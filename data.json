@@ -1,4 +1,7 @@
 {
+  "priceApi": "https://apiv2.nobitex.ir/v3/orderbook/USDTIRT",
+  "priceDivisor": 10,
+  "annualBankRate": 40,
   "transactions": [
     {
       "date": "1405/02/13",
