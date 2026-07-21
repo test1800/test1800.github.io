@@ -1,1247 +1,149 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
-
-<title>Financial Dashboard</title>
-
-
 <style>
 
 * {
     box-sizing: border-box;
 }
 
-
 body {
-
     margin: 0;
-
-    background: #f5f7fb;
-
-    color: #172033;
-
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
-
+    background: #f3f4f6;
+    color: #111827;
+    font-family: Arial, Helvetica, sans-serif;
 }
-
 
 .container {
-
-    max-width: 1100px;
-
+    max-width: 900px;
     margin: auto;
-
-    padding:
-        35px
-        20px
-        50px;
-
+    padding: 8px;
 }
 
-
-/* =========================
-   HEADER
-========================= */
-
-
-.header {
-
-    display: flex;
-
-    justify-content:
-        space-between;
-
-    align-items:
-        center;
-
-    margin-bottom:
-        30px;
-
+header {
+    background: white;
+    border-radius: 10px;
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
-
 
 h1 {
-
     margin: 0;
-
-    font-size:
-        30px;
-
+    font-size: 21px;
 }
-
 
 .subtitle {
-
-    color:
-        #7b8496;
-
-    margin-top:
-        8px;
-
-    font-size:
-        13px;
-
+    margin-top: 3px;
+    color: #6b7280;
+    font-size: 11px;
 }
-
-
-.status {
-
-    color:
-        #16a34a;
-
-    background:
-        white;
-
-    border:
-        1px solid #e8ebf1;
-
-    padding:
-        10px
-        15px;
-
-    border-radius:
-        12px;
-
-    font-size:
-        12px;
-
-}
-
-
-/* =========================
-   TOP CARDS
-========================= */
-
-
-.top-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(3, 1fr);
-
-    gap:
-        18px;
-
-}
-
-
-.big-card {
-
-    background:
-        white;
-
-    border:
-        1px solid #e8ebf1;
-
-    box-shadow:
-        0 8px 30px
-        rgba(20,30,60,.05);
-
-    border-radius:
-        22px;
-
-    padding:
-        28px;
-
-}
-
-
-/* =========================
-   USD CARD
-========================= */
-
-
-.usd-card {
-
-    border-top:
-        4px solid #16a34a;
-
-}
-
-
-.usd-title {
-
-    color:
-        #16a34a;
-
-    font-size:
-        14px;
-
-    font-weight:
-        bold;
-
-    margin-bottom:
-        18px;
-
-}
-
-
-.usd-price {
-
-    font-size:
-        32px;
-
-    font-weight:
-        bold;
-
-}
-
-
-.usd-unit {
-
-    font-size:
-        13px;
-
-    color:
-        #7b8496;
-
-    margin-left:
-        5px;
-
-}
-
-
-.usd-update {
-
-    margin-top:
-        12px;
-
-    color:
-        #7b8496;
-
-    font-size:
-        11px;
-
-}
-
-
-/* =========================
-   NORMAL BIG CARDS
-========================= */
-
-
-.label {
-
-    color:
-        #7b8496;
-
-    font-size:
-        14px;
-
-    margin-bottom:
-        18px;
-
-}
-
-
-.big-value {
-
-    font-size:
-        30px;
-
-    font-weight:
-        bold;
-
-}
-
-
-/* =========================
-   SECTIONS
-========================= */
-
-
-.section {
-
-    margin-top:
-        35px;
-
-}
-
-
-.section-header {
-
-    display: flex;
-
-    justify-content:
-        space-between;
-
-    margin-bottom:
-        15px;
-
-}
-
-
-.section-title {
-
-    font-size:
-        19px;
-
-    font-weight:
-        bold;
-
-}
-
-
-.section-subtitle {
-
-    font-size:
-        12px;
-
-    color:
-        #7b8496;
-
-}
-
-
-/* =========================
-   SMALL CARDS
-========================= */
-
-
-.cards {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(3, 1fr);
-
-    gap:
-        18px;
-
-}
-
 
 .card {
-
-    background:
-        white;
-
-    border:
-        1px solid #e8ebf1;
-
-    border-radius:
-        20px;
-
-    padding:
-        25px;
-
-    min-height:
-        145px;
-
-    box-shadow:
-        0 8px 30px
-        rgba(20,30,60,.04);
-
+    background: white;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-
-.card-name {
-
-    color:
-        #7b8496;
-
-    font-size:
-        13px;
-
+.card h2 {
+    margin: 0 0 8px 0;
+    padding-bottom: 7px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 16px;
 }
 
-
-.card-number {
-
-    font-size:
-        27px;
-
-    font-weight:
-        bold;
-
-    margin-top:
-        30px;
-
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
 }
 
-
-/* =========================
-   FOOTER
-========================= */
-
-
-.footer {
-
-    text-align:
-        center;
-
-    margin-top:
-        45px;
-
-    color:
-        #7b8496;
-
-    font-size:
-        11px;
-
+.metric {
+    padding: 9px 10px;
+    border-radius: 7px;
+    background: #f8fafc;
 }
 
+.metric-title {
+    color: #6b7280;
+    font-size: 10px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+}
 
-/* =========================
-   MOBILE
-========================= */
+.metric-value {
+    font-size: 16px;
+    font-weight: bold;
+}
 
+.result {
+    margin-top: 8px;
+    padding: 9px;
+    text-align: center;
+    border-radius: 7px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.investment {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.bank {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.status {
+    margin-top: 6px;
+    font-size: 10px;
+    color: #6b7280;
+}
 
 @media(max-width:700px) {
 
-
     .container {
-
-        padding:
-            20px
-            14px;
-
+        padding: 5px;
     }
 
-
-    .header {
-
-        flex-direction:
-            column;
-
-        align-items:
-            flex-start;
-
-        gap:
-            15px;
-
+    .card {
+        padding: 9px;
+        margin-bottom: 5px;
     }
 
-
-    .top-grid,
-    .cards {
-
-        grid-template-columns:
-            1fr;
-
+    header {
+        padding: 10px 12px;
+        margin-bottom: 5px;
     }
 
+    .grid {
+        gap: 4px;
+    }
+
+    .metric {
+        padding: 7px 8px;
+    }
+
+    .metric-value {
+        font-size: 14px;
+    }
+
+    .metric-title {
+        font-size: 9px;
+    }
+
+    .card h2 {
+        font-size: 14px;
+        margin-bottom: 6px;
+        padding-bottom: 5px;
+    }
+
+    .result {
+        padding: 7px;
+        margin-top: 5px;
+        font-size: 14px;
+    }
 
 }
 
 </style>
-
-</head>
-
-
-<body>
-
-
-<div class="container">
-
-
-<!-- =========================
-     HEADER
-========================= -->
-
-
-<header class="header">
-
-
-<div>
-
-<h1>
-Financial Dashboard
-</h1>
-
-
-<div class="subtitle">
-
-Financial Overview & Open Market USD
-
-</div>
-
-</div>
-
-
-<div
-    class="status"
-    id="status">
-
-● Loading
-
-</div>
-
-
-</header>
-
-
-
-<!-- =========================
-     TOP CARDS
-========================= -->
-
-
-<div class="top-grid">
-
-
-
-<!-- USD -->
-
-<div class="big-card usd-card">
-
-
-<div class="usd-title">
-
-USD Open Market
-
-</div>
-
-
-<div class="usd-price">
-
-
-<span id="usdPrice">
-
-Loading...
-
-</span>
-
-
-<span class="usd-unit">
-
-Toman
-
-</span>
-
-
-</div>
-
-
-<div class="usd-update">
-
-
-Last Update:
-
-<span id="usdUpdate">
-
-—
-
-</span>
-
-
-</div>
-
-
-</div>
-
-
-
-<!-- DATE -->
-
-<div class="big-card">
-
-
-<div class="label">
-
-Today's Date
-
-</div>
-
-
-<div
-    class="big-value"
-    id="today">
-
-—
-
-</div>
-
-
-</div>
-
-
-
-<!-- BALANCE -->
-
-<div class="big-card">
-
-
-<div class="label">
-
-Balance
-
-</div>
-
-
-<div
-    class="big-value"
-    id="balance">
-
-—
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-
-<!-- =========================
-     UNIT PRICE
-========================= -->
-
-
-<section class="section">
-
-
-<div class="section-header">
-
-
-<div class="section-title">
-
-Unit Price
-
-</div>
-
-
-<div class="section-subtitle">
-
-Comparison by Period
-
-</div>
-
-
-</div>
-
-
-
-<div class="cards">
-
-
-
-<div class="card">
-
-
-<div class="card-name">
-
-All Periods
-
-</div>
-
-
-<div
-    class="card-number"
-    id="unitAll">
-
-—
-
-</div>
-
-
-</div>
-
-
-
-<div class="card">
-
-
-<div class="card-name">
-
-6 Periods
-
-</div>
-
-
-<div
-    class="card-number"
-    id="unit6">
-
-—
-
-</div>
-
-
-</div>
-
-
-
-<div class="card">
-
-
-<div class="card-name">
-
-1 Period
-
-</div>
-
-
-<div
-    class="card-number"
-    id="unit1">
-
-—
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-</section>
-
-
-
-<!-- =========================
-     AVERAGE PRICE
-========================= -->
-
-
-<section class="section">
-
-
-<div class="section-header">
-
-
-<div class="section-title">
-
-Average Price
-
-</div>
-
-
-<div class="section-subtitle">
-
-Calculated Average by Period
-
-</div>
-
-
-</div>
-
-
-
-<div class="cards">
-
-
-
-<div class="card">
-
-
-<div class="card-name">
-
-All Periods
-
-</div>
-
-
-<div
-    class="card-number"
-    id="avgAll">
-
-—
-
-</div>
-
-
-</div>
-
-
-
-<div class="card">
-
-
-<div class="card-name">
-
-6 Periods
-
-</div>
-
-
-<div
-    class="card-number"
-    id="avg6">
-
-—
-
-</div>
-
-
-</div>
-
-
-
-<div class="card">
-
-
-<div class="card-name">
-
-1 Period
-
-</div>
-
-
-<div
-    class="card-number"
-    id="avg1">
-
-—
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-</section>
-
-
-
-<!-- =========================
-     FOOTER
-========================= -->
-
-
-<footer class="footer">
-
-
-Excel Data Last Updated:
-
-<span id="dataUpdate">
-
-—
-
-</span>
-
-
-<br><br>
-
-
-USD Source:
-
-TGJU
-
-
-</footer>
-
-
-</div>
-
-
-
-<script>
-
-
-// ==========================================
-// LOAD YOUR ORIGINAL data.json
-// ==========================================
-
-
-async function loadDashboardData() {
-
-
-try {
-
-
-const response = await fetch(
-
-"data.json?v=" +
-Date.now(),
-
-{
-
-cache:
-"no-store"
-
-}
-
-);
-
-
-if (!response.ok) {
-
-throw new Error(
-"data.json not found"
-);
-
-}
-
-
-const data =
-await response.json();
-
-
-
-// DATE
-
-document
-.getElementById("today")
-.textContent =
-
-data.today || "—";
-
-
-
-// BALANCE
-
-document
-.getElementById("balance")
-.textContent =
-
-formatNumber(
-data.balance
-);
-
-
-
-// UNIT PRICE
-
-document
-.getElementById("unitAll")
-.textContent =
-
-formatNumber(
-data.unitAll
-);
-
-
-document
-.getElementById("unit6")
-.textContent =
-
-formatNumber(
-data.unit6
-);
-
-
-document
-.getElementById("unit1")
-.textContent =
-
-formatNumber(
-data.unit1
-);
-
-
-
-// AVERAGE PRICE
-
-document
-.getElementById("avgAll")
-.textContent =
-
-formatNumber(
-data.avgAll
-);
-
-
-document
-.getElementById("avg6")
-.textContent =
-
-formatNumber(
-data.avg6
-);
-
-
-document
-.getElementById("avg1")
-.textContent =
-
-formatNumber(
-data.avg1
-);
-
-
-
-// UPDATE TIME
-
-document
-.getElementById("dataUpdate")
-.textContent =
-
-new Date()
-.toLocaleString(
-"en-US"
-);
-
-
-}
-
-catch(error) {
-
-
-console.error(
-"Data error:",
-error
-);
-
-}
-
-}
-
-
-
-// ==========================================
-// LOAD USD FROM usd.txt
-// ==========================================
-
-
-async function loadUSD() {
-
-
-try {
-
-
-const response = await fetch(
-
-"usd.txt?v=" +
-Date.now(),
-
-{
-
-cache:
-"no-store"
-
-}
-
-);
-
-
-if (!response.ok) {
-
-throw new Error(
-"usd.txt not found"
-);
-
-}
-
-
-let text =
-await response.text();
-
-
-// Remove spaces and new lines
-
-text =
-text.trim();
-
-
-// Convert Persian digits
-
-text =
-text.replace(
-
-/[۰-۹]/g,
-
-function(digit) {
-
-return
-"۰۱۲۳۴۵۶۷۸۹"
-.indexOf(digit);
-
-}
-
-);
-
-
-// Remove commas
-
-text =
-text.replace(
-/,/g,
-""
-);
-
-
-// Convert to number
-
-const price =
-Number(text);
-
-
-
-if (
-isNaN(price)
-) {
-
-throw new Error(
-"Invalid USD price"
-);
-
-}
-
-
-// Display price
-
-document
-.getElementById("usdPrice")
-.textContent =
-
-price.toLocaleString(
-"en-US"
-);
-
-
-// Update status
-
-document
-.getElementById("status")
-.textContent =
-
-"● Live";
-
-
-// Update time
-
-document
-.getElementById("usdUpdate")
-.textContent =
-
-new Date()
-.toLocaleString(
-"en-US"
-);
-
-
-}
-
-catch(error) {
-
-
-console.error(
-"USD error:",
-error
-);
-
-
-document
-.getElementById("usdPrice")
-.textContent =
-
-"Unavailable";
-
-
-document
-.getElementById("status")
-.textContent =
-
-"● Offline";
-
-
-}
-
-}
-
-
-
-// ==========================================
-// NUMBER FORMAT
-// ==========================================
-
-
-function formatNumber(value) {
-
-
-if (
-
-value === null ||
-value === undefined ||
-value === ""
-
-) {
-
-return "—";
-
-}
-
-
-let number = Number(
-
-String(value)
-.replace(
-/,/g,
-""
-)
-
-);
-
-
-if (
-!isNaN(number)
-) {
-
-return number
-.toLocaleString(
-"en-US"
-);
-
-}
-
-
-return value;
-
-}
-
-
-
-// ==========================================
-// INITIAL LOAD
-// ==========================================
-
-
-loadDashboardData();
-
-loadUSD();
-
-
-
-// ==========================================
-// AUTO REFRESH
-// ==========================================
-
-
-// Excel JSON
-// Every 30 seconds
-
-setInterval(
-
-loadDashboardData,
-
-30000
-
-);
-
-
-// USD
-// Every 30 seconds
-
-setInterval(
-
-loadUSD,
-
-30000
-
-);
-
-
-</script>
-
-
-</body>
-
-</html>
