@@ -12,503 +12,193 @@ content="width=device-width, initial-scale=1.0"
 
 <title>Investment Dashboard</title>
 
-
 <style>
-
-/* =========================
-   GLOBAL
-========================= */
 
 * {
     box-sizing: border-box;
 }
 
 body {
-
     margin: 0;
-
     background:
-        linear-gradient(
-            135deg,
-            #eef2f7,
-            #e5e9f0
-        );
-
+        linear-gradient(135deg,#eef2f7,#e5e9f0);
     color: #17202a;
-
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
+    font-family: Arial, Helvetica, sans-serif;
 }
-
 
 .container {
-
     max-width: 900px;
-
     margin: auto;
-
-    padding: 14px;
-
+    padding: 12px;
 }
 
-
-/* =========================
-   HEADER
-========================= */
+header,
+.card {
+    background: white;
+    border-radius: 15px;
+    box-shadow:
+        0 7px 22px rgba(0,0,0,.06);
+}
 
 header {
-
-    background: white;
-
-    border-radius: 16px;
-
-    padding:
-        20px;
-
-    margin-bottom:
-        12px;
-
-    box-shadow:
-        0 8px 25px
-        rgba(
-            0,
-            0,
-            0,
-            0.07
-        );
-
+    padding: 18px;
+    margin-bottom: 12px;
 }
-
 
 h1 {
-
     margin: 0;
-
-    font-size:
-        22px;
-
+    font-size: 21px;
 }
-
 
 .subtitle {
-
-    margin-top:
-        6px;
-
-    color:
-        #7b8794;
-
-    font-size:
-        11px;
-
+    margin-top: 5px;
+    color: #7b8794;
+    font-size: 11px;
 }
-
-
-/* =========================
-   CARD
-========================= */
 
 .card {
-
-    background:
-        rgba(
-            255,
-            255,
-            255,
-            0.96
-        );
-
-    border-radius:
-        15px;
-
-    padding:
-        16px;
-
-    margin-bottom:
-        12px;
-
-    box-shadow:
-        0 7px 22px
-        rgba(
-            0,
-            0,
-            0,
-            0.06
-        );
-
+    padding: 15px;
+    margin-bottom: 12px;
 }
-
 
 h2 {
-
-    margin:
-        0 0 14px 0;
-
-    padding-bottom:
-        10px;
-
-    border-bottom:
-        1px solid
-        #e8ebef;
-
-    font-size:
-        15px;
-
+    margin: 0 0 12px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid #e8ebef;
+    font-size: 15px;
 }
-
-
-/* =========================
-   GRID
-========================= */
 
 .grid {
-
-    display:
-        grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap:
-        8px 10px;
-
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px 10px;
 }
-
-
-/* =========================
-   METRIC
-========================= */
 
 .metric {
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        space-between;
-
-    min-height:
-        50px;
-
-    padding:
-        9px 12px;
-
-    background:
-        #f7f9fb;
-
-    border:
-        1px solid
-        #edf0f3;
-
-    border-radius:
-        10px;
-
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 8px 11px;
+    background: #f7f9fb;
+    border: 1px solid #edf0f3;
+    border-radius: 9px;
 }
-
 
 .metric-title {
-
-    color:
-        #7b8794;
-
-    font-size:
-        10px;
-
-    text-align:
-        right;
-
-    line-height:
-        1.3;
-
-    padding-right:
-        8px;
-
+    color: #7b8794;
+    font-size: 10px;
+    text-align: right;
+    padding-right: 8px;
 }
-
 
 .metric-value {
-
-    width:
-        125px;
-
-    font-size:
-        15px;
-
-    font-weight:
-        700;
-
-    text-align:
-        left;
-
-    direction:
-        ltr;
-
-    white-space:
-        nowrap;
-
+    width: 120px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: left;
+    direction: ltr;
 }
-
-
-/* =========================
-   PRICE COMPARISON
-========================= */
 
 .price-box {
-
-    grid-column:
-        1 / -1;
-
-    display:
-        grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap:
-        10px;
-
-    margin-top:
-        5px;
-
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    margin-top: 4px;
 }
-
 
 .price-status {
-
-    padding:
-        12px;
-
-    border-radius:
-        11px;
-
-    text-align:
-        center;
-
-    font-weight:
-        700;
-
-    transition:
-        0.2s;
-
+    padding: 11px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 700;
 }
-
 
 .price-status-title {
-
-    font-size:
-        10px;
-
-    opacity:
-        0.75;
-
-    margin-bottom:
-        5px;
-
+    font-size: 10px;
+    opacity: .75;
+    margin-bottom: 5px;
 }
-
 
 .price-status-value {
-
-    font-size:
-        17px;
-
+    font-size: 16px;
 }
-
 
 .price-lower {
-
-    background:
-        #fff0f0;
-
-    color:
-        #c0392b;
-
-    border:
-        1px solid
-        #ffd5d5;
-
+    background: #fff0f0;
+    color: #c0392b;
+    border: 1px solid #ffd5d5;
 }
-
 
 .price-higher {
-
-    background:
-        #eaf8ef;
-
-    color:
-        #18834b;
-
-    border:
-        1px solid
-        #c9eed9;
-
+    background: #eaf8ef;
+    color: #18834b;
+    border: 1px solid #c9eed9;
 }
-
-
-/* =========================
-   RESULT
-========================= */
 
 .result {
-
-    margin-top:
-        10px;
-
-    padding:
-        12px;
-
-    text-align:
-        center;
-
-    border-radius:
-        10px;
-
-    font-size:
-        14px;
-
-    font-weight:
-        700;
-
+    margin-top: 9px;
+    padding: 11px;
+    text-align: center;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 700;
 }
-
 
 .investment {
-
-    background:
-        #e8f7ee;
-
-    color:
-        #18794e;
-
+    background: #e8f7ee;
+    color: #18794e;
 }
-
 
 .bank {
-
-    background:
-        #fff0f0;
-
-    color:
-        #c0392b;
-
+    background: #fff0f0;
+    color: #c0392b;
 }
-
-
-/* =========================
-   ERROR
-========================= */
 
 .error {
-
-    background:
-        #fff0f0;
-
-    color:
-        #c0392b;
-
-    padding:
-        12px;
-
-    border-radius:
-        10px;
-
-    margin-bottom:
-        10px;
-
+    background: #fff0f0;
+    color: #c0392b;
+    padding: 11px;
+    border-radius: 9px;
+    margin-bottom: 10px;
 }
 
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #7b8794;
+}
 
-/* =========================
-   MOBILE
-========================= */
-
-@media(
-    max-width:700px
-) {
+@media(max-width:700px) {
 
     .container {
-
-        padding:
-            8px;
-
+        padding: 7px;
     }
-
 
     header {
-
-        padding:
-            16px;
-
+        padding: 15px;
     }
-
-
-    h1 {
-
-        font-size:
-            19px;
-
-    }
-
 
     .card {
-
-        padding:
-            12px;
-
-        border-radius:
-            12px;
-
+        padding: 11px;
     }
-
 
     .grid {
-
-        gap:
-            6px;
-
+        gap: 6px;
     }
-
 
     .metric {
-
-        min-height:
-            46px;
-
-        padding:
-            7px 8px;
-
+        padding: 7px 8px;
     }
-
 
     .metric-title {
-
-        font-size:
-            9px;
-
+        font-size: 9px;
     }
-
 
     .metric-value {
-
-        width:
-            105px;
-
-        font-size:
-            13px;
-
-    }
-
-
-    .price-box {
-
-        grid-template-columns:
-            1fr 1fr;
-
+        width: 105px;
+        font-size: 13px;
     }
 
 }
@@ -520,24 +210,14 @@ h2 {
 
 <body>
 
-
 <div class="container">
-
-
-<!-- =========================
-     HEADER
-========================= -->
 
 <header>
 
-<h1>
-Investment Dashboard
-</h1>
+<h1>Investment Dashboard</h1>
 
 <div class="subtitle">
-
 Automatic Daily Calculation
-
 </div>
 
 </header>
@@ -546,19 +226,21 @@ Automatic Daily Calculation
 <div id="errorBox"></div>
 
 
-<!-- =========================
-     MARKET
-========================= -->
+<div id="loading" class="loading">
+Loading...
+</div>
+
+
+<div id="dashboard" style="display:none;">
+
+
+<!-- MARKET -->
 
 <div class="card">
 
-<h2>
-Market
-</h2>
-
+<h2>Market</h2>
 
 <div class="grid">
-
 
 <div class="metric">
 
@@ -628,116 +310,55 @@ id="marketQuantity"
 </div>
 
 
-
-<!-- =========================
-     OVERALL
-========================= -->
+<!-- OVERALL -->
 
 <div class="card">
 
-<h2>
-Overall Performance
-</h2>
-
+<h2>Overall Performance</h2>
 
 <div class="grid">
 
-
 <div class="metric">
-
 <div class="metric-title">
 Average Purchase Price
 </div>
-
-<div
-class="metric-value"
-id="overallAverage"
->
--
+<div class="metric-value" id="overallAverage">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Current Quantity
 </div>
-
-<div
-class="metric-value"
-id="overallQuantity"
->
--
+<div class="metric-value" id="overallQuantity">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Bank-Adjusted Price
 </div>
-
-<div
-class="metric-value"
-id="overallAdjusted"
->
--
+<div class="metric-value" id="overallAdjusted">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Bank Value
 </div>
-
-<div
-class="metric-value"
-id="overallBank"
->
--
+<div class="metric-value" id="overallBank">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Current Price
 </div>
-
-<div
-class="metric-value"
-id="overallCurrentPrice"
->
--
+<div class="metric-value" id="overallCurrentPrice">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Current Value
 </div>
-
-<div
-class="metric-value"
-id="overallValue"
->
--
+<div class="metric-value" id="overallValue">-</div>
 </div>
-
-</div>
-
 
 <div
 class="price-box"
@@ -745,9 +366,7 @@ id="overallPriceStatus"
 >
 </div>
 
-
 </div>
-
 
 <div
 class="result"
@@ -759,116 +378,55 @@ id="overallResult"
 </div>
 
 
-
-<!-- =========================
-     LAST 6 PERIODS
-========================= -->
+<!-- LAST 6 -->
 
 <div class="card">
 
-<h2>
-Last 6 Periods
-</h2>
-
+<h2>Last 6 Periods</h2>
 
 <div class="grid">
 
-
 <div class="metric">
-
 <div class="metric-title">
 Average Purchase Price
 </div>
-
-<div
-class="metric-value"
-id="sixAverage"
->
--
+<div class="metric-value" id="sixAverage">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Current Quantity
 </div>
-
-<div
-class="metric-value"
-id="sixQuantity"
->
--
+<div class="metric-value" id="sixQuantity">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Bank-Adjusted Price
 </div>
-
-<div
-class="metric-value"
-id="sixAdjusted"
->
--
+<div class="metric-value" id="sixAdjusted">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Bank Value
 </div>
-
-<div
-class="metric-value"
-id="sixBank"
->
--
+<div class="metric-value" id="sixBank">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Current Price
 </div>
-
-<div
-class="metric-value"
-id="sixCurrentPrice"
->
--
+<div class="metric-value" id="sixCurrentPrice">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Current Value
 </div>
-
-<div
-class="metric-value"
-id="sixValue"
->
--
+<div class="metric-value" id="sixValue">-</div>
 </div>
-
-</div>
-
 
 <div
 class="price-box"
@@ -876,9 +434,7 @@ id="sixPriceStatus"
 >
 </div>
 
-
 </div>
-
 
 <div
 class="result"
@@ -890,116 +446,55 @@ id="sixResult"
 </div>
 
 
-
-<!-- =========================
-     LAST PERIOD
-========================= -->
+<!-- LAST PERIOD -->
 
 <div class="card">
 
-<h2>
-Last Period
-</h2>
-
+<h2>Last Period</h2>
 
 <div class="grid">
 
-
 <div class="metric">
-
 <div class="metric-title">
 Average Purchase Price
 </div>
-
-<div
-class="metric-value"
-id="lastAverage"
->
--
+<div class="metric-value" id="lastAverage">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Current Quantity
 </div>
-
-<div
-class="metric-value"
-id="lastQuantity"
->
--
+<div class="metric-value" id="lastQuantity">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Bank-Adjusted Price
 </div>
-
-<div
-class="metric-value"
-id="lastAdjusted"
->
--
+<div class="metric-value" id="lastAdjusted">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Bank Value
 </div>
-
-<div
-class="metric-value"
-id="lastBank"
->
--
+<div class="metric-value" id="lastBank">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Current Price
 </div>
-
-<div
-class="metric-value"
-id="lastCurrentPrice"
->
--
+<div class="metric-value" id="lastCurrentPrice">-</div>
 </div>
-
-</div>
-
 
 <div class="metric">
-
 <div class="metric-title">
 Current Value
 </div>
-
-<div
-class="metric-value"
-id="lastValue"
->
--
+<div class="metric-value" id="lastValue">-</div>
 </div>
-
-</div>
-
 
 <div
 class="price-box"
@@ -1007,9 +502,7 @@ id="lastPriceStatus"
 >
 </div>
 
-
 </div>
-
 
 <div
 class="result"
@@ -1023,44 +516,31 @@ id="lastResult"
 
 </div>
 
+</div>
 
 
 <script>
 
 
-/* ============================
-   SETTINGS
-============================ */
-
-const ANNUAL_BANK_RATE = 40;
-
-
-/* ============================
-   FORMAT
-============================ */
+/* =========================
+   NUMBER FORMAT
+========================= */
 
 function formatNumber(value) {
 
-    if (
-        !isFinite(value)
-    ) {
-
+    if (!isFinite(value)) {
         return "-";
-
     }
 
-    return Math.round(
-        value
-    ).toLocaleString(
-        "en-US"
-    );
+    return Math.round(value)
+        .toLocaleString("en-US");
 
 }
 
 
-/* ============================
-   JALALI CONVERSION
-============================ */
+/* =========================
+   JALALI TO GREGORIAN
+========================= */
 
 function jalaliToGregorian(
     jy,
@@ -1072,16 +552,10 @@ function jalaliToGregorian(
 
     let days =
         365 * jy +
+        Math.floor(jy / 33) * 8 +
         Math.floor(
-            jy / 33
-        ) * 8 +
-        Math.floor(
-            (
-                jy % 33 +
-                3
-            ) / 4
+            ((jy % 33) + 3) / 4
         );
-
 
     for (
         let i = 1;
@@ -1090,156 +564,88 @@ function jalaliToGregorian(
     ) {
 
         days +=
-
-            i <= 6
-            ?
-            31
-            :
-            30;
+            i <= 6 ? 31 : 30;
 
     }
 
-
-    days +=
-        jd - 1;
-
+    days += jd - 1;
 
     let gy =
         1600 +
         400 *
         Math.floor(
-            days /
-            146097
+            days / 146097
         );
 
+    days %= 146097;
 
-    days %=
-        146097;
-
-
-    if (
-        days >
-        36524
-    ) {
+    if (days > 36524) {
 
         gy +=
             100 *
             Math.floor(
-                --days /
-                36524
+                --days / 36524
             );
 
+        days %= 36524;
 
-        days %=
-            36524;
-
-
-        if (
-            days >=
-            365
-        ) {
-
+        if (days >= 365) {
             days++;
-
         }
 
     }
 
-
     gy +=
         4 *
         Math.floor(
-            days /
-            1461
+            days / 1461
         );
 
+    days %= 1461;
 
-    days %=
-        1461;
-
-
-    if (
-        days >
-        365
-    ) {
+    if (days > 365) {
 
         gy +=
             Math.floor(
-                (
-                    days - 1
-                ) /
-                365
+                (days - 1) / 365
             );
 
-
         days =
-            (
-                days - 1
-            ) %
-            365;
+            (days - 1) % 365;
 
     }
-
 
     let gd =
         days + 1;
 
-
     const leap =
-
         (
             gy % 4 === 0 &&
             gy % 100 !== 0
         )
-
         ||
-
         gy % 400 === 0;
 
-
     const monthDays = [
-
         0,
-
         31,
-
-        leap
-        ?
-        29
-        :
-        28,
-
+        leap ? 29 : 28,
         31,
-
         30,
-
         31,
-
         30,
-
         31,
-
         31,
-
         30,
-
         31,
-
         30,
-
         31
-
     ];
-
 
     let gm = 1;
 
-
     while (
-
-        gd >
-        monthDays[gm]
-
+        gd > monthDays[gm]
     ) {
 
         gd -=
@@ -1249,304 +655,150 @@ function jalaliToGregorian(
 
     }
 
-
     return new Date(
-
         gy,
-
         gm - 1,
-
         gd
-
     );
 
 }
 
 
-/* ============================
+/* =========================
    TODAY JALALI
-============================ */
+========================= */
 
 function getTodayJalali() {
 
     const now =
         new Date();
 
-
     const gy =
         now.getFullYear();
-
 
     const gm =
         now.getMonth() + 1;
 
-
     const gd =
         now.getDate();
 
-
     const gdm = [
-
         0,
-
         31,
-
         59,
-
         90,
-
         120,
-
         151,
-
         181,
-
         212,
-
         243,
-
         273,
-
         304,
-
         334
-
     ];
 
+    let jy =
+        gy > 1600
+        ? 979
+        : 0;
 
-    let jy;
+    const y =
+        gy > 1600
+        ? gy - 1600
+        : gy - 621;
 
+    let days =
 
-    let days;
+        365 * y
 
+        +
 
-    if (
-        gy >
-        1600
-    ) {
+        Math.floor(
+            (y + 3) / 4
+        )
 
-        jy =
-            979;
+        -
 
+        Math.floor(
+            (y + 99) / 100
+        )
 
-        const y =
-            gy - 1600;
+        +
 
+        Math.floor(
+            (y + 399) / 400
+        )
 
-        days =
+        -
 
-            365 * y
+        80
 
-            +
+        +
 
-            Math.floor(
-                (
-                    y + 3
-                ) /
-                4
-            )
+        gd
 
-            -
+        +
 
-            Math.floor(
-                (
-                    y + 99
-                ) /
-                100
-            )
-
-            +
-
-            Math.floor(
-                (
-                    y + 399
-                ) /
-                400
-            )
-
-            -
-
-            80
-
-            +
-
-            gd
-
-            +
-
-            gdm[
-                gm - 1
-            ];
-
-    }
-
-
-    else {
-
-        jy =
-            0;
-
-
-        const y =
-            gy - 621;
-
-
-        days =
-
-            365 * y
-
-            +
-
-            Math.floor(
-                (
-                    y + 3
-                ) /
-                4
-            )
-
-            -
-
-            Math.floor(
-                (
-                    y + 99
-                ) /
-                100
-            )
-
-            +
-
-            Math.floor(
-                (
-                    y + 399
-                ) /
-                400
-            )
-
-            -
-
-            80
-
-            +
-
-            gd
-
-            +
-
-            gdm[
-                gm - 1
-            ];
-
-    }
-
+        gdm[gm - 1];
 
     jy +=
 
         33 *
         Math.floor(
-            days /
-            12053
+            days / 12053
         );
 
-
-    days %=
-        12053;
-
+    days %= 12053;
 
     jy +=
 
         4 *
         Math.floor(
-            days /
-            1461
+            days / 1461
         );
 
+    days %= 1461;
 
-    days %=
-        1461;
-
-
-    if (
-        days >
-        365
-    ) {
+    if (days > 365) {
 
         jy +=
             Math.floor(
-                (
-                    days - 1
-                ) /
-                365
+                (days - 1) / 365
             );
-
 
         days =
-            (
-                days - 1
-            ) %
-            365;
+            (days - 1) % 365;
 
     }
-
 
     let jm;
-
-
     let jd;
 
-
-    if (
-        days <
-        186
-    ) {
+    if (days < 186) {
 
         jm =
-
             1 +
-
             Math.floor(
-                days /
-                31
+                days / 31
             );
 
-
         jd =
-
             1 +
+            days % 31;
 
-            days %
-            31;
-
-    }
-
-
-    else {
+    } else {
 
         jm =
-
             7 +
-
             Math.floor(
-                (
-                    days - 186
-                ) /
-                30
+                (days - 186) / 30
             );
-
 
         jd =
-
             1 +
-
-            (
-                (
-                    days - 186
-                )
-                %
-                30
-            );
+            (days - 186) % 30;
 
     }
-
 
     return (
 
@@ -1554,55 +806,35 @@ function getTodayJalali() {
 
         "/" +
 
-        String(
-            jm
-        ).padStart(
-            2,
-            "0"
-        ) +
+        String(jm)
+            .padStart(2,"0") +
 
         "/" +
 
-        String(
-            jd
-        ).padStart(
-            2,
-            "0"
-        )
+        String(jd)
+            .padStart(2,"0")
 
     );
 
 }
 
 
-/* ============================
+/* =========================
    DATE NUMBER
-============================ */
+========================= */
 
-function dateNumber(
-    date
-) {
+function dateNumber(date) {
 
     const p =
-
         date
             .split("/")
-            .map(
-                Number
-            );
-
+            .map(Number);
 
     return (
 
-        p[0] *
-        10000
+        p[0] * 10000 +
 
-        +
-
-        p[1] *
-        100
-
-        +
+        p[1] * 100 +
 
         p[2]
 
@@ -1611,9 +843,9 @@ function dateNumber(
 }
 
 
-/* ============================
-   DAYS
-============================ */
+/* =========================
+   DAYS BETWEEN
+========================= */
 
 function daysBetweenInclusive(
     start,
@@ -1621,48 +853,28 @@ function daysBetweenInclusive(
 ) {
 
     const s =
-
         start
             .split("/")
-            .map(
-                Number
-            );
-
+            .map(Number);
 
     const e =
-
         end
             .split("/")
-            .map(
-                Number
-            );
-
+            .map(Number);
 
     const startDate =
-
         jalaliToGregorian(
-
             s[0],
-
             s[1],
-
             s[2]
-
         );
-
 
     const endDate =
-
         jalaliToGregorian(
-
             e[0],
-
             e[1],
-
             e[2]
-
         );
-
 
     return (
 
@@ -1677,58 +889,42 @@ function daysBetweenInclusive(
 
         )
 
-        +
-
-        1
+        + 1
 
     );
 
 }
 
 
-/* ============================
-   COMPOUND INTEREST
-============================ */
+/* =========================
+   COMPOUND BANK VALUE
+========================= */
 
 function compoundValue(
-
     principal,
-
     startDate,
-
-    today
-
+    today,
+    annualRate
 ) {
 
     const days =
-
         daysBetweenInclusive(
-
             startDate,
-
             today
-
         );
 
-
     const dailyRate =
-
-        ANNUAL_BANK_RATE /
+        annualRate /
         100 /
         365;
-
 
     return (
 
         principal *
 
         Math.pow(
-
-            1 +
-            dailyRate,
-
+            1 + dailyRate,
             days
-
         )
 
     );
@@ -1736,71 +932,33 @@ function compoundValue(
 }
 
 
-/* ============================
-   FIFO
-============================ */
+/* =========================
+   FIFO CALCULATION
+========================= */
 
 function calculateFIFO(
-
     transactions,
-
     currentPrice,
-
-    today
-
+    today,
+    annualRate
 ) {
 
-
     let lots = [];
-
-
-    let totalBankOpportunity =
-
-        0;
-
-
-    let totalBuyCost =
-
-        0;
-
 
     for (
         const t
         of transactions
     ) {
 
-
         const amount =
-
-            Number(
-                t.amount
-            );
-
+            Number(t.amount);
 
         const price =
-
-            Number(
-                t.price
-            );
-
-
-        const value =
-
-            amount *
-            price;
-
-
-        /* BUY */
+            Number(t.price);
 
         if (
-            t.type ===
-            "buy"
+            t.type === "buy"
         ) {
-
-
-            totalBuyCost +=
-                value;
-
 
             lots.push({
 
@@ -1815,89 +973,43 @@ function calculateFIFO(
 
             });
 
-
-            const bankProfit =
-
-                compoundValue(
-
-                    value,
-
-                    t.date,
-
-                    today
-
-                )
-
-                -
-
-                value;
-
-
-            totalBankOpportunity +=
-
-                bankProfit;
-
         }
 
-
-        /* SELL */
-
         else if (
-            t.type ===
-            "sell"
+            t.type === "sell"
         ) {
 
-
             let remaining =
-
                 amount;
-
 
             while (
 
-                remaining >
-                0
-
-                &&
-
-                lots.length >
-                0
+                remaining > 0 &&
+                lots.length > 0
 
             ) {
-
 
                 const lot =
                     lots[0];
 
-
                 if (
-
                     lot.amount <=
                     remaining
-
                 ) {
 
-
                     remaining -=
-
                         lot.amount;
-
 
                     lots.shift();
 
                 }
 
-
                 else {
 
-
                     lot.amount -=
-
                         remaining;
 
-
-                    remaining =
-                        0;
+                    remaining = 0;
 
                 }
 
@@ -1936,10 +1048,8 @@ function calculateFIFO(
 
                 sum +
 
-                (
-                    lot.amount *
-                    lot.price
-                ),
+                lot.amount *
+                lot.price,
 
             0
 
@@ -1948,9 +1058,7 @@ function calculateFIFO(
 
     const averagePurchasePrice =
 
-        currentQuantity >
-
-        0
+        currentQuantity > 0
 
         ?
 
@@ -1962,59 +1070,30 @@ function calculateFIFO(
         0;
 
 
-    let remainingBankProfit =
-
-        0;
+    let bankValue = 0;
 
 
-    if (
-
-        totalBuyCost >
-        0
-
-        &&
-
-        currentQuantity >
-        0
-
+    for (
+        const lot
+        of lots
     ) {
 
+        bankValue +=
 
-        const remainingRatio =
+            compoundValue(
 
-            remainingCost /
-            totalBuyCost;
+                lot.amount *
+                lot.price,
 
+                lot.date,
 
-        remainingBankProfit =
+                today,
 
-            totalBankOpportunity *
-            remainingRatio;
+                annualRate
+
+            );
 
     }
-
-
-    const bankAdjustedPrice =
-
-        currentQuantity >
-        0
-
-        ?
-
-        averagePurchasePrice
-
-        +
-
-        (
-
-            remainingBankProfit /
-            currentQuantity
-
-        )
-
-        :
-
-        0;
 
 
     const currentValue =
@@ -2023,16 +1102,18 @@ function calculateFIFO(
         currentPrice;
 
 
-    const bankValue =
+    const bankAdjustedPrice =
 
-        currentQuantity *
-        bankAdjustedPrice;
+        currentQuantity > 0
 
+        ?
 
-    const difference =
+        bankValue /
+        currentQuantity
 
-        currentValue -
-        bankValue;
+        :
+
+        0;
 
 
     return {
@@ -2049,314 +1130,206 @@ function calculateFIFO(
 
         bankValue,
 
-        difference
+        difference:
+
+            currentValue -
+            bankValue
 
     };
 
 }
 
 
-/* ============================
-   PRICE STATUS
-============================ */
+/* =========================
+   DISPLAY STATUS
+========================= */
 
 function displayPriceStatus(
-
     result,
-
     elementId
-
 ) {
 
-
     const box =
-
         document.getElementById(
             elementId
         );
 
+    const bankIsLower =
 
-    if (
-
-        result.bankAdjustedPrice <
-
-        result.currentPrice
-
-    ) {
+        result.bankAdjustedPrice
+        <
+        result.currentPrice;
 
 
-        box.innerHTML = `
+    const bankClass =
 
-            <div class="price-status price-lower">
+        bankIsLower
 
-                <div
-                class="price-status-title"
-                >
-
-                Bank-Adjusted Price
-
-                </div>
-
-                <div
-                class="price-status-value"
-                >
-
-                ${formatNumber(
-                    result.bankAdjustedPrice
-                )}
-
-                </div>
-
-            </div>
+        ? "price-lower"
+        : "price-higher";
 
 
-            <div class="price-status price-higher">
+    const currentClass =
 
-                <div
-                class="price-status-title"
-                >
+        bankIsLower
 
-                Current Price
-
-                </div>
-
-                <div
-                class="price-status-value"
-                >
-
-                ${formatNumber(
-                    result.currentPrice
-                )}
-
-                </div>
-
-            </div>
-
-        `;
-
-    }
+        ? "price-higher"
+        : "price-lower";
 
 
-    else {
+    box.innerHTML = `
+
+        <div
+        class="price-status ${bankClass}"
+        >
+
+        <div
+        class="price-status-title"
+        >
+        Bank-Adjusted Price
+        </div>
+
+        <div
+        class="price-status-value"
+        >
+        ${formatNumber(
+            result.bankAdjustedPrice
+        )}
+        </div>
+
+        </div>
 
 
-        box.innerHTML = `
+        <div
+        class="price-status ${currentClass}"
+        >
 
-            <div class="price-status price-higher">
+        <div
+        class="price-status-title"
+        >
+        Current Price
+        </div>
 
-                <div
-                class="price-status-title"
-                >
+        <div
+        class="price-status-value"
+        >
+        ${formatNumber(
+            result.currentPrice
+        )}
+        </div>
 
-                Bank-Adjusted Price
+        </div>
 
-                </div>
-
-                <div
-                class="price-status-value"
-                >
-
-                ${formatNumber(
-                    result.bankAdjustedPrice
-                )}
-
-                </div>
-
-            </div>
-
-
-            <div class="price-status price-lower">
-
-                <div
-                class="price-status-title"
-                >
-
-                Current Price
-
-                </div>
-
-                <div
-                class="price-status-value"
-                >
-
-                ${formatNumber(
-                    result.currentPrice
-                )}
-
-                </div>
-
-            </div>
-
-        `;
-
-    }
+    `;
 
 }
 
 
-/* ============================
-   DISPLAY
-============================ */
+/* =========================
+   DISPLAY SECTION
+========================= */
 
 function displaySection(
-
     result,
-
     prefix
-
 ) {
 
-
     document.getElementById(
-
-        prefix +
-        "Quantity"
-
+        prefix + "Quantity"
     ).textContent =
 
         formatNumber(
-
             result.currentQuantity
-
         );
 
 
     document.getElementById(
-
-        prefix +
-        "Average"
-
+        prefix + "Average"
     ).textContent =
 
         formatNumber(
-
             result.averagePurchasePrice
-
         );
 
 
     document.getElementById(
-
-        prefix +
-        "Adjusted"
-
+        prefix + "Adjusted"
     ).textContent =
 
         formatNumber(
-
             result.bankAdjustedPrice
-
         );
 
 
     document.getElementById(
-
-        prefix +
-        "CurrentPrice"
-
+        prefix + "CurrentPrice"
     ).textContent =
 
         formatNumber(
-
             result.currentPrice
-
         );
 
 
     document.getElementById(
-
-        prefix +
-        "Value"
-
+        prefix + "Value"
     ).textContent =
 
         formatNumber(
-
             result.currentValue
-
         );
 
 
     document.getElementById(
-
-        prefix +
-        "Bank"
-
+        prefix + "Bank"
     ).textContent =
 
         formatNumber(
-
             result.bankValue
-
         );
 
 
     displayPriceStatus(
-
         result,
-
-        prefix +
-        "PriceStatus"
-
+        prefix + "PriceStatus"
     );
 
 
     const box =
-
         document.getElementById(
-
-            prefix +
-            "Result"
-
+            prefix + "Result"
         );
 
 
     if (
-
-        result.difference >=
-        0
-
+        result.difference >= 0
     ) {
 
-
         box.className =
-
             "result investment";
-
 
         box.textContent =
 
             "INVESTMENT  +" +
 
             formatNumber(
-
                 result.difference
-
             );
 
     }
 
-
     else {
 
-
         box.className =
-
             "result bank";
-
 
         box.textContent =
 
             "BANK  +" +
 
             formatNumber(
-
                 Math.abs(
-
                     result.difference
-
                 )
-
             );
 
     }
@@ -2364,18 +1337,20 @@ function displaySection(
 }
 
 
-/* ============================
-   NOBITEX PRICE
-============================ */
+/* =========================
+   GET CURRENT PRICE
+========================= */
 
-async function getCurrentPrice() {
-
+async function getCurrentPrice(
+    apiUrl,
+    divisor
+) {
 
     const response =
 
         await fetch(
 
-            "https://apiv2.nobitex.ir/v2/trades/Usdt",
+            apiUrl,
 
             {
 
@@ -2403,7 +1378,9 @@ async function getCurrentPrice() {
 
         throw new Error(
 
-            "Unable to get current price"
+            "Unable to get current price. HTTP " +
+
+            response.status
 
         );
 
@@ -2411,151 +1388,53 @@ async function getCurrentPrice() {
 
 
     const data =
-
         await response.json();
 
 
-    /*
-       Nobitex normally returns
-       trade information.
-
-       We use the latest
-       available trade price.
-    */
-
-
-    let price;
-
-
     if (
-        Array.isArray(
-            data
-        )
-    ) {
-
-        price =
-
-            data[0]?.price;
-
-    }
-
-
-    else if (
-        data.trades &&
-        Array.isArray(
-            data.trades
-        )
-    ) {
-
-        price =
-
-            data.trades[0]?.price;
-
-    }
-
-
-    else if (
-        data.price
-    ) {
-
-        price =
-            data.price;
-
-    }
-
-
-    if (
-        !price
+        !data.lastTradePrice
     ) {
 
         throw new Error(
-
-            "Current price was not found"
-
+            "Invalid lastTradePrice"
         );
 
     }
 
 
-    return Number(
-        price
+    return (
+
+        Number(
+            data.lastTradePrice
+        )
+        /
+        divisor
+
     );
 
 }
 
 
-/* ============================
+/* =========================
    MAIN
-============================ */
+========================= */
 
 async function init() {
 
-
-    const today =
-
-        getTodayJalali();
-
-
-    document.getElementById(
-
-        "today"
-
-    ).textContent =
-
-        today;
-
-
-    document.getElementById(
-
-        "bankRate"
-
-    ).textContent =
-
-        ANNUAL_BANK_RATE +
-        "% / Year";
-
-
-    /* GET CURRENT PRICE */
-
-    const currentPrice =
-
-        await getCurrentPrice();
-
-
-    document.getElementById(
-
-        "currentPrice"
-
-    ).textContent =
-
-        formatNumber(
-
-            currentPrice
-
-        );
-
-
-    /* LOAD JSON */
-
-    const response =
+    const dataResponse =
 
         await fetch(
-
             "data.json?x=" +
-
             Date.now()
-
         );
 
 
     if (
-        !response.ok
+        !dataResponse.ok
     ) {
 
         throw new Error(
-
             "Cannot load data.json"
-
         );
 
     }
@@ -2563,29 +1442,62 @@ async function init() {
 
     const data =
 
-        await response.json();
+        await dataResponse.json();
 
 
-    if (
+    const annualBankRate =
 
-        !Array.isArray(
+        Number(
+            data.annualBankRate ||
+            40
+        );
 
-            data.transactions
 
-        )
+    const divisor =
 
-    ) {
+        Number(
+            data.priceDivisor ||
+            10
+        );
 
-        throw new Error(
 
-            "Invalid transactions data"
+    const currentPrice =
+
+        await getCurrentPrice(
+
+            data.priceApi,
+
+            divisor
 
         );
 
-    }
+
+    const today =
+        getTodayJalali();
 
 
-    /* SORT */
+    document.getElementById(
+        "today"
+    ).textContent =
+        today;
+
+
+    document.getElementById(
+        "currentPrice"
+    ).textContent =
+
+        formatNumber(
+            currentPrice
+        );
+
+
+    document.getElementById(
+        "bankRate"
+    ).textContent =
+
+        annualBankRate +
+        "% / Year";
+
 
     const transactions =
 
@@ -2593,27 +1505,13 @@ async function init() {
             .slice()
             .sort(
 
-                (
-                    a,
-                    b
-                ) =>
+                (a,b) =>
 
-                    dateNumber(
-                        a.date
-                    )
-
+                    dateNumber(a.date)
                     -
-
-                    dateNumber(
-                        b.date
-                    )
+                    dateNumber(b.date)
 
             );
-
-
-    /* ======================
-       OVERALL
-    ====================== */
 
 
     const overall =
@@ -2624,87 +1522,64 @@ async function init() {
 
             currentPrice,
 
-            today
+            today,
+
+            annualBankRate
 
         );
 
 
     document.getElementById(
-
         "marketQuantity"
-
     ).textContent =
 
         formatNumber(
-
             overall.currentQuantity
-
         );
 
 
     displaySection(
-
         overall,
-
         "overall"
-
     );
 
 
-    /* ======================
-       LAST 6
-    ====================== */
+    const lastSixTransactions =
 
-
-    const lastSix =
-
-        transactions.slice(
-            -6
-        );
+        transactions.slice(-6);
 
 
     const six =
 
         calculateFIFO(
 
-            lastSix,
+            lastSixTransactions,
 
             currentPrice,
 
-            today
+            today,
+
+            annualBankRate
 
         );
 
 
     displaySection(
-
         six,
-
         "six"
-
     );
 
 
-    /* ======================
-       LAST PERIOD
-    ====================== */
-
-
-    const lastPeriod =
+    const lastTransaction =
 
         transactions.length
 
         ?
 
         [
-
             transactions[
-
-                transactions.length -
-                1
-
+                transactions.length - 1
             ]
-
         ]
 
         :
@@ -2716,29 +1591,40 @@ async function init() {
 
         calculateFIFO(
 
-            lastPeriod,
+            lastTransaction,
 
             currentPrice,
 
-            today
+            today,
+
+            annualBankRate
 
         );
 
 
     displaySection(
-
         last,
-
         "last"
-
     );
+
+
+    document.getElementById(
+        "loading"
+    ).style.display =
+        "none";
+
+
+    document.getElementById(
+        "dashboard"
+    ).style.display =
+        "block";
 
 }
 
 
-/* ============================
+/* =========================
    START
-============================ */
+========================= */
 
 init()
 
@@ -2746,36 +1632,32 @@ init()
 
     error => {
 
-
         console.error(
-
             error
-
         );
 
+        document.getElementById(
+            "loading"
+        ).style.display =
+            "none";
 
         document.getElementById(
-
             "errorBox"
+        ).innerHTML = `
 
-        ).innerHTML =
+        <div class="error">
 
-            `
+        ${error.message}
 
-            <div class="error">
+        </div>
 
-            ${error.message}
-
-            </div>
-
-            `;
+        `;
 
     }
 
 );
 
 </script>
-
 
 </body>
 
