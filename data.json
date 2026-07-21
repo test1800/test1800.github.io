@@ -1,10 +1,10 @@
 {
   "today": "30/04/1405",
-  "balance": "0",
-  "unitAll": "0",
-  "unit6": "0",
-  "unit1": "0",
-  "avgAll": "0",
-  "avg6": "0",
-  "avg1": "0"
+  "balance": 123456,
+  "unitAll": 123,
+  "unit6": 125,
+  "unit1": 130,
+  "avgAll": 120,
+  "avg6": 122,
+  "avg1": 128
 }
