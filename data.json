@@ -1,1 +1,56 @@
-{"today":"21/07/2026","balance":"9800","unitAll":"184723","unit6":"183595","unit1":"164226","avgAll":"173480","avg6":"172929","avg1":"158160"}
+{
+  "settings": {
+    "annualBankRate": 40,
+    "currentPrice": 189300
+  },
+  "transactions": [
+    {
+      "date": "1405/02/13",
+      "type": "buy",
+      "amount": 300,
+      "price": 187000
+    },
+    {
+      "date": "1405/02/17",
+      "type": "buy",
+      "amount": 1100,
+      "price": 174000
+    },
+    {
+      "date": "1405/02/20",
+      "type": "buy",
+      "amount": 1000,
+      "price": 177500
+    },
+    {
+      "date": "1405/02/26",
+      "type": "buy",
+      "amount": 1000,
+      "price": 181500
+    },
+    {
+      "date": "1405/02/29",
+      "type": "buy",
+      "amount": 1100,
+      "price": 177000
+    },
+    {
+      "date": "1405/02/30",
+      "type": "buy",
+      "amount": 2200,
+      "price": 180000
+    },
+    {
+      "date": "1405/03/02",
+      "type": "buy",
+      "amount": 600,
+      "price": 179167
+    },
+    {
+      "date": "1405/03/26",
+      "type": "buy",
+      "amount": 2500,
+      "price": 158160
+    }
+  ]
+}
