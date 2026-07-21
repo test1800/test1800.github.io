@@ -52,6 +52,15 @@ h2 {
     font-size: 14px;
 }
 
+h3 {
+    margin: 7px 0 4px 0;
+    font-size: 11px;
+    color: #374151;
+    text-transform: uppercase;
+    border-left: 3px solid #6b7280;
+    padding-left: 5px;
+}
+
 .grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -132,6 +141,11 @@ h2 {
         font-size: 13px;
     }
 
+    h3 {
+        font-size: 10px;
+        margin-top: 6px;
+    }
+
     .result {
         font-size: 13px;
         padding: 6px;
@@ -156,7 +170,9 @@ h2 {
 <div id="errorBox"></div>
 
 
-<!-- MARKET -->
+<!-- ================================
+     MARKET
+================================ -->
 
 <div class="card">
 
@@ -189,11 +205,15 @@ h2 {
 </div>
 
 
-<!-- OVERALL -->
+<!-- ================================
+     OVERALL
+================================ -->
 
 <div class="card">
 
 <h2>Overall Performance</h2>
+
+<h3>Current</h3>
 
 <div class="grid">
 
@@ -208,11 +228,6 @@ h2 {
 </div>
 
 <div class="metric">
-<div class="metric-title">Bank-Adjusted Price</div>
-<div class="metric-value" id="overallAdjusted">-</div>
-</div>
-
-<div class="metric">
 <div class="metric-title">Current Price</div>
 <div class="metric-value" id="overallCurrentPrice">-</div>
 </div>
@@ -220,6 +235,18 @@ h2 {
 <div class="metric">
 <div class="metric-title">Current Value</div>
 <div class="metric-value" id="overallValue">-</div>
+</div>
+
+</div>
+
+
+<h3>Bank</h3>
+
+<div class="grid">
+
+<div class="metric">
+<div class="metric-title">Bank-Adjusted Price</div>
+<div class="metric-value" id="overallAdjusted">-</div>
 </div>
 
 <div class="metric">
@@ -234,56 +261,15 @@ h2 {
 </div>
 
 
-<!-- LAST PERIOD -->
-
-<div class="card">
-
-<h2>Last Period</h2>
-
-<div class="grid">
-
-<div class="metric">
-<div class="metric-title">Current Quantity</div>
-<div class="metric-value" id="lastQuantity">-</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">Average Purchase Price</div>
-<div class="metric-value" id="lastAverage">-</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">Bank-Adjusted Price</div>
-<div class="metric-value" id="lastAdjusted">-</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">Current Price</div>
-<div class="metric-value" id="lastCurrentPrice">-</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">Current Value</div>
-<div class="metric-value" id="lastValue">-</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">Bank Value</div>
-<div class="metric-value" id="lastBank">-</div>
-</div>
-
-</div>
-
-<div class="result" id="lastResult">-</div>
-
-</div>
-
-
-<!-- LAST SIX -->
+<!-- ================================
+     LAST 6 PERIODS
+================================ -->
 
 <div class="card">
 
 <h2>Last 6 Periods</h2>
+
+<h3>Current</h3>
 
 <div class="grid">
 
@@ -298,11 +284,6 @@ h2 {
 </div>
 
 <div class="metric">
-<div class="metric-title">Bank-Adjusted Price</div>
-<div class="metric-value" id="sixAdjusted">-</div>
-</div>
-
-<div class="metric">
 <div class="metric-title">Current Price</div>
 <div class="metric-value" id="sixCurrentPrice">-</div>
 </div>
@@ -310,6 +291,18 @@ h2 {
 <div class="metric">
 <div class="metric-title">Current Value</div>
 <div class="metric-value" id="sixValue">-</div>
+</div>
+
+</div>
+
+
+<h3>Bank</h3>
+
+<div class="grid">
+
+<div class="metric">
+<div class="metric-title">Bank-Adjusted Price</div>
+<div class="metric-value" id="sixAdjusted">-</div>
 </div>
 
 <div class="metric">
@@ -320,6 +313,62 @@ h2 {
 </div>
 
 <div class="result" id="sixResult">-</div>
+
+</div>
+
+
+<!-- ================================
+     LAST PERIOD
+================================ -->
+
+<div class="card">
+
+<h2>Last Period</h2>
+
+<h3>Current</h3>
+
+<div class="grid">
+
+<div class="metric">
+<div class="metric-title">Current Quantity</div>
+<div class="metric-value" id="lastQuantity">-</div>
+</div>
+
+<div class="metric">
+<div class="metric-title">Average Purchase Price</div>
+<div class="metric-value" id="lastAverage">-</div>
+</div>
+
+<div class="metric">
+<div class="metric-title">Current Price</div>
+<div class="metric-value" id="lastCurrentPrice">-</div>
+</div>
+
+<div class="metric">
+<div class="metric-title">Current Value</div>
+<div class="metric-value" id="lastValue">-</div>
+</div>
+
+</div>
+
+
+<h3>Bank</h3>
+
+<div class="grid">
+
+<div class="metric">
+<div class="metric-title">Bank-Adjusted Price</div>
+<div class="metric-value" id="lastAdjusted">-</div>
+</div>
+
+<div class="metric">
+<div class="metric-title">Bank Value</div>
+<div class="metric-value" id="lastBank">-</div>
+</div>
+
+</div>
+
+<div class="result" id="lastResult">-</div>
 
 </div>
 
@@ -346,17 +395,23 @@ function formatNumber(value) {
 
 
 /* ==========================================
-   JALALI DATE TO GREGORIAN
+   JALALI TO GREGORIAN
 ========================================== */
 
-function jalaliToGregorian(jy, jm, jd) {
+function jalaliToGregorian(
+    jy,
+    jm,
+    jd
+) {
 
     jy -= 979;
 
     let days =
         365 * jy +
         Math.floor(jy / 33) * 8 +
-        Math.floor(((jy % 33) + 3) / 4);
+        Math.floor(
+            ((jy % 33) + 3) / 4
+        );
 
     for (
         let i = 1;
@@ -479,7 +534,7 @@ function jalaliToGregorian(jy, jm, jd) {
 
 
 /* ==========================================
-   TODAY JALALI
+   GET TODAY JALALI
 ========================================== */
 
 function getTodayJalali() {
@@ -527,9 +582,15 @@ function getTodayJalali() {
 
         days =
             365 * y +
-            Math.floor((y + 3) / 4) -
-            Math.floor((y + 99) / 100) +
-            Math.floor((y + 399) / 400) -
+            Math.floor(
+                (y + 3) / 4
+            ) -
+            Math.floor(
+                (y + 99) / 100
+            ) +
+            Math.floor(
+                (y + 399) / 400
+            ) -
             80 +
             gd +
             gdm[gm - 1];
@@ -544,9 +605,15 @@ function getTodayJalali() {
 
         days =
             365 * y +
-            Math.floor((y + 3) / 4) -
-            Math.floor((y + 99) / 100) +
-            Math.floor((y + 399) / 400) -
+            Math.floor(
+                (y + 3) / 4
+            ) -
+            Math.floor(
+                (y + 99) / 100
+            ) +
+            Math.floor(
+                (y + 399) / 400
+            ) -
             80 +
             gd +
             gdm[gm - 1];
@@ -623,9 +690,15 @@ function getTodayJalali() {
 
         jy +
         "/" +
-        String(jm).padStart(2,"0") +
+        String(jm).padStart(
+            2,
+            "0"
+        ) +
         "/" +
-        String(jd).padStart(2,"0")
+        String(jd).padStart(
+            2,
+            "0"
+        )
 
     );
 
@@ -644,17 +717,18 @@ function dateNumber(date) {
             .map(Number);
 
     return (
+
         p[0] * 10000 +
         p[1] * 100 +
         p[2]
+
     );
 
 }
 
 
 /* ==========================================
-   DAYS
-   START DATE INCLUDED
+   DAYS BETWEEN DATES
 ========================================== */
 
 function daysBetweenInclusive(
@@ -688,12 +762,14 @@ function daysBetweenInclusive(
 
     const days =
         Math.floor(
+
             (
                 endDate -
                 startDate
             )
             /
             86400000
+
         );
 
     return days + 1;
@@ -755,16 +831,9 @@ function calculateFIFO(
     let totalBuyCost =
         0;
 
-    let totalBuyAmount =
-        0;
-
     let balance =
         0;
 
-
-    /*
-       PROCESS TRANSACTIONS
-    */
 
     for (
         const t
@@ -772,19 +841,21 @@ function calculateFIFO(
     ) {
 
         const amount =
-            Number(t.amount);
+            Number(
+                t.amount
+            );
 
         const price =
-            Number(t.price);
+            Number(
+                t.price
+            );
 
         const value =
             amount *
             price;
 
 
-        /* =========================
-           BUY
-        ========================= */
+        /* BUY */
 
         if (
             t.type === "buy"
@@ -796,13 +867,6 @@ function calculateFIFO(
             totalBuyCost +=
                 value;
 
-            totalBuyAmount +=
-                amount;
-
-
-            /*
-               Save FIFO lot
-            */
 
             lots.push({
 
@@ -817,15 +881,6 @@ function calculateFIFO(
 
             });
 
-
-            /*
-               Bank opportunity cost
-
-               This is the compound
-               interest that the money
-               spent on this purchase
-               could have earned.
-            */
 
             const bankProfit =
                 compoundValue(
@@ -844,9 +899,7 @@ function calculateFIFO(
         }
 
 
-        /* =========================
-           SELL
-        ========================= */
+        /* SELL */
 
         if (
             t.type === "sell"
@@ -855,18 +908,15 @@ function calculateFIFO(
             balance -=
                 amount;
 
-
             let remaining =
                 amount;
 
 
-            /*
-               FIFO removal
-            */
-
             while (
+
                 remaining > 0 &&
                 lots.length > 0
+
             ) {
 
                 const lot =
@@ -900,28 +950,28 @@ function calculateFIFO(
     }
 
 
-    /*
-       Remaining FIFO quantity
-    */
+    /* CURRENT QUANTITY */
 
     const currentQuantity =
         lots.reduce(
+
             (
                 sum,
                 lot
             ) =>
                 sum +
                 lot.amount,
+
             0
+
         );
 
 
-    /*
-       Remaining FIFO cost
-    */
+    /* REMAINING FIFO COST */
 
     const remainingCost =
         lots.reduce(
+
             (
                 sum,
                 lot
@@ -931,31 +981,31 @@ function calculateFIFO(
                     lot.amount *
                     lot.price
                 ),
+
             0
+
         );
 
 
-    /*
-       Average price of
-       CURRENT remaining inventory
-    */
+    /* AVERAGE PURCHASE PRICE */
 
     const averagePurchasePrice =
+
         currentQuantity > 0
+
         ?
+
         remainingCost /
         currentQuantity
+
         :
+
         0;
 
 
     /*
-       Bank opportunity profit
-       allocated to current units.
-
-       This uses the same ratio
-       between current remaining
-       cost and total purchase cost.
+       ALLOCATE BANK OPPORTUNITY
+       TO REMAINING INVENTORY
     */
 
     let remainingBankProfit =
@@ -963,71 +1013,66 @@ function calculateFIFO(
 
 
     if (
+
         totalBuyCost > 0 &&
         currentQuantity > 0
+
     ) {
 
         const remainingRatio =
+
             remainingCost /
             totalBuyCost;
 
 
         remainingBankProfit =
+
             totalBankOpportunity *
             remainingRatio;
 
     }
 
 
-    /*
-       Bank-adjusted price
-
-       Average current cost
-       +
-       bank opportunity profit
-       per remaining unit
-    */
+    /* BANK ADJUSTED PRICE */
 
     const bankAdjustedPrice =
+
         currentQuantity > 0
+
         ?
+
         averagePurchasePrice +
+
         (
             remainingBankProfit /
             currentQuantity
         )
+
         :
+
         0;
 
 
-    /*
-       Current market value
-    */
+    /* CURRENT VALUE */
 
     const currentValue =
+
         currentQuantity *
         currentPrice;
 
 
-    /*
-       Value if remaining capital
-       had stayed in bank
-
-       This is the adjusted
-       price multiplied by
-       remaining quantity.
-    */
+    /* BANK VALUE */
 
     const bankValue =
+
         currentQuantity *
         bankAdjustedPrice;
 
 
-    /*
-       Difference
-    */
+    /* DIFFERENCE */
 
     const difference =
+
         currentValue -
         bankValue;
 
@@ -1046,11 +1091,7 @@ function calculateFIFO(
 
         bankValue,
 
-        difference,
-
-        remainingCost,
-
-        remainingBankProfit
+        difference
 
     };
 
@@ -1058,7 +1099,7 @@ function calculateFIFO(
 
 
 /* ==========================================
-   DISPLAY SECTION
+   DISPLAY
 ========================================== */
 
 function displaySection(
@@ -1067,56 +1108,70 @@ function displaySection(
 ) {
 
     document.getElementById(
-        prefix + "Quantity"
+        prefix +
+        "Quantity"
     ).textContent =
+
         formatNumber(
             result.currentQuantity
         );
 
 
     document.getElementById(
-        prefix + "Average"
+        prefix +
+        "Average"
     ).textContent =
+
         formatNumber(
             result.averagePurchasePrice
         );
 
 
     document.getElementById(
-        prefix + "Adjusted"
+        prefix +
+        "Adjusted"
     ).textContent =
+
         formatNumber(
             result.bankAdjustedPrice
         );
 
 
     document.getElementById(
-        prefix + "CurrentPrice"
+        prefix +
+        "CurrentPrice"
     ).textContent =
+
         formatNumber(
             result.currentPrice
         );
 
 
     document.getElementById(
-        prefix + "Value"
+        prefix +
+        "Value"
     ).textContent =
+
         formatNumber(
             result.currentValue
         );
 
 
     document.getElementById(
-        prefix + "Bank"
+        prefix +
+        "Bank"
     ).textContent =
+
         formatNumber(
             result.bankValue
         );
 
 
     const box =
+
         document.getElementById(
-            prefix + "Result"
+            prefix +
+            "Result"
         );
 
 
@@ -1128,7 +1183,9 @@ function displaySection(
             "result investment";
 
         box.textContent =
+
             "INVESTMENT  +" +
+
             formatNumber(
                 result.difference
             );
@@ -1140,7 +1197,9 @@ function displaySection(
             "result bank";
 
         box.textContent =
+
             "BANK  +" +
+
             formatNumber(
                 Math.abs(
                     result.difference
@@ -1159,9 +1218,12 @@ function displaySection(
 async function init() {
 
     const response =
+
         await fetch(
+
             "data.json?x=" +
             Date.now()
+
         );
 
 
@@ -1177,14 +1239,18 @@ async function init() {
 
 
     const data =
+
         await response.json();
 
 
     if (
+
         !data.settings ||
+
         !Array.isArray(
             data.transactions
         )
+
     ) {
 
         throw new Error(
@@ -1195,51 +1261,63 @@ async function init() {
 
 
     const today =
+
         getTodayJalali();
 
 
     const currentPrice =
+
         Number(
             data.settings.currentPrice
         );
 
 
     const annualRate =
+
         Number(
             data.settings.annualBankRate
         );
 
 
-    /*
-       SORT
-    */
+    /* SORT TRANSACTIONS */
 
     const transactions =
+
         data.transactions
             .slice()
             .sort(
+
                 (
                     a,
                     b
                 ) =>
-                    dateNumber(a.date) -
-                    dateNumber(b.date)
+
+                    dateNumber(
+                        a.date
+                    )
+
+                    -
+
+                    dateNumber(
+                        b.date
+                    )
+
             );
 
 
-    /*
-       MARKET
-    */
+    /* MARKET */
 
     document.getElementById(
         "today"
     ).textContent =
+
         today;
 
 
     document.getElementById(
         "currentPrice"
     ).textContent =
+
         formatNumber(
             currentPrice
         );
@@ -1248,93 +1326,121 @@ async function init() {
     document.getElementById(
         "bankRate"
     ).textContent =
+
         annualRate +
         "% / Year";
 
 
-    /*
-       OVERALL
-    */
+    /* OVERALL */
 
     const overall =
+
         calculateFIFO(
+
             transactions,
+
             currentPrice,
+
             today,
+
             annualRate
+
         );
 
 
     document.getElementById(
         "currentBalance"
     ).textContent =
+
         formatNumber(
             overall.currentQuantity
         );
 
 
     displaySection(
+
         overall,
+
         "overall"
+
     );
 
 
-    /*
-       LAST PERIOD
+    /* LAST 6 PERIODS */
 
-       Only the last transaction.
-    */
+    const lastSixTransactions =
+
+        transactions.slice(
+            -6
+        );
+
+
+    const six =
+
+        calculateFIFO(
+
+            lastSixTransactions,
+
+            currentPrice,
+
+            today,
+
+            annualRate
+
+        );
+
+
+    displaySection(
+
+        six,
+
+        "six"
+
+    );
+
+
+    /* LAST PERIOD */
 
     const lastTransactions =
+
         transactions.length > 0
+
         ?
+
         [
+
             transactions[
                 transactions.length - 1
             ]
+
         ]
+
         :
+
         [];
 
 
     const last =
+
         calculateFIFO(
+
             lastTransactions,
+
             currentPrice,
+
             today,
+
             annualRate
+
         );
 
 
     displaySection(
+
         last,
+
         "last"
-    );
 
-
-    /*
-       LAST 6 PERIODS
-
-       Exactly 6 latest transactions.
-       Previous transactions are ignored.
-    */
-
-    const lastSixTransactions =
-        transactions.slice(-6);
-
-
-    const six =
-        calculateFIFO(
-            lastSixTransactions,
-            currentPrice,
-            today,
-            annualRate
-        );
-
-
-    displaySection(
-        six,
-        "six"
     );
 
 }
@@ -1345,12 +1451,15 @@ async function init() {
 ========================================== */
 
 init()
+
 .catch(
+
     error => {
 
         console.error(
             error
         );
+
 
         document.getElementById(
             "errorBox"
@@ -1359,11 +1468,13 @@ init()
             '<div class="error">' +
 
             'Error: ' +
+
             error.message +
 
             '</div>';
 
     }
+
 );
 
 </script>
