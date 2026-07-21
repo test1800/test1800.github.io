@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
@@ -9,148 +10,427 @@
 
 <title>Financial Dashboard</title>
 
+
 <style>
 
 * {
     box-sizing: border-box;
 }
 
+
 body {
+
     margin: 0;
+
     background: #f5f7fb;
+
     color: #172033;
-    font-family: Arial, Helvetica, sans-serif;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
 }
+
 
 .container {
-    max-width: 1050px;
+
+    max-width: 1100px;
+
     margin: auto;
-    padding: 30px 20px 50px;
+
+    padding:
+        35px
+        20px
+        50px;
+
 }
+
+
+/* =========================
+   HEADER
+========================= */
+
 
 .header {
+
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        center;
+
+    margin-bottom:
+        30px;
+
 }
+
 
 h1 {
+
     margin: 0;
-    font-size: 28px;
+
+    font-size:
+        30px;
+
 }
+
 
 .subtitle {
-    color: #7b8496;
-    margin-top: 8px;
-    font-size: 13px;
+
+    color:
+        #7b8496;
+
+    margin-top:
+        8px;
+
+    font-size:
+        13px;
+
 }
+
 
 .status {
-    color: #16a34a;
-    background: white;
-    border: 1px solid #e8ebf1;
-    padding: 10px 15px;
-    border-radius: 12px;
-    font-size: 12px;
+
+    color:
+        #16a34a;
+
+    background:
+        white;
+
+    border:
+        1px solid #e8ebf1;
+
+    padding:
+        10px
+        15px;
+
+    border-radius:
+        12px;
+
+    font-size:
+        12px;
+
 }
+
+
+/* =========================
+   TOP CARDS
+========================= */
+
 
 .top-grid {
+
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-    margin-bottom: 35px;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap:
+        18px;
+
 }
 
-.big-card,
-.card {
-    background: white;
-    border: 1px solid #e8ebf1;
-    box-shadow: 0 8px 30px rgba(20,30,60,.05);
-}
 
 .big-card {
-    padding: 28px;
-    border-radius: 22px;
+
+    background:
+        white;
+
+    border:
+        1px solid #e8ebf1;
+
+    box-shadow:
+        0 8px 30px
+        rgba(20,30,60,.05);
+
+    border-radius:
+        22px;
+
+    padding:
+        28px;
+
 }
+
+
+/* =========================
+   USD CARD
+========================= */
+
+
+.usd-card {
+
+    border-top:
+        4px solid #16a34a;
+
+}
+
+
+.usd-title {
+
+    color:
+        #16a34a;
+
+    font-size:
+        14px;
+
+    font-weight:
+        bold;
+
+    margin-bottom:
+        18px;
+
+}
+
+
+.usd-price {
+
+    font-size:
+        32px;
+
+    font-weight:
+        bold;
+
+}
+
+
+.usd-unit {
+
+    font-size:
+        13px;
+
+    color:
+        #7b8496;
+
+    margin-left:
+        5px;
+
+}
+
+
+.usd-update {
+
+    margin-top:
+        12px;
+
+    color:
+        #7b8496;
+
+    font-size:
+        11px;
+
+}
+
+
+/* =========================
+   NORMAL BIG CARDS
+========================= */
+
 
 .label {
-    color: #7b8496;
-    font-size: 14px;
-    margin-bottom: 18px;
+
+    color:
+        #7b8496;
+
+    font-size:
+        14px;
+
+    margin-bottom:
+        18px;
+
 }
+
 
 .big-value {
-    font-size: 34px;
-    font-weight: bold;
+
+    font-size:
+        30px;
+
+    font-weight:
+        bold;
+
 }
+
+
+/* =========================
+   SECTIONS
+========================= */
+
 
 .section {
-    margin-top: 30px;
+
+    margin-top:
+        35px;
+
 }
+
 
 .section-header {
+
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 15px;
+
+    justify-content:
+        space-between;
+
+    margin-bottom:
+        15px;
+
 }
+
 
 .section-title {
-    font-size: 18px;
-    font-weight: bold;
+
+    font-size:
+        19px;
+
+    font-weight:
+        bold;
+
 }
+
 
 .section-subtitle {
-    font-size: 12px;
-    color: #7b8496;
+
+    font-size:
+        12px;
+
+    color:
+        #7b8496;
+
 }
+
+
+/* =========================
+   SMALL CARDS
+========================= */
+
 
 .cards {
+
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap:
+        18px;
+
 }
+
 
 .card {
-    border-radius: 20px;
-    padding: 24px;
-    min-height: 145px;
+
+    background:
+        white;
+
+    border:
+        1px solid #e8ebf1;
+
+    border-radius:
+        20px;
+
+    padding:
+        25px;
+
+    min-height:
+        145px;
+
+    box-shadow:
+        0 8px 30px
+        rgba(20,30,60,.04);
+
 }
+
 
 .card-name {
-    color: #7b8496;
-    font-size: 13px;
+
+    color:
+        #7b8496;
+
+    font-size:
+        13px;
+
 }
+
 
 .card-number {
-    font-size: 27px;
-    font-weight: bold;
-    margin-top: 30px;
+
+    font-size:
+        27px;
+
+    font-weight:
+        bold;
+
+    margin-top:
+        30px;
+
 }
 
+
+/* =========================
+   FOOTER
+========================= */
+
+
 .footer {
-    text-align: center;
-    margin-top: 40px;
-    color: #7b8496;
-    font-size: 11px;
+
+    text-align:
+        center;
+
+    margin-top:
+        45px;
+
+    color:
+        #7b8496;
+
+    font-size:
+        11px;
+
 }
+
+
+/* =========================
+   MOBILE
+========================= */
+
 
 @media(max-width:700px) {
 
+
     .container {
-        padding: 20px 14px;
+
+        padding:
+            20px
+            14px;
+
     }
 
+
     .header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
+
+        flex-direction:
+            column;
+
+        align-items:
+            flex-start;
+
+        gap:
+            15px;
+
     }
+
 
     .top-grid,
     .cards {
-        grid-template-columns: 1fr;
+
+        grid-template-columns:
+            1fr;
+
     }
+
 
 }
 
@@ -161,10 +441,17 @@ h1 {
 
 <body>
 
+
 <div class="container">
 
 
+<!-- =========================
+     HEADER
+========================= -->
+
+
 <header class="header">
+
 
 <div>
 
@@ -172,214 +459,382 @@ h1 {
 Financial Dashboard
 </h1>
 
+
 <div class="subtitle">
-Financial Overview & Pricing
-</div>
+
+Financial Overview & Open Market USD
 
 </div>
 
-<div class="status">
-● Live Data
 </div>
+
+
+<div
+    class="status"
+    id="status">
+
+● Loading
+
+</div>
+
 
 </header>
+
+
+
+<!-- =========================
+     TOP CARDS
+========================= -->
 
 
 <div class="top-grid">
 
 
-<div class="big-card">
 
-<div class="label">
-📅 Today's Date
+<!-- USD -->
+
+<div class="big-card usd-card">
+
+
+<div class="usd-title">
+
+USD Open Market
+
 </div>
 
-<div
-class="big-value"
-id="today">
+
+<div class="usd-price">
+
+
+<span id="usdPrice">
 
 Loading...
 
-</div>
+</span>
+
+
+<span class="usd-unit">
+
+Toman
+
+</span>
+
 
 </div>
 
+
+<div class="usd-update">
+
+
+Last Update:
+
+<span id="usdUpdate">
+
+—
+
+</span>
+
+
+</div>
+
+
+</div>
+
+
+
+<!-- DATE -->
 
 <div class="big-card">
 
+
 <div class="label">
-💰 Balance
+
+Today's Date
+
 </div>
+
 
 <div
-class="big-value"
-id="balance">
+    class="big-value"
+    id="today">
 
-Loading...
-
-</div>
+—
 
 </div>
 
 
 </div>
+
+
+
+<!-- BALANCE -->
+
+<div class="big-card">
+
+
+<div class="label">
+
+Balance
+
+</div>
+
+
+<div
+    class="big-value"
+    id="balance">
+
+—
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+<!-- =========================
+     UNIT PRICE
+========================= -->
 
 
 <section class="section">
 
+
 <div class="section-header">
 
+
 <div class="section-title">
+
 Unit Price
+
 </div>
+
 
 <div class="section-subtitle">
+
 Comparison by Period
-</div>
 
 </div>
+
+
+</div>
+
 
 
 <div class="cards">
 
 
+
 <div class="card">
 
+
 <div class="card-name">
+
 All Periods
+
 </div>
 
+
 <div
-class="card-number"
-id="unitAll">
+    class="card-number"
+    id="unitAll">
 
 —
 
 </div>
 
+
 </div>
+
 
 
 <div class="card">
 
+
 <div class="card-name">
+
 6 Periods
+
 </div>
 
+
 <div
-class="card-number"
-id="unit6">
+    class="card-number"
+    id="unit6">
 
 —
 
 </div>
 
+
 </div>
+
 
 
 <div class="card">
 
+
 <div class="card-name">
+
 1 Period
+
 </div>
 
+
 <div
-class="card-number"
-id="unit1">
+    class="card-number"
+    id="unit1">
 
 —
 
 </div>
 
+
 </div>
 
 
 </div>
+
 
 </section>
 
+
+
+<!-- =========================
+     AVERAGE PRICE
+========================= -->
 
 
 <section class="section">
 
+
 <div class="section-header">
 
+
 <div class="section-title">
+
 Average Price
+
 </div>
+
 
 <div class="section-subtitle">
+
 Calculated Average by Period
-</div>
 
 </div>
+
+
+</div>
+
 
 
 <div class="cards">
 
 
+
 <div class="card">
 
+
 <div class="card-name">
+
 All Periods
+
 </div>
 
+
 <div
-class="card-number"
-id="avgAll">
+    class="card-number"
+    id="avgAll">
 
 —
 
 </div>
 
+
 </div>
+
 
 
 <div class="card">
 
+
 <div class="card-name">
+
 6 Periods
+
 </div>
 
+
 <div
-class="card-number"
-id="avg6">
+    class="card-number"
+    id="avg6">
 
 —
 
 </div>
 
+
 </div>
+
 
 
 <div class="card">
 
+
 <div class="card-name">
+
 1 Period
+
 </div>
 
+
 <div
-class="card-number"
-id="avg1">
+    class="card-number"
+    id="avg1">
 
 —
 
 </div>
 
+
 </div>
 
 
 </div>
+
 
 </section>
+
+
+
+<!-- =========================
+     FOOTER
+========================= -->
 
 
 <footer class="footer">
 
-Last Updated:
-<span id="updateTime">
+
+Excel Data Last Updated:
+
+<span id="dataUpdate">
+
 —
+
 </span>
+
+
+<br><br>
+
+
+USD Source:
+
+TGJU
+
 
 </footer>
 
@@ -387,42 +842,40 @@ Last Updated:
 </div>
 
 
+
 <script>
 
 
-// ========================================
-// LOAD DATA.JSON
-// ========================================
+// ==========================================
+// LOAD YOUR ORIGINAL data.json
+// ==========================================
 
-async function loadData() {
+
+async function loadDashboardData() {
+
 
 try {
 
 
-/*
-این قسمت خیلی مهم است.
+const response = await fetch(
 
-Date.now باعث می‌شود
-هر بار URL جدید باشد
-و کش قدیمی استفاده نشود.
-*/
+"data.json?v=" +
+Date.now(),
 
-const url =
-"data.json?v=" + Date.now();
+{
 
+cache:
+"no-store"
 
-const response =
-await fetch(url, {
+}
 
-cache: "no-store"
-
-});
+);
 
 
 if (!response.ok) {
 
 throw new Error(
-"Cannot load data.json"
+"data.json not found"
 );
 
 }
@@ -432,57 +885,99 @@ const data =
 await response.json();
 
 
-// ========================================
-// SHOW DATA
-// ========================================
 
+// DATE
 
-document.getElementById("today")
+document
+.getElementById("today")
 .textContent =
+
 data.today || "—";
 
 
-document.getElementById("balance")
+
+// BALANCE
+
+document
+.getElementById("balance")
 .textContent =
-formatNumber(data.balance);
+
+formatNumber(
+data.balance
+);
 
 
-document.getElementById("unitAll")
+
+// UNIT PRICE
+
+document
+.getElementById("unitAll")
 .textContent =
-formatNumber(data.unitAll);
+
+formatNumber(
+data.unitAll
+);
 
 
-document.getElementById("unit6")
+document
+.getElementById("unit6")
 .textContent =
-formatNumber(data.unit6);
+
+formatNumber(
+data.unit6
+);
 
 
-document.getElementById("unit1")
+document
+.getElementById("unit1")
 .textContent =
-formatNumber(data.unit1);
+
+formatNumber(
+data.unit1
+);
 
 
-document.getElementById("avgAll")
+
+// AVERAGE PRICE
+
+document
+.getElementById("avgAll")
 .textContent =
-formatNumber(data.avgAll);
+
+formatNumber(
+data.avgAll
+);
 
 
-document.getElementById("avg6")
+document
+.getElementById("avg6")
 .textContent =
-formatNumber(data.avg6);
+
+formatNumber(
+data.avg6
+);
 
 
-document.getElementById("avg1")
+document
+.getElementById("avg1")
 .textContent =
-formatNumber(data.avg1);
+
+formatNumber(
+data.avg1
+);
 
 
-// زمان بروزرسانی
 
-document.getElementById("updateTime")
+// UPDATE TIME
+
+document
+.getElementById("dataUpdate")
 .textContent =
+
 new Date()
-.toLocaleString("en-US");
+.toLocaleString(
+"en-US"
+);
 
 
 }
@@ -490,12 +985,162 @@ new Date()
 catch(error) {
 
 
-console.error(error);
+console.error(
+"Data error:",
+error
+);
+
+}
+
+}
 
 
-document.getElementById("updateTime")
+
+// ==========================================
+// LOAD USD FROM usd.txt
+// ==========================================
+
+
+async function loadUSD() {
+
+
+try {
+
+
+const response = await fetch(
+
+"usd.txt?v=" +
+Date.now(),
+
+{
+
+cache:
+"no-store"
+
+}
+
+);
+
+
+if (!response.ok) {
+
+throw new Error(
+"usd.txt not found"
+);
+
+}
+
+
+let text =
+await response.text();
+
+
+// Remove spaces and new lines
+
+text =
+text.trim();
+
+
+// Convert Persian digits
+
+text =
+text.replace(
+
+/[۰-۹]/g,
+
+function(digit) {
+
+return
+"۰۱۲۳۴۵۶۷۸۹"
+.indexOf(digit);
+
+}
+
+);
+
+
+// Remove commas
+
+text =
+text.replace(
+/,/g,
+""
+);
+
+
+// Convert to number
+
+const price =
+Number(text);
+
+
+
+if (
+isNaN(price)
+) {
+
+throw new Error(
+"Invalid USD price"
+);
+
+}
+
+
+// Display price
+
+document
+.getElementById("usdPrice")
 .textContent =
-"Update Error";
+
+price.toLocaleString(
+"en-US"
+);
+
+
+// Update status
+
+document
+.getElementById("status")
+.textContent =
+
+"● Live";
+
+
+// Update time
+
+document
+.getElementById("usdUpdate")
+.textContent =
+
+new Date()
+.toLocaleString(
+"en-US"
+);
+
+
+}
+
+catch(error) {
+
+
+console.error(
+"USD error:",
+error
+);
+
+
+document
+.getElementById("usdPrice")
+.textContent =
+
+"Unavailable";
+
+
+document
+.getElementById("status")
+.textContent =
+
+"● Offline";
 
 
 }
@@ -503,17 +1148,21 @@ document.getElementById("updateTime")
 }
 
 
-// ========================================
-// FORMAT NUMBERS
-// ========================================
+
+// ==========================================
+// NUMBER FORMAT
+// ==========================================
+
 
 function formatNumber(value) {
 
 
 if (
+
 value === null ||
 value === undefined ||
 value === ""
+
 ) {
 
 return "—";
@@ -521,17 +1170,25 @@ return "—";
 }
 
 
-let number =
-Number(
+let number = Number(
+
 String(value)
-.replace(/,/g, "")
+.replace(
+/,/g,
+""
+)
+
 );
 
 
-if (!isNaN(number)) {
+if (
+!isNaN(number)
+) {
 
 return number
-.toLocaleString("en-US");
+.toLocaleString(
+"en-US"
+);
 
 }
 
@@ -541,21 +1198,41 @@ return value;
 }
 
 
-// ========================================
-// FIRST LOAD
-// ========================================
 
-loadData();
+// ==========================================
+// INITIAL LOAD
+// ==========================================
 
 
-// ========================================
+loadDashboardData();
+
+loadUSD();
+
+
+
+// ==========================================
 // AUTO REFRESH
-// EVERY 30 SECONDS
-// ========================================
+// ==========================================
+
+
+// Excel JSON
+// Every 30 seconds
 
 setInterval(
 
-loadData,
+loadDashboardData,
+
+30000
+
+);
+
+
+// USD
+// Every 30 seconds
+
+setInterval(
+
+loadUSD,
 
 30000
 
@@ -563,6 +1240,7 @@ loadData,
 
 
 </script>
+
 
 </body>
 
