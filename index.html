@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>داشبورد مالی</title>
+<title>Financial Dashboard</title>
 
 <style>
 
@@ -27,8 +27,8 @@ body {
     background: var(--bg);
     color: var(--text);
     font-family:
-        Tahoma,
         Arial,
+        Helvetica,
         sans-serif;
 }
 
@@ -209,11 +209,11 @@ body {
     <div class="title">
 
         <h1>
-            داشبورد مالی
+            Financial Dashboard
         </h1>
 
         <p>
-            خلاصه وضعیت مالی و قیمت‌ها
+            Financial Overview & Pricing
         </p>
 
     </div>
@@ -221,7 +221,7 @@ body {
 
     <div class="status">
 
-        ● آنلاین
+        ● Online
 
     </div>
 
@@ -236,7 +236,7 @@ body {
     <div class="big-card">
 
         <div class="card-label">
-            📅 تاریخ امروز
+            📅 Today's Date
         </div>
 
         <div
@@ -253,14 +253,14 @@ body {
     <div class="big-card">
 
         <div class="card-label">
-            💰 مانده
+            💰 Balance
         </div>
 
         <div
             class="big-value"
             id="balance">
 
-            در انتظار اطلاعات
+            —
 
         </div>
 
@@ -279,11 +279,11 @@ body {
     <div class="section-header">
 
         <div class="section-title">
-            قیمت واحد
+            Unit Price
         </div>
 
         <div class="section-subtitle">
-            مقایسه دوره‌های مختلف
+            Comparison by Period
         </div>
 
     </div>
@@ -295,7 +295,7 @@ body {
         <div class="card">
 
             <div class="card-name">
-                کل دوره
+                All Periods
             </div>
 
             <div
@@ -312,7 +312,7 @@ body {
         <div class="card">
 
             <div class="card-name">
-                ۶ دوره
+                6 Periods
             </div>
 
             <div
@@ -329,7 +329,7 @@ body {
         <div class="card">
 
             <div class="card-name">
-                ۱ دوره
+                1 Period
             </div>
 
             <div
@@ -357,11 +357,11 @@ body {
     <div class="section-header">
 
         <div class="section-title">
-            قیمت میانگین
+            Average Price
         </div>
 
         <div class="section-subtitle">
-            میانگین محاسبه‌شده در دوره‌ها
+            Calculated Average by Period
         </div>
 
     </div>
@@ -373,7 +373,7 @@ body {
         <div class="card">
 
             <div class="card-name">
-                تمام دوره
+                All Periods
             </div>
 
             <div
@@ -390,7 +390,7 @@ body {
         <div class="card">
 
             <div class="card-name">
-                ۶ دوره
+                6 Periods
             </div>
 
             <div
@@ -407,7 +407,7 @@ body {
         <div class="card">
 
             <div class="card-name">
-                ۱ دوره
+                1 Period
             </div>
 
             <div
@@ -429,9 +429,9 @@ body {
 
 <footer class="footer">
 
-    آخرین بروزرسانی:
+    Last Updated:
     <span id="updateTime">
-        همین الان
+        Just Now
     </span>
 
 </footer>
@@ -444,10 +444,12 @@ body {
 
 /*
 ====================================
-اطلاعات فعلی
+CURRENT DATA
 ====================================
 
-فعلاً برای تست ظاهر داشبورد
+Temporary values for dashboard preview.
+These will later be connected
+to your Excel Online data.
 */
 
 const data = {
@@ -473,7 +475,7 @@ const data = {
 
 /*
 ====================================
-نمایش اطلاعات
+DISPLAY DATA
 ====================================
 */
 
@@ -519,13 +521,13 @@ document.getElementById("avg1")
 
 /*
 ====================================
-زمان بروزرسانی
+UPDATE TIME
 ====================================
 */
 
 document.getElementById("updateTime")
     .textContent =
-    new Date().toLocaleString("fa-IR");
+    new Date().toLocaleString("en-US");
 
 </script>
 
