@@ -1,10 +1,10 @@
 name: Update USD Price
 
 on:
+  workflow_dispatch:
+
   schedule:
     - cron: "*/5 * * * *"
-
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,7 +16,7 @@ jobs:
 
     steps:
 
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Get USD price from TGJU
@@ -26,128 +26,145 @@ jobs:
 
           import urllib.request
           import re
-          import json
-          from datetime import datetime, timezone
 
           url = "https://www.tgju.org/%D9%82%DB%8C%D9%85%D8%AA-%D8%AF%D9%84%D8%A7%D8%B1"
 
-          req = urllib.request.Request(
+          request = urllib.request.Request(
               url,
               headers={
-                  "User-Agent": "Mozilla/5.0"
+                  "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
               }
           )
 
-          html = urllib.request.urlopen(
-              req,
+          response = urllib.request.urlopen(
+              request,
               timeout=30
-          ).read().decode(
+          )
+
+          html = response.read().decode(
               "utf-8",
               errors="ignore"
           )
 
 
-          # Find the current free-market USD price
-          # Example:
-          # دلار 1,909,200 (1.72%)
+          # Search numbers close to دلار
 
-          pattern = (
-              r'دلار\s+'
-              r'([0-9۰-۹,]+)\s*'
-              r'\('
-          )
+          patterns = [
 
+              r'دلار.{0,100}?([0-9۰-۹,]{5,})',
 
-          matches = re.findall(
-              pattern,
-              html
-          )
+              r'USD.{0,100}?([0-9,]{5,})',
+
+              r'price.{0,100}?([0-9,]{5,})'
+
+          ]
 
 
-          if not matches:
+          price = None
 
-              raise Exception(
-                  "USD price not found on TGJU"
+
+          for pattern in patterns:
+
+              matches = re.findall(
+                  pattern,
+                  html,
+                  re.IGNORECASE
               )
 
+              if matches:
 
-          price = matches[0]
+                  for value in matches:
+
+                      clean = value
+
+                      # Persian numbers
+
+                      persian = "۰۱۲۳۴۵۶۷۸۹"
+
+                      for i, digit in enumerate(persian):
+
+                          clean = clean.replace(
+                              digit,
+                              str(i)
+                          )
 
 
-          # Convert Persian digits
-          persian = "۰۱۲۳۴۵۶۷۸۹"
+                      clean = clean.replace(
+                          ",",
+                          ""
+                      )
 
-          for i, digit in enumerate(persian):
 
-              price = price.replace(
-                  digit,
-                  str(i)
+                      try:
+
+                          number = int(clean)
+
+                          # USD price should be
+                          # larger than 100,000 Rial
+
+                          if number > 100000:
+
+                              price = number
+
+                              break
+
+                      except:
+
+                          pass
+
+
+                  if price:
+
+                      break
+
+
+          if not price:
+
+              print(
+                  "Could not find USD price"
               )
 
+              raise SystemExit(1)
 
-          # Remove commas
-          price = price.replace(
-              ",",
-              ""
+
+          # Convert Rial to Toman
+
+          toman = round(
+              price / 10
           )
 
 
-          # TGJU gives Rial
-          # Convert to Toman
-
-          price_rial = int(price)
-
-          price_toman = round(
-              price_rial / 10
+          print(
+              "TGJU Rial:",
+              price
           )
 
 
-          data = {
+          print(
+              "Toman:",
+              toman
+          )
 
-              "price": price_toman,
 
-              "price_rial": price_rial,
-
-              "updated": datetime.now(
-                  timezone.utc
-              ).strftime(
-                  "%Y-%m-%d %H:%M UTC"
-              ),
-
-              "source":
-              "TGJU"
-
-          }
-
+          # Write only the number
+          # to usd.txt
 
           with open(
-              "usd.json",
+              "usd.txt",
               "w",
               encoding="utf-8"
-          ) as f:
+          ) as file:
 
-              json.dump(
-                  data,
-                  f,
-                  ensure_ascii=False,
-                  indent=2
+              file.write(
+                  str(toman)
               )
-
-
-          print(
-              "USD Rial:",
-              price_rial
-          )
-
-          print(
-              "USD Toman:",
-              price_toman
-          )
 
           PY
 
 
-      - name: Commit USD data
+      - name: Commit USD price
+
         run: |
 
           git config user.name \
@@ -156,11 +173,11 @@ jobs:
           git config user.email \
           "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add usd.json
+          git add usd.txt
 
           if git diff --cached --quiet; then
 
-            echo "No changes"
+            echo "USD price has not changed"
 
           else
 
