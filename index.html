@@ -1,204 +1,138 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>داشبورد مالی</title>
+<title>داشبورد مالی</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+<style>
+* {
+    box-sizing: border-box;
+}
 
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: Tahoma, Arial, sans-serif;
-            background: #f3f5f7;
-            color: #202124;
-            padding: 20px;
-        }
+body {
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    font-family: Tahoma, Arial, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+}
 
-        .container {
-            width: 100%;
-            max-width: 850px;
-            margin: auto;
-        }
+.container {
+    max-width: 850px;
+    margin: auto;
+}
 
-        .header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
+.header {
+    text-align: center;
+    margin-bottom: 25px;
+}
 
-        .header h1 {
-            margin: 0;
-            font-size: 28px;
-        }
+.header h1 {
+    margin: 0;
+    font-size: 28px;
+}
 
-        .header p {
-            margin: 8px 0 0;
-            font-size: 13px;
-            color: #777;
-        }
+.header p {
+    color: #777;
+    font-size: 13px;
+}
 
-        /* کارت های اصلی */
+.main-cards,
+.cards {
+    display: grid;
+    gap: 15px;
+}
 
-        .main-cards {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 25px;
-        }
+.main-cards {
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 25px;
+}
 
-        .main-card {
-            background: white;
-            border-radius: 18px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.06);
-        }
+.cards {
+    grid-template-columns: repeat(3, 1fr);
+}
 
-        .main-title {
-            font-size: 14px;
-            color: #777;
-            margin-bottom: 15px;
-        }
+.main-card,
+.card {
+    background: white;
+    border-radius: 18px;
+    padding: 25px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,.06);
+}
 
-        .main-value {
-            font-size: 30px;
-            font-weight: bold;
-        }
+.main-title,
+.card-title {
+    color: #777;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
 
-        /* عنوان بخش */
+.main-value {
+    font-size: 30px;
+    font-weight: bold;
+}
 
-        .section-title {
-            font-size: 19px;
-            font-weight: bold;
-            margin: 25px 0 12px;
-        }
+.card-value {
+    font-size: 24px;
+    font-weight: bold;
+}
 
-        /* کارت های کوچک */
+.section-title {
+    font-size: 19px;
+    font-weight: bold;
+    margin: 25px 0 12px;
+}
 
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-        }
+.update {
+    text-align: center;
+    margin-top: 25px;
+    color: #888;
+    font-size: 12px;
+}
 
-        .card {
-            background: white;
-            border-radius: 18px;
-            padding: 24px 15px;
-            text-align: center;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.06);
-        }
+@media (max-width: 600px) {
 
-        .card-title {
-            font-size: 14px;
-            color: #777;
-            margin-bottom: 15px;
-        }
+    body {
+        padding: 12px;
+    }
 
-        .card-value {
-            font-size: 24px;
-            font-weight: bold;
-        }
+    .main-cards,
+    .cards {
+        grid-template-columns: 1fr;
+    }
 
-        /* وضعیت بروزرسانی */
-
-        .update {
-            text-align: center;
-            margin-top: 25px;
-            font-size: 12px;
-            color: #888;
-        }
-
-        .status {
-            display: inline-block;
-            margin-right: 5px;
-        }
-
-        /* موبایل */
-
-        @media (max-width: 600px) {
-
-            body {
-                padding: 12px;
-            }
-
-            .main-cards {
-                grid-template-columns: 1fr;
-            }
-
-            .cards {
-                grid-template-columns: 1fr;
-            }
-
-            .header h1 {
-                font-size: 24px;
-            }
-
-            .main-value {
-                font-size: 27px;
-            }
-
-            .card-value {
-                font-size: 23px;
-            }
-        }
-    </style>
+    .main-value {
+        font-size: 27px;
+    }
+}
+</style>
 </head>
-
 
 <body>
 
 <div class="container">
 
-    <!-- عنوان -->
-
     <div class="header">
-
         <h1>داشبورد مالی</h1>
-
-        <p>
-            اطلاعات مالی
-        </p>
-
+        <p>آخرین اطلاعات ثبت‌شده</p>
     </div>
-
 
     <!-- تاریخ و مانده -->
 
     <div class="main-cards">
 
         <div class="main-card">
-
-            <div class="main-title">
-                📅 تاریخ امروز
-            </div>
-
-            <div
-                class="main-value"
-                id="today">
-                در حال دریافت...
-            </div>
-
+            <div class="main-title">📅 تاریخ امروز</div>
+            <div class="main-value" id="today">---</div>
         </div>
 
-
         <div class="main-card">
-
-            <div class="main-title">
-                💰 مانده
-            </div>
-
-            <div
-                class="main-value"
-                id="balance">
-                در حال دریافت...
-            </div>
-
+            <div class="main-title">💰 مانده</div>
+            <div class="main-value" id="balance">---</div>
         </div>
 
     </div>
@@ -210,51 +144,21 @@
         قیمت واحد
     </div>
 
-
     <div class="cards">
 
         <div class="card">
-
-            <div class="card-title">
-                کل دوره
-            </div>
-
-            <div
-                class="card-value"
-                id="unitAll">
-                ---
-            </div>
-
+            <div class="card-title">کل دوره</div>
+            <div class="card-value" id="unitAll">---</div>
         </div>
 
-
         <div class="card">
-
-            <div class="card-title">
-                ۶ دوره
-            </div>
-
-            <div
-                class="card-value"
-                id="unit6">
-                ---
-            </div>
-
+            <div class="card-title">۶ دوره</div>
+            <div class="card-value" id="unit6">---</div>
         </div>
 
-
         <div class="card">
-
-            <div class="card-title">
-                ۱ دوره
-            </div>
-
-            <div
-                class="card-value"
-                id="unit1">
-                ---
-            </div>
-
+            <div class="card-title">۱ دوره</div>
+            <div class="card-value" id="unit1">---</div>
         </div>
 
     </div>
@@ -266,70 +170,29 @@
         قیمت میانگین
     </div>
 
-
     <div class="cards">
 
         <div class="card">
-
-            <div class="card-title">
-                تمام دوره
-            </div>
-
-            <div
-                class="card-value"
-                id="avgAll">
-                ---
-            </div>
-
+            <div class="card-title">تمام دوره</div>
+            <div class="card-value" id="avgAll">---</div>
         </div>
 
-
         <div class="card">
-
-            <div class="card-title">
-                ۶ دوره
-            </div>
-
-            <div
-                class="card-value"
-                id="avg6">
-                ---
-            </div>
-
+            <div class="card-title">۶ دوره</div>
+            <div class="card-value" id="avg6">---</div>
         </div>
 
-
         <div class="card">
-
-            <div class="card-title">
-                ۱ دوره
-            </div>
-
-            <div
-                class="card-value"
-                id="avg1">
-                ---
-            </div>
-
+            <div class="card-title">۱ دوره</div>
+            <div class="card-value" id="avg1">---</div>
         </div>
 
     </div>
 
 
-    <!-- وضعیت -->
-
     <div class="update">
-
         آخرین بروزرسانی:
-
-        <span id="lastUpdate">
-            ---
-        </span>
-
-        <span class="status">
-            ●
-        </span>
-
+        <span id="lastUpdate">---</span>
     </div>
 
 </div>
@@ -337,32 +200,23 @@
 
 <script>
 
-/*
-==================================================
-تنظیمات
-==================================================
-*/
-
-// آدرس منبع داده Excel
-// بعداً این قسمت را با آدرس واقعی CSV یا API پر می‌کنیم
-
-const EXCEL_DATA_URL = "";
+const DATA_URL =
+"https://raw.githubusercontent.com/test1800/dashboard/main/data.json";
 
 
-// فاصله بروزرسانی خودکار
-// 5 دقیقه
+// تبدیل اعداد فارسی به انگلیسی
 
-const REFRESH_TIME = 5 * 60 * 1000;
+function convertPersianNumbers(value) {
+
+    return String(value)
+        .replace(/[۰-۹]/g, function(d) {
+            return "۰۱۲۳۴۵۶۷۸۹".indexOf(d);
+        });
+
+}
 
 
-/*
-==================================================
-ابزارهای کمکی
-==================================================
-*/
-
-
-// نمایش عدد با جداکننده هزارگان
+// فرمت اعداد
 
 function formatNumber(value) {
 
@@ -371,25 +225,14 @@ function formatNumber(value) {
         value === undefined ||
         value === ""
     ) {
-
         return "---";
-
     }
 
-    // تبدیل اعداد فارسی به انگلیسی
+    let text =
+        convertPersianNumbers(value)
+        .replace(/,/g, "");
 
-    value = String(value)
-        .replace(/[۰-۹]/g, function(d) {
-            return "۰۱۲۳۴۵۶۷۸۹".indexOf(d);
-        });
-
-
-    // اگر عدد باشد
-
-    const number = Number(
-        value.replace(/,/g, "")
-    );
-
+    let number = Number(text);
 
     if (!isNaN(number)) {
 
@@ -397,59 +240,45 @@ function formatNumber(value) {
 
     }
 
-
     return value;
 
 }
 
 
-/*
-==================================================
-نمایش اطلاعات
-==================================================
-*/
-
+// نمایش اطلاعات
 
 function showData(data) {
 
     document.getElementById("today")
-        .textContent =
-        data.today || "---";
+        .textContent = data.today || "---";
 
 
     document.getElementById("balance")
-        .textContent =
-        formatNumber(data.balance);
+        .textContent = formatNumber(data.balance);
 
 
     document.getElementById("unitAll")
-        .textContent =
-        formatNumber(data.unitAll);
+        .textContent = formatNumber(data.unitAll);
 
 
     document.getElementById("unit6")
-        .textContent =
-        formatNumber(data.unit6);
+        .textContent = formatNumber(data.unit6);
 
 
     document.getElementById("unit1")
-        .textContent =
-        formatNumber(data.unit1);
+        .textContent = formatNumber(data.unit1);
 
 
     document.getElementById("avgAll")
-        .textContent =
-        formatNumber(data.avgAll);
+        .textContent = formatNumber(data.avgAll);
 
 
     document.getElementById("avg6")
-        .textContent =
-        formatNumber(data.avg6);
+        .textContent = formatNumber(data.avg6);
 
 
     document.getElementById("avg1")
-        .textContent =
-        formatNumber(data.avg1);
+        .textContent = formatNumber(data.avg1);
 
 
     document.getElementById("lastUpdate")
@@ -459,54 +288,29 @@ function showData(data) {
 }
 
 
-/*
-==================================================
-دریافت اطلاعات
-==================================================
-*/
-
+// دریافت اطلاعات
 
 async function loadData() {
 
     try {
 
-        /*
-        این قسمت بعداً به فایل آنلاین Excel
-        یا CSV متصل می‌شود.
-        */
-
-
-        if (!EXCEL_DATA_URL) {
-
-            console.log(
-                "آدرس منبع Excel هنوز تنظیم نشده است."
+        const response =
+            await fetch(
+                DATA_URL + "?t=" + Date.now()
             );
-
-            return;
-
-        }
-
-
-        const response = await fetch(
-            EXCEL_DATA_URL + "?t=" + Date.now()
-        );
-
 
         if (!response.ok) {
 
             throw new Error(
-                "خطا در دریافت اطلاعات"
+                "خطا در دریافت داده"
             );
 
         }
 
-
         const data =
             await response.json();
 
-
         showData(data);
-
 
     }
 
@@ -523,26 +327,16 @@ async function loadData() {
 }
 
 
-/*
-==================================================
-شروع
-==================================================
-*/
-
+// بارگذاری اولیه
 
 loadData();
 
 
-/*
-==================================================
-بروزرسانی خودکار
-==================================================
-*/
-
+// بروزرسانی هر 5 دقیقه
 
 setInterval(
     loadData,
-    REFRESH_TIME
+    5 * 60 * 1000
 );
 
 </script>
