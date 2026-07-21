@@ -3,10 +3,212 @@ name: Update USD Price
 on:
   workflow_dispatch:
 
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: write
+
 jobs:
-  test:
+  update-usd:
+
     runs-on: ubuntu-latest
 
     steps:
-      - name: Test
-        run: echo "Workflow is working"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4
+
+      - name: Get USD price from TGJU
+        run: |
+
+          python - <<'PY'
+
+          import requests
+          import re
+          from bs4 import BeautifulSoup
+
+          url = "https://www.tgju.org/%D9%82%DB%8C%D9%85%D8%AA-%D8%AF%D9%84%D8%A7%D8%B1"
+
+          headers = {
+              "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
+          }
+
+          print("Connecting to TGJU...")
+
+          response = requests.get(
+              url,
+              headers=headers,
+              timeout=30
+          )
+
+          response.raise_for_status()
+
+          print(
+              "HTTP Status:",
+              response.status_code
+          )
+
+          soup = BeautifulSoup(
+              response.text,
+              "html.parser"
+          )
+
+          # Get all visible text
+          text = soup.get_text(
+              " ",
+              strip=True
+          )
+
+          # Convert Persian digits
+          persian_digits = "۰۱۲۳۴۵۶۷۸۹"
+
+          for i, digit in enumerate(
+              persian_digits
+          ):
+
+              text = text.replace(
+                  digit,
+                  str(i)
+              )
+
+          # Search numbers around USD / Dollar text
+
+          patterns = [
+
+              r'دلار\s+([0-9,]{6,})',
+
+              r'دلار\s*([0-9,]{6,})',
+
+              r'قیمت دلار\s*([0-9,]{6,})'
+
+          ]
+
+          price = None
+
+          for pattern in patterns:
+
+              matches = re.findall(
+                  pattern,
+                  text,
+                  re.IGNORECASE
+              )
+
+              print(
+                  "Pattern:",
+                  pattern
+              )
+
+              print(
+                  "Matches:",
+                  matches[:10]
+              )
+
+              for value in matches:
+
+                  number = int(
+                      value.replace(
+                          ",",
+                          ""
+                      )
+                  )
+
+                  # USD free market price
+                  # should be above 100,000 Rial
+
+                  if number > 100000:
+
+                      price = number
+
+                      break
+
+              if price:
+
+                  break
+
+
+          if not price:
+
+              print(
+                  "ERROR: USD price was not found."
+              )
+
+              print(
+                  "TGJU page text preview:"
+              )
+
+              print(
+                  text[:5000]
+              )
+
+              raise SystemExit(1)
+
+
+          print(
+              "TGJU USD price in Rial:",
+              price
+          )
+
+
+          # Convert Rial to Toman
+
+          toman = round(
+              price / 10
+          )
+
+
+          print(
+              "USD price in Toman:",
+              toman
+          )
+
+
+          # Write ONLY the price
+          # to usd.txt
+
+          with open(
+              "usd.txt",
+              "w",
+              encoding="utf-8"
+          ) as file:
+
+              file.write(
+                  str(toman)
+              )
+
+
+          print(
+              "usd.txt updated successfully."
+          )
+
+          PY
+
+
+      - name: Commit and push USD price
+        run: |
+
+          git config user.name \
+          "github-actions[bot]"
+
+          git config user.email \
+          "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add usd.txt
+
+          if git diff --cached --quiet; then
+
+            echo "USD price has not changed."
+
+          else
+
+            git commit \
+            -m "Update USD price"
+
+            git push
+
+          fi
