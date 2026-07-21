@@ -12,6 +12,30 @@ content="width=device-width, initial-scale=1.0"
 
 <title>Financial Dashboard</title>
 
+<!-- PWA -->
+
+<link
+rel="manifest"
+href="manifest.json"
+>
+
+<meta
+name="theme-color"
+content="#0b1220"
+>
+
+<link
+rel="icon"
+type="image/png"
+href="icon.png"
+>
+
+<link
+rel="apple-touch-icon"
+href="icon.png"
+>
+
+
 <style>
 
 /* =====================================================
@@ -1582,31 +1606,17 @@ function jalaliToGregorian(
     const monthDays = [
 
         0,
-
         31,
-
-        leap
-        ? 29
-        : 28,
-
+        leap ? 29 : 28,
         31,
-
         30,
-
         31,
-
         30,
-
         31,
-
         31,
-
         30,
-
         31,
-
         30,
-
         31
 
     ];
@@ -1655,27 +1665,16 @@ function getTodayJalali() {
     const gdm = [
 
         0,
-
         31,
-
         59,
-
         90,
-
         120,
-
         151,
-
         181,
-
         212,
-
         243,
-
         273,
-
         304,
-
         334
 
     ];
@@ -2133,8 +2132,7 @@ function displaySection(
 ) {
 
     document.getElementById(
-        prefix +
-        "Average"
+        prefix + "Average"
     ).textContent =
 
         formatNumber(
@@ -2143,8 +2141,7 @@ function displaySection(
 
 
     document.getElementById(
-        prefix +
-        "Adjusted"
+        prefix + "Adjusted"
     ).textContent =
 
         formatNumber(
@@ -2153,8 +2150,7 @@ function displaySection(
 
 
     document.getElementById(
-        prefix +
-        "CurrentPrice"
+        prefix + "CurrentPrice"
     ).textContent =
 
         formatNumber(
@@ -2163,8 +2159,7 @@ function displaySection(
 
 
     document.getElementById(
-        prefix +
-        "Quantity"
+        prefix + "Quantity"
     ).textContent =
 
         formatNumber(
@@ -2173,8 +2168,7 @@ function displaySection(
 
 
     document.getElementById(
-        prefix +
-        "Value"
+        prefix + "Value"
     ).textContent =
 
         formatNumber(
@@ -2183,8 +2177,7 @@ function displaySection(
 
 
     document.getElementById(
-        prefix +
-        "Bank"
+        prefix + "Bank"
     ).textContent =
 
         formatNumber(
@@ -2193,8 +2186,7 @@ function displaySection(
 
 
     document.getElementById(
-        prefix +
-        "Difference"
+        prefix + "Difference"
     ).textContent =
 
         formatNumber(
