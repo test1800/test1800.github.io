@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
 
 <title>Financial Dashboard</title>
 
@@ -12,34 +15,18 @@
     box-sizing: border-box;
 }
 
-:root {
-    --bg: #f5f7fb;
-    --card: #ffffff;
-    --text: #172033;
-    --muted: #7b8496;
-    --border: #e8ebf1;
-    --accent: #4f46e5;
-    --green: #16a34a;
-}
-
 body {
     margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
+    background: #f5f7fb;
+    color: #172033;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 .container {
-    width: 100%;
     max-width: 1050px;
     margin: auto;
     padding: 30px 20px 50px;
 }
-
-/* HEADER */
 
 .header {
     display: flex;
@@ -48,27 +35,25 @@ body {
     margin-bottom: 30px;
 }
 
-.title h1 {
+h1 {
     margin: 0;
     font-size: 28px;
 }
 
-.title p {
-    margin: 8px 0 0;
-    color: var(--muted);
+.subtitle {
+    color: #7b8496;
+    margin-top: 8px;
     font-size: 13px;
 }
 
 .status {
+    color: #16a34a;
     background: white;
-    border: 1px solid var(--border);
+    border: 1px solid #e8ebf1;
     padding: 10px 15px;
     border-radius: 12px;
     font-size: 12px;
-    color: var(--green);
 }
-
-/* TOP CARDS */
 
 .top-grid {
     display: grid;
@@ -77,16 +62,20 @@ body {
     margin-bottom: 35px;
 }
 
-.big-card {
-    background: var(--card);
-    border-radius: 22px;
-    padding: 28px;
-    border: 1px solid var(--border);
+.big-card,
+.card {
+    background: white;
+    border: 1px solid #e8ebf1;
     box-shadow: 0 8px 30px rgba(20,30,60,.05);
 }
 
-.card-label {
-    color: var(--muted);
+.big-card {
+    padding: 28px;
+    border-radius: 22px;
+}
+
+.label {
+    color: #7b8496;
     font-size: 14px;
     margin-bottom: 18px;
 }
@@ -96,8 +85,6 @@ body {
     font-weight: bold;
 }
 
-/* SECTIONS */
-
 .section {
     margin-top: 30px;
 }
@@ -105,7 +92,6 @@ body {
 .section-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
     margin-bottom: 15px;
 }
 
@@ -116,10 +102,8 @@ body {
 
 .section-subtitle {
     font-size: 12px;
-    color: var(--muted);
+    color: #7b8496;
 }
-
-/* SMALL CARDS */
 
 .cards {
     display: grid;
@@ -128,49 +112,33 @@ body {
 }
 
 .card {
-    background: var(--card);
-    border: 1px solid var(--border);
     border-radius: 20px;
     padding: 24px;
     min-height: 145px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    box-shadow: 0 8px 30px rgba(20,30,60,.04);
-    transition: transform .2s ease, box-shadow .2s ease;
-}
-
-.card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 35px rgba(20,30,60,.08);
 }
 
 .card-name {
-    color: var(--muted);
+    color: #7b8496;
     font-size: 13px;
 }
 
 .card-number {
     font-size: 27px;
     font-weight: bold;
-    margin-top: 20px;
+    margin-top: 30px;
 }
-
-/* FOOTER */
 
 .footer {
     text-align: center;
     margin-top: 40px;
-    color: var(--muted);
+    color: #7b8496;
     font-size: 11px;
 }
 
-/* MOBILE */
-
-@media (max-width: 700px) {
+@media(max-width:700px) {
 
     .container {
-        padding: 20px 14px 40px;
+        padding: 20px 14px;
     }
 
     .header {
@@ -179,21 +147,15 @@ body {
         gap: 15px;
     }
 
-    .top-grid {
-        grid-template-columns: 1fr;
-    }
-
+    .top-grid,
     .cards {
         grid-template-columns: 1fr;
-    }
-
-    .big-value {
-        font-size: 30px;
     }
 
 }
 
 </style>
+
 </head>
 
 
@@ -202,237 +164,222 @@ body {
 <div class="container">
 
 
-<!-- HEADER -->
-
 <header class="header">
 
-    <div class="title">
+<div>
 
-        <h1>
-            Financial Dashboard
-        </h1>
+<h1>
+Financial Dashboard
+</h1>
 
-        <p>
-            Financial Overview & Pricing
-        </p>
+<div class="subtitle">
+Financial Overview & Pricing
+</div>
 
-    </div>
+</div>
 
-
-    <div class="status">
-
-        ● Online
-
-    </div>
+<div class="status">
+● Live Data
+</div>
 
 </header>
 
 
-<!-- DATE / BALANCE -->
-
 <div class="top-grid">
 
 
-    <div class="big-card">
+<div class="big-card">
 
-        <div class="card-label">
-            📅 Today's Date
-        </div>
+<div class="label">
+📅 Today's Date
+</div>
 
-        <div
-            class="big-value"
-            id="today">
+<div
+class="big-value"
+id="today">
 
-            30/04/1405
+Loading...
 
-        </div>
+</div>
 
-    </div>
+</div>
 
 
-    <div class="big-card">
+<div class="big-card">
 
-        <div class="card-label">
-            💰 Balance
-        </div>
+<div class="label">
+💰 Balance
+</div>
 
-        <div
-            class="big-value"
-            id="balance">
+<div
+class="big-value"
+id="balance">
 
-            —
+Loading...
 
-        </div>
+</div>
 
-    </div>
+</div>
 
 
 </div>
 
 
-
-<!-- UNIT PRICE -->
-
 <section class="section">
 
+<div class="section-header">
 
-    <div class="section-header">
+<div class="section-title">
+Unit Price
+</div>
 
-        <div class="section-title">
-            Unit Price
-        </div>
+<div class="section-subtitle">
+Comparison by Period
+</div>
 
-        <div class="section-subtitle">
-            Comparison by Period
-        </div>
-
-    </div>
-
-
-    <div class="cards">
+</div>
 
 
-        <div class="card">
-
-            <div class="card-name">
-                All Periods
-            </div>
-
-            <div
-                class="card-number"
-                id="unitAll">
-
-                —
-
-            </div>
-
-        </div>
+<div class="cards">
 
 
-        <div class="card">
+<div class="card">
 
-            <div class="card-name">
-                6 Periods
-            </div>
+<div class="card-name">
+All Periods
+</div>
 
-            <div
-                class="card-number"
-                id="unit6">
+<div
+class="card-number"
+id="unitAll">
 
-                —
+—
 
-            </div>
+</div>
 
-        </div>
-
-
-        <div class="card">
-
-            <div class="card-name">
-                1 Period
-            </div>
-
-            <div
-                class="card-number"
-                id="unit1">
-
-                —
-
-            </div>
-
-        </div>
+</div>
 
 
-    </div>
+<div class="card">
+
+<div class="card-name">
+6 Periods
+</div>
+
+<div
+class="card-number"
+id="unit6">
+
+—
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="card-name">
+1 Period
+</div>
+
+<div
+class="card-number"
+id="unit1">
+
+—
+
+</div>
+
+</div>
+
+
+</div>
 
 </section>
 
 
 
-<!-- AVERAGE PRICE -->
-
 <section class="section">
 
+<div class="section-header">
 
-    <div class="section-header">
+<div class="section-title">
+Average Price
+</div>
 
-        <div class="section-title">
-            Average Price
-        </div>
+<div class="section-subtitle">
+Calculated Average by Period
+</div>
 
-        <div class="section-subtitle">
-            Calculated Average by Period
-        </div>
-
-    </div>
-
-
-    <div class="cards">
+</div>
 
 
-        <div class="card">
-
-            <div class="card-name">
-                All Periods
-            </div>
-
-            <div
-                class="card-number"
-                id="avgAll">
-
-                —
-
-            </div>
-
-        </div>
+<div class="cards">
 
 
-        <div class="card">
+<div class="card">
 
-            <div class="card-name">
-                6 Periods
-            </div>
+<div class="card-name">
+All Periods
+</div>
 
-            <div
-                class="card-number"
-                id="avg6">
+<div
+class="card-number"
+id="avgAll">
 
-                —
+—
 
-            </div>
+</div>
 
-        </div>
-
-
-        <div class="card">
-
-            <div class="card-name">
-                1 Period
-            </div>
-
-            <div
-                class="card-number"
-                id="avg1">
-
-                —
-
-            </div>
-
-        </div>
+</div>
 
 
-    </div>
+<div class="card">
+
+<div class="card-name">
+6 Periods
+</div>
+
+<div
+class="card-number"
+id="avg6">
+
+—
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="card-name">
+1 Period
+</div>
+
+<div
+class="card-number"
+id="avg1">
+
+—
+
+</div>
+
+</div>
+
+
+</div>
 
 </section>
-
 
 
 <footer class="footer">
 
-    Last Updated:
-    <span id="updateTime">
-        Just Now
-    </span>
+Last Updated:
+<span id="updateTime">
+—
+</span>
 
 </footer>
 
@@ -442,95 +389,181 @@ body {
 
 <script>
 
-/*
-====================================
-CURRENT DATA
-====================================
 
-Temporary values for dashboard preview.
-These will later be connected
-to your Excel Online data.
-*/
+// ========================================
+// LOAD DATA.JSON
+// ========================================
 
-const data = {
+async function loadData() {
 
-    today: "30/04/1405",
-
-    balance: "—",
-
-    unitAll: "—",
-
-    unit6: "—",
-
-    unit1: "—",
-
-    avgAll: "—",
-
-    avg6: "—",
-
-    avg1: "—"
-
-};
+try {
 
 
 /*
-====================================
-DISPLAY DATA
-====================================
+این قسمت خیلی مهم است.
+
+Date.now باعث می‌شود
+هر بار URL جدید باشد
+و کش قدیمی استفاده نشود.
 */
+
+const url =
+"data.json?v=" + Date.now();
+
+
+const response =
+await fetch(url, {
+
+cache: "no-store"
+
+});
+
+
+if (!response.ok) {
+
+throw new Error(
+"Cannot load data.json"
+);
+
+}
+
+
+const data =
+await response.json();
+
+
+// ========================================
+// SHOW DATA
+// ========================================
+
 
 document.getElementById("today")
-    .textContent =
-    data.today;
+.textContent =
+data.today || "—";
 
 
 document.getElementById("balance")
-    .textContent =
-    data.balance;
+.textContent =
+formatNumber(data.balance);
 
 
 document.getElementById("unitAll")
-    .textContent =
-    data.unitAll;
+.textContent =
+formatNumber(data.unitAll);
 
 
 document.getElementById("unit6")
-    .textContent =
-    data.unit6;
+.textContent =
+formatNumber(data.unit6);
 
 
 document.getElementById("unit1")
-    .textContent =
-    data.unit1;
+.textContent =
+formatNumber(data.unit1);
 
 
 document.getElementById("avgAll")
-    .textContent =
-    data.avgAll;
+.textContent =
+formatNumber(data.avgAll);
 
 
 document.getElementById("avg6")
-    .textContent =
-    data.avg6;
+.textContent =
+formatNumber(data.avg6);
 
 
 document.getElementById("avg1")
-    .textContent =
-    data.avg1;
+.textContent =
+formatNumber(data.avg1);
 
 
-/*
-====================================
-UPDATE TIME
-====================================
-*/
+// زمان بروزرسانی
 
 document.getElementById("updateTime")
-    .textContent =
-    new Date().toLocaleString("en-US");
+.textContent =
+new Date()
+.toLocaleString("en-US");
+
+
+}
+
+catch(error) {
+
+
+console.error(error);
+
+
+document.getElementById("updateTime")
+.textContent =
+"Update Error";
+
+
+}
+
+}
+
+
+// ========================================
+// FORMAT NUMBERS
+// ========================================
+
+function formatNumber(value) {
+
+
+if (
+value === null ||
+value === undefined ||
+value === ""
+) {
+
+return "—";
+
+}
+
+
+let number =
+Number(
+String(value)
+.replace(/,/g, "")
+);
+
+
+if (!isNaN(number)) {
+
+return number
+.toLocaleString("en-US");
+
+}
+
+
+return value;
+
+}
+
+
+// ========================================
+// FIRST LOAD
+// ========================================
+
+loadData();
+
+
+// ========================================
+// AUTO REFRESH
+// EVERY 30 SECONDS
+// ========================================
+
+setInterval(
+
+loadData,
+
+30000
+
+);
+
 
 </script>
 
-
 </body>
+
 </html>
