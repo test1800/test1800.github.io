@@ -7,339 +7,528 @@
 <title>داشبورد مالی</title>
 
 <style>
+
 * {
     box-sizing: border-box;
 }
 
+:root {
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --text: #172033;
+    --muted: #7b8496;
+    --border: #e8ebf1;
+    --accent: #4f46e5;
+    --green: #16a34a;
+}
+
 body {
     margin: 0;
-    padding: 20px;
-    min-height: 100vh;
-    font-family: Tahoma, Arial, sans-serif;
-    background: #f4f6f8;
-    color: #222;
+    background: var(--bg);
+    color: var(--text);
+    font-family:
+        Tahoma,
+        Arial,
+        sans-serif;
 }
 
 .container {
-    max-width: 850px;
+    width: 100%;
+    max-width: 1050px;
     margin: auto;
+    padding: 30px 20px 50px;
 }
+
+/* HEADER */
 
 .header {
-    text-align: center;
-    margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
 }
 
-.header h1 {
+.title h1 {
     margin: 0;
     font-size: 28px;
 }
 
-.header p {
-    color: #777;
+.title p {
+    margin: 8px 0 0;
+    color: var(--muted);
     font-size: 13px;
 }
 
-.main-cards,
-.cards {
-    display: grid;
-    gap: 15px;
-}
-
-.main-cards {
-    grid-template-columns: 1fr 1fr;
-    margin-bottom: 25px;
-}
-
-.cards {
-    grid-template-columns: repeat(3, 1fr);
-}
-
-.main-card,
-.card {
+.status {
     background: white;
-    border-radius: 18px;
-    padding: 25px;
-    text-align: center;
-    box-shadow: 0 5px 20px rgba(0,0,0,.06);
+    border: 1px solid var(--border);
+    padding: 10px 15px;
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--green);
 }
 
-.main-title,
-.card-title {
-    color: #777;
+/* TOP CARDS */
+
+.top-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 35px;
+}
+
+.big-card {
+    background: var(--card);
+    border-radius: 22px;
+    padding: 28px;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 30px rgba(20,30,60,.05);
+}
+
+.card-label {
+    color: var(--muted);
     font-size: 14px;
+    margin-bottom: 18px;
+}
+
+.big-value {
+    font-size: 34px;
+    font-weight: bold;
+}
+
+/* SECTIONS */
+
+.section {
+    margin-top: 30px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 15px;
 }
 
-.main-value {
-    font-size: 30px;
-    font-weight: bold;
-}
-
-.card-value {
-    font-size: 24px;
-    font-weight: bold;
-}
-
 .section-title {
-    font-size: 19px;
+    font-size: 18px;
     font-weight: bold;
-    margin: 25px 0 12px;
 }
 
-.update {
-    text-align: center;
-    margin-top: 25px;
-    color: #888;
+.section-subtitle {
     font-size: 12px;
+    color: var(--muted);
 }
 
-@media (max-width: 600px) {
+/* SMALL CARDS */
 
-    body {
-        padding: 12px;
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+}
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    min-height: 145px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 8px 30px rgba(20,30,60,.04);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(20,30,60,.08);
+}
+
+.card-name {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.card-number {
+    font-size: 27px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+/* FOOTER */
+
+.footer {
+    text-align: center;
+    margin-top: 40px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+/* MOBILE */
+
+@media (max-width: 700px) {
+
+    .container {
+        padding: 20px 14px 40px;
     }
 
-    .main-cards,
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .top-grid {
+        grid-template-columns: 1fr;
+    }
+
     .cards {
         grid-template-columns: 1fr;
     }
 
-    .main-value {
-        font-size: 27px;
+    .big-value {
+        font-size: 30px;
     }
+
 }
+
 </style>
 </head>
+
 
 <body>
 
 <div class="container">
 
-    <div class="header">
-        <h1>داشبورد مالی</h1>
-        <p>آخرین اطلاعات ثبت‌شده</p>
+
+<!-- HEADER -->
+
+<header class="header">
+
+    <div class="title">
+
+        <h1>
+            داشبورد مالی
+        </h1>
+
+        <p>
+            خلاصه وضعیت مالی و قیمت‌ها
+        </p>
+
     </div>
 
-    <!-- تاریخ و مانده -->
 
-    <div class="main-cards">
+    <div class="status">
 
-        <div class="main-card">
-            <div class="main-title">📅 تاریخ امروز</div>
-            <div class="main-value" id="today">---</div>
+        ● آنلاین
+
+    </div>
+
+</header>
+
+
+<!-- DATE / BALANCE -->
+
+<div class="top-grid">
+
+
+    <div class="big-card">
+
+        <div class="card-label">
+            📅 تاریخ امروز
         </div>
 
-        <div class="main-card">
-            <div class="main-title">💰 مانده</div>
-            <div class="main-value" id="balance">---</div>
+        <div
+            class="big-value"
+            id="today">
+
+            30/04/1405
+
         </div>
 
     </div>
 
 
-    <!-- قیمت واحد -->
+    <div class="big-card">
 
-    <div class="section-title">
-        قیمت واحد
+        <div class="card-label">
+            💰 مانده
+        </div>
+
+        <div
+            class="big-value"
+            id="balance">
+
+            در انتظار اطلاعات
+
+        </div>
+
     </div>
+
+
+</div>
+
+
+
+<!-- UNIT PRICE -->
+
+<section class="section">
+
+
+    <div class="section-header">
+
+        <div class="section-title">
+            قیمت واحد
+        </div>
+
+        <div class="section-subtitle">
+            مقایسه دوره‌های مختلف
+        </div>
+
+    </div>
+
 
     <div class="cards">
 
-        <div class="card">
-            <div class="card-title">کل دوره</div>
-            <div class="card-value" id="unitAll">---</div>
-        </div>
 
         <div class="card">
-            <div class="card-title">۶ دوره</div>
-            <div class="card-value" id="unit6">---</div>
+
+            <div class="card-name">
+                کل دوره
+            </div>
+
+            <div
+                class="card-number"
+                id="unitAll">
+
+                —
+
+            </div>
+
         </div>
 
+
         <div class="card">
-            <div class="card-title">۱ دوره</div>
-            <div class="card-value" id="unit1">---</div>
+
+            <div class="card-name">
+                ۶ دوره
+            </div>
+
+            <div
+                class="card-number"
+                id="unit6">
+
+                —
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-name">
+                ۱ دوره
+            </div>
+
+            <div
+                class="card-number"
+                id="unit1">
+
+                —
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+
+<!-- AVERAGE PRICE -->
+
+<section class="section">
+
+
+    <div class="section-header">
+
+        <div class="section-title">
+            قیمت میانگین
+        </div>
+
+        <div class="section-subtitle">
+            میانگین محاسبه‌شده در دوره‌ها
         </div>
 
     </div>
 
-
-    <!-- قیمت میانگین -->
-
-    <div class="section-title">
-        قیمت میانگین
-    </div>
 
     <div class="cards">
 
-        <div class="card">
-            <div class="card-title">تمام دوره</div>
-            <div class="card-value" id="avgAll">---</div>
-        </div>
 
         <div class="card">
-            <div class="card-title">۶ دوره</div>
-            <div class="card-value" id="avg6">---</div>
+
+            <div class="card-name">
+                تمام دوره
+            </div>
+
+            <div
+                class="card-number"
+                id="avgAll">
+
+                —
+
+            </div>
+
         </div>
 
+
         <div class="card">
-            <div class="card-title">۱ دوره</div>
-            <div class="card-value" id="avg1">---</div>
+
+            <div class="card-name">
+                ۶ دوره
+            </div>
+
+            <div
+                class="card-number"
+                id="avg6">
+
+                —
+
+            </div>
+
         </div>
+
+
+        <div class="card">
+
+            <div class="card-name">
+                ۱ دوره
+            </div>
+
+            <div
+                class="card-number"
+                id="avg1">
+
+                —
+
+            </div>
+
+        </div>
+
 
     </div>
 
+</section>
 
-    <div class="update">
-        آخرین بروزرسانی:
-        <span id="lastUpdate">---</span>
-    </div>
+
+
+<footer class="footer">
+
+    آخرین بروزرسانی:
+    <span id="updateTime">
+        همین الان
+    </span>
+
+</footer>
+
 
 </div>
 
 
 <script>
 
-const DATA_URL =
-"https://raw.githubusercontent.com/test1800/dashboard/main/data.json";
+/*
+====================================
+اطلاعات فعلی
+====================================
+
+فعلاً برای تست ظاهر داشبورد
+*/
+
+const data = {
+
+    today: "30/04/1405",
+
+    balance: "—",
+
+    unitAll: "—",
+
+    unit6: "—",
+
+    unit1: "—",
+
+    avgAll: "—",
+
+    avg6: "—",
+
+    avg1: "—"
+
+};
 
 
-// تبدیل اعداد فارسی به انگلیسی
+/*
+====================================
+نمایش اطلاعات
+====================================
+*/
 
-function convertPersianNumbers(value) {
-
-    return String(value)
-        .replace(/[۰-۹]/g, function(d) {
-            return "۰۱۲۳۴۵۶۷۸۹".indexOf(d);
-        });
-
-}
-
-
-// فرمت اعداد
-
-function formatNumber(value) {
-
-    if (
-        value === null ||
-        value === undefined ||
-        value === ""
-    ) {
-        return "---";
-    }
-
-    let text =
-        convertPersianNumbers(value)
-        .replace(/,/g, "");
-
-    let number = Number(text);
-
-    if (!isNaN(number)) {
-
-        return number.toLocaleString("en-US");
-
-    }
-
-    return value;
-
-}
+document.getElementById("today")
+    .textContent =
+    data.today;
 
 
-// نمایش اطلاعات
-
-function showData(data) {
-
-    document.getElementById("today")
-        .textContent = data.today || "---";
+document.getElementById("balance")
+    .textContent =
+    data.balance;
 
 
-    document.getElementById("balance")
-        .textContent = formatNumber(data.balance);
+document.getElementById("unitAll")
+    .textContent =
+    data.unitAll;
 
 
-    document.getElementById("unitAll")
-        .textContent = formatNumber(data.unitAll);
+document.getElementById("unit6")
+    .textContent =
+    data.unit6;
 
 
-    document.getElementById("unit6")
-        .textContent = formatNumber(data.unit6);
+document.getElementById("unit1")
+    .textContent =
+    data.unit1;
 
 
-    document.getElementById("unit1")
-        .textContent = formatNumber(data.unit1);
+document.getElementById("avgAll")
+    .textContent =
+    data.avgAll;
 
 
-    document.getElementById("avgAll")
-        .textContent = formatNumber(data.avgAll);
+document.getElementById("avg6")
+    .textContent =
+    data.avg6;
 
 
-    document.getElementById("avg6")
-        .textContent = formatNumber(data.avg6);
+document.getElementById("avg1")
+    .textContent =
+    data.avg1;
 
 
-    document.getElementById("avg1")
-        .textContent = formatNumber(data.avg1);
+/*
+====================================
+زمان بروزرسانی
+====================================
+*/
 
-
-    document.getElementById("lastUpdate")
-        .textContent =
-        new Date().toLocaleString("fa-IR");
-
-}
-
-
-// دریافت اطلاعات
-
-async function loadData() {
-
-    try {
-
-        const response =
-            await fetch(
-                DATA_URL + "?t=" + Date.now()
-            );
-
-        if (!response.ok) {
-
-            throw new Error(
-                "خطا در دریافت داده"
-            );
-
-        }
-
-        const data =
-            await response.json();
-
-        showData(data);
-
-    }
-
-    catch (error) {
-
-        console.error(error);
-
-        document.getElementById("lastUpdate")
-            .textContent =
-            "خطا در دریافت اطلاعات";
-
-    }
-
-}
-
-
-// بارگذاری اولیه
-
-loadData();
-
-
-// بروزرسانی هر 5 دقیقه
-
-setInterval(
-    loadData,
-    5 * 60 * 1000
-);
+document.getElementById("updateTime")
+    .textContent =
+    new Date().toLocaleString("fa-IR");
 
 </script>
+
 
 </body>
 </html>
