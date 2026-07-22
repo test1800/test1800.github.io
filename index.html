@@ -11,8 +11,7 @@
 
 <link rel="manifest" href="manifest.json">
 
-<meta name="theme-color"
-      content="#0b1220">
+<meta name="theme-color" content="#0b1220">
 
 <link rel="icon"
       type="image/png"
@@ -236,14 +235,14 @@ h1 {
 
     justify-content: flex-end;
 
-    gap: 6px;
+    gap: 5px;
 
     margin-top: 4px;
 
     color:
-        #64748b;
+        #475569;
 
-    font-size: 9px;
+    font-size: 8px;
 
     font-weight: 600;
 
@@ -252,39 +251,41 @@ h1 {
 
 #countdown {
 
-    min-width: 18px;
+    min-width: 14px;
 
     text-align: right;
 
     color:
-        #94a3b8;
+        #64748b;
+
+    font-size: 8px;
 
 }
 
 
 .refresh-btn {
 
-    width: 22px;
+    width: 20px;
 
-    height: 22px;
+    height: 20px;
 
     padding: 0;
 
     border:
         1px solid
-        rgba(255,255,255,.10);
+        rgba(255,255,255,.08);
 
-    border-radius: 7px;
+    border-radius: 6px;
 
     background:
-        rgba(255,255,255,.04);
+        rgba(255,255,255,.035);
 
     color:
-        #94a3b8;
+        #64748b;
 
-    font-size: 15px;
+    font-size: 12px;
 
-    line-height: 20px;
+    line-height: 18px;
 
     cursor: pointer;
 
@@ -297,13 +298,10 @@ h1 {
 .refresh-btn:hover {
 
     background:
-        rgba(255,255,255,.09);
+        rgba(255,255,255,.08);
 
     color:
-        #f8fafc;
-
-    transform:
-        rotate(45deg);
+        #cbd5e1;
 
 }
 
@@ -574,7 +572,7 @@ h1 {
 
 .pl-box {
 
-    height: 58px;
+    min-height: 58px;
 
     padding: 6px;
 
@@ -637,6 +635,85 @@ h1 {
 
     color:
         #f87171;
+
+}
+
+
+.neutral {
+
+    color:
+        #94a3b8;
+
+}
+
+
+/* =====================================================
+   REALIZED PROFIT
+===================================================== */
+
+.realized-container {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 7px;
+
+    margin-top: 7px;
+
+}
+
+
+.realized-box {
+
+    min-height: 52px;
+
+    padding: 6px;
+
+    display: flex;
+
+    flex-direction:
+        column;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+
+    border-radius: 9px;
+
+    background:
+        rgba(255,255,255,.035);
+
+    border:
+        1px solid
+        rgba(255,255,255,.055);
+
+}
+
+
+.realized-label {
+
+    color:
+        #94a3b8;
+
+    font-size: 8px;
+
+    margin-bottom: 3px;
+
+    text-align:
+        center;
+
+}
+
+
+.realized-value {
+
+    font-size: 14px;
+
+    font-weight: 800;
 
 }
 
@@ -1009,7 +1086,7 @@ class="refresh-btn"
 onclick="manualRefresh()"
 title="Refresh">
 
-↻
+⟳
 
 </button>
 
@@ -1124,6 +1201,40 @@ id="overallResult">
 </div>
 
 
+<div class="realized-container">
+
+<div class="realized-box">
+
+<div class="realized-label">
+Realized P/L vs Purchase
+</div>
+
+<div
+class="realized-value"
+id="overallRealizedPurchase">
+-
+</div>
+
+</div>
+
+
+<div class="realized-box">
+
+<div class="realized-label">
+Realized P/L vs Bank
+</div>
+
+<div
+class="realized-value"
+id="overallRealizedBank">
+-
+</div>
+
+</div>
+
+</div>
+
+
 <div class="comparison">
 
 <div class="compare-box">
@@ -1208,7 +1319,7 @@ id="overallBank">
 <div class="metric">
 
 <div class="metric-label">
-Difference
+Current P/L
 </div>
 
 <div
@@ -1308,6 +1419,40 @@ id="sixResult">
 </div>
 
 
+<div class="realized-container">
+
+<div class="realized-box">
+
+<div class="realized-label">
+Realized P/L vs Purchase
+</div>
+
+<div
+class="realized-value"
+id="sixRealizedPurchase">
+-
+</div>
+
+</div>
+
+
+<div class="realized-box">
+
+<div class="realized-label">
+Realized P/L vs Bank
+</div>
+
+<div
+class="realized-value"
+id="sixRealizedBank">
+-
+</div>
+
+</div>
+
+</div>
+
+
 <div class="comparison">
 
 <div class="compare-box">
@@ -1392,7 +1537,7 @@ id="sixBank">
 <div class="metric">
 
 <div class="metric-label">
-Difference
+Current P/L
 </div>
 
 <div
@@ -1498,6 +1643,40 @@ id="lastResult">
 </div>
 
 
+<div class="realized-container">
+
+<div class="realized-box">
+
+<div class="realized-label">
+Realized P/L vs Purchase
+</div>
+
+<div
+class="realized-value"
+id="lastRealizedPurchase">
+-
+</div>
+
+</div>
+
+
+<div class="realized-box">
+
+<div class="realized-label">
+Realized P/L vs Bank
+</div>
+
+<div
+class="realized-value"
+id="lastRealizedBank">
+-
+</div>
+
+</div>
+
+</div>
+
+
 <div class="comparison">
 
 <div class="compare-box">
@@ -1582,7 +1761,7 @@ id="lastBank">
 <div class="metric">
 
 <div class="metric-label">
-Difference
+Current P/L
 </div>
 
 <div
@@ -1617,6 +1796,27 @@ function formatNumber(value) {
 
     return Math.round(value)
         .toLocaleString("en-US");
+
+}
+
+
+function formatMoneySigned(value) {
+
+    if (!isFinite(value)) {
+        return "-";
+    }
+
+    const rounded =
+        Math.round(value);
+
+    if (rounded > 0) {
+
+        return "+" +
+            rounded.toLocaleString("en-US");
+
+    }
+
+    return rounded.toLocaleString("en-US");
 
 }
 
@@ -1964,14 +2164,14 @@ function dateNumber(date) {
 function compoundValue(
     principal,
     startDate,
-    today,
+    endDate,
     annualRate
 ) {
 
     const days =
         daysBetweenInclusive(
             startDate,
-            today
+            endDate
         );
 
     const dailyRate =
@@ -1991,20 +2191,24 @@ function compoundValue(
 
 
 /* =====================================================
-   STANDARD FIFO
+   REALIZED PROFIT
 ===================================================== */
 
-function calculateFIFO(
+function calculateRealizedProfit(
     transactions,
-    currentPrice,
-    today,
     annualRate
 ) {
 
     let lots = [];
 
+    let realizedPurchase = 0;
+
+    let realizedBank = 0;
+
     let buyCount = 0;
+
     let sellCount = 0;
+
 
     for (
         const t of transactions
@@ -2015,6 +2219,7 @@ function calculateFIFO(
 
         const price =
             Number(t.price);
+
 
         if (
             t.type === "buy"
@@ -2037,6 +2242,7 @@ function calculateFIFO(
 
         }
 
+
         else if (
             t.type === "sell"
         ) {
@@ -2045,6 +2251,17 @@ function calculateFIFO(
 
             let remaining =
                 amount;
+
+            const sellRevenue =
+                amount *
+                price;
+
+            let purchaseCost =
+                0;
+
+            let bankCost =
+                0;
+
 
             while (
 
@@ -2055,6 +2272,156 @@ function calculateFIFO(
 
                 const lot =
                     lots[0];
+
+                const used =
+                    Math.min(
+                        remaining,
+                        lot.amount
+                    );
+
+
+                purchaseCost +=
+
+                    used *
+                    lot.price;
+
+
+                bankCost +=
+
+                    compoundValue(
+
+                        used *
+                        lot.price,
+
+                        lot.date,
+
+                        t.date,
+
+                        annualRate
+
+                    );
+
+
+                lot.amount -=
+                    used;
+
+                remaining -=
+                    used;
+
+
+                if (
+                    lot.amount <= 0
+                ) {
+
+                    lots.shift();
+
+                }
+
+            }
+
+
+            realizedPurchase +=
+
+                sellRevenue -
+                purchaseCost;
+
+
+            realizedBank +=
+
+                sellRevenue -
+                bankCost;
+
+        }
+
+    }
+
+
+    return {
+
+        realizedPurchase,
+
+        realizedBank,
+
+        buyCount,
+
+        sellCount
+
+    };
+
+}
+
+
+/* =====================================================
+   STANDARD FIFO
+===================================================== */
+
+function calculateFIFO(
+    transactions,
+    currentPrice,
+    today,
+    annualRate
+) {
+
+    let lots = [];
+
+    let buyCount = 0;
+
+    let sellCount = 0;
+
+
+    for (
+        const t of transactions
+    ) {
+
+        const amount =
+            Number(t.amount);
+
+        const price =
+            Number(t.price);
+
+
+        if (
+            t.type === "buy"
+        ) {
+
+            buyCount++;
+
+            lots.push({
+
+                amount:
+                    amount,
+
+                price:
+                    price,
+
+                date:
+                    t.date
+
+            });
+
+        }
+
+
+        else if (
+            t.type === "sell"
+        ) {
+
+            sellCount++;
+
+            let remaining =
+                amount;
+
+
+            while (
+
+                remaining > 0 &&
+                lots.length > 0
+
+            ) {
+
+                const lot =
+                    lots[0];
+
 
                 if (
                     lot.amount <=
@@ -2083,12 +2450,14 @@ function calculateFIFO(
 
     }
 
+
     const currentQuantity =
         lots.reduce(
             (sum, lot) =>
                 sum + lot.amount,
             0
         );
+
 
     const paidAmount =
         lots.reduce(
@@ -2098,6 +2467,7 @@ function calculateFIFO(
                 lot.price,
             0
         );
+
 
     const averagePurchasePrice =
 
@@ -2112,7 +2482,9 @@ function calculateFIFO(
 
         0;
 
+
     let bankValue = 0;
+
 
     for (
         const lot of lots
@@ -2135,10 +2507,12 @@ function calculateFIFO(
 
     }
 
+
     const currentValue =
 
         currentQuantity *
         currentPrice;
+
 
     const bankAdjustedPrice =
 
@@ -2153,6 +2527,7 @@ function calculateFIFO(
 
         0;
 
+
     const plPurchase =
 
         averagePurchasePrice > 0
@@ -2160,19 +2535,24 @@ function calculateFIFO(
         ?
 
         (
+
             (
                 currentPrice -
                 averagePurchasePrice
             )
+
             /
+
             averagePurchasePrice
+
         )
-        *
-        100
+
+        * 100
 
         :
 
         0;
+
 
     const plBank =
 
@@ -2181,19 +2561,35 @@ function calculateFIFO(
         ?
 
         (
+
             (
                 currentValue -
                 bankValue
             )
+
             /
+
             bankValue
+
         )
-        *
-        100
+
+        * 100
 
         :
 
         0;
+
+
+    const realized =
+
+        calculateRealizedProfit(
+
+            transactions,
+
+            annualRate
+
+        );
+
 
     return {
 
@@ -2219,6 +2615,12 @@ function calculateFIFO(
 
         plBank,
 
+        realizedPurchase:
+            realized.realizedPurchase,
+
+        realizedBank:
+            realized.realizedBank,
+
         buyCount,
 
         sellCount
@@ -2229,7 +2631,7 @@ function calculateFIFO(
 
 
 /* =====================================================
-   LAST PERIOD CALCULATION
+   LAST PERIOD
 ===================================================== */
 
 function calculateLastPeriod(
@@ -2249,47 +2651,9 @@ function calculateLastPeriod(
         transactions.length === 0
     ) {
 
-        return {
-
-            currentQuantity: 0,
-            paidAmount: 0,
-            averagePurchasePrice: 0,
-            bankAdjustedPrice: 0,
-            currentPrice,
-            currentValue: 0,
-            bankValue: 0,
-            difference: 0,
-            plPurchase: 0,
-            plBank: 0,
-            buyCount: 0,
-            sellCount: 0
-
-        };
-
-    }
-
-
-    const lastIndex =
-        transactions.length - 1;
-
-    const last =
-        transactions[lastIndex];
-
-
-    /*
-    اگر آخرین دوره با خرید تمام شده:
-    همان خرید آخر مبنای دوره است.
-    */
-
-    if (
-        last.type === "buy"
-    ) {
-
         return calculateFIFO(
 
-            [
-                last
-            ],
+            [],
 
             currentPrice,
 
@@ -2303,35 +2667,51 @@ function calculateLastPeriod(
 
 
     /*
-    اگر آخرین تراکنش فروش است:
+    آخرین دوره واقعی:
 
-    از آخر به عقب می‌رویم
-    تا آخرین خرید را پیدا کنیم.
+    از انتهای لیست شروع می‌کنیم
+    و به عقب می‌رویم تا اولین BUY
+    قبل از آخرین SELL پیدا شود.
 
-    اما برای اینکه فروش باعث صفر شدن
-    موجودی Last Period نشود، مقدار خرید
-    را مبنای سرمایه‌گذاری دوره قرار می‌دهیم
-    و فروش را فقط به عنوان پایان دوره ثبت می‌کنیم.
+    اگر آخرین تراکنش BUY باشد،
+    همان دوره آخر است.
+
+    اگر آخرین تراکنش SELL باشد،
+    خرید مربوط به آن فروش مبنای Last Period است.
     */
 
+
+    let startIndex =
+
+        transactions.length - 1;
+
+
     if (
-        last.type === "sell"
+
+        transactions[startIndex].type ===
+        "sell"
+
     ) {
 
-        let lastBuy = null;
-
         for (
-            let i = lastIndex - 1;
+
+            let i =
+                startIndex - 1;
+
             i >= 0;
+
             i--
+
         ) {
 
             if (
-                transactions[i].type === "buy"
+
+                transactions[i].type ===
+                "buy"
+
             ) {
 
-                lastBuy =
-                    transactions[i];
+                startIndex = i;
 
                 break;
 
@@ -2339,157 +2719,19 @@ function calculateLastPeriod(
 
         }
 
-
-        if (
-            !lastBuy
-        ) {
-
-            return calculateFIFO(
-
-                [
-                    last
-                ],
-
-                currentPrice,
-
-                today,
-
-                annualRate
-
-            );
-
-        }
-
-
-        /*
-        مقدار خرید آخر را برای محاسبه دوره
-        حفظ می‌کنیم.
-
-        فروش فقط به عنوان آخرین رویداد دوره
-        در تعداد معاملات ثبت می‌شود.
-        */
-
-        const amount =
-            Number(lastBuy.amount);
-
-        const price =
-            Number(lastBuy.price);
-
-        const paidAmount =
-            amount * price;
-
-        const averagePurchasePrice =
-            price;
-
-        const bankValue =
-
-            compoundValue(
-
-                paidAmount,
-
-                lastBuy.date,
-
-                today,
-
-                annualRate
-
-            );
-
-        const currentValue =
-
-            amount *
-            currentPrice;
-
-        const bankAdjustedPrice =
-
-            amount > 0
-
-            ?
-
-            bankValue /
-            amount
-
-            :
-
-            0;
-
-        const plPurchase =
-
-            averagePurchasePrice > 0
-
-            ?
-
-            (
-                (
-                    currentPrice -
-                    averagePurchasePrice
-                )
-                /
-                averagePurchasePrice
-            )
-            * 100
-
-            :
-
-            0;
-
-        const plBank =
-
-            bankValue > 0
-
-            ?
-
-            (
-                (
-                    currentValue -
-                    bankValue
-                )
-                /
-                bankValue
-            )
-            * 100
-
-            :
-
-            0;
-
-        return {
-
-            currentQuantity:
-                amount,
-
-            paidAmount,
-
-            averagePurchasePrice,
-
-            bankAdjustedPrice,
-
-            currentPrice,
-
-            currentValue,
-
-            bankValue,
-
-            difference:
-                currentValue -
-                bankValue,
-
-            plPurchase,
-
-            plBank,
-
-            buyCount: 1,
-
-            sellCount: 1
-
-        };
-
     }
+
+
+    const periodTransactions =
+
+        transactions.slice(
+            startIndex
+        );
 
 
     return calculateFIFO(
 
-        [last],
+        periodTransactions,
 
         currentPrice,
 
@@ -2498,6 +2740,103 @@ function calculateLastPeriod(
         annualRate
 
     );
+
+}
+
+
+/* =====================================================
+   DISPLAY REALIZED
+===================================================== */
+
+function displayRealized(
+    result,
+    prefix
+) {
+
+    const purchase =
+
+        document.getElementById(
+
+            prefix +
+            "RealizedPurchase"
+
+        );
+
+
+    const bank =
+
+        document.getElementById(
+
+            prefix +
+            "RealizedBank"
+
+        );
+
+
+    if (
+        !purchase ||
+        !bank
+    ) {
+
+        return;
+
+    }
+
+
+    purchase.textContent =
+
+        formatMoneySigned(
+
+            result.realizedPurchase
+
+        );
+
+
+    bank.textContent =
+
+        formatMoneySigned(
+
+            result.realizedBank
+
+        );
+
+
+    purchase.className =
+
+        "realized-value " +
+
+        (
+
+            result.realizedPurchase >= 0
+
+            ?
+
+            "profit"
+
+            :
+
+            "loss"
+
+        );
+
+
+    bank.className =
+
+        "realized-value " +
+
+        (
+
+            result.realizedBank >= 0
+
+            ?
+
+            "profit"
+
+            :
+
+            "loss"
+
+        );
 
 }
 
@@ -2514,148 +2853,301 @@ function displaySection(
     document.getElementById(
         prefix + "Average"
     ).textContent =
+
         formatNumber(
+
             result.averagePurchasePrice
+
         );
+
 
     document.getElementById(
         prefix + "Paid"
     ).textContent =
+
         formatNumber(
+
             result.paidAmount
+
         );
+
 
     document.getElementById(
         prefix + "Adjusted"
     ).textContent =
+
         formatNumber(
+
             result.bankAdjustedPrice
+
         );
+
 
     document.getElementById(
         prefix + "Quantity"
     ).textContent =
+
         formatNumber(
+
             result.currentQuantity
+
         );
+
 
     document.getElementById(
         prefix + "Value"
     ).textContent =
+
         formatNumber(
+
             result.currentValue
+
         );
+
 
     document.getElementById(
         prefix + "Bank"
     ).textContent =
+
         formatNumber(
+
             result.bankValue
+
         );
 
-    document.getElementById(
-        prefix + "Difference"
-    ).textContent =
-        formatNumber(
-            Math.abs(
-                result.difference
-            )
+
+    const currentPL =
+
+        document.getElementById(
+
+            prefix +
+            "Difference"
+
+        );
+
+
+    currentPL.textContent =
+
+        formatMoneySigned(
+
+            result.difference
+
+        );
+
+
+    currentPL.className =
+
+        "metric-value " +
+
+        (
+
+            result.difference >= 0
+
+            ?
+
+            "profit"
+
+            :
+
+            "loss"
+
         );
 
 
     const plPurchase =
+
         document.getElementById(
-            prefix + "PLPurchase"
+
+            prefix +
+            "PLPurchase"
+
         );
 
+
     const plBank =
+
         document.getElementById(
-            prefix + "PLBank"
+
+            prefix +
+            "PLBank"
+
         );
 
 
     plPurchase.textContent =
+
         formatPercent(
+
             result.plPurchase
+
         );
 
+
     plBank.textContent =
+
         formatPercent(
+
             result.plBank
+
         );
 
 
     plPurchase.className =
+
         "pl-value " +
+
         (
+
             result.plPurchase >= 0
-            ? "profit"
-            : "loss"
+
+            ?
+
+            "profit"
+
+            :
+
+            "loss"
+
         );
 
 
     plBank.className =
+
         "pl-value " +
+
         (
+
             result.plBank >= 0
-            ? "profit"
-            : "loss"
+
+            ?
+
+            "profit"
+
+            :
+
+            "loss"
+
         );
 
 
+    displayRealized(
+
+        result,
+
+        prefix
+
+    );
+
+
     const mainPrice =
+
         document.getElementById(
-            prefix + "MainPrice"
+
+            prefix +
+            "MainPrice"
+
         );
 
 
     const resultBox =
+
         document.getElementById(
-            prefix + "Result"
+
+            prefix +
+            "Result"
+
         );
 
 
     mainPrice.classList.remove(
+
         "status-green",
+
         "status-red"
+
     );
 
 
     if (
-        result.currentPrice >
-        result.bankAdjustedPrice
+
+        result.currentQuantity <= 0
+
     ) {
 
         mainPrice.classList.add(
-            "status-green"
+
+            "status-red"
+
         );
 
+
         resultBox.textContent =
-            "INVESTMENT IS BETTER THAN BANK";
+
+            "NO CURRENT POSITION";
+
 
         resultBox.style.color =
+
+            "#94a3b8";
+
+    }
+
+
+    else if (
+
+        result.currentPrice >
+
+        result.bankAdjustedPrice
+
+    ) {
+
+        mainPrice.classList.add(
+
+            "status-green"
+
+        );
+
+
+        resultBox.textContent =
+
+            "INVESTMENT IS BETTER THAN BANK";
+
+
+        resultBox.style.color =
+
             "#34d399";
 
     }
 
+
     else {
 
         mainPrice.classList.add(
+
             "status-red"
+
         );
 
+
         resultBox.textContent =
+
             "BANK RETURN IS BETTER THAN INVESTMENT";
 
+
         resultBox.style.color =
+
             "#f87171";
 
     }
 
 
     const tradeCount =
+
         document.getElementById(
-            prefix + "Trades"
+
+            prefix +
+            "Trades"
+
         );
 
 
@@ -2666,8 +3158,11 @@ function displaySection(
         tradeCount.textContent =
 
             result.buyCount +
+
             " IN  •  " +
+
             result.sellCount +
+
             " OUT";
 
     }
@@ -2684,8 +3179,11 @@ function displayLastAction(
 ) {
 
     const badge =
+
         document.getElementById(
+
             "lastAction"
+
         );
 
 
@@ -2702,7 +3200,10 @@ function displayLastAction(
 
 
     if (
-        transaction.type === "buy"
+
+        transaction.type ===
+        "buy"
+
     ) {
 
         badge.textContent =
@@ -2736,6 +3237,7 @@ async function getCurrentPrice(
 ) {
 
     const response =
+
         await fetch(
 
             apiUrl,
@@ -2765,13 +3267,16 @@ async function getCurrentPrice(
     ) {
 
         throw new Error(
+
             "Unable to get current price"
+
         );
 
     }
 
 
     const data =
+
         await response.json();
 
 
@@ -2780,7 +3285,9 @@ async function getCurrentPrice(
     ) {
 
         throw new Error(
+
             "Invalid lastTradePrice"
+
         );
 
     }
@@ -2789,7 +3296,9 @@ async function getCurrentPrice(
     return (
 
         Number(
+
             data.lastTradePrice
+
         )
 
         /
@@ -2805,19 +3314,26 @@ async function getCurrentPrice(
    AUTO REFRESH
 ===================================================== */
 
-let countdownTimer = null;
+let countdownTimer =
+    null;
 
-let refreshTimer = null;
+let refreshTimer =
+    null;
 
 
 function startAutoRefresh() {
 
     clearInterval(
+
         countdownTimer
+
     );
 
+
     clearTimeout(
+
         refreshTimer
+
     );
 
 
@@ -2825,21 +3341,27 @@ function startAutoRefresh() {
 
 
     const countdownElement =
+
         document.getElementById(
+
             "countdown"
+
         );
 
 
     countdownElement.textContent =
+
         seconds;
 
 
     countdownTimer =
+
         setInterval(
 
             () => {
 
                 seconds--;
+
 
                 if (
                     seconds < 0
@@ -2851,6 +3373,7 @@ function startAutoRefresh() {
 
 
                 countdownElement.textContent =
+
                     seconds;
 
             },
@@ -2861,6 +3384,7 @@ function startAutoRefresh() {
 
 
     refreshTimer =
+
         setTimeout(
 
             () => {
@@ -2890,9 +3414,12 @@ function manualRefresh() {
 async function init() {
 
     const dataResponse =
+
         await fetch(
+
             "data.json?x=" +
             Date.now()
+
         );
 
 
@@ -2901,29 +3428,41 @@ async function init() {
     ) {
 
         throw new Error(
+
             "Cannot load data.json"
+
         );
 
     }
 
 
     const data =
+
         await dataResponse.json();
 
 
     const annualBankRate =
+
         Number(
-            data.annualBankRate || 40
+
+            data.annualBankRate ||
+            40
+
         );
 
 
     const divisor =
+
         Number(
-            data.priceDivisor || 10
+
+            data.priceDivisor ||
+            10
+
         );
 
 
     const currentPrice =
+
         await getCurrentPrice(
 
             data.priceApi,
@@ -2934,40 +3473,57 @@ async function init() {
 
 
     const today =
+
         getTodayJalali();
 
 
     document.getElementById(
+
         "today"
+
     ).textContent =
+
         today;
 
 
     document.getElementById(
+
         "currentPrice"
+
     ).textContent =
+
         formatNumber(
+
             currentPrice
+
         );
 
 
     document.getElementById(
+
         "bankRate"
+
     ).textContent =
+
         annualBankRate +
+
         "%";
 
 
     const transactions =
 
         data.transactions
+
             .slice()
+
             .sort(
 
                 (a, b) =>
 
                     dateNumber(a.date)
+
                     -
+
                     dateNumber(b.date)
 
             );
@@ -3069,7 +3625,9 @@ async function init() {
         ?
 
         transactions[
+
             transactions.length - 1
+
         ]
 
         :
@@ -3085,14 +3643,20 @@ async function init() {
 
 
     document.getElementById(
+
         "loading"
+
     ).style.display =
+
         "none";
 
 
     document.getElementById(
+
         "dashboard"
+
     ).style.display =
+
         "grid";
 
 }
@@ -3119,18 +3683,25 @@ init()
     error => {
 
         console.error(
+
             error
+
         );
 
 
         document.getElementById(
+
             "loading"
+
         ).style.display =
+
             "none";
 
 
         document.getElementById(
+
             "errorBox"
+
         ).innerHTML =
 
             `
