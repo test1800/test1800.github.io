@@ -856,7 +856,9 @@ Loading...
 id="dashboard"
 style="display:none;">
 
-<!-- OVERALL -->
+<!-- =========================
+     OVERALL
+========================= -->
 
 <div class="card">
 
@@ -887,8 +889,6 @@ class="main-price-number"
 id="overallAdjusted">
 -
 </div>
-
-<!-- UNREALIZED P/L -->
 
 <div class="pl-container">
 
@@ -921,8 +921,6 @@ id="overallPLBank">
 </div>
 
 </div>
-
-<!-- REALIZED P/L -->
 
 <div class="realized-container">
 
@@ -1043,12 +1041,12 @@ id="overallBank">
 <div class="metric">
 
 <div class="metric-label">
-Total Performance
+Realized P/L vs Purchase
 </div>
 
 <div
 class="metric-value"
-id="overallTotalPerformance">
+id="overallRealizedMetricPurchase">
 -
 </div>
 
@@ -1059,7 +1057,9 @@ id="overallTotalPerformance">
 </div>
 
 
-<!-- SIX PERIODS -->
+<!-- =========================
+     LAST 6 PERIODS
+========================= -->
 
 <div class="card">
 
@@ -1090,8 +1090,6 @@ class="main-price-number"
 id="sixAdjusted">
 -
 </div>
-
-<!-- UNREALIZED P/L -->
 
 <div class="pl-container">
 
@@ -1124,8 +1122,6 @@ id="sixPLBank">
 </div>
 
 </div>
-
-<!-- REALIZED P/L -->
 
 <div class="realized-container">
 
@@ -1246,12 +1242,12 @@ id="sixBank">
 <div class="metric">
 
 <div class="metric-label">
-Total Performance
+Realized P/L vs Purchase
 </div>
 
 <div
 class="metric-value"
-id="sixTotalPerformance">
+id="sixRealizedMetricPurchase">
 -
 </div>
 
@@ -1262,7 +1258,9 @@ id="sixTotalPerformance">
 </div>
 
 
-<!-- LAST PERIOD -->
+<!-- =========================
+     LAST PERIOD
+========================= -->
 
 <div class="card">
 
@@ -1304,8 +1302,6 @@ id="lastAdjusted">
 -
 </div>
 
-<!-- UNREALIZED P/L -->
-
 <div class="pl-container">
 
 <div class="pl-box">
@@ -1337,8 +1333,6 @@ id="lastPLBank">
 </div>
 
 </div>
-
-<!-- REALIZED P/L -->
 
 <div class="realized-container">
 
@@ -1459,12 +1453,12 @@ id="lastBank">
 <div class="metric">
 
 <div class="metric-label">
-Total Performance
+Realized P/L vs Purchase
 </div>
 
 <div
 class="metric-value"
-id="lastTotalPerformance">
+id="lastRealizedMetricPurchase">
 -
 </div>
 
@@ -1482,7 +1476,7 @@ id="lastTotalPerformance">
 <script>
 
 /* =====================================================
-   HELPERS
+   BASIC HELPERS
 ===================================================== */
 
 function $(id) {
@@ -1602,11 +1596,7 @@ function jalaliToGregorian(jy, jm, jd) {
         +
         Math.floor(((jy % 33) + 3) / 4);
 
-    for (
-        let i = 1;
-        i < jm;
-        i++
-    ) {
+    for (let i = 1; i < jm; i++) {
 
         days += i <= 6 ? 31 : 30;
 
@@ -1684,9 +1674,7 @@ function jalaliToGregorian(jy, jm, jd) {
 
     let gm = 1;
 
-    while (
-        gd > monthDays[gm]
-    ) {
+    while (gd > monthDays[gm]) {
 
         gd -= monthDays[gm];
 
@@ -1733,12 +1721,10 @@ function daysBetweenInclusive(
         0,
 
         Math.floor(
-
             (
                 endDate -
                 startDate
             ) / 86400000
-
         ) + 1
 
     );
@@ -1750,14 +1736,11 @@ function getTodayJalali() {
 
     const now = new Date();
 
-    const gy =
-        now.getFullYear();
+    const gy = now.getFullYear();
 
-    const gm =
-        now.getMonth() + 1;
+    const gm = now.getMonth() + 1;
 
-    const gd =
-        now.getDate();
+    const gd = now.getDate();
 
     const gdm = [
 
@@ -1777,7 +1760,9 @@ function getTodayJalali() {
     ];
 
     let jy =
-        gy > 1600 ? 979 : 0;
+        gy > 1600
+        ? 979
+        : 0;
 
     const y =
         gy > 1600
@@ -1841,9 +1826,7 @@ function getTodayJalali() {
 
         jm =
             7 +
-            Math.floor(
-                (days - 186) / 30
-            );
+            Math.floor((days - 186) / 30);
 
         jd =
             1 +
@@ -1914,13 +1897,13 @@ function compoundValue(
 
 
 /* =====================================================
-   FIFO PORTFOLIO
+   PORTFOLIO ENGINE
 ===================================================== */
 
 function calculatePortfolio(
     transactions,
     currentPrice,
-    today,
+    valuationDate,
     annualRate
 ) {
 
@@ -1944,7 +1927,9 @@ function calculatePortfolio(
             Number(t.price);
 
 
-        if (t.type === "buy") {
+        if (
+            t.type === "buy"
+        ) {
 
             buyCount++;
 
@@ -1964,7 +1949,9 @@ function calculatePortfolio(
         }
 
 
-        else if (t.type === "sell") {
+        else if (
+            t.type === "sell"
+        ) {
 
             sellCount++;
 
@@ -1973,10 +1960,8 @@ function calculatePortfolio(
 
 
             while (
-
                 remaining > 0 &&
                 lots.length > 0
-
             ) {
 
                 const lot =
@@ -2028,9 +2013,11 @@ function calculatePortfolio(
                     bankCost;
 
 
-                lot.amount -= used;
+                lot.amount -=
+                    used;
 
-                remaining -= used;
+                remaining -=
+                    used;
 
 
                 if (
@@ -2053,7 +2040,6 @@ function calculatePortfolio(
         lots.reduce(
 
             (sum, lot) =>
-
                 sum + lot.amount,
 
             0
@@ -2104,7 +2090,7 @@ function calculatePortfolio(
 
                 lot.date,
 
-                today,
+                valuationDate,
 
                 annualRate
 
@@ -2134,31 +2120,32 @@ function calculatePortfolio(
 
 
     /*
-       Unrealized P/L:
-       فقط مربوط به دارایی فعلی
-       که هنوز فروخته نشده است.
+       Unrealized P/L
+
+       فقط دارایی‌هایی که هنوز
+       در اختیار کاربر هستند.
     */
 
-    const unrealizedPurchase =
+    const unrealizedPurchasePL =
 
         currentValue -
         paidAmount;
 
 
-    const unrealizedBank =
+    const unrealizedBankPL =
 
         currentValue -
         bankValue;
 
 
-    const unrealizedPLPurchase =
+    const unrealizedPLPurchasePercent =
 
         paidAmount > 0
 
         ?
 
         (
-            unrealizedPurchase /
+            unrealizedPurchasePL /
             paidAmount
         ) * 100
 
@@ -2167,14 +2154,14 @@ function calculatePortfolio(
         0;
 
 
-    const unrealizedPLBank =
+    const unrealizedPLBankPercent =
 
         bankValue > 0
 
         ?
 
         (
-            unrealizedBank /
+            unrealizedBankPL /
             bankValue
         ) * 100
 
@@ -2184,22 +2171,31 @@ function calculatePortfolio(
 
 
     /*
-       Total performance:
-       سود/زیان قطعی فروش‌ها
-       +
-       سود/زیان دارایی فعلی
+       Realized P/L
+
+       فقط فروش‌های انجام‌شده.
     */
 
-    const totalPerformancePurchase =
+
+    /*
+       سود/زیان کل اقتصادی:
+
+       Realized + Unrealized
+
+       این عدد برای تصمیم Investment
+       vs Bank استفاده می‌شود.
+    */
+
+    const totalPurchasePL =
 
         realizedPurchase +
-        unrealizedPurchase;
+        unrealizedPurchasePL;
 
 
-    const totalPerformanceBank =
+    const totalBankPL =
 
         realizedBank +
-        unrealizedBank;
+        unrealizedBankPL;
 
 
     return {
@@ -2212,27 +2208,25 @@ function calculatePortfolio(
 
         bankAdjustedPrice,
 
-        currentPrice,
-
         currentValue,
 
         bankValue,
 
-        unrealizedPurchase,
+        unrealizedPurchasePL,
 
-        unrealizedBank,
+        unrealizedBankPL,
 
-        unrealizedPLPurchase,
+        unrealizedPLPurchasePercent,
 
-        unrealizedPLBank,
+        unrealizedPLBankPercent,
 
         realizedPurchase,
 
         realizedBank,
 
-        totalPerformancePurchase,
+        totalPurchasePL,
 
-        totalPerformanceBank,
+        totalBankPL,
 
         buyCount,
 
@@ -2244,37 +2238,40 @@ function calculatePortfolio(
 
 
 /* =====================================================
-   PERIOD ENGINE
+   PERIOD BUILDER
 ===================================================== */
 
 /*
-   هر BUY یک Period جدید ایجاد می‌کند.
+   هر خرید شروع یک Period جدید است.
 
-   SELL به آخرین Period موجود اضافه می‌شود.
+   فروش بعد از خرید متعلق به همان Period است.
 
-   مثال داده فعلی:
+   بنابراین برای داده شما:
 
-   Period 1:
-   300 BUY
-   100 SELL
+   Period 1
+   300 Buy
+   100 Sell
 
-   Period 2:
-   1100 BUY
+   Period 2
+   1100 Buy
 
-   Period 3:
-   1000 BUY
+   Period 3
+   1000 Buy
 
    ...
 
    نکته مهم:
-   محاسبه هر Period مستقل است.
-   بنابراین فروش 100 واحد از Period اول
-   باعث نمی‌شود مقدار 9500 یا مقدار کل
-   در Last Period نمایش داده شود.
+   فروش 100 واحد در Period 1 فقط
+   موجودی همان Period را کاهش می‌دهد.
+
+   اما برای Last Period که آخرین خرید است،
+   فقط معاملات همان Period بررسی می‌شوند.
 */
 
 
-function buildPeriods(transactions) {
+function buildPeriods(
+    transactions
+) {
 
     const periods = [];
 
@@ -2283,14 +2280,18 @@ function buildPeriods(transactions) {
 
     for (const t of transactions) {
 
-        if (t.type === "buy") {
+        if (
+            t.type === "buy"
+        ) {
 
             if (
                 current &&
                 current.transactions.length > 0
             ) {
 
-                periods.push(current);
+                periods.push(
+                    current
+                );
 
             }
 
@@ -2313,12 +2314,17 @@ function buildPeriods(transactions) {
 
         }
 
+        else if (
+            t.type === "sell"
+        ) {
 
-        else if (t.type === "sell") {
+            if (
+                current
+            ) {
 
-            if (current) {
-
-                current.transactions.push(t);
+                current.transactions.push(
+                    t
+                );
 
                 current.endDate =
                     t.date;
@@ -2335,7 +2341,9 @@ function buildPeriods(transactions) {
         current.transactions.length > 0
     ) {
 
-        periods.push(current);
+        periods.push(
+            current
+        );
 
     }
 
@@ -2345,12 +2353,9 @@ function buildPeriods(transactions) {
 }
 
 
-/*
-   این تابع عمداً مستقل تعریف شده
-   تا خطای getLastPeriods is not defined
-   رخ ندهد.
-*/
-
+/* =====================================================
+   GET LAST PERIODS
+===================================================== */
 
 function getLastPeriods(
     transactions,
@@ -2365,20 +2370,26 @@ function getLastPeriods(
 
     const selected =
         periods.slice(
-            -count
+            Math.max(
+                0,
+                periods.length - count
+            )
         );
 
 
     return selected.flatMap(
 
         period =>
-
             period.transactions
 
     );
 
 }
 
+
+/* =====================================================
+   GET LAST PERIOD
+===================================================== */
 
 function getLastPeriod(
     transactions
@@ -2415,79 +2426,6 @@ function displaySection(
     prefix
 ) {
 
-    /*
-       Bank Adjusted Price
-    */
-
-    safeText(
-
-        prefix + "Adjusted",
-
-        formatNumber(
-            result.bankAdjustedPrice
-        )
-
-    );
-
-
-    /*
-       Unrealized P/L percentages
-       مربوط به موجودی فعلی
-    */
-
-    safeText(
-
-        prefix + "PLPurchase",
-
-        formatPercent(
-            result.unrealizedPLPurchase
-        )
-
-    );
-
-
-    safeText(
-
-        prefix + "PLBank",
-
-        formatPercent(
-            result.unrealizedPLBank
-        )
-
-    );
-
-
-    /*
-       Realized P/L
-       مربوط به فروش‌های قطعی
-    */
-
-    safeText(
-
-        prefix + "RealizedPurchase",
-
-        formatMoneySigned(
-            result.realizedPurchase
-        )
-
-    );
-
-
-    safeText(
-
-        prefix + "RealizedBank",
-
-        formatMoneySigned(
-            result.realizedBank
-        )
-
-    );
-
-
-    /*
-       Average / Paid
-    */
-
     safeText(
 
         prefix + "Average",
@@ -2510,9 +2448,16 @@ function displaySection(
     );
 
 
-    /*
-       Current Metrics
-    */
+    safeText(
+
+        prefix + "Adjusted",
+
+        formatNumber(
+            result.bankAdjustedPrice
+        )
+
+    );
+
 
     safeText(
 
@@ -2548,30 +2493,64 @@ function displaySection(
 
 
     /*
-       Total Performance
-       فقط برای نمایش وضعیت کلی
+       زیر درصدها:
+       Unrealized P/L
     */
 
     safeText(
 
-        prefix + "TotalPerformance",
+        prefix + "PLPurchase",
 
         formatMoneySigned(
-            result.totalPerformanceBank
+            result.unrealizedPurchasePL
+        )
+
+    );
+
+
+    safeText(
+
+        prefix + "PLBank",
+
+        formatMoneySigned(
+            result.unrealizedBankPL
         )
 
     );
 
 
     /*
-       رنگ درصدهای Unrealized
+       باکس پایین:
+       Realized P/L
     */
+
+    safeText(
+
+        prefix + "RealizedPurchase",
+
+        formatMoneySigned(
+            result.realizedPurchase
+        )
+
+    );
+
+
+    safeText(
+
+        prefix + "RealizedBank",
+
+        formatMoneySigned(
+            result.realizedBank
+        )
+
+    );
+
 
     setProfitLossClass(
 
         prefix + "PLPurchase",
 
-        result.unrealizedPLPurchase
+        result.unrealizedPurchasePL
 
     );
 
@@ -2580,14 +2559,10 @@ function displaySection(
 
         prefix + "PLBank",
 
-        result.unrealizedPLBank
+        result.unrealizedBankPL
 
     );
 
-
-    /*
-       رنگ Realized
-    */
 
     setProfitLossClass(
 
@@ -2608,31 +2583,14 @@ function displaySection(
 
 
     /*
-       رنگ Total Performance
-    */
+       Main card status بر اساس سود کل
+       نسبت به بانک است:
 
-    setProfitLossClass(
-
-        prefix + "TotalPerformance",
-
-        result.totalPerformanceBank
-
-    );
-
-
-    /*
-       Main status
-       بر اساس Unrealized P/L vs Bank
+       Realized + Unrealized
     */
 
     const mainPrice =
-
-        $(
-
-            prefix +
-            "MainPrice"
-
-        );
+        $(prefix + "MainPrice");
 
 
     if (mainPrice) {
@@ -2647,7 +2605,7 @@ function displaySection(
 
 
         if (
-            result.unrealizedPLBank >= 0
+            result.totalBankPL >= 0
         ) {
 
             mainPrice.classList.add(
@@ -2671,30 +2629,19 @@ function displaySection(
     }
 
 
-    /*
-       نتیجه مقایسه:
-       فقط برای دارایی فعلی
-    */
-
     const resultBox =
-
-        $(
-
-            prefix +
-            "Result"
-
-        );
+        $(prefix + "Result");
 
 
     if (resultBox) {
 
         if (
-            result.unrealizedPLBank >= 0
+            result.totalBankPL >= 0
         ) {
 
             resultBox.textContent =
 
-                "Current investment return is better than bank";
+                "Investment return is better than bank";
 
             resultBox.style.color =
                 "#34d399";
@@ -2705,7 +2652,7 @@ function displaySection(
 
             resultBox.textContent =
 
-                "Bank return is better than current investment";
+                "Bank return is better than investment";
 
             resultBox.style.color =
                 "#f87171";
@@ -2715,18 +2662,8 @@ function displaySection(
     }
 
 
-    /*
-       Trade count
-    */
-
     const tradeCount =
-
-        $(
-
-            prefix +
-            "Trades"
-
-        );
+        $(prefix + "Trades");
 
 
     if (tradeCount) {
@@ -2740,6 +2677,34 @@ function displaySection(
             result.sellCount +
 
             " OUT";
+
+    }
+
+
+    /*
+       فقط برای حفظ ساختار فعلی HTML.
+       Unrealized P/L مقدار اصلی است.
+    */
+
+    const metricPurchase =
+        $(prefix + "RealizedMetricPurchase");
+
+
+    if (metricPurchase) {
+
+        metricPurchase.textContent =
+
+            formatMoneySigned(
+                result.realizedPurchase
+            );
+
+        setProfitLossClass(
+
+            prefix + "RealizedMetricPurchase",
+
+            result.realizedPurchase
+
+        );
 
     }
 
@@ -2760,7 +2725,7 @@ function displayLastAction(
 
     if (
         !badge ||
-        !transactions.length
+        transactions.length === 0
     ) {
 
         return;
@@ -2769,7 +2734,6 @@ function displayLastAction(
 
 
     const last =
-
         transactions[
             transactions.length - 1
         ];
@@ -2904,11 +2868,8 @@ function startAutoRefresh() {
 
 
     safeText(
-
         "countdown",
-
         seconds
-
     );
 
 
@@ -2930,11 +2891,8 @@ function startAutoRefresh() {
 
 
                 safeText(
-
                     "countdown",
-
                     seconds
-
                 );
 
             },
@@ -3080,11 +3038,15 @@ async function init() {
 
                 (a, b) =>
 
-                    dateNumber(a.date)
+                    dateNumber(
+                        a.date
+                    )
 
                     -
 
-                    dateNumber(b.date)
+                    dateNumber(
+                        b.date
+                    )
 
             )
 
@@ -3093,9 +3055,9 @@ async function init() {
         [];
 
 
-    /*
+    /* ==============================
        OVERALL
-    */
+    ============================== */
 
     const overall =
 
@@ -3121,9 +3083,9 @@ async function init() {
     );
 
 
-    /*
+    /* ==============================
        LAST 6 PERIODS
-    */
+    ============================== */
 
     const sixTransactions =
 
@@ -3160,9 +3122,9 @@ async function init() {
     );
 
 
-    /*
+    /* ==============================
        LAST PERIOD
-    */
+    ============================== */
 
     const lastTransactions =
 
@@ -3279,15 +3241,9 @@ init()
 
             $("errorBox").innerHTML =
 
-                `
-
-                <div class="error">
-
+                `<div class="error">
                     ${error.message}
-
-                </div>
-
-                `;
+                </div>`;
 
         }
 
