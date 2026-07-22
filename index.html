@@ -140,10 +140,16 @@ h1 {
 
 }
 
+.update-time {
 
-/* =====================================================
-   TOP LIVE PRICE
-===================================================== */
+    color:
+        #64748b;
+
+    font-size: 10px;
+
+    margin-left: 8px;
+
+}
 
 .live-price {
 
@@ -181,11 +187,69 @@ h1 {
 
 }
 
+.live-number-row {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: flex-start;
+
+    gap: 9px;
+
+}
+
 .live-number {
 
     font-size: 28px;
 
     font-weight: 850;
+
+}
+
+.price-arrow {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 18px;
+
+    height: 25px;
+
+    font-size: 25px;
+
+    font-weight: 300;
+
+    line-height: 1;
+
+    background: transparent;
+
+    border: none;
+
+    padding: 0;
+
+    margin: 0;
+
+}
+
+.arrow-up {
+
+    color: #34d399;
+
+}
+
+.arrow-down {
+
+    color: #f87171;
+
+}
+
+.arrow-flat {
+
+    color: #94a3b8;
 
 }
 
@@ -267,11 +331,6 @@ h1 {
         #f8fafc;
 
 }
-
-
-/* =====================================================
-   DASHBOARD
-===================================================== */
 
 #dashboard {
 
@@ -395,11 +454,6 @@ h1 {
 
 }
 
-
-/* =====================================================
-   MAIN PRICE
-===================================================== */
-
 .main-price {
 
     padding: 9px;
@@ -445,44 +499,33 @@ h1 {
 
 }
 
+.main-price-values {
 
-/* =====================================================
-   BANK ADJUSTED + LIVE
-===================================================== */
+    display: flex;
 
-.price-comparison {
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 18px;
 
     width: 100%;
 
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    align-items:
-        center;
-
-    gap: 12px;
-
 }
 
-.price-side {
+.main-price-side {
+
+    flex: 1;
 
     min-width: 0;
 
     display: flex;
 
-    flex-direction:
-        column;
+    flex-direction: column;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
-
-    text-align:
-        center;
+    justify-content: center;
 
 }
 
@@ -495,8 +538,6 @@ h1 {
 
     margin-bottom: 3px;
 
-    line-height: 1.2;
-
 }
 
 .main-price-number {
@@ -505,66 +546,29 @@ h1 {
 
     font-weight: 850;
 
-    line-height: 1.15;
-
-    white-space:
-        nowrap;
+    white-space: nowrap;
 
 }
 
-.live-price-row {
+.live-main-number-row {
 
     display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
-    gap: 6px;
+    gap: 7px;
 
 }
 
-.live-arrow {
-
-    display: inline-flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
+.live-main-number {
 
     font-size: 25px;
 
-    font-weight: 400;
+    font-weight: 850;
 
-    line-height: 1;
-
-    background:
-        transparent;
-
-    border:
-        none;
-
-    padding: 0;
-
-    margin: 0;
-
-}
-
-.live-arrow.up {
-
-    color:
-        #34d399;
-
-}
-
-.live-arrow.down {
-
-    color:
-        #f87171;
+    white-space: nowrap;
 
 }
 
@@ -740,7 +744,7 @@ h1 {
 
 
 /* =====================================================
-   REALIZED P/L
+   REALIZED
 ===================================================== */
 
 .realized-combined {
@@ -956,6 +960,25 @@ h1 {
 
     }
 
+    .main-price-values {
+
+        gap: 8px;
+
+    }
+
+    .main-price-number,
+    .live-main-number {
+
+        font-size: 21px;
+
+    }
+
+    .main-price-title {
+
+        font-size: 10px;
+
+    }
+
     .realized-label {
 
         font-size:
@@ -967,33 +990,6 @@ h1 {
 
         font-size:
             9px;
-
-    }
-
-    .price-comparison {
-
-        gap: 8px;
-
-    }
-
-    .main-price-title {
-
-        font-size:
-            10px;
-
-    }
-
-    .main-price-number {
-
-        font-size:
-            22px;
-
-    }
-
-    .live-arrow {
-
-        font-size:
-            22px;
 
     }
 
@@ -1019,10 +1015,16 @@ h1 {
 Financial Dashboard
 </h1>
 
-<div
-class="today"
-id="today">
--
+<div class="today">
+
+<span id="today">-</span>
+
+<span
+class="update-time"
+id="updateTime">
+Last Update: -
+</span>
+
 </div>
 
 </div>
@@ -1038,10 +1040,20 @@ id="today">
 Live Market
 </div>
 
+<div class="live-number-row">
+
 <div
 class="live-number"
 id="currentPrice">
 -
+</div>
+
+<div
+class="price-arrow arrow-flat"
+id="topPriceArrow">
+→
+</div>
+
 </div>
 
 </div>
@@ -1125,10 +1137,10 @@ class="main-price"
 id="overallMainPrice">
 
 
-<div class="price-comparison">
+<div class="main-price-values">
 
 
-<div class="price-side">
+<div class="main-price-side">
 
 <div class="main-price-title">
 Bank-Adjusted
@@ -1143,35 +1155,33 @@ id="overallAdjusted">
 </div>
 
 
-<div class="price-side">
+<div class="main-price-side">
 
 <div class="main-price-title">
 Live
 </div>
 
-<div class="live-price-row">
+<div class="live-main-number-row">
 
 <div
-class="main-price-number"
-id="overallLivePrice">
+class="live-main-number"
+id="overallLive">
 -
 </div>
 
-<span
-class="live-arrow"
-id="overallLiveArrow">
--
-</span>
-
+<div
+class="price-arrow arrow-flat"
+id="overallPriceArrow">
+→
 </div>
 
 </div>
 
-
 </div>
 
 
-<!-- UNREALIZED PERCENTAGES -->
+</div>
+
 
 <div class="pl-container">
 
@@ -1209,8 +1219,6 @@ id="overallPLBank">
 
 </div>
 
-
-<!-- UNREALIZED AMOUNTS -->
 
 <div class="pl-container">
 
@@ -1412,10 +1420,10 @@ class="main-price"
 id="sixMainPrice">
 
 
-<div class="price-comparison">
+<div class="main-price-values">
 
 
-<div class="price-side">
+<div class="main-price-side">
 
 <div class="main-price-title">
 Bank-Adjusted
@@ -1430,25 +1438,25 @@ id="sixAdjusted">
 </div>
 
 
-<div class="price-side">
+<div class="main-price-side">
 
 <div class="main-price-title">
 Live
 </div>
 
-<div class="live-price-row">
+<div class="live-main-number-row">
 
 <div
-class="main-price-number"
-id="sixLivePrice">
+class="live-main-number"
+id="sixLive">
 -
 </div>
 
-<span
-class="live-arrow"
-id="sixLiveArrow">
--
-</span>
+<div
+class="price-arrow arrow-flat"
+id="sixPriceArrow">
+→
+</div>
 
 </div>
 
@@ -1709,10 +1717,10 @@ class="main-price"
 id="lastMainPrice">
 
 
-<div class="price-comparison">
+<div class="main-price-values">
 
 
-<div class="price-side">
+<div class="main-price-side">
 
 <div class="main-price-title">
 Bank-Adjusted
@@ -1727,25 +1735,25 @@ id="lastAdjusted">
 </div>
 
 
-<div class="price-side">
+<div class="main-price-side">
 
 <div class="main-price-title">
 Live
 </div>
 
-<div class="live-price-row">
+<div class="live-main-number-row">
 
 <div
-class="main-price-number"
-id="lastLivePrice">
+class="live-main-number"
+id="lastLive">
 -
 </div>
 
-<span
-class="live-arrow"
-id="lastLiveArrow">
--
-</span>
+<div
+class="price-arrow arrow-flat"
+id="lastPriceArrow">
+→
+</div>
 
 </div>
 
@@ -2100,88 +2108,83 @@ function setProfitLossClass(
 
 
 /* =====================================================
-   LIVE ARROW
+   PRICE ARROW
 ===================================================== */
 
-function displayLivePrice(
-    prefix,
+function setPriceArrow(
+    id,
     currentPrice,
-    adjustedPrice
+    previousPrice
 ) {
 
-    safeText(
+    const el = $(id);
 
-        prefix +
-        "LivePrice",
-
-        formatNumber(
-            currentPrice
-        )
-
-    );
-
-
-    const arrow = $(
-        prefix +
-        "LiveArrow"
-    );
-
-
-    if (!arrow) {
+    if (!el) {
 
         return;
 
     }
 
 
-    arrow.classList.remove(
-        "up",
-        "down"
+    el.classList.remove(
+        "arrow-up",
+        "arrow-down",
+        "arrow-flat"
     );
 
 
     if (
-
-        Number(currentPrice)
-
-        >
-
-        Number(adjustedPrice)
-
+        !Number.isFinite(Number(currentPrice))
+        ||
+        !Number.isFinite(Number(previousPrice))
     ) {
 
-        arrow.textContent =
-            "↑";
+        el.textContent = "→";
 
-        arrow.classList.add(
-            "up"
+        el.classList.add(
+            "arrow-flat"
+        );
+
+        return;
+
+    }
+
+
+    if (
+        Number(currentPrice)
+        >
+        Number(previousPrice)
+    ) {
+
+        el.textContent = "↑";
+
+        el.classList.add(
+            "arrow-up"
         );
 
     }
 
     else if (
-
         Number(currentPrice)
-
         <
-
-        Number(adjustedPrice)
-
+        Number(previousPrice)
     ) {
 
-        arrow.textContent =
-            "↓";
+        el.textContent = "↓";
 
-        arrow.classList.add(
-            "down"
+        el.classList.add(
+            "arrow-down"
         );
 
     }
 
     else {
 
-        arrow.textContent =
-            "−";
+        el.textContent = "→";
+
+        el.classList.add(
+            "arrow-flat"
+        );
 
     }
 
@@ -3334,9 +3337,24 @@ function displaySection(
     );
 
 
-    displayLivePrice(
+    safeText(
 
-        prefix,
+        prefix +
+        "Live",
+
+        formatNumber(
+
+            result.currentPrice
+
+        )
+
+    );
+
+
+    setPriceArrow(
+
+        prefix +
+        "PriceArrow",
 
         result.currentPrice,
 
@@ -4105,6 +4123,111 @@ async function init() {
         "%"
 
     );
+
+
+    /* آخرین زمان آپدیت */
+
+    const now = new Date();
+
+    const updateTime =
+
+        now.toLocaleTimeString(
+
+            "en-US",
+
+            {
+
+                hour:
+                    "2-digit",
+
+                minute:
+                    "2-digit",
+
+                second:
+                    "2-digit",
+
+                hour12:
+                    false
+
+            }
+
+        );
+
+
+    safeText(
+
+        "updateTime",
+
+        "Last Update: " +
+
+        updateTime
+
+    );
+
+
+    /* فلش بالای صفحه */
+
+    let previousTopPrice = null;
+
+
+    try {
+
+        const savedPrice =
+
+            sessionStorage.getItem(
+
+                "previousLivePrice"
+
+            );
+
+
+        if (
+            savedPrice !== null
+        ) {
+
+            previousTopPrice =
+
+                Number(
+
+                    savedPrice
+
+                );
+
+        }
+
+    }
+
+    catch (e) {}
+
+
+    setPriceArrow(
+
+        "topPriceArrow",
+
+        currentPrice,
+
+        previousTopPrice
+
+    );
+
+
+    try {
+
+        sessionStorage.setItem(
+
+            "previousLivePrice",
+
+            String(
+
+                currentPrice
+
+            )
+
+        );
+
+    }
+
+    catch (e) {}
 
 
     const transactions =
