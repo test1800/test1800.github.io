@@ -140,6 +140,11 @@ h1 {
 
 }
 
+
+/* =====================================================
+   TOP LIVE PRICE
+===================================================== */
+
 .live-price {
 
     margin-top: 12px;
@@ -182,7 +187,62 @@ h1 {
 
     font-weight: 850;
 
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 7px;
+
 }
+
+
+/* =====================================================
+   THIN LIVE ARROW
+===================================================== */
+
+.price-arrow {
+
+    display: inline-block;
+
+    font-size: 22px;
+
+    font-weight: 300;
+
+    line-height: 1;
+
+    background: none;
+
+    border: none;
+
+    padding: 0;
+
+    margin: 0;
+
+    vertical-align: middle;
+
+}
+
+.price-arrow.up {
+
+    color:
+        #34d399;
+
+}
+
+.price-arrow.down {
+
+    color:
+        #f87171;
+
+}
+
+.price-arrow.equal {
+
+    color:
+        #94a3b8;
+
+}
+
 
 .live-footer {
 
@@ -262,6 +322,11 @@ h1 {
         #f8fafc;
 
 }
+
+
+/* =====================================================
+   DASHBOARD
+===================================================== */
 
 #dashboard {
 
@@ -385,6 +450,11 @@ h1 {
 
 }
 
+
+/* =====================================================
+   MAIN PRICE
+===================================================== */
+
 .main-price {
 
     padding: 9px;
@@ -392,9 +462,6 @@ h1 {
     margin-bottom: 9px;
 
     border-radius: 13px;
-
-    text-align:
-        center;
 
 }
 
@@ -432,20 +499,35 @@ h1 {
 
 
 /* =====================================================
-   BANK-ADJUSTED PRICE HEADER + LIVE PRICE
+   PRICE HEADER
 ===================================================== */
 
-.main-price-title-row {
+.price-header {
 
-    display: flex;
+    display: grid;
 
-    align-items: center;
+    grid-template-columns:
+        1fr
+        1fr;
 
-    justify-content: space-between;
+    align-items:
+        center;
 
-    gap: 10px;
+    gap: 8px;
 
-    margin-bottom: 3px;
+}
+
+.adjusted-side {
+
+    text-align:
+        left;
+
+}
+
+.live-side {
+
+    text-align:
+        right;
 
 }
 
@@ -456,98 +538,48 @@ h1 {
 
     font-size: 11px;
 
-    white-space:
-        nowrap;
+    margin-bottom: 3px;
 
 }
-
-.live-adjusted-price {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: flex-end;
-
-    gap: 6px;
-
-    min-width: 0;
-
-}
-
-.live-adjusted-number {
-
-    font-size: 11px;
-
-    font-weight: 800;
-
-    color:
-        #f8fafc;
-
-    white-space:
-        nowrap;
-
-}
-
-
-/* باریک و بدون بک‌گراند */
-
-.price-arrow {
-
-    display: inline-block;
-
-    width: 8px;
-
-    height: 8px;
-
-    border-right:
-        1.5px solid
-        currentColor;
-
-    border-top:
-        1.5px solid
-        currentColor;
-
-    flex-shrink: 0;
-
-}
-
-
-/* فلش رو به بالا */
-
-.price-arrow.up {
-
-    color:
-        #34d399;
-
-    transform:
-        rotate(-45deg);
-
-}
-
-
-/* فلش رو به پایین */
-
-.price-arrow.down {
-
-    color:
-        #f87171;
-
-    transform:
-        rotate(135deg);
-
-}
-
-
-/* =====================================================
-   MAIN BANK-ADJUSTED PRICE
-===================================================== */
 
 .main-price-number {
 
     font-size: 25px;
 
     font-weight: 850;
+
+    line-height: 1.1;
+
+}
+
+.live-card-label {
+
+    color:
+        #94a3b8;
+
+    font-size: 10px;
+
+    margin-bottom: 3px;
+
+}
+
+.live-card-number {
+
+    font-size: 25px;
+
+    font-weight: 850;
+
+    line-height: 1.1;
+
+    display: inline-flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        flex-end;
+
+    gap: 6px;
 
 }
 
@@ -723,7 +755,7 @@ h1 {
 
 
 /* =====================================================
-   COMBINED REALIZED P/L BOX
+   COMBINED REALIZED P/L
 ===================================================== */
 
 .realized-combined {
@@ -889,7 +921,6 @@ h1 {
 
 }
 
-
 @media (max-width:650px) {
 
     .container {
@@ -953,26 +984,18 @@ h1 {
 
     }
 
-    .main-price-title-row {
+    .price-header {
 
-        gap: 6px;
+        grid-template-columns:
+            1fr 1fr;
 
     }
 
-    .live-adjusted-number {
+    .main-price-number,
+    .live-card-number {
 
         font-size:
-            10px;
-
-    }
-
-    .price-arrow {
-
-        width:
-            7px;
-
-        height:
-            7px;
+            22px;
 
     }
 
@@ -1018,9 +1041,17 @@ Live Market Price
 </div>
 
 <div
-class="live-number"
-id="currentPrice">
+class="live-number">
+
+<span id="currentPrice">
 -
+</span>
+
+<span
+id="topPriceArrow"
+class="price-arrow equal">
+</span>
+
 </div>
 
 </div>
@@ -1104,34 +1135,47 @@ class="main-price"
 id="overallMainPrice">
 
 
-<div class="main-price-title-row">
+<div class="price-header">
+
+
+<div class="adjusted-side">
 
 <div class="main-price-title">
 Bank-Adjusted Price
 </div>
 
-<div class="live-adjusted-price">
-
-<span
-class="live-adjusted-number"
-id="overallLiveAdjusted">
--
-</span>
-
-<span
-class="price-arrow"
-id="overallPriceArrow">
-</span>
-
-</div>
-
-</div>
-
-
 <div
 class="main-price-number"
 id="overallAdjusted">
 -
+</div>
+
+</div>
+
+
+<div class="live-side">
+
+<div class="live-card-label">
+Live Price
+</div>
+
+<div
+class="live-card-number">
+
+<span id="overallLivePrice">
+-
+</span>
+
+<span
+id="overallPriceArrow"
+class="price-arrow equal">
+</span>
+
+</div>
+
+</div>
+
+
 </div>
 
 
@@ -1372,34 +1416,47 @@ class="main-price"
 id="sixMainPrice">
 
 
-<div class="main-price-title-row">
+<div class="price-header">
+
+
+<div class="adjusted-side">
 
 <div class="main-price-title">
 Bank-Adjusted Price
 </div>
 
-<div class="live-adjusted-price">
-
-<span
-class="live-adjusted-number"
-id="sixLiveAdjusted">
--
-</span>
-
-<span
-class="price-arrow"
-id="sixPriceArrow">
-</span>
-
-</div>
-
-</div>
-
-
 <div
 class="main-price-number"
 id="sixAdjusted">
 -
+</div>
+
+</div>
+
+
+<div class="live-side">
+
+<div class="live-card-label">
+Live Price
+</div>
+
+<div
+class="live-card-number">
+
+<span id="sixLivePrice">
+-
+</span>
+
+<span
+id="sixPriceArrow"
+class="price-arrow equal">
+</span>
+
+</div>
+
+</div>
+
+
 </div>
 
 
@@ -1654,34 +1711,47 @@ class="main-price"
 id="lastMainPrice">
 
 
-<div class="main-price-title-row">
+<div class="price-header">
+
+
+<div class="adjusted-side">
 
 <div class="main-price-title">
 Bank-Adjusted Price
 </div>
 
-<div class="live-adjusted-price">
-
-<span
-class="live-adjusted-number"
-id="lastLiveAdjusted">
--
-</span>
-
-<span
-class="price-arrow"
-id="lastPriceArrow">
-</span>
-
-</div>
-
-</div>
-
-
 <div
 class="main-price-number"
 id="lastAdjusted">
 -
+</div>
+
+</div>
+
+
+<div class="live-side">
+
+<div class="live-card-label">
+Live Price
+</div>
+
+<div
+class="live-card-number">
+
+<span id="lastLivePrice">
+-
+</span>
+
+<span
+id="lastPriceArrow"
+class="price-arrow equal">
+</span>
+
+</div>
+
+</div>
+
+
 </div>
 
 
@@ -2030,88 +2100,86 @@ function setProfitLossClass(
 
 
 /* =====================================================
-   LIVE PRICE ARROW
+   PRICE ARROW
 ===================================================== */
 
-function updateLiveAdjustedPrice(
-
-    prefix,
-
+function setPriceArrow(
+    id,
     currentPrice,
-
-    previousAdjustedPrice
-
+    previousPrice
 ) {
 
-    const livePriceEl =
-        $(prefix + "LiveAdjusted");
+    const el = $(id);
 
-    const arrowEl =
-        $(prefix + "PriceArrow");
-
-
-    if (
-        !livePriceEl ||
-        !arrowEl
-    ) {
+    if (!el) {
 
         return;
 
     }
 
 
-    /* نمایش قیمت لایو */
-
-    livePriceEl.textContent =
-
-        formatNumber(
-
-            currentPrice
-
-        );
-
-
-    /* حذف وضعیت قبلی */
-
-    arrowEl.classList.remove(
-
+    el.classList.remove(
         "up",
-
-        "down"
-
+        "down",
+        "equal"
     );
 
 
-    /* مقایسه قیمت لایو با Bank-Adjusted Price */
-
     if (
-
-        Number(currentPrice) >
-
-        Number(previousAdjustedPrice)
-
+        !Number.isFinite(Number(currentPrice))
+        ||
+        !Number.isFinite(Number(previousPrice))
     ) {
 
-        arrowEl.classList.add(
+        el.textContent = "";
 
+        el.classList.add(
+            "equal"
+        );
+
+        return;
+
+    }
+
+
+    const current =
+        Number(currentPrice);
+
+
+    const previous =
+        Number(previousPrice);
+
+
+    if (
+        current > previous
+    ) {
+
+        el.textContent = "↑";
+
+        el.classList.add(
             "up"
-
         );
 
     }
 
     else if (
-
-        Number(currentPrice) <
-
-        Number(previousAdjustedPrice)
-
+        current < previous
     ) {
 
-        arrowEl.classList.add(
+        el.textContent = "↓";
 
+        el.classList.add(
             "down"
+        );
 
+    }
+
+    else {
+
+        el.textContent = "→";
+
+        el.classList.add(
+            "equal"
         );
 
     }
@@ -2362,15 +2430,10 @@ function daysBetweenInclusive(
         Math.floor(
 
             (
-
                 endDate -
-
                 startDate
-
             )
-
             /
-
             86400000
 
         )
@@ -2849,11 +2912,8 @@ function calculatePortfolio(
         lots.reduce(
 
             (
-
                 sum,
-
                 lot
-
             ) =>
 
                 sum +
@@ -2870,11 +2930,8 @@ function calculatePortfolio(
         lots.reduce(
 
             (
-
                 sum,
-
                 lot
-
             ) =>
 
                 sum
@@ -2897,7 +2954,6 @@ function calculatePortfolio(
         ?
 
         paidAmount /
-
         currentQuantity
 
         :
@@ -2917,7 +2973,6 @@ function calculatePortfolio(
             compoundValue(
 
                 lot.amount *
-
                 lot.price,
 
                 lot.date,
@@ -2945,7 +3000,6 @@ function calculatePortfolio(
         ?
 
         bankValue /
-
         currentQuantity
 
         :
@@ -3597,6 +3651,24 @@ function displaySection(
 
     }
 
+
+    /* =================================================
+       LIVE PRICE IN CARD
+    ================================================= */
+
+    safeText(
+
+        prefix +
+        "LivePrice",
+
+        formatNumber(
+
+            result.currentPrice
+
+        )
+
+    );
+
 }
 
 
@@ -3759,7 +3831,7 @@ async function getCurrentPrice(
 
 
 /* =====================================================
-   REFRESH AND SCROLL POSITION
+   REFRESH AND SCROLL
 ===================================================== */
 
 let countdownTimer =
@@ -4041,6 +4113,80 @@ async function init() {
     );
 
 
+    /* =================================================
+       COMPARE LIVE PRICE WITH PREVIOUS PRICE
+    ================================================= */
+
+    const previousPrice =
+
+        Number(
+
+            localStorage.getItem(
+
+                "previousLivePrice"
+
+            )
+
+        );
+
+
+    setPriceArrow(
+
+        "topPriceArrow",
+
+        currentPrice,
+
+        previousPrice
+
+    );
+
+
+    setPriceArrow(
+
+        "overallPriceArrow",
+
+        currentPrice,
+
+        previousPrice
+
+    );
+
+
+    setPriceArrow(
+
+        "sixPriceArrow",
+
+        currentPrice,
+
+        previousPrice
+
+    );
+
+
+    setPriceArrow(
+
+        "lastPriceArrow",
+
+        currentPrice,
+
+        previousPrice
+
+    );
+
+
+    localStorage.setItem(
+
+        "previousLivePrice",
+
+        String(
+
+            currentPrice
+
+        )
+
+    );
+
+
     const transactions =
 
         Array.isArray(
@@ -4114,17 +4260,6 @@ async function init() {
     );
 
 
-    updateLiveAdjustedPrice(
-
-        "overall",
-
-        currentPrice,
-
-        overall.bankAdjustedPrice
-
-    );
-
-
     /* =================================================
        LAST 6
     ================================================= */
@@ -4164,17 +4299,6 @@ async function init() {
     );
 
 
-    updateLiveAdjustedPrice(
-
-        "six",
-
-        currentPrice,
-
-        six.bankAdjustedPrice
-
-    );
-
-
     /* =================================================
        LAST PERIOD
     ================================================= */
@@ -4208,17 +4332,6 @@ async function init() {
         last,
 
         "last"
-
-    );
-
-
-    updateLiveAdjustedPrice(
-
-        "last",
-
-        currentPrice,
-
-        last.bankAdjustedPrice
 
     );
 
