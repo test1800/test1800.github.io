@@ -1336,8 +1336,6 @@ id="overallValue">
 </div>
 
 
-<!-- Realized P/L LEFT -->
-
 <div class="metric realized-combined">
 
 <div class="realized-row">
@@ -1371,8 +1369,6 @@ id="overallRealizedBank">
 
 </div>
 
-
-<!-- Bank Value RIGHT -->
 
 <div class="metric">
 
@@ -1584,6 +1580,7 @@ id="sixPaid">
 
 </div>
 
+
 </div>
 
 
@@ -1620,8 +1617,6 @@ id="sixValue">
 </div>
 
 
-<!-- Realized P/L LEFT -->
-
 <div class="metric realized-combined">
 
 <div class="realized-row">
@@ -1655,8 +1650,6 @@ id="sixRealizedBank">
 
 </div>
 
-
-<!-- Bank Value RIGHT -->
 
 <div class="metric">
 
@@ -1921,8 +1914,6 @@ id="lastValue">
 </div>
 
 
-<!-- Realized P/L LEFT -->
-
 <div class="metric realized-combined">
 
 <div class="realized-row">
@@ -1956,8 +1947,6 @@ id="lastRealizedBank">
 
 </div>
 
-
-<!-- Bank Value RIGHT -->
 
 <div class="metric">
 
@@ -2114,6 +2103,7 @@ function setProfitLossClass(
 
 /* =====================================================
    PRICE ARROW
+   ALL ARROWS USE LIVE PRICE CHANGE BETWEEN REFRESHES
 ===================================================== */
 
 function setPriceArrow(
@@ -2138,10 +2128,21 @@ function setPriceArrow(
     );
 
 
+    const current =
+        Number(currentPrice);
+
+    const previous =
+        Number(previousPrice);
+
+
     if (
-        !Number.isFinite(Number(currentPrice))
+
+        !Number.isFinite(current)
+
         ||
-        !Number.isFinite(Number(previousPrice))
+
+        !Number.isFinite(previous)
+
     ) {
 
         el.textContent = "→";
@@ -2156,9 +2157,11 @@ function setPriceArrow(
 
 
     if (
-        Number(currentPrice)
-        >
-        Number(previousPrice)
+
+        current >
+
+        previous
+
     ) {
 
         el.textContent = "↑";
@@ -2170,9 +2173,11 @@ function setPriceArrow(
     }
 
     else if (
-        Number(currentPrice)
-        <
-        Number(previousPrice)
+
+        current <
+
+        previous
+
     ) {
 
         el.textContent = "↓";
@@ -2439,10 +2444,15 @@ function daysBetweenInclusive(
         Math.floor(
 
             (
+
                 endDate -
+
                 startDate
+
             )
+
             /
+
             86400000
 
         )
@@ -2963,6 +2973,7 @@ function calculatePortfolio(
         ?
 
         paidAmount /
+
         currentQuantity
 
         :
@@ -3009,6 +3020,7 @@ function calculatePortfolio(
         ?
 
         bankValue /
+
         currentQuantity
 
         :
@@ -3296,7 +3308,9 @@ function displaySection(
 
     result,
 
-    prefix
+    prefix,
+
+    previousLivePrice
 
 ) {
 
@@ -3356,6 +3370,12 @@ function displaySection(
     );
 
 
+    /*
+       ALL SECTION ARROWS NOW COMPARE
+       CURRENT LIVE PRICE WITH
+       THE LIVE PRICE FROM PREVIOUS REFRESH
+    */
+
     setPriceArrow(
 
         prefix +
@@ -3363,7 +3383,7 @@ function displaySection(
 
         result.currentPrice,
 
-        result.bankAdjustedPrice
+        previousLivePrice
 
     );
 
@@ -4130,7 +4150,9 @@ async function init() {
     );
 
 
-    /* آخرین زمان آپدیت */
+    /* =================================================
+       LAST UPDATE TIME
+    ================================================= */
 
     const now = new Date();
 
@@ -4170,9 +4192,12 @@ async function init() {
     );
 
 
-    /* فلش بالای صفحه */
+    /* =================================================
+       PREVIOUS LIVE PRICE
+       USED BY ALL ARROWS
+    ================================================= */
 
-    let previousTopPrice = null;
+    let previousLivePrice = null;
 
 
     try {
@@ -4187,16 +4212,39 @@ async function init() {
 
 
         if (
+
             savedPrice !== null
+
+            &&
+
+            savedPrice !== ""
+
         ) {
 
-            previousTopPrice =
+            const parsedPrice =
 
                 Number(
 
                     savedPrice
 
                 );
+
+
+            if (
+
+                Number.isFinite(
+
+                    parsedPrice
+
+                )
+
+            ) {
+
+                previousLivePrice =
+
+                    parsedPrice;
+
+            }
 
         }
 
@@ -4205,16 +4253,25 @@ async function init() {
     catch (e) {}
 
 
+    /* =================================================
+       TOP PRICE ARROW
+    ================================================= */
+
     setPriceArrow(
 
         "topPriceArrow",
 
         currentPrice,
 
-        previousTopPrice
+        previousLivePrice
 
     );
 
+
+    /*
+       Save CURRENT price only AFTER
+       reading the PREVIOUS price.
+    */
 
     try {
 
@@ -4303,7 +4360,9 @@ async function init() {
 
         overall,
 
-        "overall"
+        "overall",
+
+        previousLivePrice
 
     );
 
@@ -4342,7 +4401,9 @@ async function init() {
 
         six,
 
-        "six"
+        "six",
+
+        previousLivePrice
 
     );
 
@@ -4379,7 +4440,9 @@ async function init() {
 
         last,
 
-        "last"
+        "last",
+
+        previousLivePrice
 
     );
 
