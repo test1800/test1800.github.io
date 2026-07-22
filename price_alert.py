@@ -1,69 +1,78 @@
 import json
 import os
-import time
+import requests
 from datetime import datetime, timezone
 
-import requests
-
-
-# =========================================================
+# =====================================================
 # SETTINGS
-# =========================================================
+# =====================================================
 
-PRICE_API = os.environ.get(
-    "PRICE_API",
-    "https://api.nobitex.ir/v2/orderbook/USDTIRT"
-)
+API_URL = "https://api.nobitex.ir/market/stats"
 
 HISTORY_FILE = "price_history.json"
 
-# تغییر شدید قیمت
+# مقدار تغییر هشدار
 ALERT_PERCENT = 1.0
 
-# فاصله مقایسه: حدود 1 ساعت
-COMPARE_SECONDS = 60 * 60
+# مقایسه با حدود 1 ساعت قبل
+COMPARE_MINUTES = 60
 
-# فقط 2 ساعت اخیر نگهداری شود
-MAX_HISTORY_SECONDS = 2 * 60 * 60
+# نگهداری حداکثر 2 ساعت داده
+KEEP_MINUTES = 120
+
+# اگر قیمت نوبیتکس در دسترس نبود
+# برنامه بدون خطا پایان پیدا می کند
+FAIL_SILENT = True
 
 
-# =========================================================
-# GET CURRENT PRICE
-# =========================================================
+# =====================================================
+# GET PRICE
+# =====================================================
 
-def get_current_price():
+def get_price():
 
-    response = requests.get(
-        PRICE_API,
-        timeout=20
-    )
+    try:
 
-    response.raise_for_status()
-
-    data = response.json()
-
-    # قیمت آخرین معامله
-    if "lastTradePrice" in data:
-        price = float(data["lastTradePrice"])
-
-    # پشتیبانی از ساختارهای دیگر API
-    elif "last" in data:
-        price = float(data["last"])
-
-    elif "lastPrice" in data:
-        price = float(data["lastPrice"])
-
-    else:
-        raise ValueError(
-            "Could not find current price in API response"
+        response = requests.get(
+            API_URL,
+            params={
+                "srcCurrency": "usdt",
+                "dstCurrency": "rls"
+            },
+            headers={
+                "User-Agent": "Mozilla/5.0"
+            },
+            timeout=20
         )
 
-    return price
+        response.raise_for_status()
+
+        data = response.json()
+
+        price = data["stats"]["usdt-rls"]["latest"]
+
+        price = float(price)
+
+        # تبدیل ریال به تومان
+        price = price / 10
+
+        return price
+
+    except Exception as e:
+
+        print("WARNING: Unable to get price from Nobitex API")
+
+        print(repr(e))
+
+        if FAIL_SILENT:
+            return None
+
+        raise
 
 
-# =========================================================
+# =====================================================
 # LOAD HISTORY
-# =========================================================
+# =====================================================
 
 def load_history():
 
@@ -82,19 +91,22 @@ def load_history():
             data = json.load(file)
 
             if isinstance(data, list):
-
                 return data
 
             return []
 
-    except Exception:
+    except Exception as e:
+
+        print("WARNING: Cannot read price history")
+
+        print(repr(e))
 
         return []
 
 
-# =========================================================
+# =====================================================
 # SAVE HISTORY
-# =========================================================
+# =====================================================
 
 def save_history(history):
 
@@ -112,26 +124,27 @@ def save_history(history):
         )
 
 
-# =========================================================
-# FIND PRICE FROM ABOUT 1 HOUR AGO
-# =========================================================
+# =====================================================
+# FIND PRICE FROM 1 HOUR AGO
+# =====================================================
 
-def find_old_price(
-    history,
-    current_timestamp
-):
-
-    target_timestamp = (
-
-        current_timestamp
-
-        - COMPARE_SECONDS
-
-    )
+def find_old_price(history):
 
     if not history:
 
         return None
+
+    now = datetime.now(timezone.utc)
+
+    target_timestamp = (
+
+        now.timestamp()
+
+        -
+
+        COMPARE_MINUTES * 60
+
+    )
 
     closest = None
 
@@ -145,30 +158,19 @@ def find_old_price(
                 item["timestamp"]
             )
 
-            price = float(
-                item["price"]
+            difference = abs(
+
+                timestamp
+
+                -
+
+                target_timestamp
+
             )
-
-        except Exception:
-
-            continue
-
-        difference = abs(
-
-            timestamp
-
-            - target_timestamp
-
-        )
-
-        # فقط داده‌های حداکثر 10 دقیقه
-        # دور از نقطه یک ساعت قبل قبول شوند
-
-        if difference <= 10 * 60:
 
             if (
 
-                closest_difference is None
+                closest is None
 
                 or
 
@@ -176,167 +178,203 @@ def find_old_price(
 
             ):
 
-                closest = price
+                closest = item
 
                 closest_difference = difference
 
-    return closest
+        except Exception:
+
+            continue
+
+    if closest is None:
+
+        return None
+
+    # حداقل حدود 50 دقیقه از داده گذشته باشد
+    if closest_difference > 10 * 60:
+
+        return None
+
+    return float(
+        closest["price"]
+    )
 
 
-# =========================================================
+# =====================================================
+# CALCULATE CHANGE
+# =====================================================
+
+def calculate_change(
+
+    current_price,
+
+    old_price
+
+):
+
+    if (
+
+        old_price is None
+
+        or
+
+        old_price == 0
+
+    ):
+
+        return None
+
+    return (
+
+        (
+
+            current_price
+
+            -
+
+            old_price
+
+        )
+
+        /
+
+        old_price
+
+    ) * 100
+
+
+# =====================================================
 # MAIN
-# =========================================================
+# =====================================================
 
 def main():
 
-    now = time.time()
+    print("=" * 50)
 
-    now_iso = datetime.now(
-        timezone.utc
-    ).isoformat()
+    print("PRICE CHECK STARTED")
+
+    print("=" * 50)
+
+
+    # -----------------------------------------------
+    # GET CURRENT PRICE
+    # -----------------------------------------------
+
+    current_price = get_price()
+
+
+    if current_price is None:
+
+        print(
+            "No new price received."
+        )
+
+        print(
+            "Keeping existing history."
+        )
+
+        print(
+            "Workflow will finish successfully."
+        )
+
+        return
+
 
     print(
-        "Getting current USDT price..."
+        f"Current price: {current_price:,.0f}"
     )
 
-    current_price = get_current_price()
 
-    print(
-        f"Current price: {current_price}"
-    )
+    # -----------------------------------------------
+    # LOAD HISTORY
+    # -----------------------------------------------
 
     history = load_history()
 
 
-    # =====================================================
-    # REMOVE DATA OLDER THAN 2 HOURS
-    # =====================================================
-
-    history = [
-
-        item
-
-        for item in history
-
-        if (
-
-            isinstance(item, dict)
-
-            and
-
-            float(
-                item.get(
-                    "timestamp",
-                    0
-                )
-            )
-
-            >=
-
-            now
-
-            - MAX_HISTORY_SECONDS
-
-        )
-
-    ]
-
-
-    # =====================================================
-    # FIND PRICE 1 HOUR AGO
-    # =====================================================
+    # -----------------------------------------------
+    # FIND 1 HOUR OLD PRICE
+    # -----------------------------------------------
 
     old_price = find_old_price(
+        history
+    )
 
-        history,
 
-        now
+    change_percent = calculate_change(
+
+        current_price,
+
+        old_price
 
     )
 
 
-    # =====================================================
-    # CALCULATE CHANGE
-    # =====================================================
-
-    change_percent = None
-
-    if (
-
-        old_price is not None
-
-        and
-
-        old_price > 0
-
-    ):
-
-        change_percent = (
-
-            (
-
-                current_price
-
-                -
-
-                old_price
-
-            )
-
-            /
-
-            old_price
-
-        ) * 100
-
+    if change_percent is not None:
 
         print(
 
-            f"Price 1 hour ago: {old_price}"
+            f"Price about 1 hour ago: "
+            f"{old_price:,.0f}"
 
         )
 
         print(
 
-            f"Change: {change_percent:.3f}%"
+            f"Change: "
+            f"{change_percent:+.2f}%"
 
         )
-
 
     else:
 
         print(
-
-            "Not enough historical data yet."
-
+            "Not enough historical data "
+            "for 1-hour comparison."
         )
 
 
-    # =====================================================
-    # ADD CURRENT PRICE
-    # =====================================================
+    # -----------------------------------------------
+    # SAVE CURRENT PRICE
+    # -----------------------------------------------
+
+    now = datetime.now(
+        timezone.utc
+    )
+
+    new_record = {
+
+        "timestamp":
+            now.timestamp(),
+
+        "time":
+            now.isoformat(),
+
+        "price":
+            current_price
+
+    }
+
 
     history.append(
-
-        {
-
-            "timestamp":
-                now,
-
-            "datetime":
-                now_iso,
-
-            "price":
-                current_price
-
-        }
-
+        new_record
     )
 
 
-    # =====================================================
-    # KEEP ONLY LAST 2 HOURS
-    # =====================================================
+    # -----------------------------------------------
+    # DELETE DATA OLDER THAN 2 HOURS
+    # -----------------------------------------------
+
+    cutoff = (
+
+        now.timestamp()
+
+        -
+
+        KEEP_MINUTES * 60
+
+    )
+
 
     history = [
 
@@ -344,39 +382,38 @@ def main():
 
         for item in history
 
-        if (
+        if float(
 
-            now
-
-            -
-
-            float(
-                item["timestamp"]
+            item.get(
+                "timestamp",
+                0
             )
 
-            <=
-
-            MAX_HISTORY_SECONDS
-
-        )
+        ) >= cutoff
 
     ]
 
 
-    # =====================================================
+    # -----------------------------------------------
     # SAVE
-    # =====================================================
+    # -----------------------------------------------
 
     save_history(
-
         history
+    )
+
+
+    print(
+
+        f"History records: "
+        f"{len(history)}"
 
     )
 
 
-    # =====================================================
-    # ALERT CONDITION
-    # =====================================================
+    # -----------------------------------------------
+    # ALERT
+    # -----------------------------------------------
 
     if (
 
@@ -392,60 +429,42 @@ def main():
 
     ):
 
-        if change_percent > 0:
+        print("")
 
-            direction = "UP"
-
-        else:
-
-            direction = "DOWN"
-
+        print("🚨 PRICE ALERT")
 
         print(
 
-            "===================================="
+            f"Current price: "
+            f"{current_price:,.0f}"
 
         )
 
         print(
 
-            "🚨 PRICE ALERT"
+            f"1 hour ago: "
+            f"{old_price:,.0f}"
 
         )
 
         print(
 
-            f"Direction: {direction}"
+            f"Change: "
+            f"{change_percent:+.2f}%"
 
         )
 
-        print(
+        print("")
 
-            f"Current: {current_price}"
+        # -------------------------------------------
+        # TELEGRAM WILL BE ADDED HERE
+        # -------------------------------------------
 
-        )
-
-        print(
-
-            f"1 hour ago: {old_price}"
-
-        )
-
-        print(
-
-            f"Change: {change_percent:.2f}%"
-
-        )
-
-        print(
-
-            "===================================="
-
-        )
-
-        # فعلاً فقط هشدار در لاگ GitHub Actions
-
-        # مرحله بعد Push Notification را اضافه می‌کنیم
+        # send_telegram_alert(
+        #     current_price,
+        #     old_price,
+        #     change_percent
+        # )
 
     else:
 
@@ -455,6 +474,17 @@ def main():
 
         )
 
+
+    print("")
+
+    print(
+        "PRICE CHECK COMPLETED SUCCESSFULLY"
+    )
+
+
+# =====================================================
+# RUN
+# =====================================================
 
 if __name__ == "__main__":
 
