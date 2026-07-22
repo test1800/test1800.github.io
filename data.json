@@ -1,405 +1,733 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Investment Dashboard</title>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Financial Dashboard</title>
+
+<link rel="manifest" href="manifest.json">
+
+<meta name="theme-color"
+      content="#0b1220">
+
+<link rel="icon"
+      type="image/png"
+      href="icon.png">
+
+<link rel="apple-touch-icon"
+      href="icon.png">
+
 
 <style>
+
 * {
     box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
     margin: 0;
-    width: 100%;
     min-height: 100%;
 }
 
 body {
-    font-family: "Segoe UI", Arial, sans-serif;
+
     color: #f8fafc;
+
+    font-family:
+        Inter,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
     background:
-        radial-gradient(circle at 10% 10%, rgba(37,99,235,.16), transparent 30%),
-        radial-gradient(circle at 90% 20%, rgba(14,165,233,.10), transparent 30%),
-        linear-gradient(135deg, #070b14, #0b1220, #0f172a);
+
+        radial-gradient(
+            circle at 10% 10%,
+            rgba(37,99,235,.16),
+            transparent 28%
+        ),
+
+        radial-gradient(
+            circle at 90% 20%,
+            rgba(14,165,233,.10),
+            transparent 25%
+        ),
+
+        linear-gradient(
+            135deg,
+            #070b14,
+            #0b1220,
+            #0f172a
+        );
+
 }
 
 .container {
+
     width: 100%;
-    max-width: 1450px;
+
+    max-width: 1400px;
+
     margin: auto;
-    padding: 14px 18px 18px;
+
+    padding:
+        12px
+        18px
+        20px;
+
 }
 
-/* HEADER */
-
 header {
-    padding: 14px 18px;
-    margin-bottom: 12px;
+
+    padding:
+        14px
+        18px;
+
+    margin-bottom: 10px;
+
     border-radius: 17px;
-    background: rgba(255,255,255,.045);
-    border: 1px solid rgba(255,255,255,.08);
-    box-shadow: 0 15px 40px rgba(0,0,0,.25);
-    backdrop-filter: blur(15px);
+
+    background:
+
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.07),
+            rgba(255,255,255,.025)
+        );
+
+    border:
+        1px solid
+        rgba(255,255,255,.09);
+
+    box-shadow:
+
+        0 15px 40px
+        rgba(0,0,0,.25);
+
+    backdrop-filter:
+        blur(15px);
+
 }
 
 .header-top {
+
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        center;
+
 }
 
 h1 {
+
     margin: 0;
-    font-size: 25px;
+
+    font-size: 24px;
+
     font-weight: 800;
+
 }
 
 .today {
-    margin-top: 3px;
-    color: #a5b4fc;
+
+    margin-top: 4px;
+
+    color:
+        #a5b4fc;
+
     font-size: 13px;
+
 }
 
 .live-price {
-    margin-top: 11px;
-    padding: 10px 15px;
+
+    margin-top: 12px;
+
+    padding:
+        11px
+        16px;
+
     border-radius: 13px;
-    background: rgba(2,6,23,.55);
-    border: 1px solid rgba(255,255,255,.06);
+
+    background:
+        rgba(2,6,23,.55);
+
+    border:
+        1px solid
+        rgba(255,255,255,.06);
 
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
 }
 
 .live-label {
-    color: #94a3b8;
-    font-size: 12px;
+
+    color:
+        #94a3b8;
+
+    font-size: 11px;
+
 }
 
 .live-number {
-    margin-top: 2px;
+
     font-size: 28px;
+
     font-weight: 850;
+
 }
 
 .live-footer {
-    color: #94a3b8;
-    font-size: 13px;
+
+    color:
+        #94a3b8;
+
+    font-size: 12px;
+
 }
-
-/* ERROR */
-
-.error {
-    padding: 12px;
-    margin-bottom: 12px;
-    border-radius: 10px;
-    color: #f87171;
-    background: rgba(239,68,68,.10);
-    border: 1px solid rgba(239,68,68,.25);
-}
-
-/* DASHBOARD */
 
 #dashboard {
+
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    grid-template-columns:
+        repeat(
+            3,
+            minmax(0, 1fr)
+        );
+
     gap: 12px;
+
 }
 
-/* CARD */
-
 .card {
-    min-width: 0;
+
     padding: 12px;
+
     border-radius: 17px;
-    background: linear-gradient(
-        145deg,
-        rgba(255,255,255,.065),
-        rgba(255,255,255,.025)
-    );
-    border: 1px solid rgba(255,255,255,.08);
-    box-shadow: 0 12px 35px rgba(0,0,0,.22);
-    backdrop-filter: blur(12px);
+
+    background:
+
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.065),
+            rgba(255,255,255,.025)
+        );
+
+    border:
+        1px solid
+        rgba(255,255,255,.08);
+
+    box-shadow:
+
+        0 12px 35px
+        rgba(0,0,0,.22);
+
+    display: flex;
+
+    flex-direction:
+        column;
+
 }
 
 .card-header {
+
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
     margin-bottom: 9px;
+
 }
 
 .card-title {
+
     font-size: 17px;
+
     font-weight: 800;
+
 }
 
 .period-info {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
 
-.trade-count {
-    color: #64748b;
-    font-size: 9px;
-    white-space: nowrap;
+    display: flex;
+
+    align-items:
+        center;
+
+    gap: 5px;
+
 }
 
 .action-badge {
-    padding: 4px 8px;
+
+    padding:
+        4px
+        7px;
+
     border-radius: 6px;
-    font-size: 9px;
-    font-weight: 850;
-    letter-spacing: .5px;
+
+    font-size: 8px;
+
+    font-weight: 800;
+
+    letter-spacing:
+        .3px;
+
 }
 
-.action-in {
-    color: #67e8f9;
-    background: rgba(34,211,238,.10);
-    border: 1px solid rgba(34,211,238,.20);
+.action-buy {
+
+    color:
+        #67e8f9;
+
+    background:
+        rgba(34,211,238,.10);
+
+    border:
+        1px solid
+        rgba(34,211,238,.20);
+
 }
 
-.action-out {
-    color: #fbbf24;
-    background: rgba(245,158,11,.10);
-    border: 1px solid rgba(245,158,11,.20);
+.action-sell {
+
+    color:
+        #fbbf24;
+
+    background:
+        rgba(245,158,11,.10);
+
+    border:
+        1px solid
+        rgba(245,158,11,.20);
+
 }
 
-/* MAIN PRICE */
+.trade-count {
+
+    color:
+        #94a3b8;
+
+    font-size: 8px;
+
+    white-space:
+        nowrap;
+
+}
 
 .main-price {
-    min-height: 158px;
+
     padding: 9px;
+
     margin-bottom: 9px;
+
     border-radius: 13px;
 
+    text-align:
+        center;
+
+    min-height:
+        151px;
+
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
 
-    transition: .3s;
-}
+    flex-direction:
+        column;
 
-.status-green {
-    background:
-        linear-gradient(
-            135deg,
-            rgba(16,185,129,.18),
-            rgba(16,185,129,.035)
-        );
-    border: 1px solid rgba(16,185,129,.32);
-}
+    justify-content:
+        center;
 
-.status-red {
-    background:
-        linear-gradient(
-            135deg,
-            rgba(239,68,68,.18),
-            rgba(239,68,68,.035)
-        );
-    border: 1px solid rgba(239,68,68,.32);
 }
 
 .main-price-title {
-    color: #94a3b8;
-    font-size: 12px;
+
+    color:
+        #94a3b8;
+
+    font-size: 11px;
+
+    margin-bottom: 3px;
+
 }
 
 .main-price-number {
-    margin-top: 2px;
-    font-size: 27px;
+
+    font-size: 25px;
+
     font-weight: 850;
+
+    line-height:
+        1.15;
+
 }
 
-/* P/L */
+.status-green {
+
+    background:
+
+        linear-gradient(
+            135deg,
+            rgba(16,185,129,.18),
+            rgba(16,185,129,.04)
+        );
+
+    border:
+        1px solid
+        rgba(16,185,129,.32);
+
+}
+
+.status-red {
+
+    background:
+
+        linear-gradient(
+            135deg,
+            rgba(239,68,68,.18),
+            rgba(239,68,68,.04)
+        );
+
+    border:
+        1px solid
+        rgba(239,68,68,.32);
+
+}
 
 .pl-container {
+
     display: grid;
-    grid-template-columns: 1fr 1fr;
+
+    grid-template-columns:
+        1fr 1fr;
+
     gap: 7px;
+
     margin-top: 8px;
+
 }
 
 .pl-box {
-    height: 56px;
+
+    height: 58px;
+
     padding: 6px;
 
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+
+    flex-direction:
+        column;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
 
     border-radius: 9px;
-    background: rgba(2,6,23,.38);
-    border: 1px solid rgba(255,255,255,.09);
+
+    background:
+        rgba(2,6,23,.38);
+
+    border:
+        1px solid
+        rgba(255,255,255,.09);
+
 }
 
 .pl-label {
-    color: #94a3b8;
+
+    color:
+        #94a3b8;
+
     font-size: 9px;
+
+    margin-bottom: 3px;
+
+    white-space:
+        nowrap;
+
 }
 
 .pl-value {
-    margin-top: 3px;
+
     font-size: 17px;
+
     font-weight: 850;
+
 }
 
 .profit {
-    color: #34d399;
+
+    color:
+        #34d399;
+
 }
 
 .loss {
-    color: #f87171;
+
+    color:
+        #f87171;
+
 }
 
 .result {
+
+    display: block;
+
     margin-top: 7px;
+
     font-size: 9px;
+
     font-weight: 750;
+
+    line-height:
+        1.2;
+
 }
 
-/* COMPARISON */
-
 .comparison {
+
     display: grid;
-    grid-template-columns: 1fr 1fr;
+
+    grid-template-columns:
+        1fr 1fr;
+
     gap: 7px;
+
 }
 
 .compare-box {
+
     padding: 9px;
+
     border-radius: 9px;
-    background: rgba(255,255,255,.035);
-    border: 1px solid rgba(255,255,255,.055);
+
+    background:
+        rgba(255,255,255,.035);
+
+    border:
+        1px solid
+        rgba(255,255,255,.055);
+
 }
 
 .compare-label {
-    color: #94a3b8;
-    font-size: 10px;
+
+    color:
+        #94a3b8;
+
+    font-size: 9px;
+
+    margin-bottom: 4px;
+
 }
 
 .compare-value {
-    margin-top: 4px;
+
     font-size: 16px;
+
     font-weight: 800;
-    white-space: nowrap;
+
 }
 
-/* METRICS */
-
 .metrics {
+
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+
+    grid-template-columns:
+        repeat(
+            2,
+            1fr
+        );
+
     gap: 7px;
+
     margin-top: 7px;
+
 }
 
 .metric {
+
     padding: 8px;
-    min-height: 58px;
+
+    min-height: 55px;
+
     border-radius: 9px;
-    background: rgba(255,255,255,.035);
-    border: 1px solid rgba(255,255,255,.055);
+
+    background:
+        rgba(255,255,255,.035);
+
+    border:
+        1px solid
+        rgba(255,255,255,.055);
+
 }
 
 .metric-label {
-    color: #94a3b8;
-    font-size: 10px;
+
+    color:
+        #94a3b8;
+
+    font-size: 9px;
+
+    margin-bottom: 4px;
+
 }
 
 .metric-value {
-    margin-top: 4px;
-    font-size: 15px;
+
+    font-size: 14px;
+
     font-weight: 750;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+
+    white-space:
+        nowrap;
+
 }
 
-/* DESKTOP */
+.error {
 
-@media (min-width: 1100px) {
+    padding: 12px;
+
+    margin-bottom: 12px;
+
+    border-radius: 10px;
+
+    color:
+        #f87171;
+
+    background:
+        rgba(239,68,68,.10);
+
+    border:
+        1px solid
+        rgba(239,68,68,.20);
+
+}
+
+.loading {
+
+    text-align:
+        center;
+
+    padding: 35px;
+
+    color:
+        #94a3b8;
+
+}
+
+@media (min-width: 1000px) {
 
     body {
-        overflow-y: hidden;
+
+        overflow-y:
+            hidden;
+
     }
 
-    .container {
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
+}
 
-    header {
-        flex-shrink: 0;
+@media (max-width: 1100px) {
+
+    body {
+
+        overflow-y:
+            auto;
+
     }
 
     #dashboard {
-        flex: 1;
-        min-height: 0;
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0,1fr)
+            );
+
     }
+
 }
-
-/* TABLET */
-
-@media (max-width: 1099px) {
-
-    body {
-        overflow-y: auto;
-    }
-
-    #dashboard {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-/* MOBILE */
 
 @media (max-width: 650px) {
 
     .container {
-        padding: 9px 8px 25px;
+
+        padding:
+            9px
+            8px
+            25px;
+
     }
 
     h1 {
-        font-size: 21px;
-    }
 
-    .live-price {
-        display: block;
-    }
+        font-size:
+            20px;
 
-    .live-footer {
-        margin-top: 5px;
     }
 
     #dashboard {
-        grid-template-columns: 1fr;
+
+        grid-template-columns:
+            1fr;
+
     }
 
-    /* Overall first */
-    .card:nth-child(1) {
-        order: 1;
+    .live-price {
+
+        display:
+            block;
+
     }
 
-    /* Last 6 second */
-    .card:nth-child(2) {
-        order: 2;
+    .live-number {
+
+        margin-top:
+            4px;
+
+        font-size:
+            27px;
+
     }
 
-    /* Last Period third */
-    .card:nth-child(3) {
-        order: 3;
+    .live-footer {
+
+        margin-top:
+            4px;
+
     }
+
+    .card {
+
+        padding:
+            12px;
+
+    }
+
 }
+
 </style>
+
 </head>
 
 <body>
@@ -409,36 +737,67 @@ h1 {
 <header>
 
 <div class="header-top">
+
 <div>
-<h1>Investment Dashboard</h1>
-<div class="today" id="today">-</div>
+
+<h1>
+Financial Dashboard
+</h1>
+
+<div
+class="today"
+id="today">
+-
 </div>
+
+</div>
+
 </div>
 
 <div class="live-price">
 
 <div>
+
 <div class="live-label">
-Live USDT Price
+Live Market Price
 </div>
 
-<div class="live-number" id="currentPrice">
-Loading...
+<div
+class="live-number"
+id="currentPrice">
+-
 </div>
+
 </div>
 
 <div class="live-footer">
+
 Bank Rate:
-<span id="bankRate">40%</span>
+
+<span id="bankRate">
+-
+</span>
+
 </div>
 
 </div>
 
 </header>
 
-<div id="errorBox"></div>
+<div id="errorBox">
+</div>
 
-<div id="dashboard">
+<div
+id="loading"
+class="loading">
+
+Loading...
+
+</div>
+
+<div
+id="dashboard"
+style="display:none;">
 
 <!-- OVERALL -->
 
@@ -450,19 +809,29 @@ Bank Rate:
 Overall Performance
 </div>
 
-<div class="trade-count" id="overallTrades">
+<div class="period-info">
+
+<div
+class="trade-count"
+id="overallTrades">
 -
 </div>
 
 </div>
 
-<div class="main-price" id="overallMainPrice">
+</div>
+
+<div
+class="main-price"
+id="overallMainPrice">
 
 <div class="main-price-title">
 Bank-Adjusted Price
 </div>
 
-<div class="main-price-number" id="overallAdjusted">
+<div
+class="main-price-number"
+id="overallAdjusted">
 -
 </div>
 
@@ -474,7 +843,9 @@ Bank-Adjusted Price
 P/L vs Purchase
 </div>
 
-<div class="pl-value" id="overallPLPurchase">
+<div
+class="pl-value"
+id="overallPLPurchase">
 -
 </div>
 
@@ -486,7 +857,9 @@ P/L vs Purchase
 P/L vs Bank
 </div>
 
-<div class="pl-value" id="overallPLBank">
+<div
+class="pl-value"
+id="overallPLBank">
 -
 </div>
 
@@ -494,7 +867,9 @@ P/L vs Bank
 
 </div>
 
-<div class="result" id="overallResult">
+<div
+class="result"
+id="overallResult">
 -
 </div>
 
@@ -508,7 +883,9 @@ P/L vs Bank
 Average Purchase Price
 </div>
 
-<div class="compare-value" id="overallAverage">
+<div
+class="compare-value"
+id="overallAverage">
 -
 </div>
 
@@ -520,7 +897,9 @@ Average Purchase Price
 Paid Amount
 </div>
 
-<div class="compare-value" id="overallPaid">
+<div
+class="compare-value"
+id="overallPaid">
 -
 </div>
 
@@ -536,7 +915,9 @@ Paid Amount
 Current Quantity
 </div>
 
-<div class="metric-value" id="overallQuantity">
+<div
+class="metric-value"
+id="overallQuantity">
 -
 </div>
 
@@ -548,7 +929,9 @@ Current Quantity
 Current Value
 </div>
 
-<div class="metric-value" id="overallValue">
+<div
+class="metric-value"
+id="overallValue">
 -
 </div>
 
@@ -560,7 +943,9 @@ Current Value
 Bank Value
 </div>
 
-<div class="metric-value" id="overallBank">
+<div
+class="metric-value"
+id="overallBank">
 -
 </div>
 
@@ -572,7 +957,9 @@ Bank Value
 Difference
 </div>
 
-<div class="metric-value" id="overallDifference">
+<div
+class="metric-value"
+id="overallDifference">
 -
 </div>
 
@@ -583,7 +970,7 @@ Difference
 </div>
 
 
-<!-- LAST 6 -->
+<!-- LAST 6 PERIODS -->
 
 <div class="card">
 
@@ -593,19 +980,29 @@ Difference
 Last 6 Periods
 </div>
 
-<div class="trade-count" id="sixTrades">
+<div class="period-info">
+
+<div
+class="trade-count"
+id="sixTrades">
 -
 </div>
 
 </div>
 
-<div class="main-price" id="sixMainPrice">
+</div>
+
+<div
+class="main-price"
+id="sixMainPrice">
 
 <div class="main-price-title">
 Bank-Adjusted Price
 </div>
 
-<div class="main-price-number" id="sixAdjusted">
+<div
+class="main-price-number"
+id="sixAdjusted">
 -
 </div>
 
@@ -617,7 +1014,9 @@ Bank-Adjusted Price
 P/L vs Purchase
 </div>
 
-<div class="pl-value" id="sixPLPurchase">
+<div
+class="pl-value"
+id="sixPLPurchase">
 -
 </div>
 
@@ -629,7 +1028,9 @@ P/L vs Purchase
 P/L vs Bank
 </div>
 
-<div class="pl-value" id="sixPLBank">
+<div
+class="pl-value"
+id="sixPLBank">
 -
 </div>
 
@@ -637,7 +1038,9 @@ P/L vs Bank
 
 </div>
 
-<div class="result" id="sixResult">
+<div
+class="result"
+id="sixResult">
 -
 </div>
 
@@ -651,7 +1054,9 @@ P/L vs Bank
 Average Purchase Price
 </div>
 
-<div class="compare-value" id="sixAverage">
+<div
+class="compare-value"
+id="sixAverage">
 -
 </div>
 
@@ -663,7 +1068,9 @@ Average Purchase Price
 Paid Amount
 </div>
 
-<div class="compare-value" id="sixPaid">
+<div
+class="compare-value"
+id="sixPaid">
 -
 </div>
 
@@ -679,7 +1086,9 @@ Paid Amount
 Current Quantity
 </div>
 
-<div class="metric-value" id="sixQuantity">
+<div
+class="metric-value"
+id="sixQuantity">
 -
 </div>
 
@@ -691,7 +1100,9 @@ Current Quantity
 Current Value
 </div>
 
-<div class="metric-value" id="sixValue">
+<div
+class="metric-value"
+id="sixValue">
 -
 </div>
 
@@ -703,7 +1114,9 @@ Current Value
 Bank Value
 </div>
 
-<div class="metric-value" id="sixBank">
+<div
+class="metric-value"
+id="sixBank">
 -
 </div>
 
@@ -715,7 +1128,9 @@ Bank Value
 Difference
 </div>
 
-<div class="metric-value" id="sixDifference">
+<div
+class="metric-value"
+id="sixDifference">
 -
 </div>
 
@@ -738,11 +1153,15 @@ Last Period
 
 <div class="period-info">
 
-<div class="trade-count" id="lastTrades">
+<div
+class="trade-count"
+id="lastTrades">
 -
 </div>
 
-<div class="action-badge" id="lastAction">
+<div
+class="action-badge"
+id="lastAction">
 -
 </div>
 
@@ -750,13 +1169,17 @@ Last Period
 
 </div>
 
-<div class="main-price" id="lastMainPrice">
+<div
+class="main-price"
+id="lastMainPrice">
 
 <div class="main-price-title">
 Bank-Adjusted Price
 </div>
 
-<div class="main-price-number" id="lastAdjusted">
+<div
+class="main-price-number"
+id="lastAdjusted">
 -
 </div>
 
@@ -768,7 +1191,9 @@ Bank-Adjusted Price
 P/L vs Purchase
 </div>
 
-<div class="pl-value" id="lastPLPurchase">
+<div
+class="pl-value"
+id="lastPLPurchase">
 -
 </div>
 
@@ -780,7 +1205,9 @@ P/L vs Purchase
 P/L vs Bank
 </div>
 
-<div class="pl-value" id="lastPLBank">
+<div
+class="pl-value"
+id="lastPLBank">
 -
 </div>
 
@@ -788,7 +1215,9 @@ P/L vs Bank
 
 </div>
 
-<div class="result" id="lastResult">
+<div
+class="result"
+id="lastResult">
 -
 </div>
 
@@ -802,7 +1231,9 @@ P/L vs Bank
 Average Purchase Price
 </div>
 
-<div class="compare-value" id="lastAverage">
+<div
+class="compare-value"
+id="lastAverage">
 -
 </div>
 
@@ -814,7 +1245,9 @@ Average Purchase Price
 Paid Amount
 </div>
 
-<div class="compare-value" id="lastPaid">
+<div
+class="compare-value"
+id="lastPaid">
 -
 </div>
 
@@ -830,7 +1263,9 @@ Paid Amount
 Current Quantity
 </div>
 
-<div class="metric-value" id="lastQuantity">
+<div
+class="metric-value"
+id="lastQuantity">
 -
 </div>
 
@@ -842,7 +1277,9 @@ Current Quantity
 Current Value
 </div>
 
-<div class="metric-value" id="lastValue">
+<div
+class="metric-value"
+id="lastValue">
 -
 </div>
 
@@ -854,7 +1291,9 @@ Current Value
 Bank Value
 </div>
 
-<div class="metric-value" id="lastBank">
+<div
+class="metric-value"
+id="lastBank">
 -
 </div>
 
@@ -866,7 +1305,9 @@ Bank Value
 Difference
 </div>
 
-<div class="metric-value" id="lastDifference">
+<div
+class="metric-value"
+id="lastDifference">
 -
 </div>
 
@@ -883,99 +1324,13 @@ Difference
 
 <script>
 
-/* =========================================
-   SETTINGS
-========================================= */
-
-const API_URL =
-    "https://apiv2.nobitex.ir/v3/orderbook/USDTIRT";
-
-const PRICE_DIVISOR = 10;
-
-const ANNUAL_BANK_RATE = 40;
-
-
-/* =========================================
-   TRANSACTIONS
-========================================= */
-
-const transactions = [
-
-    {
-        date: "1405/02/13",
-        type: "buy",
-        amount: 300,
-        price: 187000
-    },
-
-    {
-        date: "1405/02/17",
-        type: "buy",
-        amount: 1100,
-        price: 174000
-    },
-
-    {
-        date: "1405/02/20",
-        type: "buy",
-        amount: 1000,
-        price: 177500
-    },
-
-    {
-        date: "1405/02/26",
-        type: "buy",
-        amount: 1000,
-        price: 181500
-    },
-
-    {
-        date: "1405/02/29",
-        type: "buy",
-        amount: 1100,
-        price: 177000
-    },
-
-    {
-        date: "1405/02/30",
-        type: "buy",
-        amount: 2200,
-        price: 180000
-    },
-
-    {
-        date: "1405/03/02",
-        type: "buy",
-        amount: 600,
-        price: 179167
-    },
-
-    {
-        date: "1405/03/26",
-        type: "buy",
-        amount: 2500,
-        price: 158160
-    },
-
-    {
-        date: "1405/04/31",
-        type: "sell",
-        amount: 2500,
-        price: 190160
-    }
-
-];
-
-
-/* =========================================
+/* =====================================================
    FORMAT
-========================================= */
+===================================================== */
 
 function formatNumber(value) {
 
-    if (
-        !Number.isFinite(value)
-    ) {
+    if (!isFinite(value)) {
         return "-";
     }
 
@@ -984,43 +1339,29 @@ function formatNumber(value) {
 
 }
 
-
 function formatPercent(value) {
 
-    if (
-        !Number.isFinite(value)
-    ) {
+    if (!isFinite(value)) {
         return "-";
     }
 
+    const sign =
+        value > 0
+        ? "+"
+        : "";
+
     return (
-        value >= 0 ? "+" : ""
-    )
-    +
-    value.toFixed(2)
-    +
-    "%";
+        sign +
+        value.toFixed(2) +
+        "%"
+    );
 
 }
 
 
-/* =========================================
+/* =====================================================
    DATE
-========================================= */
-
-function parseJalaliDate(date) {
-
-    const p =
-        date.split("/").map(Number);
-
-    return {
-        y: p[0],
-        m: p[1],
-        d: p[2]
-    };
-
-}
-
+===================================================== */
 
 function jalaliToGregorian(
     jy,
@@ -1046,15 +1387,16 @@ function jalaliToGregorian(
     ) {
 
         days +=
-            i <= 6 ? 31 : 30;
+            i <= 6
+            ? 31
+            : 30;
 
     }
 
     days += jd - 1;
 
     let gy =
-        1600
-        +
+        1600 +
         400 *
         Math.floor(
             days / 146097
@@ -1103,8 +1445,7 @@ function jalaliToGregorian(
 
     const leap =
         (
-            gy % 4 === 0
-            &&
+            gy % 4 === 0 &&
             gy % 100 !== 0
         )
         ||
@@ -1131,8 +1472,7 @@ function jalaliToGregorian(
     let gm = 1;
 
     while (
-        gd >
-        monthDays[gm]
+        gd > monthDays[gm]
     ) {
 
         gd -=
@@ -1151,51 +1491,54 @@ function jalaliToGregorian(
 }
 
 
-function daysBetween(
+function daysBetweenInclusive(
     start,
     end
 ) {
 
     const s =
-        parseJalaliDate(start);
+        start
+            .split("/")
+            .map(Number);
 
     const e =
-        parseJalaliDate(end);
+        end
+            .split("/")
+            .map(Number);
 
     const startDate =
         jalaliToGregorian(
-            s.y,
-            s.m,
-            s.d
+            s[0],
+            s[1],
+            s[2]
         );
 
     const endDate =
         jalaliToGregorian(
-            e.y,
-            e.m,
-            e.d
+            e[0],
+            e[1],
+            e[2]
         );
 
-    return Math.max(
-        1,
-        Math.round(
+    return (
+
+        Math.floor(
+
             (
                 endDate -
                 startDate
             )
             /
             86400000
+
         )
         +
         1
+
     );
 
 }
 
-
-/* =========================================
-   TODAY JALALI
-========================================= */
 
 function getTodayJalali() {
 
@@ -1211,143 +1554,196 @@ function getTodayJalali() {
     const gd =
         now.getDate();
 
+    const gdm = [
+
+        0,
+        31,
+        59,
+        90,
+        120,
+        151,
+        181,
+        212,
+        243,
+        273,
+        304,
+        334
+
+    ];
+
     let jy =
-        gy - 621;
+        gy > 1600
+        ? 979
+        : 0;
+
+    const y =
+        gy > 1600
+        ? gy - 1600
+        : gy - 621;
 
     let days =
-        (
-            gm <= 2
-            ?
-            0
-            :
-            31
+        365 * y
+        +
+        Math.floor((y + 3) / 4)
+        -
+        Math.floor((y + 99) / 100)
+        +
+        Math.floor((y + 399) / 400)
+        -
+        80
+        +
+        gd
+        +
+        gdm[gm - 1];
+
+    jy +=
+        33 *
+        Math.floor(
+            days / 12053
         );
 
-    for (
-        let i = 1;
-        i < gm;
-        i++
-    ) {
+    days %= 12053;
 
-        days +=
-            [
-                31,
-                28,
-                31,
-                30,
-                31,
-                30,
-                31,
-                31,
-                30,
-                31,
-                30,
-                31
-            ][i - 1];
+    jy +=
+        4 *
+        Math.floor(
+            days / 1461
+        );
 
-    }
+    days %= 1461;
 
-    days += gd;
+    if (days > 365) {
 
-    let offset =
-        days -
-        80;
-
-    if (
-        offset <= 0
-    ) {
-
-        jy--;
-
-    }
-
-    /*
-       For this dashboard,
-       today's real Gregorian date
-       is converted using Intl.
-    */
-
-    try {
-
-        const formatter =
-            new Intl.DateTimeFormat(
-                "fa-IR-u-ca-persian",
-                {
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit"
-                }
+        jy +=
+            Math.floor(
+                (days - 1) / 365
             );
 
-        return formatter.format(
-            now
-        );
+        days =
+            (days - 1) % 365;
 
     }
 
-    catch {
+    let jm;
+    let jd;
 
-        return "-";
+    if (days < 186) {
+
+        jm =
+            1 +
+            Math.floor(
+                days / 31
+            );
+
+        jd =
+            1 +
+            days % 31;
 
     }
 
-}
+    else {
 
+        jm =
+            7 +
+            Math.floor(
+                (days - 186) / 30
+            );
 
-/* =========================================
-   BANK VALUE
-========================================= */
+        jd =
+            1 +
+            (
+                days - 186
+            ) % 30;
 
-function bankValue(
-    principal,
-    startDate,
-    today
-) {
-
-    const days =
-        daysBetween(
-            startDate,
-            today
-        );
-
-    const dailyRate =
-        ANNUAL_BANK_RATE
-        /
-        100
-        /
-        365;
+    }
 
     return (
-        principal
-        *
-        Math.pow(
-            1 + dailyRate,
-            days
-        )
+
+        jy +
+        "/" +
+        String(jm)
+            .padStart(2, "0") +
+        "/" +
+        String(jd)
+            .padStart(2, "0")
+
     );
 
 }
 
 
-/* =========================================
-   FIFO
-========================================= */
+function dateNumber(date) {
 
-function calculateFIFO(
-    list,
-    currentPrice,
-    today
+    const p =
+        date
+            .split("/")
+            .map(Number);
+
+    return (
+
+        p[0] * 10000
+        +
+        p[1] * 100
+        +
+        p[2]
+
+    );
+
+}
+
+
+/* =====================================================
+   COMPOUND BANK INTEREST
+===================================================== */
+
+function compoundValue(
+    principal,
+    startDate,
+    today,
+    annualRate
 ) {
 
-    const lots = [];
+    const days =
+        daysBetweenInclusive(
+            startDate,
+            today
+        );
 
-    let inCount = 0;
+    const dailyRate =
+        annualRate / 100 / 365;
 
-    let outCount = 0;
+    return (
 
+        principal *
+        Math.pow(
+            1 + dailyRate,
+            days
+        )
+
+    );
+
+}
+
+
+/* =====================================================
+   FIFO CALCULATION
+===================================================== */
+
+function calculateFIFO(
+    transactions,
+    currentPrice,
+    today,
+    annualRate
+) {
+
+    let lots = [];
+
+    let buyCount = 0;
+    let sellCount = 0;
 
     for (
-        const t of list
+        const t
+        of transactions
     ) {
 
         const amount =
@@ -1356,12 +1752,9 @@ function calculateFIFO(
         const price =
             Number(t.price);
 
+        if (t.type === "buy") {
 
-        if (
-            t.type === "buy"
-        ) {
-
-            inCount++;
+            buyCount++;
 
             lots.push({
 
@@ -1378,31 +1771,28 @@ function calculateFIFO(
 
         }
 
+        else if (t.type === "sell") {
 
-        else if (
-            t.type === "sell"
-        ) {
-
-            outCount++;
+            sellCount++;
 
             let remaining =
                 amount;
 
-
             while (
-                remaining > 0
-                &&
+                remaining > 0 &&
                 lots.length > 0
             ) {
 
+                const lot =
+                    lots[0];
+
                 if (
-                    lots[0].amount
-                    <=
+                    lot.amount <=
                     remaining
                 ) {
 
                     remaining -=
-                        lots[0].amount;
+                        lot.amount;
 
                     lots.shift();
 
@@ -1410,7 +1800,7 @@ function calculateFIFO(
 
                 else {
 
-                    lots[0].amount -=
+                    lot.amount -=
                         remaining;
 
                     remaining = 0;
@@ -1423,170 +1813,175 @@ function calculateFIFO(
 
     }
 
+    const currentQuantity =
+        lots.reduce(
+            (sum, lot) =>
+                sum + lot.amount,
+            0
+        );
 
-    let quantity = 0;
+    const paidAmount =
+        lots.reduce(
+            (sum, lot) =>
+                sum +
+                lot.amount *
+                lot.price,
+            0
+        );
 
-    let paid = 0;
+    const averagePurchasePrice =
+        currentQuantity > 0
+        ?
+        paidAmount /
+        currentQuantity
+        :
+        0;
 
-    let bank = 0;
-
+    let bankValue = 0;
 
     for (
-        const lot of lots
+        const lot
+        of lots
     ) {
 
-        quantity +=
-            lot.amount;
-
-
-        paid +=
-            lot.amount *
-            lot.price;
-
-
-        bank +=
-            bankValue(
+        bankValue +=
+            compoundValue(
                 lot.amount *
                 lot.price,
                 lot.date,
-                today
+                today,
+                annualRate
             );
 
     }
 
-
-    const average =
-        quantity > 0
-        ?
-        paid / quantity
-        :
-        0;
-
-
-    const value =
-        quantity *
+    const currentValue =
+        currentQuantity *
         currentPrice;
 
-
-    const adjusted =
-        quantity > 0
+    const bankAdjustedPrice =
+        currentQuantity > 0
         ?
-        bank / quantity
+        bankValue /
+        currentQuantity
         :
         0;
 
-
     const plPurchase =
-        average > 0
+        averagePurchasePrice > 0
         ?
         (
             (
                 currentPrice -
-                average
+                averagePurchasePrice
             )
             /
-            average
+            averagePurchasePrice
         )
         *
         100
         :
         0;
 
-
     const plBank =
-        bank > 0
+        bankValue > 0
         ?
         (
             (
-                value -
-                bank
+                currentValue -
+                bankValue
             )
             /
-            bank
+            bankValue
         )
         *
         100
         :
         0;
 
-
     return {
 
-        quantity,
-        paid,
-        average,
-        value,
-        bank,
-        adjusted,
-        plPurchase,
-        plBank,
+        currentQuantity,
+
+        paidAmount,
+
+        averagePurchasePrice,
+
+        bankAdjustedPrice,
+
+        currentPrice,
+
+        currentValue,
+
+        bankValue,
+
         difference:
-            value - bank,
-        inCount,
-        outCount
+            currentValue -
+            bankValue,
+
+        plPurchase,
+
+        plBank,
+
+        buyCount,
+
+        sellCount
 
     };
 
 }
 
 
-/* =========================================
-   RENDER
-========================================= */
+/* =====================================================
+   DISPLAY
+===================================================== */
 
-function render(
+function displaySection(
     result,
-    prefix,
-    currentPrice
+    prefix
 ) {
 
     document.getElementById(
         prefix + "Average"
     ).textContent =
         formatNumber(
-            result.average
+            result.averagePurchasePrice
         );
-
 
     document.getElementById(
         prefix + "Paid"
     ).textContent =
         formatNumber(
-            result.paid
+            result.paidAmount
         );
-
 
     document.getElementById(
         prefix + "Adjusted"
     ).textContent =
         formatNumber(
-            result.adjusted
+            result.bankAdjustedPrice
         );
-
 
     document.getElementById(
         prefix + "Quantity"
     ).textContent =
         formatNumber(
-            result.quantity
+            result.currentQuantity
         );
-
 
     document.getElementById(
         prefix + "Value"
     ).textContent =
         formatNumber(
-            result.value
+            result.currentValue
         );
-
 
     document.getElementById(
         prefix + "Bank"
     ).textContent =
         formatNumber(
-            result.bank
+            result.bankValue
         );
-
 
     document.getElementById(
         prefix + "Difference"
@@ -1597,26 +1992,27 @@ function render(
             )
         );
 
+    const plPurchase =
+        document.getElementById(
+            prefix + "PLPurchase"
+        );
 
-    document.getElementById(
-        prefix + "PLPurchase"
-    ).textContent =
+    const plBank =
+        document.getElementById(
+            prefix + "PLBank"
+        );
+
+    plPurchase.textContent =
         formatPercent(
             result.plPurchase
         );
 
-
-    document.getElementById(
-        prefix + "PLBank"
-    ).textContent =
+    plBank.textContent =
         formatPercent(
             result.plBank
         );
 
-
-    document.getElementById(
-        prefix + "PLPurchase"
-    ).className =
+    plPurchase.className =
         "pl-value " +
         (
             result.plPurchase >= 0
@@ -1626,10 +2022,7 @@ function render(
             "loss"
         );
 
-
-    document.getElementById(
-        prefix + "PLBank"
-    ).className =
+    plBank.className =
         "pl-value " +
         (
             result.plBank >= 0
@@ -1639,73 +2032,63 @@ function render(
             "loss"
         );
 
-
-    const main =
+    const mainPrice =
         document.getElementById(
             prefix + "MainPrice"
         );
 
-
-    const message =
+    const resultBox =
         document.getElementById(
             prefix + "Result"
         );
 
-
-    main.classList.remove(
+    mainPrice.classList.remove(
         "status-green",
         "status-red"
     );
 
-
     if (
-        result.adjusted
-        <
-        currentPrice
+        result.bankAdjustedPrice <
+        result.currentPrice
     ) {
 
-        main.classList.add(
+        mainPrice.classList.add(
             "status-green"
         );
 
-        message.textContent =
+        resultBox.textContent =
             "INVESTMENT IS BETTER THAN BANK";
 
-        message.style.color =
+        resultBox.style.color =
             "#34d399";
 
     }
 
     else {
 
-        main.classList.add(
+        mainPrice.classList.add(
             "status-red"
         );
 
-        message.textContent =
+        resultBox.textContent =
             "BANK RETURN IS BETTER THAN INVESTMENT";
 
-        message.style.color =
+        resultBox.style.color =
             "#f87171";
 
     }
 
-
-    const trades =
+    const tradeCount =
         document.getElementById(
             prefix + "Trades"
         );
 
+    if (tradeCount) {
 
-    if (trades) {
-
-        trades.textContent =
-            result.inCount
-            +
-            " IN  •  "
-            +
-            result.outCount
-            +
+        tradeCount.textContent =
+            result.buyCount +
+            " IN  •  " +
+            result.sellCount +
             " OUT";
 
     }
@@ -1713,64 +2096,235 @@ function render(
 }
 
 
-/* =========================================
-   LIVE PRICE
-========================================= */
+/* =====================================================
+   LAST PERIOD LOGIC
+===================================================== */
 
-async function loadPrice() {
+function getLastPeriodTransactions(
+    transactions
+) {
+
+    if (
+        transactions.length === 0
+    ) {
+
+        return [];
+
+    }
+
+    const last =
+        transactions[
+            transactions.length - 1
+        ];
+
+    /*
+       اگر آخرین عملیات IN باشد،
+       همان آخرین خرید، آخرین دوره است.
+    */
+
+    if (
+        last.type === "buy"
+    ) {
+
+        return [
+            last
+        ];
+
+    }
+
+    /*
+       اگر آخرین عملیات OUT باشد،
+       آخرین خرید را پیدا می‌کنیم.
+
+       مثال:
+
+       آخرین خرید = 2500
+       آخرین OUT = 2000
+
+       نتیجه Last Period:
+
+       2500 - 2000 = 500
+    */
+
+    let lastBuyIndex = -1;
+
+    for (
+        let i =
+            transactions.length - 2;
+
+        i >= 0;
+
+        i--
+    ) {
+
+        if (
+            transactions[i].type ===
+            "buy"
+        ) {
+
+            lastBuyIndex = i;
+
+            break;
+
+        }
+
+    }
+
+    if (
+        lastBuyIndex === -1
+    ) {
+
+        return [
+            last
+        ];
+
+    }
+
+    return [
+
+        {
+
+            date:
+                transactions[
+                    lastBuyIndex
+                ].date,
+
+            type:
+                "buy",
+
+            amount:
+                Number(
+                    transactions[
+                        lastBuyIndex
+                    ].amount
+                ),
+
+            price:
+                Number(
+                    transactions[
+                        lastBuyIndex
+                    ].price
+                )
+
+        },
+
+        {
+
+            date:
+                last.date,
+
+            type:
+                "sell",
+
+            amount:
+                Number(
+                    last.amount
+                ),
+
+            price:
+                Number(
+                    last.price
+                )
+
+        }
+
+    ];
+
+}
+
+
+/* =====================================================
+   LAST ACTION
+===================================================== */
+
+function displayLastAction(
+    transaction
+) {
+
+    const badge =
+        document.getElementById(
+            "lastAction"
+        );
+
+    if (!transaction) {
+
+        badge.textContent =
+            "-";
+
+        return;
+
+    }
+
+    if (
+        transaction.type ===
+        "buy"
+    ) {
+
+        badge.textContent =
+            "IN";
+
+        badge.className =
+            "action-badge action-buy";
+
+    }
+
+    else {
+
+        badge.textContent =
+            "OUT";
+
+        badge.className =
+            "action-badge action-sell";
+
+    }
+
+}
+
+
+/* =====================================================
+   NOBITEX
+===================================================== */
+
+async function getCurrentPrice(
+    apiUrl,
+    divisor
+) {
 
     const response =
         await fetch(
-            API_URL
-            +
-            "?_="
-            +
-            Date.now(),
+            apiUrl,
             {
-                method: "GET",
-                cache: "no-store"
+                method:
+                    "GET",
+
+                headers: {
+
+                    "Accept":
+                        "application/json"
+
+                },
+
+                cache:
+                    "no-store"
+
             }
         );
-
 
     if (
         !response.ok
     ) {
 
         throw new Error(
-            "Nobitex API Error: "
-            +
-            response.status
+            "Unable to get current price"
         );
 
     }
 
-
     const data =
         await response.json();
 
-
-    /*
-       IMPORTANT:
-       Nobitex returns lastTradePrice
-       in Rial.
-
-       Divide by 10
-       to display Toman.
-    */
-
-    const price =
-        Number(
-            data.lastTradePrice
-        )
-        /
-        PRICE_DIVISOR;
-
-
     if (
-        !Number.isFinite(price)
-        ||
-        price <= 0
+        !data.lastTradePrice
     ) {
 
         throw new Error(
@@ -1779,251 +2333,222 @@ async function loadPrice() {
 
     }
 
+    return (
 
-    return price;
+        Number(
+            data.lastTradePrice
+        )
+        /
+        divisor
+
+    );
 
 }
 
 
-/* =========================================
-   MAIN
-========================================= */
+/* =====================================================
+   INIT
+===================================================== */
 
-async function main() {
+async function init() {
 
-    try {
-
-        document.getElementById(
-            "today"
-        ).textContent =
-            getTodayJalali();
-
-
-        document.getElementById(
-            "bankRate"
-        ).textContent =
-            ANNUAL_BANK_RATE
-            +
-            "%";
-
-
-        /*
-           Live price
-        */
-
-        const currentPrice =
-            await loadPrice();
-
-
-        document.getElementById(
-            "currentPrice"
-        ).textContent =
-            formatNumber(
-                currentPrice
-            );
-
-
-        /*
-           Overall
-
-           همه تراکنش‌ها
-           فروش 2500 هم لحاظ می‌شود
-        */
-
-        const overall =
-            calculateFIFO(
-                transactions,
-                currentPrice,
-                getTodayJalali()
-            );
-
-
-        render(
-            overall,
-            "overall",
-            currentPrice
+    const dataResponse =
+        await fetch(
+            "data.json?x=" +
+            Date.now()
         );
 
+    if (
+        !dataResponse.ok
+    ) {
 
-        /*
-           Last 6
-
-           شش تراکنش آخر
-           شامل OUT آخر
-        */
-
-        const lastSix =
-            transactions.slice(-6);
-
-
-        const six =
-            calculateFIFO(
-                lastSix,
-                currentPrice,
-                getTodayJalali()
-            );
-
-
-        render(
-            six,
-            "six",
-            currentPrice
+        throw new Error(
+            "Cannot load data.json"
         );
-
-
-        /*
-           Last Period
-
-           اگر آخرین تراکنش OUT باشد:
-           از آخرین IN شروع می‌کنیم
-           اما OUT را هم نگه می‌داریم.
-        */
-
-        const last =
-            transactions[
-                transactions.length - 1
-            ];
-
-
-        let startIndex =
-            transactions.length - 1;
-
-
-        if (
-            last.type === "sell"
-        ) {
-
-            for (
-                let i =
-                    transactions.length - 1;
-
-                i >= 0;
-
-                i--
-            ) {
-
-                if (
-                    transactions[i].type
-                    ===
-                    "buy"
-                ) {
-
-                    startIndex =
-                        i;
-
-                    break;
-
-                }
-
-            }
-
-        }
-
-
-        const lastPeriodTransactions =
-            transactions.slice(
-                startIndex
-            );
-
-
-        const lastPeriod =
-            calculateFIFO(
-                lastPeriodTransactions,
-                currentPrice,
-                getTodayJalali()
-            );
-
-
-        render(
-            lastPeriod,
-            "last",
-            currentPrice
-        );
-
-
-        /*
-           Last Action
-        */
-
-        const action =
-            document.getElementById(
-                "lastAction"
-            );
-
-
-        if (
-            last.type === "sell"
-        ) {
-
-            action.textContent =
-                "OUT";
-
-            action.className =
-                "action-badge action-out";
-
-
-            document.getElementById(
-                "lastResult"
-            ).textContent =
-                "LAST PERIOD WAS OUT";
-
-
-            document.getElementById(
-                "lastResult"
-            ).style.color =
-                "#fbbf24";
-
-        }
-
-        else {
-
-            action.textContent =
-                "IN";
-
-            action.className =
-                "action-badge action-in";
-
-        }
 
     }
 
-    catch (error) {
+    const data =
+        await dataResponse.json();
+
+    const annualBankRate =
+        Number(
+            data.annualBankRate ||
+            40
+        );
+
+    const divisor =
+        Number(
+            data.priceDivisor ||
+            10
+        );
+
+    const currentPrice =
+        await getCurrentPrice(
+            data.priceApi,
+            divisor
+        );
+
+    const today =
+        getTodayJalali();
+
+    document.getElementById(
+        "today"
+    ).textContent =
+        today;
+
+    document.getElementById(
+        "currentPrice"
+    ).textContent =
+        formatNumber(
+            currentPrice
+        );
+
+    document.getElementById(
+        "bankRate"
+    ).textContent =
+        annualBankRate +
+        "%";
+
+    const transactions =
+        data.transactions
+            .slice()
+            .sort(
+                (a, b) =>
+                    dateNumber(a.date)
+                    -
+                    dateNumber(b.date)
+            );
+
+
+    /* =================================================
+       OVERALL
+    ================================================= */
+
+    const overall =
+        calculateFIFO(
+            transactions,
+            currentPrice,
+            today,
+            annualBankRate
+        );
+
+    displaySection(
+        overall,
+        "overall"
+    );
+
+
+    /* =================================================
+       LAST 6 PERIODS
+       بدون تغییر در منطق قبلی
+    ================================================= */
+
+    const sixTransactions =
+        transactions.slice(-6);
+
+    const six =
+        calculateFIFO(
+            sixTransactions,
+            currentPrice,
+            today,
+            annualBankRate
+        );
+
+    displaySection(
+        six,
+        "six"
+    );
+
+
+    /* =================================================
+       LAST PERIOD
+       اصلاح شده
+    ================================================= */
+
+    const lastPeriodTransactions =
+        getLastPeriodTransactions(
+            transactions
+        );
+
+    const last =
+        calculateFIFO(
+            lastPeriodTransactions,
+            currentPrice,
+            today,
+            annualBankRate
+        );
+
+    displaySection(
+        last,
+        "last"
+    );
+
+
+    const lastTransaction =
+        transactions.length > 0
+        ?
+        transactions[
+            transactions.length - 1
+        ]
+        :
+        null;
+
+    displayLastAction(
+        lastTransaction
+    );
+
+
+    document.getElementById(
+        "loading"
+    ).style.display =
+        "none";
+
+    document.getElementById(
+        "dashboard"
+    ).style.display =
+        "grid";
+
+}
+
+
+/* =====================================================
+   START
+===================================================== */
+
+init()
+
+.catch(
+    error => {
 
         console.error(
             error
         );
 
-
         document.getElementById(
-            "currentPrice"
-        ).textContent =
-            "Unavailable";
-
+            "loading"
+        ).style.display =
+            "none";
 
         document.getElementById(
             "errorBox"
         ).innerHTML =
 
-            '<div class="error">' +
+            `
 
-            error.message +
+            <div class="error">
 
-            '<br><small>' +
+                ${error.message}
 
-            'اگر قیمت آنلاین نمایش داده نمی‌شود، احتمالاً API نوبیتکس توسط مرورگر به دلیل CORS مسدود شده است.' +
+            </div>
 
-            '</small>' +
-
-            '</div>';
+            `;
 
     }
-
-}
-
-
-main();
+);
 
 </script>
 
 </body>
+
 </html>
