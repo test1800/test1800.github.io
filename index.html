@@ -445,7 +445,11 @@ h1 {
 
 }
 
-.pl-container {
+/* =========================================
+   UNREALIZED PERCENTAGES
+========================================= */
+
+.unrealized-percent-container {
 
     display: grid;
 
@@ -454,15 +458,15 @@ h1 {
 
     gap: 7px;
 
-    margin-top: 8px;
+    margin-top: 9px;
 
 }
 
-.pl-box {
+.unrealized-percent-box {
 
     min-height: 58px;
 
-    padding: 6px;
+    padding: 7px;
 
     display: flex;
 
@@ -486,21 +490,21 @@ h1 {
 
 }
 
-.pl-label {
+.unrealized-percent-label {
 
     color:
         #94a3b8;
 
     font-size: 9px;
 
-    margin-bottom: 3px;
+    margin-bottom: 4px;
 
-    white-space:
-        nowrap;
+    text-align:
+        center;
 
 }
 
-.pl-value {
+.unrealized-percent-value {
 
     font-size: 17px;
 
@@ -508,21 +512,11 @@ h1 {
 
 }
 
-.profit {
+/* =========================================
+   UNREALIZED AMOUNTS
+========================================= */
 
-    color:
-        #34d399;
-
-}
-
-.loss {
-
-    color:
-        #f87171;
-
-}
-
-.realized-container {
+.unrealized-amount-container {
 
     display: grid;
 
@@ -535,9 +529,22 @@ h1 {
 
 }
 
-.realized-box {
+.unrealized-amount-box {
 
-    padding: 8px;
+    min-height: 48px;
+
+    padding: 6px;
+
+    display: flex;
+
+    flex-direction:
+        column;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
 
     border-radius: 9px;
 
@@ -550,18 +557,21 @@ h1 {
 
 }
 
-.realized-label {
+.unrealized-amount-label {
 
     color:
         #94a3b8;
 
     font-size: 8px;
 
-    margin-bottom: 4px;
+    margin-bottom: 3px;
+
+    text-align:
+        center;
 
 }
 
-.realized-value {
+.unrealized-amount-value {
 
     font-size: 13px;
 
@@ -569,15 +579,26 @@ h1 {
 
 }
 
+/* =========================================
+   RESULT
+========================================= */
+
 .result {
 
-    margin-top: 7px;
+    margin-top: 8px;
 
     font-size: 9px;
 
     font-weight: 750;
 
+    text-align:
+        center;
+
 }
+
+/* =========================================
+   COMPARISON
+========================================= */
 
 .comparison {
 
@@ -618,18 +639,25 @@ h1 {
 
 .compare-value {
 
-    font-size: 16px;
+    font-size: 14px;
 
     font-weight: 800;
 
+    white-space:
+        nowrap;
+
 }
+
+/* =========================================
+   METRICS
+========================================= */
 
 .metrics {
 
     display: grid;
 
     grid-template-columns:
-        repeat(2,1fr);
+        1fr 1fr;
 
     gap: 7px;
 
@@ -676,6 +704,94 @@ h1 {
 
 }
 
+/* =========================================
+   REALIZED P/L
+========================================= */
+
+.realized-section {
+
+    margin-top: 8px;
+
+    padding: 7px 8px;
+
+    border-radius: 9px;
+
+    background:
+        rgba(255,255,255,.025);
+
+    border:
+        1px solid
+        rgba(255,255,255,.055);
+
+}
+
+.realized-row {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto;
+
+    align-items:
+        center;
+
+    gap: 8px;
+
+    min-height: 24px;
+
+}
+
+.realized-row + .realized-row {
+
+    margin-top: 2px;
+
+}
+
+.realized-label {
+
+    color:
+        #94a3b8;
+
+    font-size: 9px;
+
+    white-space:
+        nowrap;
+
+}
+
+.realized-value {
+
+    font-size: 11px;
+
+    font-weight: 800;
+
+    white-space:
+        nowrap;
+
+    text-align:
+        right;
+
+}
+
+/* =========================================
+   COLORS
+========================================= */
+
+.profit {
+
+    color:
+        #34d399;
+
+}
+
+.loss {
+
+    color:
+        #f87171;
+
+}
+
 .error {
 
     padding: 12px;
@@ -707,6 +823,10 @@ h1 {
         #94a3b8;
 
 }
+
+/* =========================================
+   RESPONSIVE
+========================================= */
 
 @media (max-width:1100px) {
 
@@ -765,6 +885,20 @@ h1 {
 
         justify-content:
             flex-start;
+
+    }
+
+    .realized-label {
+
+        font-size:
+            8px;
+
+    }
+
+    .realized-value {
+
+        font-size:
+            10px;
 
     }
 
@@ -856,9 +990,9 @@ Loading...
 id="dashboard"
 style="display:none;">
 
-<!-- =========================
+<!-- =========================================
      OVERALL
-========================= -->
+========================================= -->
 
 <div class="card">
 
@@ -890,30 +1024,32 @@ id="overallAdjusted">
 -
 </div>
 
-<div class="pl-container">
+<!-- UNREALIZED PERCENTAGES -->
 
-<div class="pl-box">
+<div class="unrealized-percent-container">
 
-<div class="pl-label">
+<div class="unrealized-percent-box">
+
+<div class="unrealized-percent-label">
 Unrealized P/L vs Purchase
 </div>
 
 <div
-class="pl-value"
+class="unrealized-percent-value"
 id="overallPLPurchase">
 -
 </div>
 
 </div>
 
-<div class="pl-box">
+<div class="unrealized-percent-box">
 
-<div class="pl-label">
+<div class="unrealized-percent-label">
 Unrealized P/L vs Bank
 </div>
 
 <div
-class="pl-value"
+class="unrealized-percent-value"
 id="overallPLBank">
 -
 </div>
@@ -922,31 +1058,33 @@ id="overallPLBank">
 
 </div>
 
-<div class="realized-container">
+<!-- UNREALIZED AMOUNTS -->
 
-<div class="realized-box">
+<div class="unrealized-amount-container">
 
-<div class="realized-label">
-Realized P/L vs Purchase
+<div class="unrealized-amount-box">
+
+<div class="unrealized-amount-label">
+Unrealized P/L vs Purchase
 </div>
 
 <div
-class="realized-value"
-id="overallRealizedPurchase">
+class="unrealized-amount-value"
+id="overallUnrealizedPurchase">
 -
 </div>
 
 </div>
 
-<div class="realized-box">
+<div class="unrealized-amount-box">
 
-<div class="realized-label">
-Realized P/L vs Bank
+<div class="unrealized-amount-label">
+Unrealized P/L vs Bank
 </div>
 
 <div
-class="realized-value"
-id="overallRealizedBank">
+class="unrealized-amount-value"
+id="overallUnrealizedBank">
 -
 </div>
 
@@ -1046,7 +1184,39 @@ Realized P/L vs Purchase
 
 <div
 class="metric-value"
-id="overallRealizedMetricPurchase">
+id="overallRealizedPurchase">
+-
+</div>
+
+</div>
+
+</div>
+
+<div class="realized-section">
+
+<div class="realized-row">
+
+<div class="realized-label">
+Realized P/L vs Purchase
+</div>
+
+<div
+class="realized-value"
+id="overallRealizedPurchaseBottom">
+-
+</div>
+
+</div>
+
+<div class="realized-row">
+
+<div class="realized-label">
+Realized P/L vs Bank
+</div>
+
+<div
+class="realized-value"
+id="overallRealizedBank">
 -
 </div>
 
@@ -1057,9 +1227,9 @@ id="overallRealizedMetricPurchase">
 </div>
 
 
-<!-- =========================
+<!-- =========================================
      LAST 6 PERIODS
-========================= -->
+========================================= -->
 
 <div class="card">
 
@@ -1091,30 +1261,30 @@ id="sixAdjusted">
 -
 </div>
 
-<div class="pl-container">
+<div class="unrealized-percent-container">
 
-<div class="pl-box">
+<div class="unrealized-percent-box">
 
-<div class="pl-label">
+<div class="unrealized-percent-label">
 Unrealized P/L vs Purchase
 </div>
 
 <div
-class="pl-value"
+class="unrealized-percent-value"
 id="sixPLPurchase">
 -
 </div>
 
 </div>
 
-<div class="pl-box">
+<div class="unrealized-percent-box">
 
-<div class="pl-label">
+<div class="unrealized-percent-label">
 Unrealized P/L vs Bank
 </div>
 
 <div
-class="pl-value"
+class="unrealized-percent-value"
 id="sixPLBank">
 -
 </div>
@@ -1123,31 +1293,31 @@ id="sixPLBank">
 
 </div>
 
-<div class="realized-container">
+<div class="unrealized-amount-container">
 
-<div class="realized-box">
+<div class="unrealized-amount-box">
 
-<div class="realized-label">
-Realized P/L vs Purchase
+<div class="unrealized-amount-label">
+Unrealized P/L vs Purchase
 </div>
 
 <div
-class="realized-value"
-id="sixRealizedPurchase">
+class="unrealized-amount-value"
+id="sixUnrealizedPurchase">
 -
 </div>
 
 </div>
 
-<div class="realized-box">
+<div class="unrealized-amount-box">
 
-<div class="realized-label">
-Realized P/L vs Bank
+<div class="unrealized-amount-label">
+Unrealized P/L vs Bank
 </div>
 
 <div
-class="realized-value"
-id="sixRealizedBank">
+class="unrealized-amount-value"
+id="sixUnrealizedBank">
 -
 </div>
 
@@ -1247,7 +1417,39 @@ Realized P/L vs Purchase
 
 <div
 class="metric-value"
-id="sixRealizedMetricPurchase">
+id="sixRealizedPurchaseMetric">
+-
+</div>
+
+</div>
+
+</div>
+
+<div class="realized-section">
+
+<div class="realized-row">
+
+<div class="realized-label">
+Realized P/L vs Purchase
+</div>
+
+<div
+class="realized-value"
+id="sixRealizedPurchase">
+-
+</div>
+
+</div>
+
+<div class="realized-row">
+
+<div class="realized-label">
+Realized P/L vs Bank
+</div>
+
+<div
+class="realized-value"
+id="sixRealizedBank">
 -
 </div>
 
@@ -1258,9 +1460,9 @@ id="sixRealizedMetricPurchase">
 </div>
 
 
-<!-- =========================
+<!-- =========================================
      LAST PERIOD
-========================= -->
+========================================= -->
 
 <div class="card">
 
@@ -1302,30 +1504,30 @@ id="lastAdjusted">
 -
 </div>
 
-<div class="pl-container">
+<div class="unrealized-percent-container">
 
-<div class="pl-box">
+<div class="unrealized-percent-box">
 
-<div class="pl-label">
+<div class="unrealized-percent-label">
 Unrealized P/L vs Purchase
 </div>
 
 <div
-class="pl-value"
+class="unrealized-percent-value"
 id="lastPLPurchase">
 -
 </div>
 
 </div>
 
-<div class="pl-box">
+<div class="unrealized-percent-box">
 
-<div class="pl-label">
+<div class="unrealized-percent-label">
 Unrealized P/L vs Bank
 </div>
 
 <div
-class="pl-value"
+class="unrealized-percent-value"
 id="lastPLBank">
 -
 </div>
@@ -1334,31 +1536,31 @@ id="lastPLBank">
 
 </div>
 
-<div class="realized-container">
+<div class="unrealized-amount-container">
 
-<div class="realized-box">
+<div class="unrealized-amount-box">
 
-<div class="realized-label">
-Realized P/L vs Purchase
+<div class="unrealized-amount-label">
+Unrealized P/L vs Purchase
 </div>
 
 <div
-class="realized-value"
-id="lastRealizedPurchase">
+class="unrealized-amount-value"
+id="lastUnrealizedPurchase">
 -
 </div>
 
 </div>
 
-<div class="realized-box">
+<div class="unrealized-amount-box">
 
-<div class="realized-label">
-Realized P/L vs Bank
+<div class="unrealized-amount-label">
+Unrealized P/L vs Bank
 </div>
 
 <div
-class="realized-value"
-id="lastRealizedBank">
+class="unrealized-amount-value"
+id="lastUnrealizedBank">
 -
 </div>
 
@@ -1458,7 +1660,39 @@ Realized P/L vs Purchase
 
 <div
 class="metric-value"
-id="lastRealizedMetricPurchase">
+id="lastRealizedPurchaseMetric">
+-
+</div>
+
+</div>
+
+</div>
+
+<div class="realized-section">
+
+<div class="realized-row">
+
+<div class="realized-label">
+Realized P/L vs Purchase
+</div>
+
+<div
+class="realized-value"
+id="lastRealizedPurchase">
+-
+</div>
+
+</div>
+
+<div class="realized-row">
+
+<div class="realized-label">
+Realized P/L vs Bank
+</div>
+
+<div
+class="realized-value"
+id="lastRealizedBank">
 -
 </div>
 
@@ -1521,11 +1755,13 @@ function formatMoneySigned(value) {
 
     }
 
-    const n = Math.round(Number(value));
+    const n =
+        Math.round(Number(value));
 
     if (n > 0) {
 
-        return "+" + n.toLocaleString("en-US");
+        return "+" +
+            n.toLocaleString("en-US");
 
     }
 
@@ -1542,7 +1778,8 @@ function formatPercent(value) {
 
     }
 
-    const n = Number(value);
+    const n =
+        Number(value);
 
     return (
 
@@ -1550,12 +1787,19 @@ function formatPercent(value) {
         ? "+"
         : ""
 
-    ) + n.toFixed(2) + "%";
+    ) +
+
+    n.toFixed(2) +
+
+    "%";
 
 }
 
 
-function setProfitLossClass(id, value) {
+function setProfitLossClass(
+    id,
+    value
+) {
 
     const el = $(id);
 
@@ -1582,10 +1826,14 @@ function setProfitLossClass(id, value) {
 
 
 /* =====================================================
-   JALALI DATE
+   JALALI
 ===================================================== */
 
-function jalaliToGregorian(jy, jm, jd) {
+function jalaliToGregorian(
+    jy,
+    jm,
+    jd
+) {
 
     jy -= 979;
 
@@ -1596,9 +1844,16 @@ function jalaliToGregorian(jy, jm, jd) {
         +
         Math.floor(((jy % 33) + 3) / 4);
 
-    for (let i = 1; i < jm; i++) {
+    for (
+        let i = 1;
+        i < jm;
+        i++
+    ) {
 
-        days += i <= 6 ? 31 : 30;
+        days +=
+            i <= 6
+            ? 31
+            : 30;
 
     }
 
@@ -1636,14 +1891,17 @@ function jalaliToGregorian(jy, jm, jd) {
     if (days > 365) {
 
         gy +=
-            Math.floor((days - 1) / 365);
+            Math.floor(
+                (days - 1) / 365
+            );
 
         days =
             (days - 1) % 365;
 
     }
 
-    let gd = days + 1;
+    let gd =
+        days + 1;
 
     const leap =
 
@@ -1674,9 +1932,12 @@ function jalaliToGregorian(jy, jm, jd) {
 
     let gm = 1;
 
-    while (gd > monthDays[gm]) {
+    while (
+        gd > monthDays[gm]
+    ) {
 
-        gd -= monthDays[gm];
+        gd -=
+            monthDays[gm];
 
         gm++;
 
@@ -1697,10 +1958,14 @@ function daysBetweenInclusive(
 ) {
 
     const s =
-        start.split("/").map(Number);
+        start
+            .split("/")
+            .map(Number);
 
     const e =
-        end.split("/").map(Number);
+        end
+            .split("/")
+            .map(Number);
 
     const startDate =
         jalaliToGregorian(
@@ -1721,10 +1986,12 @@ function daysBetweenInclusive(
         0,
 
         Math.floor(
+
             (
                 endDate -
                 startDate
             ) / 86400000
+
         ) + 1
 
     );
@@ -1734,13 +2001,17 @@ function daysBetweenInclusive(
 
 function getTodayJalali() {
 
-    const now = new Date();
+    const now =
+        new Date();
 
-    const gy = now.getFullYear();
+    const gy =
+        now.getFullYear();
 
-    const gm = now.getMonth() + 1;
+    const gm =
+        now.getMonth() + 1;
 
-    const gd = now.getDate();
+    const gd =
+        now.getDate();
 
     const gdm = [
 
@@ -1773,11 +2044,17 @@ function getTodayJalali() {
 
         365 * y
         +
-        Math.floor((y + 3) / 4)
+        Math.floor(
+            (y + 3) / 4
+        )
         -
-        Math.floor((y + 99) / 100)
+        Math.floor(
+            (y + 99) / 100
+        )
         +
-        Math.floor((y + 399) / 400)
+        Math.floor(
+            (y + 399) / 400
+        )
         -
         80
         +
@@ -1787,20 +2064,26 @@ function getTodayJalali() {
 
     jy +=
         33 *
-        Math.floor(days / 12053);
+        Math.floor(
+            days / 12053
+        );
 
     days %= 12053;
 
     jy +=
         4 *
-        Math.floor(days / 1461);
+        Math.floor(
+            days / 1461
+        );
 
     days %= 1461;
 
     if (days > 365) {
 
         jy +=
-            Math.floor((days - 1) / 365);
+            Math.floor(
+                (days - 1) / 365
+            );
 
         days =
             (days - 1) % 365;
@@ -1814,7 +2097,9 @@ function getTodayJalali() {
 
         jm =
             1 +
-            Math.floor(days / 31);
+            Math.floor(
+                days / 31
+            );
 
         jd =
             1 +
@@ -1826,7 +2111,9 @@ function getTodayJalali() {
 
         jm =
             7 +
-            Math.floor((days - 186) / 30);
+            Math.floor(
+                (days - 186) / 30
+            );
 
         jd =
             1 +
@@ -1838,9 +2125,9 @@ function getTodayJalali() {
 
         jy +
         "/" +
-        String(jm).padStart(2, "0") +
+        String(jm).padStart(2,"0") +
         "/" +
-        String(jd).padStart(2, "0")
+        String(jd).padStart(2,"0")
 
     );
 
@@ -1850,7 +2137,9 @@ function getTodayJalali() {
 function dateNumber(date) {
 
     const p =
-        date.split("/").map(Number);
+        date
+            .split("/")
+            .map(Number);
 
     return (
 
@@ -1864,24 +2153,26 @@ function dateNumber(date) {
 
 
 /* =====================================================
-   BANK
+   BANK CALCULATION
 ===================================================== */
 
 function compoundValue(
     principal,
     startDate,
-    endDate,
+    today,
     annualRate
 ) {
 
     const days =
         daysBetweenInclusive(
             startDate,
-            endDate
+            today
         );
 
     const dailyRate =
-        annualRate / 100 / 365;
+        annualRate /
+        100 /
+        365;
 
     return (
 
@@ -1897,13 +2188,13 @@ function compoundValue(
 
 
 /* =====================================================
-   PORTFOLIO ENGINE
+   PORTFOLIO CALCULATION
 ===================================================== */
 
 function calculatePortfolio(
     transactions,
     currentPrice,
-    valuationDate,
+    today,
     annualRate
 ) {
 
@@ -1918,7 +2209,9 @@ function calculatePortfolio(
     let sellCount = 0;
 
 
-    for (const t of transactions) {
+    for (
+        const t of transactions
+    ) {
 
         const amount =
             Number(t.amount);
@@ -1935,11 +2228,9 @@ function calculatePortfolio(
 
             lots.push({
 
-                amount:
-                    amount,
+                amount,
 
-                price:
-                    price,
+                price,
 
                 date:
                     t.date
@@ -1960,8 +2251,10 @@ function calculatePortfolio(
 
 
             while (
+
                 remaining > 0 &&
                 lots.length > 0
+
             ) {
 
                 const lot =
@@ -1969,8 +2262,11 @@ function calculatePortfolio(
 
                 const used =
                     Math.min(
+
                         remaining,
+
                         lot.amount
+
                     );
 
 
@@ -2039,8 +2335,13 @@ function calculatePortfolio(
 
         lots.reduce(
 
-            (sum, lot) =>
-                sum + lot.amount,
+            (
+                sum,
+                lot
+            ) =>
+
+                sum +
+                lot.amount,
 
             0
 
@@ -2051,7 +2352,10 @@ function calculatePortfolio(
 
         lots.reduce(
 
-            (sum, lot) =>
+            (
+                sum,
+                lot
+            ) =>
 
                 sum +
                 lot.amount *
@@ -2079,7 +2383,9 @@ function calculatePortfolio(
     let bankValue = 0;
 
 
-    for (const lot of lots) {
+    for (
+        const lot of lots
+    ) {
 
         bankValue +=
 
@@ -2090,7 +2396,7 @@ function calculatePortfolio(
 
                 lot.date,
 
-                valuationDate,
+                today,
 
                 annualRate
 
@@ -2119,83 +2425,54 @@ function calculatePortfolio(
         0;
 
 
-    /*
-       Unrealized P/L
+    /* ================================================
+       UNREALIZED
+    ================================================ */
 
-       فقط دارایی‌هایی که هنوز
-       در اختیار کاربر هستند.
-    */
-
-    const unrealizedPurchasePL =
+    const unrealizedPurchase =
 
         currentValue -
         paidAmount;
 
 
-    const unrealizedBankPL =
+    const unrealizedBank =
 
         currentValue -
         bankValue;
 
 
-    const unrealizedPLPurchasePercent =
+    const plPurchase =
 
         paidAmount > 0
 
         ?
 
         (
-            unrealizedPurchasePL /
+            unrealizedPurchase /
             paidAmount
-        ) * 100
+        ) *
+        100
 
         :
 
         0;
 
 
-    const unrealizedPLBankPercent =
+    const plBank =
 
         bankValue > 0
 
         ?
 
         (
-            unrealizedBankPL /
+            unrealizedBank /
             bankValue
-        ) * 100
+        ) *
+        100
 
         :
 
         0;
-
-
-    /*
-       Realized P/L
-
-       فقط فروش‌های انجام‌شده.
-    */
-
-
-    /*
-       سود/زیان کل اقتصادی:
-
-       Realized + Unrealized
-
-       این عدد برای تصمیم Investment
-       vs Bank استفاده می‌شود.
-    */
-
-    const totalPurchasePL =
-
-        realizedPurchase +
-        unrealizedPurchasePL;
-
-
-    const totalBankPL =
-
-        realizedBank +
-        unrealizedBankPL;
 
 
     return {
@@ -2208,25 +2485,23 @@ function calculatePortfolio(
 
         bankAdjustedPrice,
 
+        currentPrice,
+
         currentValue,
 
         bankValue,
 
-        unrealizedPurchasePL,
+        unrealizedPurchase,
 
-        unrealizedBankPL,
+        unrealizedBank,
 
-        unrealizedPLPurchasePercent,
+        plPurchase,
 
-        unrealizedPLBankPercent,
+        plBank,
 
         realizedPurchase,
 
         realizedBank,
-
-        totalPurchasePL,
-
-        totalBankPL,
 
         buyCount,
 
@@ -2238,36 +2513,8 @@ function calculatePortfolio(
 
 
 /* =====================================================
-   PERIOD BUILDER
+   PERIODS
 ===================================================== */
-
-/*
-   هر خرید شروع یک Period جدید است.
-
-   فروش بعد از خرید متعلق به همان Period است.
-
-   بنابراین برای داده شما:
-
-   Period 1
-   300 Buy
-   100 Sell
-
-   Period 2
-   1100 Buy
-
-   Period 3
-   1000 Buy
-
-   ...
-
-   نکته مهم:
-   فروش 100 واحد در Period 1 فقط
-   موجودی همان Period را کاهش می‌دهد.
-
-   اما برای Last Period که آخرین خرید است،
-   فقط معاملات همان Period بررسی می‌شوند.
-*/
-
 
 function buildPeriods(
     transactions
@@ -2278,7 +2525,9 @@ function buildPeriods(
     let current = null;
 
 
-    for (const t of transactions) {
+    for (
+        const t of transactions
+    ) {
 
         if (
             t.type === "buy"
@@ -2313,6 +2562,7 @@ function buildPeriods(
             };
 
         }
+
 
         else if (
             t.type === "sell"
@@ -2353,10 +2603,6 @@ function buildPeriods(
 }
 
 
-/* =====================================================
-   GET LAST PERIODS
-===================================================== */
-
 function getLastPeriods(
     transactions,
     count
@@ -2370,26 +2616,19 @@ function getLastPeriods(
 
     const selected =
         periods.slice(
-            Math.max(
-                0,
-                periods.length - count
-            )
+            -count
         );
 
 
     return selected.flatMap(
 
-        period =>
-            period.transactions
+        p =>
+            p.transactions
 
     );
 
 }
 
-
-/* =====================================================
-   GET LAST PERIOD
-===================================================== */
 
 function getLastPeriod(
     transactions
@@ -2411,7 +2650,9 @@ function getLastPeriod(
 
 
     return periods[
+
         periods.length - 1
+
     ].transactions;
 
 }
@@ -2428,7 +2669,8 @@ function displaySection(
 
     safeText(
 
-        prefix + "Average",
+        prefix +
+        "Average",
 
         formatNumber(
             result.averagePurchasePrice
@@ -2439,7 +2681,8 @@ function displaySection(
 
     safeText(
 
-        prefix + "Paid",
+        prefix +
+        "Paid",
 
         formatNumber(
             result.paidAmount
@@ -2450,7 +2693,8 @@ function displaySection(
 
     safeText(
 
-        prefix + "Adjusted",
+        prefix +
+        "Adjusted",
 
         formatNumber(
             result.bankAdjustedPrice
@@ -2461,7 +2705,8 @@ function displaySection(
 
     safeText(
 
-        prefix + "Quantity",
+        prefix +
+        "Quantity",
 
         formatNumber(
             result.currentQuantity
@@ -2472,7 +2717,8 @@ function displaySection(
 
     safeText(
 
-        prefix + "Value",
+        prefix +
+        "Value",
 
         formatNumber(
             result.currentValue
@@ -2483,7 +2729,8 @@ function displaySection(
 
     safeText(
 
-        prefix + "Bank",
+        prefix +
+        "Bank",
 
         formatNumber(
             result.bankValue
@@ -2492,17 +2739,15 @@ function displaySection(
     );
 
 
-    /*
-       زیر درصدها:
-       Unrealized P/L
-    */
+    /* Unrealized amounts */
 
     safeText(
 
-        prefix + "PLPurchase",
+        prefix +
+        "UnrealizedPurchase",
 
         formatMoneySigned(
-            result.unrealizedPurchasePL
+            result.unrealizedPurchase
         )
 
     );
@@ -2510,23 +2755,48 @@ function displaySection(
 
     safeText(
 
-        prefix + "PLBank",
+        prefix +
+        "UnrealizedBank",
 
         formatMoneySigned(
-            result.unrealizedBankPL
+            result.unrealizedBank
         )
 
     );
 
 
-    /*
-       باکس پایین:
-       Realized P/L
-    */
+    /* Unrealized percentages */
 
     safeText(
 
-        prefix + "RealizedPurchase",
+        prefix +
+        "PLPurchase",
+
+        formatPercent(
+            result.plPurchase
+        )
+
+    );
+
+
+    safeText(
+
+        prefix +
+        "PLBank",
+
+        formatPercent(
+            result.plBank
+        )
+
+    );
+
+
+    /* Realized amounts */
+
+    safeText(
+
+        prefix +
+        "RealizedPurchase",
 
         formatMoneySigned(
             result.realizedPurchase
@@ -2537,7 +2807,8 @@ function displaySection(
 
     safeText(
 
-        prefix + "RealizedBank",
+        prefix +
+        "RealizedBank",
 
         formatMoneySigned(
             result.realizedBank
@@ -2546,27 +2817,52 @@ function displaySection(
     );
 
 
+    /* Classes */
+
     setProfitLossClass(
 
-        prefix + "PLPurchase",
+        prefix +
+        "PLPurchase",
 
-        result.unrealizedPurchasePL
+        result.plPurchase
 
     );
 
 
     setProfitLossClass(
 
-        prefix + "PLBank",
+        prefix +
+        "PLBank",
 
-        result.unrealizedBankPL
+        result.plBank
 
     );
 
 
     setProfitLossClass(
 
-        prefix + "RealizedPurchase",
+        prefix +
+        "UnrealizedPurchase",
+
+        result.unrealizedPurchase
+
+    );
+
+
+    setProfitLossClass(
+
+        prefix +
+        "UnrealizedBank",
+
+        result.unrealizedBank
+
+    );
+
+
+    setProfitLossClass(
+
+        prefix +
+        "RealizedPurchase",
 
         result.realizedPurchase
 
@@ -2575,25 +2871,28 @@ function displaySection(
 
     setProfitLossClass(
 
-        prefix + "RealizedBank",
+        prefix +
+        "RealizedBank",
 
         result.realizedBank
 
     );
 
 
-    /*
-       Main card status بر اساس سود کل
-       نسبت به بانک است:
-
-       Realized + Unrealized
-    */
+    /* Main status */
 
     const mainPrice =
-        $(prefix + "MainPrice");
+        $(
+
+            prefix +
+            "MainPrice"
+
+        );
 
 
-    if (mainPrice) {
+    if (
+        mainPrice
+    ) {
 
         mainPrice.classList.remove(
 
@@ -2605,7 +2904,7 @@ function displaySection(
 
 
         if (
-            result.totalBankPL >= 0
+            result.plBank >= 0
         ) {
 
             mainPrice.classList.add(
@@ -2629,14 +2928,23 @@ function displaySection(
     }
 
 
+    /* Result text */
+
     const resultBox =
-        $(prefix + "Result");
+        $(
+
+            prefix +
+            "Result"
+
+        );
 
 
-    if (resultBox) {
+    if (
+        resultBox
+    ) {
 
         if (
-            result.totalBankPL >= 0
+            result.plBank >= 0
         ) {
 
             resultBox.textContent =
@@ -2662,11 +2970,20 @@ function displaySection(
     }
 
 
+    /* Trade count */
+
     const tradeCount =
-        $(prefix + "Trades");
+        $(
+
+            prefix +
+            "Trades"
+
+        );
 
 
-    if (tradeCount) {
+    if (
+        tradeCount
+    ) {
 
         tradeCount.textContent =
 
@@ -2677,34 +2994,6 @@ function displaySection(
             result.sellCount +
 
             " OUT";
-
-    }
-
-
-    /*
-       فقط برای حفظ ساختار فعلی HTML.
-       Unrealized P/L مقدار اصلی است.
-    */
-
-    const metricPurchase =
-        $(prefix + "RealizedMetricPurchase");
-
-
-    if (metricPurchase) {
-
-        metricPurchase.textContent =
-
-            formatMoneySigned(
-                result.realizedPurchase
-            );
-
-        setProfitLossClass(
-
-            prefix + "RealizedMetricPurchase",
-
-            result.realizedPurchase
-
-        );
 
     }
 
@@ -2725,7 +3014,7 @@ function displayLastAction(
 
     if (
         !badge ||
-        transactions.length === 0
+        !transactions.length
     ) {
 
         return;
@@ -2735,7 +3024,9 @@ function displayLastAction(
 
     const last =
         transactions[
+
             transactions.length - 1
+
         ];
 
 
@@ -2845,6 +3136,137 @@ async function getCurrentPrice(
 
 
 /* =====================================================
+   SCROLL POSITION
+===================================================== */
+
+const SCROLL_KEY =
+    "financial_dashboard_scroll_y";
+
+
+function saveScrollPosition() {
+
+    try {
+
+        sessionStorage.setItem(
+
+            SCROLL_KEY,
+
+            String(
+                window.scrollY ||
+                window.pageYOffset ||
+                0
+            )
+
+        );
+
+    }
+
+    catch (e) {
+
+        console.warn(
+            "Could not save scroll position",
+            e
+        );
+
+    }
+
+}
+
+
+function restoreScrollPosition() {
+
+    try {
+
+        const saved =
+            sessionStorage.getItem(
+                SCROLL_KEY
+            );
+
+
+        if (
+            saved === null
+        ) {
+
+            return;
+
+        }
+
+
+        const position =
+            parseInt(
+                saved,
+                10
+            );
+
+
+        if (
+            !Number.isFinite(
+                position
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        requestAnimationFrame(
+
+            () => {
+
+                requestAnimationFrame(
+
+                    () => {
+
+                        window.scrollTo(
+
+                            0,
+
+                            position
+
+                        );
+
+                    }
+
+                );
+
+            }
+
+        );
+
+    }
+
+    catch (e) {
+
+        console.warn(
+            "Could not restore scroll position",
+            e
+        );
+
+    }
+
+}
+
+
+window.addEventListener(
+
+    "beforeunload",
+
+    saveScrollPosition
+
+);
+
+
+window.addEventListener(
+
+    "load",
+
+    restoreScrollPosition
+
+);
+
+
+/* =====================================================
    REFRESH
 ===================================================== */
 
@@ -2868,8 +3290,11 @@ function startAutoRefresh() {
 
 
     safeText(
+
         "countdown",
+
         seconds
+
     );
 
 
@@ -2891,8 +3316,11 @@ function startAutoRefresh() {
 
 
                 safeText(
+
                     "countdown",
+
                     seconds
+
                 );
 
             },
@@ -2908,6 +3336,8 @@ function startAutoRefresh() {
 
             () => {
 
+                saveScrollPosition();
+
                 location.reload();
 
             },
@@ -2920,6 +3350,8 @@ function startAutoRefresh() {
 
 
 function manualRefresh() {
+
+    saveScrollPosition();
 
     location.reload();
 
@@ -3036,7 +3468,10 @@ async function init() {
             .slice()
             .sort(
 
-                (a, b) =>
+                (
+                    a,
+                    b
+                ) =>
 
                     dateNumber(
                         a.date
@@ -3055,9 +3490,9 @@ async function init() {
         [];
 
 
-    /* ==============================
+    /* ================================================
        OVERALL
-    ============================== */
+    ================================================ */
 
     const overall =
 
@@ -3083,9 +3518,9 @@ async function init() {
     );
 
 
-    /* ==============================
+    /* ================================================
        LAST 6 PERIODS
-    ============================== */
+    ================================================ */
 
     const sixTransactions =
 
@@ -3122,9 +3557,9 @@ async function init() {
     );
 
 
-    /* ==============================
+    /* ================================================
        LAST PERIOD
-    ============================== */
+    ================================================ */
 
     const lastTransactions =
 
@@ -3197,6 +3632,11 @@ async function init() {
 
     }
 
+
+    /* Restore after all content has rendered */
+
+    restoreScrollPosition();
+
 }
 
 
@@ -3211,6 +3651,8 @@ init()
     () => {
 
         startAutoRefresh();
+
+        restoreScrollPosition();
 
     }
 
