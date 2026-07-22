@@ -8,7 +8,6 @@
 <title>Financial Dashboard</title>
 
 <link rel="manifest" href="manifest.json">
-
 <meta name="theme-color" content="#0b1220">
 
 <link rel="icon" type="image/png" href="icon.png">
@@ -24,6 +23,10 @@ html,
 body {
     margin: 0;
     min-height: 100%;
+}
+
+html {
+    scroll-behavior: auto;
 }
 
 body {
@@ -63,6 +66,7 @@ body {
 
     width: 100%;
     max-width: 1400px;
+
     margin: auto;
 
     padding:
@@ -445,11 +449,12 @@ h1 {
 
 }
 
-/* =========================================
-   UNREALIZED PERCENTAGES
-========================================= */
 
-.unrealized-percent-container {
+/* =====================================================
+   UNREALIZED P/L
+===================================================== */
+
+.pl-container {
 
     display: grid;
 
@@ -458,15 +463,15 @@ h1 {
 
     gap: 7px;
 
-    margin-top: 9px;
+    margin-top: 8px;
 
 }
 
-.unrealized-percent-box {
+.pl-box {
 
     min-height: 58px;
 
-    padding: 7px;
+    padding: 6px;
 
     display: flex;
 
@@ -490,21 +495,20 @@ h1 {
 
 }
 
-.unrealized-percent-label {
+.pl-label {
 
     color:
         #94a3b8;
 
     font-size: 9px;
 
-    margin-bottom: 4px;
+    line-height: 1.25;
 
-    text-align:
-        center;
+    margin-bottom: 3px;
 
 }
 
-.unrealized-percent-value {
+.pl-value {
 
     font-size: 17px;
 
@@ -512,11 +516,12 @@ h1 {
 
 }
 
-/* =========================================
-   UNREALIZED AMOUNTS
-========================================= */
 
-.unrealized-amount-container {
+/* =====================================================
+   REALIZED P/L
+===================================================== */
+
+.realized-container {
 
     display: grid;
 
@@ -529,22 +534,13 @@ h1 {
 
 }
 
-.unrealized-amount-box {
+.realized-box {
 
-    min-height: 48px;
+    min-width: 0;
 
-    padding: 6px;
-
-    display: flex;
-
-    flex-direction:
-        column;
-
-    justify-content:
-        center;
-
-    align-items:
-        center;
+    padding:
+        5px
+        6px;
 
     border-radius: 9px;
 
@@ -555,50 +551,65 @@ h1 {
         1px solid
         rgba(255,255,255,.055);
 
+    display: flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap: 5px;
+
 }
 
-.unrealized-amount-label {
+.realized-label {
 
     color:
         #94a3b8;
 
     font-size: 8px;
 
-    margin-bottom: 3px;
+    line-height: 1.2;
 
-    text-align:
-        center;
+    white-space:
+        nowrap;
 
 }
 
-.unrealized-amount-value {
+.realized-value {
 
-    font-size: 13px;
+    font-size: 10px;
 
     font-weight: 800;
 
+    white-space:
+        nowrap;
+
+    text-align:
+        right;
+
 }
 
-/* =========================================
+
+/* =====================================================
    RESULT
-========================================= */
+===================================================== */
 
 .result {
 
-    margin-top: 8px;
+    margin-top: 7px;
 
     font-size: 9px;
 
     font-weight: 750;
 
-    text-align:
-        center;
-
 }
 
-/* =========================================
+
+/* =====================================================
    COMPARISON
-========================================= */
+===================================================== */
 
 .comparison {
 
@@ -648,16 +659,17 @@ h1 {
 
 }
 
-/* =========================================
+
+/* =====================================================
    METRICS
-========================================= */
+===================================================== */
 
 .metrics {
 
     display: grid;
 
     grid-template-columns:
-        1fr 1fr;
+        repeat(2,1fr);
 
     gap: 7px;
 
@@ -704,79 +716,10 @@ h1 {
 
 }
 
-/* =========================================
-   REALIZED P/L
-========================================= */
 
-.realized-section {
-
-    margin-top: 8px;
-
-    padding: 7px 8px;
-
-    border-radius: 9px;
-
-    background:
-        rgba(255,255,255,.025);
-
-    border:
-        1px solid
-        rgba(255,255,255,.055);
-
-}
-
-.realized-row {
-
-    display: grid;
-
-    grid-template-columns:
-        minmax(0, 1fr)
-        auto;
-
-    align-items:
-        center;
-
-    gap: 8px;
-
-    min-height: 24px;
-
-}
-
-.realized-row + .realized-row {
-
-    margin-top: 2px;
-
-}
-
-.realized-label {
-
-    color:
-        #94a3b8;
-
-    font-size: 9px;
-
-    white-space:
-        nowrap;
-
-}
-
-.realized-value {
-
-    font-size: 11px;
-
-    font-weight: 800;
-
-    white-space:
-        nowrap;
-
-    text-align:
-        right;
-
-}
-
-/* =========================================
+/* =====================================================
    COLORS
-========================================= */
+===================================================== */
 
 .profit {
 
@@ -791,6 +734,11 @@ h1 {
         #f87171;
 
 }
+
+
+/* =====================================================
+   ERROR / LOADING
+===================================================== */
 
 .error {
 
@@ -824,9 +772,10 @@ h1 {
 
 }
 
-/* =========================================
+
+/* =====================================================
    RESPONSIVE
-========================================= */
+===================================================== */
 
 @media (max-width:1100px) {
 
@@ -890,15 +839,13 @@ h1 {
 
     .realized-label {
 
-        font-size:
-            8px;
+        font-size: 7px;
 
     }
 
     .realized-value {
 
-        font-size:
-            10px;
+        font-size: 9px;
 
     }
 
@@ -908,9 +855,11 @@ h1 {
 
 </head>
 
+
 <body>
 
 <div class="container">
+
 
 <header>
 
@@ -918,7 +867,9 @@ h1 {
 
 <div>
 
-<h1>Financial Dashboard</h1>
+<h1>
+Financial Dashboard
+</h1>
 
 <div
 class="today"
@@ -929,6 +880,7 @@ id="today">
 </div>
 
 </div>
+
 
 <div class="live-price">
 
@@ -946,6 +898,7 @@ id="currentPrice">
 
 </div>
 
+
 <div class="live-footer">
 
 <div>
@@ -953,9 +906,12 @@ Bank Rate:
 <span id="bankRate">-</span>
 </div>
 
+
 <div class="refresh-info">
 
-<span id="countdown">30</span>
+<span id="countdown">
+30
+</span>
 
 <span>s</span>
 
@@ -976,7 +932,9 @@ title="Refresh">
 
 </header>
 
+
 <div id="errorBox"></div>
+
 
 <div
 id="loading"
@@ -986,15 +944,18 @@ Loading...
 
 </div>
 
+
 <div
 id="dashboard"
 style="display:none;">
 
-<!-- =========================================
+
+<!-- =================================================
      OVERALL
-========================================= -->
+================================================= -->
 
 <div class="card">
+
 
 <div class="card-header">
 
@@ -1010,13 +971,16 @@ id="overallTrades">
 
 </div>
 
+
 <div
 class="main-price"
 id="overallMainPrice">
 
+
 <div class="main-price-title">
 Bank-Adjusted Price
 </div>
+
 
 <div
 class="main-price-number"
@@ -1024,32 +988,37 @@ id="overallAdjusted">
 -
 </div>
 
-<!-- UNREALIZED PERCENTAGES -->
 
-<div class="unrealized-percent-container">
+<!-- UNREALIZED PERCENT -->
 
-<div class="unrealized-percent-box">
+<div class="pl-container">
 
-<div class="unrealized-percent-label">
-Unrealized P/L vs Purchase
+
+<div class="pl-box">
+
+<div class="pl-label">
+Unrealized P/L<br>
+vs Purchase
 </div>
 
 <div
-class="unrealized-percent-value"
+class="pl-value"
 id="overallPLPurchase">
 -
 </div>
 
 </div>
 
-<div class="unrealized-percent-box">
 
-<div class="unrealized-percent-label">
-Unrealized P/L vs Bank
+<div class="pl-box">
+
+<div class="pl-label">
+Unrealized P/L<br>
+vs Bank
 </div>
 
 <div
-class="unrealized-percent-value"
+class="pl-value"
 id="overallPLBank">
 -
 </div>
@@ -1058,32 +1027,37 @@ id="overallPLBank">
 
 </div>
 
-<!-- UNREALIZED AMOUNTS -->
 
-<div class="unrealized-amount-container">
+<!-- UNREALIZED AMOUNT -->
 
-<div class="unrealized-amount-box">
+<div class="pl-container">
 
-<div class="unrealized-amount-label">
-Unrealized P/L vs Purchase
+
+<div class="pl-box">
+
+<div class="pl-label">
+Unrealized P/L<br>
+vs Purchase
 </div>
 
 <div
-class="unrealized-amount-value"
+class="pl-value"
 id="overallUnrealizedPurchase">
 -
 </div>
 
 </div>
 
-<div class="unrealized-amount-box">
 
-<div class="unrealized-amount-label">
-Unrealized P/L vs Bank
+<div class="pl-box">
+
+<div class="pl-label">
+Unrealized P/L<br>
+vs Bank
 </div>
 
 <div
-class="unrealized-amount-value"
+class="pl-value"
 id="overallUnrealizedBank">
 -
 </div>
@@ -1092,15 +1066,19 @@ id="overallUnrealizedBank">
 
 </div>
 
+
 <div
 class="result"
 id="overallResult">
 -
 </div>
 
+
 </div>
 
+
 <div class="comparison">
+
 
 <div class="compare-box">
 
@@ -1116,6 +1094,7 @@ id="overallAverage">
 
 </div>
 
+
 <div class="compare-box">
 
 <div class="compare-label">
@@ -1130,9 +1109,12 @@ id="overallPaid">
 
 </div>
 
+
 </div>
 
+
 <div class="metrics">
+
 
 <div class="metric">
 
@@ -1148,6 +1130,7 @@ id="overallQuantity">
 
 </div>
 
+
 <div class="metric">
 
 <div class="metric-label">
@@ -1161,6 +1144,7 @@ id="overallValue">
 </div>
 
 </div>
+
 
 <div class="metric">
 
@@ -1176,25 +1160,31 @@ id="overallBank">
 
 </div>
 
+
 <div class="metric">
 
 <div class="metric-label">
-Realized P/L vs Purchase
+Unrealized Difference
 </div>
 
 <div
 class="metric-value"
-id="overallRealizedPurchase">
+id="overallDifference">
 -
 </div>
 
 </div>
 
+
 </div>
 
-<div class="realized-section">
 
-<div class="realized-row">
+<!-- REALIZED P/L -->
+
+<div class="realized-container">
+
+
+<div class="realized-box">
 
 <div class="realized-label">
 Realized P/L vs Purchase
@@ -1202,13 +1192,14 @@ Realized P/L vs Purchase
 
 <div
 class="realized-value"
-id="overallRealizedPurchaseBottom">
+id="overallRealizedPurchase">
 -
 </div>
 
 </div>
 
-<div class="realized-row">
+
+<div class="realized-box">
 
 <div class="realized-label">
 Realized P/L vs Bank
@@ -1222,16 +1213,19 @@ id="overallRealizedBank">
 
 </div>
 
-</div>
 
 </div>
 
 
-<!-- =========================================
+</div>
+
+
+<!-- =================================================
      LAST 6 PERIODS
-========================================= -->
+================================================= -->
 
 <div class="card">
+
 
 <div class="card-header">
 
@@ -1247,9 +1241,11 @@ id="sixTrades">
 
 </div>
 
+
 <div
 class="main-price"
 id="sixMainPrice">
+
 
 <div class="main-price-title">
 Bank-Adjusted Price
@@ -1261,30 +1257,35 @@ id="sixAdjusted">
 -
 </div>
 
-<div class="unrealized-percent-container">
 
-<div class="unrealized-percent-box">
+<div class="pl-container">
 
-<div class="unrealized-percent-label">
-Unrealized P/L vs Purchase
+
+<div class="pl-box">
+
+<div class="pl-label">
+Unrealized P/L<br>
+vs Purchase
 </div>
 
 <div
-class="unrealized-percent-value"
+class="pl-value"
 id="sixPLPurchase">
 -
 </div>
 
 </div>
 
-<div class="unrealized-percent-box">
 
-<div class="unrealized-percent-label">
-Unrealized P/L vs Bank
+<div class="pl-box">
+
+<div class="pl-label">
+Unrealized P/L<br>
+vs Bank
 </div>
 
 <div
-class="unrealized-percent-value"
+class="pl-value"
 id="sixPLBank">
 -
 </div>
@@ -1293,30 +1294,35 @@ id="sixPLBank">
 
 </div>
 
-<div class="unrealized-amount-container">
 
-<div class="unrealized-amount-box">
+<div class="pl-container">
 
-<div class="unrealized-amount-label">
-Unrealized P/L vs Purchase
+
+<div class="pl-box">
+
+<div class="pl-label">
+Unrealized P/L<br>
+vs Purchase
 </div>
 
 <div
-class="unrealized-amount-value"
+class="pl-value"
 id="sixUnrealizedPurchase">
 -
 </div>
 
 </div>
 
-<div class="unrealized-amount-box">
 
-<div class="unrealized-amount-label">
-Unrealized P/L vs Bank
+<div class="pl-box">
+
+<div class="pl-label">
+Unrealized P/L<br>
+vs Bank
 </div>
 
 <div
-class="unrealized-amount-value"
+class="pl-value"
 id="sixUnrealizedBank">
 -
 </div>
@@ -1325,15 +1331,19 @@ id="sixUnrealizedBank">
 
 </div>
 
+
 <div
 class="result"
 id="sixResult">
 -
 </div>
 
+
 </div>
 
+
 <div class="comparison">
+
 
 <div class="compare-box">
 
@@ -1349,6 +1359,7 @@ id="sixAverage">
 
 </div>
 
+
 <div class="compare-box">
 
 <div class="compare-label">
@@ -1363,9 +1374,12 @@ id="sixPaid">
 
 </div>
 
+
 </div>
 
+
 <div class="metrics">
+
 
 <div class="metric">
 
@@ -1381,6 +1395,7 @@ id="sixQuantity">
 
 </div>
 
+
 <div class="metric">
 
 <div class="metric-label">
@@ -1394,6 +1409,7 @@ id="sixValue">
 </div>
 
 </div>
+
 
 <div class="metric">
 
@@ -1409,25 +1425,29 @@ id="sixBank">
 
 </div>
 
+
 <div class="metric">
 
 <div class="metric-label">
-Realized P/L vs Purchase
+Unrealized Difference
 </div>
 
 <div
 class="metric-value"
-id="sixRealizedPurchaseMetric">
+id="sixDifference">
 -
 </div>
 
 </div>
 
+
 </div>
 
-<div class="realized-section">
 
-<div class="realized-row">
+<div class="realized-container">
+
+
+<div class="realized-box">
 
 <div class="realized-label">
 Realized P/L vs Purchase
@@ -1441,7 +1461,8 @@ id="sixRealizedPurchase">
 
 </div>
 
-<div class="realized-row">
+
+<div class="realized-box">
 
 <div class="realized-label">
 Realized P/L vs Bank
@@ -1455,16 +1476,19 @@ id="sixRealizedBank">
 
 </div>
 
-</div>
 
 </div>
 
 
-<!-- =========================================
+</div>
+
+
+<!-- =================================================
      LAST PERIOD
-========================================= -->
+================================================= -->
 
 <div class="card">
+
 
 <div class="card-header">
 
@@ -1472,7 +1496,9 @@ id="sixRealizedBank">
 Last Period
 </div>
 
+
 <div class="period-info">
+
 
 <div
 class="trade-count"
@@ -1480,23 +1506,28 @@ id="lastTrades">
 -
 </div>
 
+
 <div
 class="action-badge"
 id="lastAction">
 -
 </div>
 
+
 </div>
 
 </div>
+
 
 <div
 class="main-price"
 id="lastMainPrice">
 
+
 <div class="main-price-title">
 Bank-Adjusted Price
 </div>
+
 
 <div
 class="main-price-number"
@@ -1504,69 +1535,82 @@ id="lastAdjusted">
 -
 </div>
 
-<div class="unrealized-percent-container">
 
-<div class="unrealized-percent-box">
+<div class="pl-container">
 
-<div class="unrealized-percent-label">
-Unrealized P/L vs Purchase
+
+<div class="pl-box">
+
+<div class="pl-label">
+Unrealized P/L<br>
+vs Purchase
 </div>
 
 <div
-class="unrealized-percent-value"
+class="pl-value"
 id="lastPLPurchase">
 -
 </div>
 
 </div>
 
-<div class="unrealized-percent-box">
 
-<div class="unrealized-percent-label">
-Unrealized P/L vs Bank
+<div class="pl-box">
+
+<div class="pl-label">
+Unrealized P/L<br>
+vs Bank
 </div>
 
 <div
-class="unrealized-percent-value"
+class="pl-value"
 id="lastPLBank">
 -
 </div>
 
 </div>
 
+
 </div>
 
-<div class="unrealized-amount-container">
 
-<div class="unrealized-amount-box">
+<div class="pl-container">
 
-<div class="unrealized-amount-label">
-Unrealized P/L vs Purchase
+
+<div class="pl-box">
+
+<div class="pl-label">
+Unrealized P/L<br>
+vs Purchase
 </div>
 
 <div
-class="unrealized-amount-value"
+class="pl-value"
 id="lastUnrealizedPurchase">
 -
 </div>
 
 </div>
 
-<div class="unrealized-amount-box">
 
-<div class="unrealized-amount-label">
-Unrealized P/L vs Bank
+<div class="pl-box">
+
+<div class="pl-label">
+Unrealized P/L<br>
+vs Bank
 </div>
 
 <div
-class="unrealized-amount-value"
+class="pl-value"
 id="lastUnrealizedBank">
 -
 </div>
 
 </div>
 
+
 </div>
+
 
 <div
 class="result"
@@ -1574,9 +1618,12 @@ id="lastResult">
 -
 </div>
 
+
 </div>
 
+
 <div class="comparison">
+
 
 <div class="compare-box">
 
@@ -1592,6 +1639,7 @@ id="lastAverage">
 
 </div>
 
+
 <div class="compare-box">
 
 <div class="compare-label">
@@ -1606,9 +1654,12 @@ id="lastPaid">
 
 </div>
 
+
 </div>
 
+
 <div class="metrics">
+
 
 <div class="metric">
 
@@ -1624,6 +1675,7 @@ id="lastQuantity">
 
 </div>
 
+
 <div class="metric">
 
 <div class="metric-label">
@@ -1637,6 +1689,7 @@ id="lastValue">
 </div>
 
 </div>
+
 
 <div class="metric">
 
@@ -1652,25 +1705,29 @@ id="lastBank">
 
 </div>
 
+
 <div class="metric">
 
 <div class="metric-label">
-Realized P/L vs Purchase
+Unrealized Difference
 </div>
 
 <div
 class="metric-value"
-id="lastRealizedPurchaseMetric">
+id="lastDifference">
 -
 </div>
 
 </div>
 
+
 </div>
 
-<div class="realized-section">
 
-<div class="realized-row">
+<div class="realized-container">
+
+
+<div class="realized-box">
 
 <div class="realized-label">
 Realized P/L vs Purchase
@@ -1684,7 +1741,8 @@ id="lastRealizedPurchase">
 
 </div>
 
-<div class="realized-row">
+
+<div class="realized-box">
 
 <div class="realized-label">
 Realized P/L vs Bank
@@ -1698,9 +1756,12 @@ id="lastRealizedBank">
 
 </div>
 
-</div>
 
 </div>
+
+
+</div>
+
 
 </div>
 
@@ -1710,7 +1771,7 @@ id="lastRealizedBank">
 <script>
 
 /* =====================================================
-   BASIC HELPERS
+   HELPERS
 ===================================================== */
 
 function $(id) {
@@ -1758,12 +1819,14 @@ function formatMoneySigned(value) {
     const n =
         Math.round(Number(value));
 
+
     if (n > 0) {
 
         return "+" +
             n.toLocaleString("en-US");
 
     }
+
 
     return n.toLocaleString("en-US");
 
@@ -1781,15 +1844,20 @@ function formatPercent(value) {
     const n =
         Number(value);
 
+
     return (
 
         n >= 0
         ? "+"
         : ""
 
-    ) +
+    )
 
-    n.toFixed(2) +
+    +
+
+    n.toFixed(2)
+
+    +
 
     "%";
 
@@ -1809,10 +1877,12 @@ function setProfitLossClass(
 
     }
 
+
     el.classList.remove(
         "profit",
         "loss"
     );
+
 
     el.classList.add(
 
@@ -1837,12 +1907,23 @@ function jalaliToGregorian(
 
     jy -= 979;
 
+
     let days =
+
         365 * jy
+
         +
-        Math.floor(jy / 33) * 8
+
+        Math.floor(
+            jy / 33
+        ) * 8
+
         +
-        Math.floor(((jy % 33) + 3) / 4);
+
+        Math.floor(
+            ((jy % 33) + 3) / 4
+        );
+
 
     for (
         let i = 1;
@@ -1851,28 +1932,46 @@ function jalaliToGregorian(
     ) {
 
         days +=
+
             i <= 6
             ? 31
             : 30;
 
     }
 
+
     days += jd - 1;
 
+
     let gy =
-        1600 +
+
+        1600
+
+        +
+
         400 *
-        Math.floor(days / 146097);
+
+        Math.floor(
+            days / 146097
+        );
+
 
     days %= 146097;
+
 
     if (days > 36524) {
 
         gy +=
+
             100 *
-            Math.floor(--days / 36524);
+
+            Math.floor(
+                --days / 36524
+            );
+
 
         days %= 36524;
+
 
         if (days >= 365) {
 
@@ -1882,55 +1981,89 @@ function jalaliToGregorian(
 
     }
 
+
     gy +=
+
         4 *
-        Math.floor(days / 1461);
+
+        Math.floor(
+            days / 1461
+        );
+
 
     days %= 1461;
+
 
     if (days > 365) {
 
         gy +=
+
             Math.floor(
                 (days - 1) / 365
             );
 
+
         days =
+
             (days - 1) % 365;
 
     }
 
+
     let gd =
         days + 1;
+
 
     const leap =
 
         (
-            gy % 4 === 0 &&
+
+            gy % 4 === 0
+
+            &&
+
             gy % 100 !== 0
+
         )
+
         ||
+
         gy % 400 === 0;
+
 
     const monthDays = [
 
         0,
+
         31,
+
         leap ? 29 : 28,
+
         31,
+
         30,
+
         31,
+
         30,
+
         31,
+
         31,
+
         30,
+
         31,
+
         30,
+
         31
 
     ];
 
+
     let gm = 1;
+
 
     while (
         gd > monthDays[gm]
@@ -1943,10 +2076,15 @@ function jalaliToGregorian(
 
     }
 
+
     return new Date(
+
         gy,
+
         gm - 1,
+
         gd
+
     );
 
 }
@@ -1958,28 +2096,40 @@ function daysBetweenInclusive(
 ) {
 
     const s =
+
         start
             .split("/")
             .map(Number);
 
+
     const e =
+
         end
             .split("/")
             .map(Number);
 
+
     const startDate =
+
         jalaliToGregorian(
+
             s[0],
             s[1],
             s[2]
+
         );
 
+
     const endDate =
+
         jalaliToGregorian(
+
             e[0],
             e[1],
             e[2]
+
         );
+
 
     return Math.max(
 
@@ -1990,9 +2140,15 @@ function daysBetweenInclusive(
             (
                 endDate -
                 startDate
-            ) / 86400000
+            )
+            /
+            86400000
 
-        ) + 1
+        )
+
+        +
+
+        1
 
     );
 
@@ -2004,105 +2160,157 @@ function getTodayJalali() {
     const now =
         new Date();
 
+
     const gy =
         now.getFullYear();
+
 
     const gm =
         now.getMonth() + 1;
 
+
     const gd =
         now.getDate();
+
 
     const gdm = [
 
         0,
+
         31,
+
         59,
+
         90,
+
         120,
+
         151,
+
         181,
+
         212,
+
         243,
+
         273,
+
         304,
+
         334
 
     ];
 
+
     let jy =
+
         gy > 1600
         ? 979
         : 0;
 
+
     const y =
+
         gy > 1600
         ? gy - 1600
         : gy - 621;
 
+
     let days =
 
         365 * y
+
         +
+
         Math.floor(
             (y + 3) / 4
         )
+
         -
+
         Math.floor(
             (y + 99) / 100
         )
+
         +
+
         Math.floor(
             (y + 399) / 400
         )
+
         -
+
         80
+
         +
+
         gd
+
         +
+
         gdm[gm - 1];
 
+
     jy +=
+
         33 *
+
         Math.floor(
             days / 12053
         );
 
+
     days %= 12053;
 
+
     jy +=
+
         4 *
+
         Math.floor(
             days / 1461
         );
 
+
     days %= 1461;
+
 
     if (days > 365) {
 
         jy +=
+
             Math.floor(
                 (days - 1) / 365
             );
 
+
         days =
+
             (days - 1) % 365;
 
     }
 
+
     let jm;
+
     let jd;
+
 
     if (days < 186) {
 
         jm =
+
             1 +
+
             Math.floor(
                 days / 31
             );
 
+
         jd =
+
             1 +
+
             days % 31;
 
     }
@@ -2110,24 +2318,44 @@ function getTodayJalali() {
     else {
 
         jm =
+
             7 +
+
             Math.floor(
                 (days - 186) / 30
             );
 
+
         jd =
+
             1 +
+
             (days - 186) % 30;
 
     }
 
+
     return (
 
-        jy +
-        "/" +
-        String(jm).padStart(2,"0") +
-        "/" +
-        String(jd).padStart(2,"0")
+        jy
+
+        +
+
+        "/"
+
+        +
+
+        String(jm)
+            .padStart(2,"0")
+
+        +
+
+        "/"
+
+        +
+
+        String(jd)
+            .padStart(2,"0")
 
     );
 
@@ -2137,14 +2365,22 @@ function getTodayJalali() {
 function dateNumber(date) {
 
     const p =
+
         date
             .split("/")
             .map(Number);
 
+
     return (
 
-        p[0] * 10000 +
-        p[1] * 100 +
+        p[0] * 10000
+
+        +
+
+        p[1] * 100
+
+        +
+
         p[2]
 
     );
@@ -2153,33 +2389,51 @@ function dateNumber(date) {
 
 
 /* =====================================================
-   BANK CALCULATION
+   BANK
 ===================================================== */
 
 function compoundValue(
+
     principal,
+
     startDate,
-    today,
+
+    endDate,
+
     annualRate
+
 ) {
 
     const days =
+
         daysBetweenInclusive(
+
             startDate,
-            today
+
+            endDate
+
         );
 
+
     const dailyRate =
-        annualRate /
-        100 /
+
+        annualRate
+        /
+        100
+        /
         365;
+
 
     return (
 
         principal *
+
         Math.pow(
+
             1 + dailyRate,
+
             days
+
         )
 
     );
@@ -2188,21 +2442,28 @@ function compoundValue(
 
 
 /* =====================================================
-   PORTFOLIO CALCULATION
+   PORTFOLIO FIFO
 ===================================================== */
 
 function calculatePortfolio(
+
     transactions,
+
     currentPrice,
+
     today,
+
     annualRate
+
 ) {
 
     const lots = [];
 
+
     let realizedPurchase = 0;
 
     let realizedBank = 0;
+
 
     let buyCount = 0;
 
@@ -2216,6 +2477,7 @@ function calculatePortfolio(
         const amount =
             Number(t.amount);
 
+
         const price =
             Number(t.price);
 
@@ -2225,6 +2487,7 @@ function calculatePortfolio(
         ) {
 
             buyCount++;
+
 
             lots.push({
 
@@ -2246,13 +2509,17 @@ function calculatePortfolio(
 
             sellCount++;
 
+
             let remaining =
                 amount;
 
 
             while (
 
-                remaining > 0 &&
+                remaining > 0
+
+                &&
+
                 lots.length > 0
 
             ) {
@@ -2260,7 +2527,9 @@ function calculatePortfolio(
                 const lot =
                     lots[0];
 
+
                 const used =
+
                     Math.min(
 
                         remaining,
@@ -2273,12 +2542,14 @@ function calculatePortfolio(
                 const purchaseCost =
 
                     used *
+
                     lot.price;
 
 
                 const saleRevenue =
 
                     used *
+
                     price;
 
 
@@ -2299,25 +2570,38 @@ function calculatePortfolio(
 
                 realizedPurchase +=
 
-                    saleRevenue -
+                    saleRevenue
+
+                    -
+
                     purchaseCost;
 
 
                 realizedBank +=
 
-                    saleRevenue -
+                    saleRevenue
+
+                    -
+
                     bankCost;
 
 
                 lot.amount -=
                     used;
 
+
                 remaining -=
                     used;
 
 
                 if (
-                    lot.amount <= 0.0000001
+
+                    lot.amount
+
+                    <=
+
+                    0.0000001
+
                 ) {
 
                     lots.shift();
@@ -2341,6 +2625,7 @@ function calculatePortfolio(
             ) =>
 
                 sum +
+
                 lot.amount,
 
             0
@@ -2357,8 +2642,12 @@ function calculatePortfolio(
                 lot
             ) =>
 
-                sum +
+                sum
+
+                +
+
                 lot.amount *
+
                 lot.price,
 
             0
@@ -2408,6 +2697,7 @@ function calculatePortfolio(
     const currentValue =
 
         currentQuantity *
+
         currentPrice;
 
 
@@ -2425,20 +2715,23 @@ function calculatePortfolio(
         0;
 
 
-    /* ================================================
-       UNREALIZED
-    ================================================ */
-
-    const unrealizedPurchase =
+    const unrealizedPurchaseAmount =
 
         currentValue -
+
         paidAmount;
 
 
-    const unrealizedBank =
+    const unrealizedBankAmount =
 
         currentValue -
+
         bankValue;
+
+
+    const unrealizedDifference =
+
+        unrealizedBankAmount;
 
 
     const plPurchase =
@@ -2448,9 +2741,17 @@ function calculatePortfolio(
         ?
 
         (
-            unrealizedPurchase /
+
+            unrealizedPurchaseAmount
+
+            /
+
             paidAmount
-        ) *
+
+        )
+
+        *
+
         100
 
         :
@@ -2465,9 +2766,17 @@ function calculatePortfolio(
         ?
 
         (
-            unrealizedBank /
+
+            unrealizedBankAmount
+
+            /
+
             bankValue
-        ) *
+
+        )
+
+        *
+
         100
 
         :
@@ -2491,9 +2800,11 @@ function calculatePortfolio(
 
         bankValue,
 
-        unrealizedPurchase,
+        unrealizedPurchaseAmount,
 
-        unrealizedBank,
+        unrealizedBankAmount,
+
+        unrealizedDifference,
 
         plPurchase,
 
@@ -2513,7 +2824,7 @@ function calculatePortfolio(
 
 
 /* =====================================================
-   PERIODS
+   PERIOD ENGINE
 ===================================================== */
 
 function buildPeriods(
@@ -2521,6 +2832,7 @@ function buildPeriods(
 ) {
 
     const periods = [];
+
 
     let current = null;
 
@@ -2534,8 +2846,13 @@ function buildPeriods(
         ) {
 
             if (
-                current &&
+
+                current
+
+                &&
+
                 current.transactions.length > 0
+
             ) {
 
                 periods.push(
@@ -2576,6 +2893,7 @@ function buildPeriods(
                     t
                 );
 
+
                 current.endDate =
                     t.date;
 
@@ -2587,8 +2905,13 @@ function buildPeriods(
 
 
     if (
-        current &&
+
+        current
+
+        &&
+
         current.transactions.length > 0
+
     ) {
 
         periods.push(
@@ -2604,26 +2927,36 @@ function buildPeriods(
 
 
 function getLastPeriods(
+
     transactions,
+
     count
+
 ) {
 
     const periods =
+
         buildPeriods(
+
             transactions
+
         );
 
 
     const selected =
+
         periods.slice(
+
             -count
+
         );
 
 
     return selected.flatMap(
 
-        p =>
-            p.transactions
+        period =>
+
+            period.transactions
 
     );
 
@@ -2635,8 +2968,11 @@ function getLastPeriod(
 ) {
 
     const periods =
+
         buildPeriods(
+
             transactions
+
         );
 
 
@@ -2663,8 +2999,11 @@ function getLastPeriod(
 ===================================================== */
 
 function displaySection(
+
     result,
+
     prefix
+
 ) {
 
     safeText(
@@ -2673,7 +3012,9 @@ function displaySection(
         "Average",
 
         formatNumber(
+
             result.averagePurchasePrice
+
         )
 
     );
@@ -2685,7 +3026,9 @@ function displaySection(
         "Paid",
 
         formatNumber(
+
             result.paidAmount
+
         )
 
     );
@@ -2697,7 +3040,9 @@ function displaySection(
         "Adjusted",
 
         formatNumber(
+
             result.bankAdjustedPrice
+
         )
 
     );
@@ -2709,7 +3054,9 @@ function displaySection(
         "Quantity",
 
         formatNumber(
+
             result.currentQuantity
+
         )
 
     );
@@ -2721,7 +3068,9 @@ function displaySection(
         "Value",
 
         formatNumber(
+
             result.currentValue
+
         )
 
     );
@@ -2733,21 +3082,9 @@ function displaySection(
         "Bank",
 
         formatNumber(
+
             result.bankValue
-        )
 
-    );
-
-
-    /* Unrealized amounts */
-
-    safeText(
-
-        prefix +
-        "UnrealizedPurchase",
-
-        formatMoneySigned(
-            result.unrealizedPurchase
         )
 
     );
@@ -2756,10 +3093,12 @@ function displaySection(
     safeText(
 
         prefix +
-        "UnrealizedBank",
+        "Difference",
 
         formatMoneySigned(
-            result.unrealizedBank
+
+            result.unrealizedDifference
+
         )
 
     );
@@ -2773,7 +3112,9 @@ function displaySection(
         "PLPurchase",
 
         formatPercent(
+
             result.plPurchase
+
         )
 
     );
@@ -2785,7 +3126,39 @@ function displaySection(
         "PLBank",
 
         formatPercent(
+
             result.plBank
+
+        )
+
+    );
+
+
+    /* Unrealized amounts */
+
+    safeText(
+
+        prefix +
+        "UnrealizedPurchase",
+
+        formatMoneySigned(
+
+            result.unrealizedPurchaseAmount
+
+        )
+
+    );
+
+
+    safeText(
+
+        prefix +
+        "UnrealizedBank",
+
+        formatMoneySigned(
+
+            result.unrealizedBankAmount
+
         )
 
     );
@@ -2799,7 +3172,9 @@ function displaySection(
         "RealizedPurchase",
 
         formatMoneySigned(
+
             result.realizedPurchase
+
         )
 
     );
@@ -2811,13 +3186,13 @@ function displaySection(
         "RealizedBank",
 
         formatMoneySigned(
+
             result.realizedBank
+
         )
 
     );
 
-
-    /* Classes */
 
     setProfitLossClass(
 
@@ -2844,7 +3219,7 @@ function displaySection(
         prefix +
         "UnrealizedPurchase",
 
-        result.unrealizedPurchase
+        result.unrealizedPurchaseAmount
 
     );
 
@@ -2854,7 +3229,7 @@ function displaySection(
         prefix +
         "UnrealizedBank",
 
-        result.unrealizedBank
+        result.unrealizedBankAmount
 
     );
 
@@ -2879,12 +3254,22 @@ function displaySection(
     );
 
 
-    /* Main status */
+    setProfitLossClass(
+
+        prefix +
+        "Difference",
+
+        result.unrealizedDifference
+
+    );
+
 
     const mainPrice =
+
         $(
 
             prefix +
+
             "MainPrice"
 
         );
@@ -2904,7 +3289,9 @@ function displaySection(
 
 
         if (
+
             result.plBank >= 0
+
         ) {
 
             mainPrice.classList.add(
@@ -2928,12 +3315,12 @@ function displaySection(
     }
 
 
-    /* Result text */
-
     const resultBox =
+
         $(
 
             prefix +
+
             "Result"
 
         );
@@ -2944,14 +3331,18 @@ function displaySection(
     ) {
 
         if (
+
             result.plBank >= 0
+
         ) {
 
             resultBox.textContent =
 
                 "Investment return is better than bank";
 
+
             resultBox.style.color =
+
                 "#34d399";
 
         }
@@ -2962,7 +3353,9 @@ function displaySection(
 
                 "Bank return is better than investment";
 
+
             resultBox.style.color =
+
                 "#f87171";
 
         }
@@ -2970,12 +3363,12 @@ function displaySection(
     }
 
 
-    /* Trade count */
-
     const tradeCount =
+
         $(
 
             prefix +
+
             "Trades"
 
         );
@@ -2987,11 +3380,17 @@ function displaySection(
 
         tradeCount.textContent =
 
-            result.buyCount +
+            result.buyCount
 
-            " IN  •  " +
+            +
 
-            result.sellCount +
+            " IN  •  "
+
+            +
+
+            result.sellCount
+
+            +
 
             " OUT";
 
@@ -3005,16 +3404,24 @@ function displaySection(
 ===================================================== */
 
 function displayLastAction(
+
     transactions
+
 ) {
 
     const badge =
+
         $("lastAction");
 
 
     if (
-        !badge ||
+
+        !badge
+
+        ||
+
         !transactions.length
+
     ) {
 
         return;
@@ -3023,6 +3430,7 @@ function displayLastAction(
 
 
     const last =
+
         transactions[
 
             transactions.length - 1
@@ -3031,13 +3439,17 @@ function displayLastAction(
 
 
     if (
+
         last.type === "buy"
+
     ) {
 
         badge.textContent =
             "IN";
 
+
         badge.className =
+
             "action-badge action-buy";
 
     }
@@ -3047,7 +3459,9 @@ function displayLastAction(
         badge.textContent =
             "OUT";
 
+
         badge.className =
+
             "action-badge action-sell";
 
     }
@@ -3060,8 +3474,11 @@ function displayLastAction(
 ===================================================== */
 
 async function getCurrentPrice(
+
     apiUrl,
+
     divisor
+
 ) {
 
     const response =
@@ -3104,11 +3521,14 @@ async function getCurrentPrice(
 
 
     const data =
+
         await response.json();
 
 
     if (
+
         !data.lastTradePrice
+
     ) {
 
         throw new Error(
@@ -3123,7 +3543,9 @@ async function getCurrentPrice(
     return (
 
         Number(
+
             data.lastTradePrice
+
         )
 
         /
@@ -3136,11 +3558,15 @@ async function getCurrentPrice(
 
 
 /* =====================================================
-   SCROLL POSITION
+   REFRESH
 ===================================================== */
 
-const SCROLL_KEY =
-    "financial_dashboard_scroll_y";
+let countdownTimer =
+    null;
+
+
+let refreshTimer =
+    null;
 
 
 function saveScrollPosition() {
@@ -3149,26 +3575,17 @@ function saveScrollPosition() {
 
         sessionStorage.setItem(
 
-            SCROLL_KEY,
+            "dashboardScrollY",
 
             String(
-                window.scrollY ||
-                window.pageYOffset ||
-                0
+                window.scrollY
             )
 
         );
 
     }
 
-    catch (e) {
-
-        console.warn(
-            "Could not save scroll position",
-            e
-        );
-
-    }
+    catch (e) {}
 
 }
 
@@ -3178,111 +3595,60 @@ function restoreScrollPosition() {
     try {
 
         const saved =
+
             sessionStorage.getItem(
-                SCROLL_KEY
+
+                "dashboardScrollY"
+
             );
 
 
         if (
-            saved === null
+            saved !== null
         ) {
 
-            return;
+            const y =
+                Number(saved);
 
-        }
 
+            requestAnimationFrame(
 
-        const position =
-            parseInt(
-                saved,
-                10
+                () => {
+
+                    window.scrollTo(
+
+                        0,
+
+                        y
+
+                    );
+
+                }
+
             );
 
-
-        if (
-            !Number.isFinite(
-                position
-            )
-        ) {
-
-            return;
-
         }
 
-
-        requestAnimationFrame(
-
-            () => {
-
-                requestAnimationFrame(
-
-                    () => {
-
-                        window.scrollTo(
-
-                            0,
-
-                            position
-
-                        );
-
-                    }
-
-                );
-
-            }
-
-        );
-
     }
 
-    catch (e) {
-
-        console.warn(
-            "Could not restore scroll position",
-            e
-        );
-
-    }
+    catch (e) {}
 
 }
-
-
-window.addEventListener(
-
-    "beforeunload",
-
-    saveScrollPosition
-
-);
-
-
-window.addEventListener(
-
-    "load",
-
-    restoreScrollPosition
-
-);
-
-
-/* =====================================================
-   REFRESH
-===================================================== */
-
-let countdownTimer = null;
-
-let refreshTimer = null;
 
 
 function startAutoRefresh() {
 
     clearInterval(
+
         countdownTimer
+
     );
 
+
     clearTimeout(
+
         refreshTimer
+
     );
 
 
@@ -3305,6 +3671,7 @@ function startAutoRefresh() {
             () => {
 
                 seconds--;
+
 
                 if (
                     seconds < 0
@@ -3338,6 +3705,7 @@ function startAutoRefresh() {
 
                 saveScrollPosition();
 
+
                 location.reload();
 
             },
@@ -3353,9 +3721,19 @@ function manualRefresh() {
 
     saveScrollPosition();
 
+
     location.reload();
 
 }
+
+
+window.addEventListener(
+
+    "beforeunload",
+
+    saveScrollPosition
+
+);
 
 
 /* =====================================================
@@ -3369,13 +3747,16 @@ async function init() {
         await fetch(
 
             "data.json?x=" +
+
             Date.now()
 
         );
 
 
     if (
+
         !dataResponse.ok
+
     ) {
 
         throw new Error(
@@ -3440,7 +3821,9 @@ async function init() {
         "currentPrice",
 
         formatNumber(
+
             currentPrice
+
         )
 
     );
@@ -3451,6 +3834,7 @@ async function init() {
         "bankRate",
 
         annualBankRate +
+
         "%"
 
     );
@@ -3459,28 +3843,39 @@ async function init() {
     const transactions =
 
         Array.isArray(
+
             data.transactions
+
         )
 
         ?
 
         data.transactions
+
             .slice()
+
             .sort(
 
                 (
+
                     a,
+
                     b
+
                 ) =>
 
                     dateNumber(
+
                         a.date
+
                     )
 
                     -
 
                     dateNumber(
+
                         b.date
+
                     )
 
             )
@@ -3490,9 +3885,9 @@ async function init() {
         [];
 
 
-    /* ================================================
+    /* =================================================
        OVERALL
-    ================================================ */
+    ================================================= */
 
     const overall =
 
@@ -3518,9 +3913,9 @@ async function init() {
     );
 
 
-    /* ================================================
-       LAST 6 PERIODS
-    ================================================ */
+    /* =================================================
+       LAST 6
+    ================================================= */
 
     const sixTransactions =
 
@@ -3557,9 +3952,9 @@ async function init() {
     );
 
 
-    /* ================================================
+    /* =================================================
        LAST PERIOD
-    ================================================ */
+    ================================================= */
 
     const lastTransactions =
 
@@ -3605,9 +4000,18 @@ async function init() {
 
         "lastTrades",
 
-        last.buyCount +
-        " IN  •  " +
-        last.sellCount +
+        last.buyCount
+
+        +
+
+        " IN  •  "
+
+        +
+
+        last.sellCount
+
+        +
+
         " OUT"
 
     );
@@ -3618,6 +4022,7 @@ async function init() {
     ) {
 
         $("loading").style.display =
+
             "none";
 
     }
@@ -3628,12 +4033,11 @@ async function init() {
     ) {
 
         $("dashboard").style.display =
+
             "grid";
 
     }
 
-
-    /* Restore after all content has rendered */
 
     restoreScrollPosition();
 
@@ -3663,7 +4067,9 @@ init()
     error => {
 
         console.error(
+
             error
+
         );
 
 
@@ -3672,6 +4078,7 @@ init()
         ) {
 
             $("loading").style.display =
+
                 "none";
 
         }
@@ -3683,9 +4090,15 @@ init()
 
             $("errorBox").innerHTML =
 
-                `<div class="error">
+                `
+
+                <div class="error">
+
                     ${error.message}
-                </div>`;
+
+                </div>
+
+                `;
 
         }
 
@@ -3696,5 +4109,4 @@ init()
 </script>
 
 </body>
-
 </html>
