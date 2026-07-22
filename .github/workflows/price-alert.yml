@@ -1,0 +1,45 @@
+name: USDT Price Alert
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+
+  check-price:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Run price checker
+        env:
+          PRICE_API: ${{ secrets.PRICE_API }}
+        run: |
+          python price_alert.py
+
+      - name: Commit price history
+        run: |
+
+          git config user.name "github-actions[bot]"
+
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add price_history.json
+
+          git diff --cached --quiet || git commit -m "Update price history"
+
+          git push
