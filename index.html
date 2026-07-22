@@ -332,6 +332,52 @@ h1 {
 
 }
 
+/* =====================================================
+   OFFLINE STATUS
+===================================================== */
+
+.connection-status {
+
+    display: none;
+
+    margin-top: 8px;
+
+    padding: 7px 10px;
+
+    border-radius: 9px;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    text-align: center;
+
+}
+
+.connection-status.offline {
+
+    display: block;
+
+    color: #fbbf24;
+
+    background: rgba(245,158,11,.10);
+
+    border: 1px solid rgba(245,158,11,.20);
+
+}
+
+.connection-status.online {
+
+    display: block;
+
+    color: #34d399;
+
+    background: rgba(16,185,129,.10);
+
+    border: 1px solid rgba(16,185,129,.20);
+
+}
+
 #dashboard {
 
     display: grid;
@@ -572,11 +618,6 @@ h1 {
 
 }
 
-
-/* =====================================================
-   UNREALIZED P/L
-===================================================== */
-
 .pl-container {
 
     display: grid;
@@ -639,11 +680,6 @@ h1 {
 
 }
 
-
-/* =====================================================
-   RESULT
-===================================================== */
-
 .result {
 
     margin-top: 7px;
@@ -653,11 +689,6 @@ h1 {
     font-weight: 750;
 
 }
-
-
-/* =====================================================
-   COMPARISON
-===================================================== */
 
 .comparison {
 
@@ -707,11 +738,6 @@ h1 {
 
 }
 
-
-/* =====================================================
-   METRICS
-===================================================== */
-
 .metrics {
 
     display: grid;
@@ -741,11 +767,6 @@ h1 {
         rgba(255,255,255,.055);
 
 }
-
-
-/* =====================================================
-   REALIZED
-===================================================== */
 
 .realized-combined {
 
@@ -811,11 +832,6 @@ h1 {
 
 }
 
-
-/* =====================================================
-   METRIC TEXT
-===================================================== */
-
 .metric-label {
 
     color:
@@ -838,11 +854,6 @@ h1 {
 
 }
 
-
-/* =====================================================
-   COLORS
-===================================================== */
-
 .profit {
 
     color:
@@ -856,11 +867,6 @@ h1 {
         #f87171;
 
 }
-
-
-/* =====================================================
-   ERROR / LOADING
-===================================================== */
 
 .error {
 
@@ -894,11 +900,6 @@ h1 {
 
 }
 
-
-/* =====================================================
-   RESPONSIVE
-===================================================== */
-
 @media (max-width:1100px) {
 
     #dashboard {
@@ -909,7 +910,6 @@ h1 {
     }
 
 }
-
 
 @media (max-width:650px) {
 
@@ -1090,6 +1090,12 @@ title="Refresh">
 
 </div>
 
+
+<div
+id="connectionStatus"
+class="connection-status">
+</div>
+
 </header>
 
 
@@ -1110,12 +1116,9 @@ id="dashboard"
 style="display:none;">
 
 
-<!-- =================================================
-     OVERALL PERFORMANCE
-================================================= -->
+<!-- OVERALL -->
 
 <div class="card">
-
 
 <div class="card-header">
 
@@ -1136,9 +1139,7 @@ id="overallTrades">
 class="main-price"
 id="overallMainPrice">
 
-
 <div class="main-price-values">
-
 
 <div class="main-price-side">
 
@@ -1179,12 +1180,10 @@ id="overallPriceArrow">
 
 </div>
 
-
 </div>
 
 
 <div class="pl-container">
-
 
 <div class="pl-box">
 
@@ -1221,7 +1220,6 @@ id="overallPLBank">
 
 
 <div class="pl-container">
-
 
 <div class="pl-box">
 
@@ -1263,12 +1261,10 @@ id="overallResult">
 -
 </div>
 
-
 </div>
 
 
 <div class="comparison">
-
 
 <div class="compare-box">
 
@@ -1299,12 +1295,10 @@ id="overallPaid">
 
 </div>
 
-
 </div>
 
 
 <div class="metrics">
-
 
 <div class="metric">
 
@@ -1384,19 +1378,14 @@ id="overallBank">
 
 </div>
 
+</div>
 
 </div>
 
 
-</div>
-
-
-<!-- =================================================
-     LAST 6 PERIODS
-================================================= -->
+<!-- LAST 6 -->
 
 <div class="card">
-
 
 <div class="card-header">
 
@@ -1417,9 +1406,7 @@ id="sixTrades">
 class="main-price"
 id="sixMainPrice">
 
-
 <div class="main-price-values">
-
 
 <div class="main-price-side">
 
@@ -1460,12 +1447,10 @@ id="sixPriceArrow">
 
 </div>
 
-
 </div>
 
 
 <div class="pl-container">
-
 
 <div class="pl-box">
 
@@ -1502,7 +1487,6 @@ id="sixPLBank">
 
 
 <div class="pl-container">
-
 
 <div class="pl-box">
 
@@ -1544,12 +1528,10 @@ id="sixResult">
 -
 </div>
 
-
 </div>
 
 
 <div class="comparison">
-
 
 <div class="compare-box">
 
@@ -1580,12 +1562,10 @@ id="sixPaid">
 
 </div>
 
-
 </div>
 
 
 <div class="metrics">
-
 
 <div class="metric">
 
@@ -1665,19 +1645,14 @@ id="sixBank">
 
 </div>
 
+</div>
 
 </div>
 
 
-</div>
-
-
-<!-- =================================================
-     LAST PERIOD
-================================================= -->
+<!-- LAST PERIOD -->
 
 <div class="card">
-
 
 <div class="card-header">
 
@@ -1685,9 +1660,7 @@ id="sixBank">
 Last Period
 </div>
 
-
 <div class="period-info">
-
 
 <div
 class="trade-count"
@@ -1695,13 +1668,11 @@ id="lastTrades">
 -
 </div>
 
-
 <div
 class="action-badge"
 id="lastAction">
 -
 </div>
-
 
 </div>
 
@@ -1712,9 +1683,7 @@ id="lastAction">
 class="main-price"
 id="lastMainPrice">
 
-
 <div class="main-price-values">
-
 
 <div class="main-price-side">
 
@@ -1755,12 +1724,10 @@ id="lastPriceArrow">
 
 </div>
 
-
 </div>
 
 
 <div class="pl-container">
-
 
 <div class="pl-box">
 
@@ -1793,12 +1760,10 @@ id="lastPLBank">
 
 </div>
 
-
 </div>
 
 
 <div class="pl-container">
-
 
 <div class="pl-box">
 
@@ -1831,7 +1796,6 @@ id="lastUnrealizedBank">
 
 </div>
 
-
 </div>
 
 
@@ -1841,12 +1805,10 @@ id="lastResult">
 -
 </div>
 
-
 </div>
 
 
 <div class="comparison">
-
 
 <div class="compare-box">
 
@@ -1877,12 +1839,10 @@ id="lastPaid">
 
 </div>
 
-
 </div>
 
 
 <div class="metrics">
-
 
 <div class="metric">
 
@@ -1962,9 +1922,7 @@ id="lastBank">
 
 </div>
 
-
 </div>
-
 
 </div>
 
@@ -2070,10 +2028,7 @@ function formatPercent(value) {
 }
 
 
-function setProfitLossClass(
-    id,
-    value
-) {
+function setProfitLossClass(id, value) {
 
     const el = $(id);
 
@@ -2083,12 +2038,10 @@ function setProfitLossClass(
 
     }
 
-
     el.classList.remove(
         "profit",
         "loss"
     );
-
 
     el.classList.add(
 
@@ -2102,14 +2055,324 @@ function setProfitLossClass(
 
 
 /* =====================================================
+   OFFLINE CACHE
+===================================================== */
+
+const CACHE_KEYS = {
+
+    DATA:
+        "financialDashboardData",
+
+    PRICE:
+        "financialDashboardPrice",
+
+    PRICE_TIME:
+        "financialDashboardPriceTime"
+
+};
+
+
+function saveLocalData(data) {
+
+    try {
+
+        localStorage.setItem(
+
+            CACHE_KEYS.DATA,
+
+            JSON.stringify(data)
+
+        );
+
+        return true;
+
+    }
+
+    catch (e) {
+
+        console.error(
+            "Cannot save dashboard data:",
+            e
+        );
+
+        return false;
+
+    }
+
+}
+
+
+function loadLocalData() {
+
+    try {
+
+        const saved =
+
+            localStorage.getItem(
+
+                CACHE_KEYS.DATA
+
+            );
+
+
+        if (!saved) {
+
+            return null;
+
+        }
+
+
+        return JSON.parse(saved);
+
+    }
+
+    catch (e) {
+
+        console.error(
+            "Cannot load cached dashboard data:",
+            e
+        );
+
+        return null;
+
+    }
+
+}
+
+
+function saveLocalPrice(price) {
+
+    try {
+
+        localStorage.setItem(
+
+            CACHE_KEYS.PRICE,
+
+            String(price)
+
+        );
+
+
+        localStorage.setItem(
+
+            CACHE_KEYS.PRICE_TIME,
+
+            new Date().toISOString()
+
+        );
+
+        return true;
+
+    }
+
+    catch (e) {
+
+        console.error(
+            "Cannot save cached price:",
+            e
+        );
+
+        return false;
+
+    }
+
+}
+
+
+function loadLocalPrice() {
+
+    try {
+
+        const saved =
+
+            localStorage.getItem(
+
+                CACHE_KEYS.PRICE
+
+            );
+
+
+        if (
+
+            saved === null
+
+            ||
+
+            saved === ""
+
+        ) {
+
+            return null;
+
+        }
+
+
+        const price =
+            Number(saved);
+
+
+        return Number.isFinite(price)
+            ? price
+            : null;
+
+    }
+
+    catch (e) {
+
+        return null;
+
+    }
+
+}
+
+
+function getCachedPriceTime() {
+
+    try {
+
+        const saved =
+
+            localStorage.getItem(
+
+                CACHE_KEYS.PRICE_TIME
+
+            );
+
+
+        if (!saved) {
+
+            return "";
+
+        }
+
+
+        const date =
+            new Date(saved);
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            return "";
+
+        }
+
+
+        return date.toLocaleString(
+
+            "en-US",
+
+            {
+
+                year:
+                    "numeric",
+
+                month:
+                    "2-digit",
+
+                day:
+                    "2-digit",
+
+                hour:
+                    "2-digit",
+
+                minute:
+                    "2-digit",
+
+                second:
+                    "2-digit",
+
+                hour12:
+                    false
+
+            }
+
+        );
+
+    }
+
+    catch (e) {
+
+        return "";
+
+    }
+
+}
+
+
+/* =====================================================
+   CONNECTION STATUS
+===================================================== */
+
+function showConnectionStatus(
+
+    offline,
+
+    message
+
+) {
+
+    const el =
+        $("connectionStatus");
+
+
+    if (!el) {
+
+        return;
+
+    }
+
+
+    if (offline) {
+
+        el.className =
+            "connection-status offline";
+
+
+        el.textContent =
+
+            message
+
+            ||
+
+            "Offline Mode • Showing Last Saved Data";
+
+    }
+
+    else {
+
+        el.className =
+            "connection-status online";
+
+
+        el.textContent =
+
+            message
+
+            ||
+
+            "Online • Live Data";
+
+    }
+
+}
+
+
+/* =====================================================
    PRICE ARROW
-   ALL ARROWS USE LIVE PRICE CHANGE BETWEEN REFRESHES
 ===================================================== */
 
 function setPriceArrow(
+
     id,
+
     currentPrice,
+
     previousPrice
+
 ) {
 
     const el = $(id);
@@ -2122,14 +2385,19 @@ function setPriceArrow(
 
 
     el.classList.remove(
+
         "arrow-up",
+
         "arrow-down",
+
         "arrow-flat"
+
     );
 
 
     const current =
         Number(currentPrice);
+
 
     const previous =
         Number(previousPrice);
@@ -2206,9 +2474,13 @@ function setPriceArrow(
 ===================================================== */
 
 function jalaliToGregorian(
+
     jy,
+
     jm,
+
     jd
+
 ) {
 
     jy -= 979;
@@ -2232,9 +2504,13 @@ function jalaliToGregorian(
 
 
     for (
+
         let i = 1;
+
         i < jm;
+
         i++
+
     ) {
 
         days +=
@@ -2372,10 +2648,13 @@ function jalaliToGregorian(
 
 
     while (
+
         gd > monthDays[gm]
+
     ) {
 
         gd -=
+
             monthDays[gm];
 
         gm++;
@@ -2397,21 +2676,28 @@ function jalaliToGregorian(
 
 
 function daysBetweenInclusive(
+
     start,
+
     end
+
 ) {
 
     const s =
 
         start
+
             .split("/")
+
             .map(Number);
 
 
     const e =
 
         end
+
             .split("/")
+
             .map(Number);
 
 
@@ -2420,7 +2706,9 @@ function daysBetweenInclusive(
         jalaliToGregorian(
 
             s[0],
+
             s[1],
+
             s[2]
 
         );
@@ -2431,7 +2719,9 @@ function daysBetweenInclusive(
         jalaliToGregorian(
 
             e[0],
+
             e[1],
+
             e[2]
 
         );
@@ -2678,7 +2968,9 @@ function dateNumber(date) {
     const p =
 
         date
+
             .split("/")
+
             .map(Number);
 
 
@@ -2729,9 +3021,13 @@ function compoundValue(
     const dailyRate =
 
         annualRate
+
         /
+
         100
+
         /
+
         365;
 
 
@@ -2782,7 +3078,9 @@ function calculatePortfolio(
 
 
     for (
+
         const t of transactions
+
     ) {
 
         const amount =
@@ -2794,7 +3092,9 @@ function calculatePortfolio(
 
 
         if (
+
             t.type === "buy"
+
         ) {
 
             buyCount++;
@@ -2815,7 +3115,9 @@ function calculatePortfolio(
 
 
         else if (
+
             t.type === "sell"
+
         ) {
 
             sellCount++;
@@ -2931,8 +3233,11 @@ function calculatePortfolio(
         lots.reduce(
 
             (
+
                 sum,
+
                 lot
+
             ) =>
 
                 sum +
@@ -2949,8 +3254,11 @@ function calculatePortfolio(
         lots.reduce(
 
             (
+
                 sum,
+
                 lot
+
             ) =>
 
                 sum
@@ -2985,7 +3293,9 @@ function calculatePortfolio(
 
 
     for (
+
         const lot of lots
+
     ) {
 
         bankValue +=
@@ -2993,6 +3303,7 @@ function calculatePortfolio(
             compoundValue(
 
                 lot.amount *
+
                 lot.price,
 
                 lot.date,
@@ -3134,7 +3445,9 @@ function calculatePortfolio(
 ===================================================== */
 
 function buildPeriods(
+
     transactions
+
 ) {
 
     const periods = [];
@@ -3144,11 +3457,15 @@ function buildPeriods(
 
 
     for (
+
         const t of transactions
+
     ) {
 
         if (
+
             t.type === "buy"
+
         ) {
 
             if (
@@ -3188,11 +3505,15 @@ function buildPeriods(
 
 
         else if (
+
             t.type === "sell"
+
         ) {
 
             if (
+
                 current
+
             ) {
 
                 current.transactions.push(
@@ -3270,7 +3591,9 @@ function getLastPeriods(
 
 
 function getLastPeriod(
+
     transactions
+
 ) {
 
     const periods =
@@ -3283,7 +3606,9 @@ function getLastPeriod(
 
 
     if (
+
         periods.length === 0
+
     ) {
 
         return [];
@@ -3317,6 +3642,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Average",
 
         formatNumber(
@@ -3331,6 +3657,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Paid",
 
         formatNumber(
@@ -3345,6 +3672,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Adjusted",
 
         formatNumber(
@@ -3359,6 +3687,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Live",
 
         formatNumber(
@@ -3370,15 +3699,10 @@ function displaySection(
     );
 
 
-    /*
-       ALL SECTION ARROWS NOW COMPARE
-       CURRENT LIVE PRICE WITH
-       THE LIVE PRICE FROM PREVIOUS REFRESH
-    */
-
     setPriceArrow(
 
         prefix +
+
         "PriceArrow",
 
         result.currentPrice,
@@ -3391,6 +3715,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Quantity",
 
         formatNumber(
@@ -3405,6 +3730,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Value",
 
         formatNumber(
@@ -3419,6 +3745,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Bank",
 
         formatNumber(
@@ -3433,6 +3760,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "PLPurchase",
 
         formatPercent(
@@ -3447,6 +3775,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "PLBank",
 
         formatPercent(
@@ -3461,6 +3790,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "UnrealizedPurchase",
 
         formatMoneySigned(
@@ -3475,6 +3805,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "UnrealizedBank",
 
         formatMoneySigned(
@@ -3489,6 +3820,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "RealizedPurchase",
 
         formatMoneySigned(
@@ -3503,6 +3835,7 @@ function displaySection(
     safeText(
 
         prefix +
+
         "RealizedBank",
 
         formatMoneySigned(
@@ -3517,6 +3850,7 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
+
         "PLPurchase",
 
         result.plPurchase
@@ -3527,6 +3861,7 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
+
         "PLBank",
 
         result.plBank
@@ -3537,6 +3872,7 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
+
         "UnrealizedPurchase",
 
         result.unrealizedPurchaseAmount
@@ -3547,6 +3883,7 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
+
         "UnrealizedBank",
 
         result.unrealizedBankAmount
@@ -3557,6 +3894,7 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
+
         "RealizedPurchase",
 
         result.realizedPurchase
@@ -3567,6 +3905,7 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
+
         "RealizedBank",
 
         result.realizedBank
@@ -3586,7 +3925,9 @@ function displaySection(
 
 
     if (
+
         mainPrice
+
     ) {
 
         mainPrice.classList.remove(
@@ -3637,7 +3978,9 @@ function displaySection(
 
 
     if (
+
         resultBox
+
     ) {
 
         if (
@@ -3685,7 +4028,9 @@ function displaySection(
 
 
     if (
+
         tradeCount
+
     ) {
 
         tradeCount.textContent =
@@ -3818,7 +4163,9 @@ async function getCurrentPrice(
 
 
     if (
+
         !response.ok
+
     ) {
 
         throw new Error(
@@ -3850,7 +4197,7 @@ async function getCurrentPrice(
     }
 
 
-    return (
+    const price =
 
         Number(
 
@@ -3860,9 +4207,25 @@ async function getCurrentPrice(
 
         /
 
-        divisor
+        divisor;
 
-    );
+
+    if (
+
+        !Number.isFinite(price)
+
+    ) {
+
+        throw new Error(
+
+            "Invalid price"
+
+        );
+
+    }
+
+
+    return price;
 
 }
 
@@ -3914,7 +4277,9 @@ function restoreScrollPosition() {
 
 
         if (
+
             saved !== null
+
         ) {
 
             const y =
@@ -3984,7 +4349,9 @@ function startAutoRefresh() {
 
 
                 if (
+
                     seconds < 0
+
                 ) {
 
                     seconds = 30;
@@ -4047,40 +4414,151 @@ window.addEventListener(
 
 
 /* =====================================================
-   INIT
+   ONLINE / OFFLINE EVENTS
 ===================================================== */
 
-async function init() {
+window.addEventListener(
 
-    const dataResponse =
+    "offline",
 
-        await fetch(
+    () => {
 
-            "data.json?x=" +
+        showConnectionStatus(
 
-            Date.now()
+            true,
 
-        );
-
-
-    if (
-
-        !dataResponse.ok
-
-    ) {
-
-        throw new Error(
-
-            "Cannot load data.json"
+            "Offline Mode • Showing Last Saved Data"
 
         );
 
     }
 
+);
 
-    const data =
 
-        await dataResponse.json();
+window.addEventListener(
+
+    "online",
+
+    () => {
+
+        showConnectionStatus(
+
+            false,
+
+            "Online • Refreshing Data..."
+
+        );
+
+        setTimeout(
+
+            () => {
+
+                location.reload();
+
+            },
+
+            500
+
+        );
+
+    }
+
+);
+
+
+/* =====================================================
+   INIT
+===================================================== */
+
+async function init() {
+
+    let data = null;
+
+    let currentPrice = null;
+
+    let usingCachedData = false;
+
+    let usingCachedPrice = false;
+
+
+    /* =================================================
+       LOAD DATA.JSON
+    ================================================= */
+
+    try {
+
+        const dataResponse =
+
+            await fetch(
+
+                "data.json?x=" +
+
+                Date.now(),
+
+                {
+
+                    cache:
+                        "no-store"
+
+                }
+
+            );
+
+
+        if (
+
+            !dataResponse.ok
+
+        ) {
+
+            throw new Error(
+
+                "Cannot load data.json"
+
+            );
+
+        }
+
+
+        data =
+
+            await dataResponse.json();
+
+
+        saveLocalData(data);
+
+    }
+
+    catch (error) {
+
+        console.warn(
+
+            "Using cached data.json:",
+
+            error
+
+        );
+
+
+        data =
+            loadLocalData();
+
+
+        usingCachedData = true;
+
+
+        if (!data) {
+
+            throw new Error(
+
+                "Offline and no saved dashboard data is available. Open the dashboard online at least once."
+
+            );
+
+        }
+
+    }
 
 
     const annualBankRate =
@@ -4101,15 +4579,64 @@ async function init() {
         );
 
 
-    const currentPrice =
+    /* =================================================
+       LOAD CURRENT PRICE
+    ================================================= */
 
-        await getCurrentPrice(
+    try {
 
-            data.priceApi,
+        currentPrice =
 
-            divisor
+            await getCurrentPrice(
+
+                data.priceApi,
+
+                divisor
+
+            );
+
+
+        saveLocalPrice(
+
+            currentPrice
 
         );
+
+    }
+
+    catch (error) {
+
+        console.warn(
+
+            "Using cached market price:",
+
+            error
+
+        );
+
+
+        currentPrice =
+            loadLocalPrice();
+
+
+        usingCachedPrice = true;
+
+
+        if (
+
+            currentPrice === null
+
+        ) {
+
+            throw new Error(
+
+                "Offline and no saved market price is available. Open the dashboard online at least once."
+
+            );
+
+        }
+
+    }
 
 
     const today =
@@ -4151,34 +4678,126 @@ async function init() {
 
 
     /* =================================================
+       STATUS
+    ================================================= */
+
+    if (
+
+        !navigator.onLine
+
+        ||
+
+        usingCachedData
+
+        ||
+
+        usingCachedPrice
+
+    ) {
+
+        let statusMessage =
+
+            "Offline Mode • Showing Last Saved Data";
+
+
+        const cachedTime =
+
+            getCachedPriceTime();
+
+
+        if (
+
+            cachedTime
+
+        ) {
+
+            statusMessage +=
+
+                " • Price Saved: " +
+
+                cachedTime;
+
+        }
+
+
+        showConnectionStatus(
+
+            true,
+
+            statusMessage
+
+        );
+
+    }
+
+    else {
+
+        showConnectionStatus(
+
+            false,
+
+            "Online • Live Data"
+
+        );
+
+    }
+
+
+    /* =================================================
        LAST UPDATE TIME
     ================================================= */
 
-    const now = new Date();
+    let updateTime =
 
-    const updateTime =
+        new Date()
 
-        now.toLocaleTimeString(
+            .toLocaleTimeString(
 
-            "en-US",
+                "en-US",
 
-            {
+                {
 
-                hour:
-                    "2-digit",
+                    hour:
+                        "2-digit",
 
-                minute:
-                    "2-digit",
+                    minute:
+                        "2-digit",
 
-                second:
-                    "2-digit",
+                    second:
+                        "2-digit",
 
-                hour12:
-                    false
+                    hour12:
+                        false
 
-            }
+                }
 
-        );
+            );
+
+
+    if (
+
+        usingCachedPrice
+
+    ) {
+
+        const cachedTime =
+
+            getCachedPriceTime();
+
+
+        if (
+
+            cachedTime
+
+        ) {
+
+            updateTime =
+
+                cachedTime;
+
+        }
+
+    }
 
 
     safeText(
@@ -4194,7 +4813,6 @@ async function init() {
 
     /* =================================================
        PREVIOUS LIVE PRICE
-       USED BY ALL ARROWS
     ================================================= */
 
     let previousLivePrice = null;
@@ -4253,10 +4871,6 @@ async function init() {
     catch (e) {}
 
 
-    /* =================================================
-       TOP PRICE ARROW
-    ================================================= */
-
     setPriceArrow(
 
         "topPriceArrow",
@@ -4267,11 +4881,6 @@ async function init() {
 
     );
 
-
-    /*
-       Save CURRENT price only AFTER
-       reading the PREVIOUS price.
-    */
 
     try {
 
@@ -4291,6 +4900,10 @@ async function init() {
 
     catch (e) {}
 
+
+    /* =================================================
+       TRANSACTIONS
+    ================================================= */
 
     const transactions =
 
@@ -4476,7 +5089,9 @@ async function init() {
 
 
     if (
+
         $("loading")
+
     ) {
 
         $("loading").style.display =
@@ -4487,7 +5102,9 @@ async function init() {
 
 
     if (
+
         $("dashboard")
+
     ) {
 
         $("dashboard").style.display =
@@ -4532,7 +5149,9 @@ init()
 
 
         if (
+
             $("loading")
+
         ) {
 
             $("loading").style.display =
@@ -4543,7 +5162,9 @@ init()
 
 
         if (
+
             $("errorBox")
+
         ) {
 
             $("errorBox").innerHTML =
@@ -4566,34 +5187,84 @@ init()
 
 </script>
 
+
 <script>
-if ("serviceWorker" in navigator) {
 
-    window.addEventListener("load", () => {
+/* =====================================================
+   SERVICE WORKER
+===================================================== */
 
-        navigator.serviceWorker.register("./sw.js")
+if (
 
-            .then(() => {
+    "serviceWorker"
 
-                console.log(
-                    "Financial Dashboard PWA Ready"
+    in
+
+    navigator
+
+) {
+
+    window.addEventListener(
+
+        "load",
+
+        () => {
+
+            navigator.serviceWorker
+
+                .register(
+
+                    "./sw.js",
+
+                    {
+
+                        updateViaCache:
+                            "none"
+
+                    }
+
+                )
+
+                .then(
+
+                    registration => {
+
+                        console.log(
+
+                            "Financial Dashboard PWA Ready"
+
+                        );
+
+
+                        registration.update();
+
+                    }
+
+                )
+
+                .catch(
+
+                    error => {
+
+                        console.error(
+
+                            "Service Worker Error:",
+
+                            error
+
+                        );
+
+                    }
+
                 );
 
-            })
+        }
 
-            .catch(error => {
-
-                console.error(
-                    "Service Worker Error:",
-                    error
-                );
-
-            });
-
-    });
+    );
 
 }
+
 </script>
-    
+
 </body>
 </html>
