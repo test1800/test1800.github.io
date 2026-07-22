@@ -187,62 +187,7 @@ h1 {
 
     font-weight: 850;
 
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 7px;
-
 }
-
-
-/* =====================================================
-   THIN LIVE ARROW
-===================================================== */
-
-.price-arrow {
-
-    display: inline-block;
-
-    font-size: 22px;
-
-    font-weight: 300;
-
-    line-height: 1;
-
-    background: none;
-
-    border: none;
-
-    padding: 0;
-
-    margin: 0;
-
-    vertical-align: middle;
-
-}
-
-.price-arrow.up {
-
-    color:
-        #34d399;
-
-}
-
-.price-arrow.down {
-
-    color:
-        #f87171;
-
-}
-
-.price-arrow.equal {
-
-    color:
-        #94a3b8;
-
-}
-
 
 .live-footer {
 
@@ -463,6 +408,9 @@ h1 {
 
     border-radius: 13px;
 
+    text-align:
+        center;
+
 }
 
 .status-green {
@@ -499,35 +447,42 @@ h1 {
 
 
 /* =====================================================
-   PRICE HEADER
+   BANK ADJUSTED + LIVE
 ===================================================== */
 
-.price-header {
+.price-comparison {
+
+    width: 100%;
 
     display: grid;
 
     grid-template-columns:
-        1fr
-        1fr;
+        1fr 1fr;
 
     align-items:
         center;
 
-    gap: 8px;
+    gap: 12px;
 
 }
 
-.adjusted-side {
+.price-side {
+
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
 
     text-align:
-        left;
-
-}
-
-.live-side {
-
-    text-align:
-        right;
+        center;
 
 }
 
@@ -540,6 +495,8 @@ h1 {
 
     margin-bottom: 3px;
 
+    line-height: 1.2;
+
 }
 
 .main-price-number {
@@ -548,28 +505,28 @@ h1 {
 
     font-weight: 850;
 
-    line-height: 1.1;
+    line-height: 1.15;
+
+    white-space:
+        nowrap;
 
 }
 
-.live-card-label {
+.live-price-row {
 
-    color:
-        #94a3b8;
+    display: flex;
 
-    font-size: 10px;
+    align-items:
+        center;
 
-    margin-bottom: 3px;
+    justify-content:
+        center;
+
+    gap: 6px;
 
 }
 
-.live-card-number {
-
-    font-size: 25px;
-
-    font-weight: 850;
-
-    line-height: 1.1;
+.live-arrow {
 
     display: inline-flex;
 
@@ -577,9 +534,37 @@ h1 {
         center;
 
     justify-content:
-        flex-end;
+        center;
 
-    gap: 6px;
+    font-size: 25px;
+
+    font-weight: 400;
+
+    line-height: 1;
+
+    background:
+        transparent;
+
+    border:
+        none;
+
+    padding: 0;
+
+    margin: 0;
+
+}
+
+.live-arrow.up {
+
+    color:
+        #34d399;
+
+}
+
+.live-arrow.down {
+
+    color:
+        #f87171;
 
 }
 
@@ -755,7 +740,7 @@ h1 {
 
 
 /* =====================================================
-   COMBINED REALIZED P/L
+   REALIZED P/L
 ===================================================== */
 
 .realized-combined {
@@ -921,6 +906,7 @@ h1 {
 
 }
 
+
 @media (max-width:650px) {
 
     .container {
@@ -984,15 +970,27 @@ h1 {
 
     }
 
-    .price-header {
+    .price-comparison {
 
-        grid-template-columns:
-            1fr 1fr;
+        gap: 8px;
 
     }
 
-    .main-price-number,
-    .live-card-number {
+    .main-price-title {
+
+        font-size:
+            10px;
+
+    }
+
+    .main-price-number {
+
+        font-size:
+            22px;
+
+    }
+
+    .live-arrow {
 
         font-size:
             22px;
@@ -1037,21 +1035,13 @@ id="today">
 <div>
 
 <div class="live-label">
-Live Market Price
+Live Market
 </div>
 
 <div
-class="live-number">
-
-<span id="currentPrice">
+class="live-number"
+id="currentPrice">
 -
-</span>
-
-<span
-id="topPriceArrow"
-class="price-arrow equal">
-</span>
-
 </div>
 
 </div>
@@ -1135,13 +1125,13 @@ class="main-price"
 id="overallMainPrice">
 
 
-<div class="price-header">
+<div class="price-comparison">
 
 
-<div class="adjusted-side">
+<div class="price-side">
 
 <div class="main-price-title">
-Bank-Adjusted Price
+Bank-Adjusted
 </div>
 
 <div
@@ -1153,24 +1143,26 @@ id="overallAdjusted">
 </div>
 
 
-<div class="live-side">
+<div class="price-side">
 
-<div class="live-card-label">
-Live Price
+<div class="main-price-title">
+Live
 </div>
 
-<div
-class="live-card-number">
+<div class="live-price-row">
 
-<span id="overallLivePrice">
+<div
+class="main-price-number"
+id="overallLivePrice">
+-
+</div>
+
+<span
+class="live-arrow"
+id="overallLiveArrow">
 -
 </span>
 
-<span
-id="overallPriceArrow"
-class="price-arrow equal">
-</span>
-
 </div>
 
 </div>
@@ -1178,6 +1170,8 @@ class="price-arrow equal">
 
 </div>
 
+
+<!-- UNREALIZED PERCENTAGES -->
 
 <div class="pl-container">
 
@@ -1215,6 +1209,8 @@ id="overallPLBank">
 
 </div>
 
+
+<!-- UNREALIZED AMOUNTS -->
 
 <div class="pl-container">
 
@@ -1269,7 +1265,7 @@ id="overallResult">
 <div class="compare-box">
 
 <div class="compare-label">
-Average Purchase Price
+Average Purchase
 </div>
 
 <div
@@ -1416,13 +1412,13 @@ class="main-price"
 id="sixMainPrice">
 
 
-<div class="price-header">
+<div class="price-comparison">
 
 
-<div class="adjusted-side">
+<div class="price-side">
 
 <div class="main-price-title">
-Bank-Adjusted Price
+Bank-Adjusted
 </div>
 
 <div
@@ -1434,22 +1430,24 @@ id="sixAdjusted">
 </div>
 
 
-<div class="live-side">
+<div class="price-side">
 
-<div class="live-card-label">
-Live Price
+<div class="main-price-title">
+Live
 </div>
 
-<div
-class="live-card-number">
+<div class="live-price-row">
 
-<span id="sixLivePrice">
+<div
+class="main-price-number"
+id="sixLivePrice">
 -
-</span>
+</div>
 
 <span
-id="sixPriceArrow"
-class="price-arrow equal">
+class="live-arrow"
+id="sixLiveArrow">
+-
 </span>
 
 </div>
@@ -1550,7 +1548,7 @@ id="sixResult">
 <div class="compare-box">
 
 <div class="compare-label">
-Average Purchase Price
+Average Purchase
 </div>
 
 <div
@@ -1711,13 +1709,13 @@ class="main-price"
 id="lastMainPrice">
 
 
-<div class="price-header">
+<div class="price-comparison">
 
 
-<div class="adjusted-side">
+<div class="price-side">
 
 <div class="main-price-title">
-Bank-Adjusted Price
+Bank-Adjusted
 </div>
 
 <div
@@ -1729,22 +1727,24 @@ id="lastAdjusted">
 </div>
 
 
-<div class="live-side">
+<div class="price-side">
 
-<div class="live-card-label">
-Live Price
+<div class="main-price-title">
+Live
 </div>
 
-<div
-class="live-card-number">
+<div class="live-price-row">
 
-<span id="lastLivePrice">
+<div
+class="main-price-number"
+id="lastLivePrice">
 -
-</span>
+</div>
 
 <span
-id="lastPriceArrow"
-class="price-arrow equal">
+class="live-arrow"
+id="lastLiveArrow">
+-
 </span>
 
 </div>
@@ -1847,7 +1847,7 @@ id="lastResult">
 <div class="compare-box">
 
 <div class="compare-label">
-Average Purchase Price
+Average Purchase
 </div>
 
 <div
@@ -2100,75 +2100,79 @@ function setProfitLossClass(
 
 
 /* =====================================================
-   PRICE ARROW
+   LIVE ARROW
 ===================================================== */
 
-function setPriceArrow(
-    id,
+function displayLivePrice(
+    prefix,
     currentPrice,
-    previousPrice
+    adjustedPrice
 ) {
 
-    const el = $(id);
+    safeText(
 
-    if (!el) {
+        prefix +
+        "LivePrice",
+
+        formatNumber(
+            currentPrice
+        )
+
+    );
+
+
+    const arrow = $(
+        prefix +
+        "LiveArrow"
+    );
+
+
+    if (!arrow) {
 
         return;
 
     }
 
 
-    el.classList.remove(
+    arrow.classList.remove(
         "up",
-        "down",
-        "equal"
+        "down"
     );
 
 
     if (
-        !Number.isFinite(Number(currentPrice))
-        ||
-        !Number.isFinite(Number(previousPrice))
+
+        Number(currentPrice)
+
+        >
+
+        Number(adjustedPrice)
+
     ) {
 
-        el.textContent = "";
+        arrow.textContent =
+            "↑";
 
-        el.classList.add(
-            "equal"
-        );
-
-        return;
-
-    }
-
-
-    const current =
-        Number(currentPrice);
-
-
-    const previous =
-        Number(previousPrice);
-
-
-    if (
-        current > previous
-    ) {
-
-        el.textContent = "↑";
-
-        el.classList.add(
+        arrow.classList.add(
             "up"
         );
 
     }
 
     else if (
-        current < previous
+
+        Number(currentPrice)
+
+        <
+
+        Number(adjustedPrice)
+
     ) {
 
-        el.textContent = "↓";
+        arrow.textContent =
+            "↓";
 
-        el.classList.add(
+        arrow.classList.add(
             "down"
         );
 
@@ -2176,11 +2180,8 @@ function setPriceArrow(
 
     else {
 
-        el.textContent = "→";
-
-        el.classList.add(
-            "equal"
-        );
+        arrow.textContent =
+            "−";
 
     }
 
@@ -3333,6 +3334,17 @@ function displaySection(
     );
 
 
+    displayLivePrice(
+
+        prefix,
+
+        result.currentPrice,
+
+        result.bankAdjustedPrice
+
+    );
+
+
     safeText(
 
         prefix +
@@ -3651,24 +3663,6 @@ function displaySection(
 
     }
 
-
-    /* =================================================
-       LIVE PRICE IN CARD
-    ================================================= */
-
-    safeText(
-
-        prefix +
-        "LivePrice",
-
-        formatNumber(
-
-            result.currentPrice
-
-        )
-
-    );
-
 }
 
 
@@ -3831,7 +3825,7 @@ async function getCurrentPrice(
 
 
 /* =====================================================
-   REFRESH AND SCROLL
+   REFRESH
 ===================================================== */
 
 let countdownTimer =
@@ -4109,80 +4103,6 @@ async function init() {
         annualBankRate +
 
         "%"
-
-    );
-
-
-    /* =================================================
-       COMPARE LIVE PRICE WITH PREVIOUS PRICE
-    ================================================= */
-
-    const previousPrice =
-
-        Number(
-
-            localStorage.getItem(
-
-                "previousLivePrice"
-
-            )
-
-        );
-
-
-    setPriceArrow(
-
-        "topPriceArrow",
-
-        currentPrice,
-
-        previousPrice
-
-    );
-
-
-    setPriceArrow(
-
-        "overallPriceArrow",
-
-        currentPrice,
-
-        previousPrice
-
-    );
-
-
-    setPriceArrow(
-
-        "sixPriceArrow",
-
-        currentPrice,
-
-        previousPrice
-
-    );
-
-
-    setPriceArrow(
-
-        "lastPriceArrow",
-
-        currentPrice,
-
-        previousPrice
-
-    );
-
-
-    localStorage.setItem(
-
-        "previousLivePrice",
-
-        String(
-
-            currentPrice
-
-        )
 
     );
 
