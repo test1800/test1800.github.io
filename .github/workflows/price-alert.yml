@@ -1,4 +1,4 @@
-name: Check Price
+name: Price Alert
 
 on:
   schedule:
@@ -17,22 +17,167 @@ jobs:
 
     steps:
 
+      # ==========================================
+      # CHECKOUT
+      # ==========================================
+
       - name: Checkout repository
         uses: actions/checkout@v4
+
+
+      # ==========================================
+      # PYTHON
+      # ==========================================
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
+
+      # ==========================================
+      # INSTALL REQUESTS
+      # ==========================================
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install requests
 
+
+      # ==========================================
+      # TEST DNS
+      # ==========================================
+
+      - name: Test Nobitex DNS
+        run: |
+          echo "Testing DNS resolution..."
+
+          getent hosts api.nobitex.ir || true
+
+          echo "DNS test completed."
+
+
+      # ==========================================
+      # TEST HTTPS CONNECTION
+      # ==========================================
+
+      - name: Test Nobitex connection
+        run: |
+          echo "Testing HTTPS connection..."
+
+          curl -I \
+            --connect-timeout 20 \
+            --max-time 30 \
+            https://api.nobitex.ir/ \
+            || true
+
+          echo "HTTPS test completed."
+
+
+      # ==========================================
+      # TEST NOBITEX API
+      # ==========================================
+
+      - name: Test Nobitex API
+        run: |
+          python - <<'PY'
+
+          import requests
+
+          url = "https://api.nobitex.ir/market/stats"
+
+          params = {
+              "srcCurrency": "usdt",
+              "dstCurrency": "rls"
+          }
+
+          print("========================================")
+          print("NOBITEX API TEST")
+          print("========================================")
+
+          print("URL:")
+          print(url)
+
+          print("Parameters:")
+          print(params)
+
+          try:
+
+              response = requests.get(
+                  url,
+                  params=params,
+                  headers={
+                      "User-Agent": "Mozilla/5.0"
+                  },
+                  timeout=30
+              )
+
+              print("")
+              print("HTTP STATUS:")
+              print(response.status_code)
+
+              print("")
+              print("RESPONSE:")
+
+              print(response.text[:5000])
+
+              response.raise_for_status()
+
+              print("")
+              print("API CONNECTION SUCCESS")
+
+          except Exception as e:
+
+              print("")
+              print("API CONNECTION FAILED")
+
+              print(repr(e))
+
+          print("")
+          print("========================================")
+
+          PY
+
+
+      # ==========================================
+      # RUN PRICE CHECKER
+      # ==========================================
+
       - name: Run price checker
         run: |
           python price_alert.py
+
+
+      # ==========================================
+      # SHOW PRICE HISTORY
+      # ==========================================
+
+      - name: Show price history
+        run: |
+
+          echo "========================================"
+
+          echo "PRICE HISTORY FILE"
+
+          echo "========================================"
+
+          if [ -f price_history.json ]; then
+
+            echo "price_history.json exists."
+
+            cat price_history.json
+
+          else
+
+            echo "price_history.json does not exist."
+
+          fi
+
+
+      # ==========================================
+      # COMMIT PRICE HISTORY
+      # ==========================================
 
       - name: Commit price history
         run: |
@@ -43,6 +188,14 @@ jobs:
 
           git add price_history.json
 
-          git diff --cached --quiet || git commit -m "Update price history"
+          if git diff --cached --quiet; then
 
-          git push
+            echo "No changes to price_history.json"
+
+          else
+
+            git commit -m "Update price history"
+
+            git push
+
+          fi
