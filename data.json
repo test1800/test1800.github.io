@@ -8,19 +8,22 @@
       "type": "buy",
       "amount": 300,
       "price": 187000
-    },
+    }
+    ,
     {
       "date": "1405/02/17",
       "type": "buy",
       "amount": 1100,
       "price": 174000
-    },
+    }
+    ,
     {
       "date": "1405/02/20",
       "type": "buy",
       "amount": 1000,
       "price": 177500
-    },
+    }
+    ,
     {
       "date": "1405/02/26",
       "type": "buy",
@@ -38,22 +41,25 @@
       "type": "buy",
       "amount": 2200,
       "price": 180000
-    },
+    }
+    ,
     {
       "date": "1405/03/02",
       "type": "buy",
       "amount": 600,
       "price": 179167
-    },
+    }
+    ,
     {
       "date": "1405/03/26",
       "type": "buy",
       "amount": 2500,
       "price": 158160
-    },
+    }
+    ,
     {
       "date": "1405/04/31",
-      "type": "buy",
+      "type": "sell",
       "amount": 2500,
       "price": 199160
     }
