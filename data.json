@@ -50,6 +50,12 @@
       "type": "buy",
       "amount": 2500,
       "price": 158160
+    },
+    {
+      "date": "1405/04/31",
+      "type": "sell",
+      "amount": 2500,
+      "price": 190160
     }
   ]
 }
