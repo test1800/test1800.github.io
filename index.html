@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 
@@ -439,6 +440,68 @@ h1 {
 
     margin-bottom: 3px;
 
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 7px;
+
+}
+
+.live-price-inline {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 4px;
+
+    color:
+        #f8fafc;
+
+    font-size: 11px;
+
+    font-weight: 800;
+
+    white-space:
+        nowrap;
+
+}
+
+.price-arrow {
+
+    display: inline-block;
+
+    font-size: 17px;
+
+    font-weight: 300;
+
+    line-height: 1;
+
+    background: none;
+
+    border: none;
+
+    padding: 0;
+
+    margin: 0;
+
+}
+
+.price-arrow.up {
+
+    color:
+        #34d399;
+
+}
+
+.price-arrow.down {
+
+    color:
+        #f87171;
+
 }
 
 .main-price-number {
@@ -854,17 +917,27 @@ h1 {
 
     }
 
+    .main-price-title {
+
+        gap: 5px;
+
+    }
+
+    .live-price-inline {
+
+        font-size: 10px;
+
+    }
+
 }
 
 </style>
 
 </head>
 
-
 <body>
 
 <div class="container">
-
 
 <header>
 
@@ -886,7 +959,6 @@ id="today">
 
 </div>
 
-
 <div class="live-price">
 
 <div>
@@ -903,14 +975,12 @@ id="currentPrice">
 
 </div>
 
-
 <div class="live-footer">
 
 <div>
 Bank Rate:
 <span id="bankRate">-</span>
 </div>
-
 
 <div class="refresh-info">
 
@@ -937,9 +1007,7 @@ title="Refresh">
 
 </header>
 
-
 <div id="errorBox"></div>
-
 
 <div
 id="loading"
@@ -949,18 +1017,15 @@ Loading...
 
 </div>
 
-
 <div
 id="dashboard"
 style="display:none;">
-
 
 <!-- =================================================
      OVERALL PERFORMANCE
 ================================================= -->
 
 <div class="card">
-
 
 <div class="card-header">
 
@@ -976,16 +1041,31 @@ id="overallTrades">
 
 </div>
 
-
 <div
 class="main-price"
 id="overallMainPrice">
 
-
 <div class="main-price-title">
-Bank-Adjusted Price
-</div>
 
+<span>
+Bank-Adjusted Price
+</span>
+
+<span class="live-price-inline">
+
+<span
+id="overallLivePrice">
+----------------------
+
+</span>
+
+<span
+class="price-arrow"
+id="overallPriceArrow"> </span>
+
+</span>
+
+</div>
 
 <div
 class="main-price-number"
@@ -993,11 +1073,7 @@ id="overallAdjusted">
 -
 </div>
 
-
-<!-- UNREALIZED PERCENTAGES -->
-
 <div class="pl-container">
-
 
 <div class="pl-box">
 
@@ -1013,7 +1089,6 @@ id="overallPLPurchase">
 </div>
 
 </div>
-
 
 <div class="pl-box">
 
@@ -1032,11 +1107,7 @@ id="overallPLBank">
 
 </div>
 
-
-<!-- UNREALIZED AMOUNTS -->
-
 <div class="pl-container">
-
 
 <div class="pl-box">
 
@@ -1052,7 +1123,6 @@ id="overallUnrealizedPurchase">
 </div>
 
 </div>
-
 
 <div class="pl-box">
 
@@ -1071,19 +1141,15 @@ id="overallUnrealizedBank">
 
 </div>
 
-
 <div
 class="result"
 id="overallResult">
 -
 </div>
 
-
 </div>
 
-
 <div class="comparison">
-
 
 <div class="compare-box">
 
@@ -1099,7 +1165,6 @@ id="overallAverage">
 
 </div>
 
-
 <div class="compare-box">
 
 <div class="compare-label">
@@ -1114,12 +1179,9 @@ id="overallPaid">
 
 </div>
 
-
 </div>
 
-
 <div class="metrics">
-
 
 <div class="metric">
 
@@ -1135,7 +1197,6 @@ id="overallQuantity">
 
 </div>
 
-
 <div class="metric">
 
 <div class="metric-label">
@@ -1149,7 +1210,6 @@ id="overallValue">
 </div>
 
 </div>
-
 
 <div class="metric">
 
@@ -1165,11 +1225,7 @@ id="overallBank">
 
 </div>
 
-
-<!-- ONE BOX FOR BOTH REALIZED VALUES -->
-
 <div class="metric realized-combined">
-
 
 <div class="realized-row">
 
@@ -1185,7 +1241,6 @@ id="overallRealizedPurchase">
 
 </div>
 
-
 <div class="realized-row">
 
 <div class="realized-label">
@@ -1200,22 +1255,17 @@ id="overallRealizedBank">
 
 </div>
 
+</div>
 
 </div>
 
-
 </div>
-
-
-</div>
-
 
 <!-- =================================================
      LAST 6 PERIODS
 ================================================= -->
 
 <div class="card">
-
 
 <div class="card-header">
 
@@ -1231,14 +1281,30 @@ id="sixTrades">
 
 </div>
 
-
 <div
 class="main-price"
 id="sixMainPrice">
 
-
 <div class="main-price-title">
+
+<span>
 Bank-Adjusted Price
+</span>
+
+<span class="live-price-inline">
+
+<span
+id="sixLivePrice">
+------------------
+
+</span>
+
+<span
+class="price-arrow"
+id="sixPriceArrow"> </span>
+
+</span>
+
 </div>
 
 <div
@@ -1247,9 +1313,7 @@ id="sixAdjusted">
 -
 </div>
 
-
 <div class="pl-container">
-
 
 <div class="pl-box">
 
@@ -1265,7 +1329,6 @@ id="sixPLPurchase">
 </div>
 
 </div>
-
 
 <div class="pl-box">
 
@@ -1284,9 +1347,7 @@ id="sixPLBank">
 
 </div>
 
-
 <div class="pl-container">
-
 
 <div class="pl-box">
 
@@ -1302,7 +1363,6 @@ id="sixUnrealizedPurchase">
 </div>
 
 </div>
-
 
 <div class="pl-box">
 
@@ -1321,19 +1381,15 @@ id="sixUnrealizedBank">
 
 </div>
 
-
 <div
 class="result"
 id="sixResult">
 -
 </div>
 
-
 </div>
 
-
 <div class="comparison">
-
 
 <div class="compare-box">
 
@@ -1349,7 +1405,6 @@ id="sixAverage">
 
 </div>
 
-
 <div class="compare-box">
 
 <div class="compare-label">
@@ -1364,12 +1419,9 @@ id="sixPaid">
 
 </div>
 
-
 </div>
 
-
 <div class="metrics">
-
 
 <div class="metric">
 
@@ -1385,7 +1437,6 @@ id="sixQuantity">
 
 </div>
 
-
 <div class="metric">
 
 <div class="metric-label">
@@ -1399,7 +1450,6 @@ id="sixValue">
 </div>
 
 </div>
-
 
 <div class="metric">
 
@@ -1415,9 +1465,7 @@ id="sixBank">
 
 </div>
 
-
 <div class="metric realized-combined">
-
 
 <div class="realized-row">
 
@@ -1433,7 +1481,6 @@ id="sixRealizedPurchase">
 
 </div>
 
-
 <div class="realized-row">
 
 <div class="realized-label">
@@ -1448,15 +1495,11 @@ id="sixRealizedBank">
 
 </div>
 
+</div>
 
 </div>
 
-
 </div>
-
-
-</div>
-
 
 <!-- =================================================
      LAST PERIOD
@@ -1464,16 +1507,13 @@ id="sixRealizedBank">
 
 <div class="card">
 
-
 <div class="card-header">
 
 <div class="card-title">
 Last Period
 </div>
 
-
 <div class="period-info">
-
 
 <div
 class="trade-count"
@@ -1481,28 +1521,41 @@ id="lastTrades">
 -
 </div>
 
-
 <div
 class="action-badge"
 id="lastAction">
 -
 </div>
 
-
 </div>
 
 </div>
-
 
 <div
 class="main-price"
 id="lastMainPrice">
 
-
 <div class="main-price-title">
-Bank-Adjusted Price
-</div>
 
+<span>
+Bank-Adjusted Price
+</span>
+
+<span class="live-price-inline">
+
+<span
+id="lastLivePrice">
+-------------------
+
+</span>
+
+<span
+class="price-arrow"
+id="lastPriceArrow"> </span>
+
+</span>
+
+</div>
 
 <div
 class="main-price-number"
@@ -1510,9 +1563,7 @@ id="lastAdjusted">
 -
 </div>
 
-
 <div class="pl-container">
-
 
 <div class="pl-box">
 
@@ -1529,7 +1580,6 @@ id="lastPLPurchase">
 
 </div>
 
-
 <div class="pl-box">
 
 <div class="pl-label">
@@ -1545,12 +1595,9 @@ id="lastPLBank">
 
 </div>
 
-
 </div>
 
-
 <div class="pl-container">
-
 
 <div class="pl-box">
 
@@ -1567,7 +1614,6 @@ id="lastUnrealizedPurchase">
 
 </div>
 
-
 <div class="pl-box">
 
 <div class="pl-label">
@@ -1583,9 +1629,7 @@ id="lastUnrealizedBank">
 
 </div>
 
-
 </div>
-
 
 <div
 class="result"
@@ -1593,12 +1637,9 @@ id="lastResult">
 -
 </div>
 
-
 </div>
 
-
 <div class="comparison">
-
 
 <div class="compare-box">
 
@@ -1614,7 +1655,6 @@ id="lastAverage">
 
 </div>
 
-
 <div class="compare-box">
 
 <div class="compare-label">
@@ -1629,12 +1669,9 @@ id="lastPaid">
 
 </div>
 
-
 </div>
 
-
 <div class="metrics">
-
 
 <div class="metric">
 
@@ -1650,7 +1687,6 @@ id="lastQuantity">
 
 </div>
 
-
 <div class="metric">
 
 <div class="metric-label">
@@ -1664,7 +1700,6 @@ id="lastValue">
 </div>
 
 </div>
-
 
 <div class="metric">
 
@@ -1680,9 +1715,7 @@ id="lastBank">
 
 </div>
 
-
 <div class="metric realized-combined">
-
 
 <div class="realized-row">
 
@@ -1698,7 +1731,6 @@ id="lastRealizedPurchase">
 
 </div>
 
-
 <div class="realized-row">
 
 <div class="realized-label">
@@ -1713,20 +1745,15 @@ id="lastRealizedBank">
 
 </div>
 
-
 </div>
 
-
 </div>
-
-
-</div>
-
 
 </div>
 
 </div>
 
+</div>
 
 <script>
 
@@ -1849,6 +1876,187 @@ function setProfitLossClass(
         Number(value) >= 0
         ? "profit"
         : "loss"
+
+    );
+
+}
+
+
+/* =====================================================
+   LIVE PRICE ARROW
+===================================================== */
+
+function displayLivePriceAndArrow(
+
+    price,
+    priceId,
+    arrowId
+
+) {
+
+    const priceElement =
+        $(priceId);
+
+    const arrowElement =
+        $(arrowId);
+
+
+    if (!priceElement || !arrowElement) {
+
+        return;
+
+    }
+
+
+    const current =
+        Number(price);
+
+
+    priceElement.textContent =
+        formatNumber(current);
+
+
+    arrowElement.textContent =
+        "";
+
+    arrowElement.classList.remove(
+        "up",
+        "down"
+    );
+
+
+    if (!Number.isFinite(current)) {
+
+        return;
+
+    }
+
+
+    let previous = null;
+
+
+    try {
+
+        const saved =
+            localStorage.getItem(
+                "dashboardPreviousLivePrice"
+            );
+
+
+        if (saved !== null) {
+
+            const parsed =
+                Number(saved);
+
+
+            if (Number.isFinite(parsed)) {
+
+                previous =
+                    parsed;
+
+            }
+
+        }
+
+    }
+
+    catch (e) {}
+
+
+    if (previous !== null) {
+
+        if (current > previous) {
+
+            arrowElement.textContent =
+                "↑";
+
+            arrowElement.classList.add(
+                "up"
+            );
+
+        }
+
+        else if (current < previous) {
+
+            arrowElement.textContent =
+                "↓";
+
+            arrowElement.classList.add(
+                "down"
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =====================================================
+   SAVE CURRENT PRICE AFTER DISPLAY
+===================================================== */
+
+function saveCurrentLivePrice(price) {
+
+    const current =
+        Number(price);
+
+
+    if (!Number.isFinite(current)) {
+
+        return;
+
+    }
+
+
+    try {
+
+        localStorage.setItem(
+
+            "dashboardPreviousLivePrice",
+
+            String(current)
+
+        );
+
+    }
+
+    catch (e) {}
+
+}
+
+
+function updateAllLivePriceDisplays(price) {
+
+    displayLivePriceAndArrow(
+
+        price,
+
+        "overallLivePrice",
+
+        "overallPriceArrow"
+
+    );
+
+
+    displayLivePriceAndArrow(
+
+        price,
+
+        "sixLivePrice",
+
+        "sixPriceArrow"
+
+    );
+
+
+    displayLivePriceAndArrow(
+
+        price,
+
+        "lastLivePrice",
+
+        "lastPriceArrow"
 
     );
 
@@ -2098,10 +2306,15 @@ function daysBetweenInclusive(
         Math.floor(
 
             (
+
                 endDate -
+
                 startDate
+
             )
+
             /
+
             86400000
 
         )
@@ -2378,9 +2591,13 @@ function compoundValue(
     const dailyRate =
 
         annualRate
+
         /
+
         100
+
         /
+
         365;
 
 
@@ -2580,8 +2797,11 @@ function calculatePortfolio(
         lots.reduce(
 
             (
+
                 sum,
+
                 lot
+
             ) =>
 
                 sum +
@@ -2598,8 +2818,11 @@ function calculatePortfolio(
         lots.reduce(
 
             (
+
                 sum,
+
                 lot
+
             ) =>
 
                 sum
@@ -2622,6 +2845,7 @@ function calculatePortfolio(
         ?
 
         paidAmount /
+
         currentQuantity
 
         :
@@ -2641,6 +2865,7 @@ function calculatePortfolio(
             compoundValue(
 
                 lot.amount *
+
                 lot.price,
 
                 lot.date,
@@ -2668,6 +2893,7 @@ function calculatePortfolio(
         ?
 
         bankValue /
+
         currentQuantity
 
         :
@@ -3043,8 +3269,6 @@ function displaySection(
     );
 
 
-    /* Unrealized percentages */
-
     safeText(
 
         prefix +
@@ -3072,8 +3296,6 @@ function displaySection(
 
     );
 
-
-    /* Unrealized amounts */
 
     safeText(
 
@@ -3103,8 +3325,6 @@ function displaySection(
     );
 
 
-    /* Realized amounts */
-
     safeText(
 
         prefix +
@@ -3129,7 +3349,6 @@ function displaySection(
             result.realizedBank
 
         )
-
 
     );
 
@@ -3325,6 +3544,7 @@ function displaySection(
             " OUT";
 
     }
+
 
 }
 
@@ -3770,6 +3990,17 @@ async function init() {
     );
 
 
+    /* =================================================
+       LIVE PRICE + ARROW
+    ================================================= */
+
+    updateAllLivePriceDisplays(
+
+        currentPrice
+
+    );
+
+
     const transactions =
 
         Array.isArray(
@@ -3943,6 +4174,17 @@ async function init() {
         +
 
         " OUT"
+
+    );
+
+
+    /* =================================================
+       SAVE CURRENT PRICE AFTER COMPARISON
+    ================================================= */
+
+    saveCurrentLivePrice(
+
+        currentPrice
 
     );
 
