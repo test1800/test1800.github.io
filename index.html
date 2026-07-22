@@ -539,8 +539,8 @@ h1 {
     min-width: 0;
 
     padding:
-        5px
-        6px;
+        6px
+        7px;
 
     border-radius: 9px;
 
@@ -559,7 +559,7 @@ h1 {
     justify-content:
         space-between;
 
-    gap: 5px;
+    gap: 6px;
 
 }
 
@@ -1161,37 +1161,19 @@ id="overallBank">
 </div>
 
 
+<!-- =================================================
+     REALIZED P/L IS HERE
+     INSTEAD OF UNREALIZED DIFFERENCE
+================================================= -->
+
 <div class="metric">
 
 <div class="metric-label">
-Unrealized Difference
-</div>
-
-<div
-class="metric-value"
-id="overallDifference">
--
-</div>
-
-</div>
-
-
-</div>
-
-
-<!-- REALIZED P/L -->
-
-<div class="realized-container">
-
-
-<div class="realized-box">
-
-<div class="realized-label">
 Realized P/L vs Purchase
 </div>
 
 <div
-class="realized-value"
+class="metric-value"
 id="overallRealizedPurchase">
 -
 </div>
@@ -1199,14 +1181,14 @@ id="overallRealizedPurchase">
 </div>
 
 
-<div class="realized-box">
+<div class="metric">
 
-<div class="realized-label">
+<div class="metric-label">
 Realized P/L vs Bank
 </div>
 
 <div
-class="realized-value"
+class="metric-value"
 id="overallRealizedBank">
 -
 </div>
@@ -1429,32 +1411,11 @@ id="sixBank">
 <div class="metric">
 
 <div class="metric-label">
-Unrealized Difference
-</div>
-
-<div
-class="metric-value"
-id="sixDifference">
--
-</div>
-
-</div>
-
-
-</div>
-
-
-<div class="realized-container">
-
-
-<div class="realized-box">
-
-<div class="realized-label">
 Realized P/L vs Purchase
 </div>
 
 <div
-class="realized-value"
+class="metric-value"
 id="sixRealizedPurchase">
 -
 </div>
@@ -1462,14 +1423,14 @@ id="sixRealizedPurchase">
 </div>
 
 
-<div class="realized-box">
+<div class="metric">
 
-<div class="realized-label">
+<div class="metric-label">
 Realized P/L vs Bank
 </div>
 
 <div
-class="realized-value"
+class="metric-value"
 id="sixRealizedBank">
 -
 </div>
@@ -1709,32 +1670,11 @@ id="lastBank">
 <div class="metric">
 
 <div class="metric-label">
-Unrealized Difference
-</div>
-
-<div
-class="metric-value"
-id="lastDifference">
--
-</div>
-
-</div>
-
-
-</div>
-
-
-<div class="realized-container">
-
-
-<div class="realized-box">
-
-<div class="realized-label">
 Realized P/L vs Purchase
 </div>
 
 <div
-class="realized-value"
+class="metric-value"
 id="lastRealizedPurchase">
 -
 </div>
@@ -1742,14 +1682,14 @@ id="lastRealizedPurchase">
 </div>
 
 
-<div class="realized-box">
+<div class="metric">
 
-<div class="realized-label">
+<div class="metric-label">
 Realized P/L vs Bank
 </div>
 
 <div
-class="realized-value"
+class="metric-value"
 id="lastRealizedBank">
 -
 </div>
@@ -2729,11 +2669,6 @@ function calculatePortfolio(
         bankValue;
 
 
-    const unrealizedDifference =
-
-        unrealizedBankAmount;
-
-
     const plPurchase =
 
         paidAmount > 0
@@ -2803,8 +2738,6 @@ function calculatePortfolio(
         unrealizedPurchaseAmount,
 
         unrealizedBankAmount,
-
-        unrealizedDifference,
 
         plPurchase,
 
@@ -3093,22 +3026,6 @@ function displaySection(
     safeText(
 
         prefix +
-        "Difference",
-
-        formatMoneySigned(
-
-            result.unrealizedDifference
-
-        )
-
-    );
-
-
-    /* Unrealized percentages */
-
-    safeText(
-
-        prefix +
         "PLPurchase",
 
         formatPercent(
@@ -3133,8 +3050,6 @@ function displaySection(
 
     );
 
-
-    /* Unrealized amounts */
 
     safeText(
 
@@ -3163,8 +3078,6 @@ function displaySection(
 
     );
 
-
-    /* Realized amounts */
 
     safeText(
 
@@ -3250,16 +3163,6 @@ function displaySection(
         "RealizedBank",
 
         result.realizedBank
-
-    );
-
-
-    setProfitLossClass(
-
-        prefix +
-        "Difference",
-
-        result.unrealizedDifference
 
     );
 
