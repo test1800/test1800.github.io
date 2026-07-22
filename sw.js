@@ -1,272 +1,166 @@
-const CACHE_NAME = "financial-dashboard-v2";
+const CACHE_NAME = "financial-dashboard-v3";
 
 const STATIC_FILES = [
-
     "./",
-
     "./index.html",
-
     "./manifest.json",
-
     "./icon.png",
-
     "./data.json"
-
 ];
 
 
-self.addEventListener(
+/* =====================================================
+   INSTALL
+===================================================== */
 
-    "install",
+self.addEventListener("install", event => {
 
-    event => {
+    event.waitUntil(
 
-        event.waitUntil(
+        caches.open(CACHE_NAME)
 
-            caches.open(
+            .then(cache => {
 
-                CACHE_NAME
+                return cache.addAll(STATIC_FILES);
 
-            )
+            })
 
-            .then(
+            .then(() => {
 
-                cache =>
+                return self.skipWaiting();
 
-                    cache.addAll(
+            })
 
-                        STATIC_FILES
+    );
 
-                    )
-
-            )
-
-            .then(
-
-                () =>
-
-                    self.skipWaiting()
-
-            )
-
-        );
-
-    }
-
-);
+});
 
 
-self.addEventListener(
+/* =====================================================
+   ACTIVATE
+===================================================== */
 
-    "activate",
+self.addEventListener("activate", event => {
 
-    event => {
+    event.waitUntil(
 
-        event.waitUntil(
+        caches.keys()
 
-            caches.keys()
+            .then(keys => {
 
-                .then(
+                return Promise.all(
 
-                    keys =>
+                    keys
 
-                        Promise.all(
+                        .filter(key => key !== CACHE_NAME)
 
-                            keys
+                        .map(key => caches.delete(key))
 
-                                .filter(
+                );
 
-                                    key =>
+            })
 
-                                        key !==
+            .then(() => {
 
-                                        CACHE_NAME
+                return self.clients.claim();
 
-                                )
+            })
 
-                                .map(
+    );
 
-                                    key =>
+});
 
-                                        caches.delete(
 
-                                            key
+/* =====================================================
+   FETCH
+===================================================== */
 
-                                        )
+self.addEventListener("fetch", event => {
 
-                                )
+    const request = event.request;
 
-                        )
+    if (request.method !== "GET") {
 
-                )
-
-                .then(
-
-                    () =>
-
-                        self.clients.claim()
-
-                )
-
-        );
+        return;
 
     }
 
-);
+    const url = new URL(request.url);
 
 
-self.addEventListener(
+    /*
+       data.json
+       Network First
+       Offline => Cached Version
+    */
 
-    "fetch",
+    if (
 
-    event => {
+        url.origin === self.location.origin
 
-        const request =
+        &&
 
-            event.request;
+        url.pathname.endsWith("/data.json")
 
-
-        if (
-
-            request.method !==
-
-            "GET"
-
-        ) {
-
-            return;
-
-        }
-
-
-        const url =
-
-            new URL(
-
-                request.url
-
-            );
-
-
-        /*
-
-           API PRICE:
-
-           Always try network first.
-
-           If offline, use cached API response.
-
-        */
-
-        if (
-
-            url.origin ===
-
-            self.location.origin
-
-            &&
-
-            url.pathname.endsWith(
-
-                "/data.json"
-
-            )
-
-        ) {
-
-            event.respondWith(
-
-                networkFirst(
-
-                    request
-
-                )
-
-            );
-
-            return;
-
-        }
-
-
-        /*
-
-           External API:
-
-           Network first.
-
-           Offline => last cached response.
-
-        */
-
-        if (
-
-            url.origin !==
-
-            self.location.origin
-
-        ) {
-
-            event.respondWith(
-
-                networkFirst(
-
-                    request
-
-                )
-
-            );
-
-            return;
-
-        }
-
-
-        /*
-
-           HTML / CSS / JS / ICON:
-
-           Cache first.
-
-           If not available, try network.
-
-        */
+    ) {
 
         event.respondWith(
 
-            cacheFirst(
-
-                request
-
-            )
+            networkFirst(request)
 
         );
 
+        return;
+
     }
 
-);
+
+    /*
+       External API
+       Network First
+       Offline => Cached Version
+    */
+
+    if (
+
+        url.origin !== self.location.origin
+
+    ) {
+
+        event.respondWith(
+
+            networkFirst(request)
+
+        );
+
+        return;
+
+    }
+
+
+    /*
+       Local Files
+       Cache First
+    */
+
+    event.respondWith(
+
+        cacheFirst(request)
+
+    );
+
+});
 
 
 /* =====================================================
    NETWORK FIRST
 ===================================================== */
 
-async function networkFirst(
-
-    request
-
-) {
+async function networkFirst(request) {
 
     try {
 
-        const response =
-
-            await fetch(
-
-                request
-
-            );
-
+        const response = await fetch(request);
 
         if (
 
@@ -278,14 +172,11 @@ async function networkFirst(
 
         ) {
 
-            const cache =
+            const cache = await caches.open(
 
-                await caches.open(
+                CACHE_NAME
 
-                    CACHE_NAME
-
-                );
-
+            );
 
             await cache.put(
 
@@ -297,32 +188,23 @@ async function networkFirst(
 
         }
 
-
         return response;
 
     }
 
     catch (error) {
 
-        const cachedResponse =
+        const cachedResponse = await caches.match(
 
-            await caches.match(
+            request
 
-                request
+        );
 
-            );
-
-
-        if (
-
-            cachedResponse
-
-        ) {
+        if (cachedResponse) {
 
             return cachedResponse;
 
         }
-
 
         throw error;
 
@@ -335,39 +217,23 @@ async function networkFirst(
    CACHE FIRST
 ===================================================== */
 
-async function cacheFirst(
+async function cacheFirst(request) {
 
-    request
+    const cachedResponse = await caches.match(
 
-) {
+        request
 
-    const cachedResponse =
-
-        await caches.match(
-
-            request
-
-        );
+    );
 
 
-    if (
-
-        cachedResponse
-
-    ) {
+    if (cachedResponse) {
 
         return cachedResponse;
 
     }
 
 
-    const response =
-
-        await fetch(
-
-            request
-
-        );
+    const response = await fetch(request);
 
 
     if (
@@ -380,14 +246,11 @@ async function cacheFirst(
 
     ) {
 
-        const cache =
+        const cache = await caches.open(
 
-            await caches.open(
+            CACHE_NAME
 
-                CACHE_NAME
-
-            );
-
+        );
 
         await cache.put(
 
@@ -403,3 +266,191 @@ async function cacheFirst(
     return response;
 
 }
+
+
+/* =====================================================
+   PUSH NOTIFICATION
+===================================================== */
+
+self.addEventListener(
+
+    "push",
+
+    event => {
+
+        let data = {
+
+            title: "Financial Dashboard",
+
+            body: "Price Alert",
+
+            icon: "./icon.png",
+
+            badge: "./icon.png",
+
+            url: "./index.html"
+
+        };
+
+
+        try {
+
+            if (event.data) {
+
+                data = {
+
+                    ...data,
+
+                    ...event.data.json()
+
+                };
+
+            }
+
+        }
+
+        catch (error) {
+
+            console.error(
+
+                "Push data error:",
+
+                error
+
+            );
+
+        }
+
+
+        const options = {
+
+            body: data.body,
+
+            icon: data.icon,
+
+            badge: data.badge,
+
+            vibrate: [
+
+                200,
+
+                100,
+
+                200
+
+            ],
+
+            data: {
+
+                url: data.url
+
+            },
+
+            tag: "financial-price-alert",
+
+            renotify: true
+
+        };
+
+
+        event.waitUntil(
+
+            self.registration.showNotification(
+
+                data.title,
+
+                options
+
+            )
+
+        );
+
+    }
+
+);
+
+
+/* =====================================================
+   NOTIFICATION CLICK
+===================================================== */
+
+self.addEventListener(
+
+    "notificationclick",
+
+    event => {
+
+        event.notification.close();
+
+
+        const url =
+
+            event.notification.data
+
+            &&
+
+            event.notification.data.url
+
+                ? event.notification.data.url
+
+                : "./index.html";
+
+
+        event.waitUntil(
+
+            clients.matchAll({
+
+                type: "window",
+
+                includeUncontrolled: true
+
+            })
+
+            .then(
+
+                clientList => {
+
+                    for (
+
+                        const client of clientList
+
+                    ) {
+
+                        if (
+
+                            "focus" in client
+
+                        ) {
+
+                            client.navigate(url);
+
+                            return client.focus();
+
+                        }
+
+                    }
+
+
+                    if (
+
+                        clients.openWindow
+
+                    ) {
+
+                        return clients.openWindow(
+
+                            url
+
+                        );
+
+                    }
+
+                }
+
+            )
+
+        );
+
+    }
+
+);
