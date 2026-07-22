@@ -430,6 +430,25 @@ h1 {
 
 }
 
+
+/* =====================================================
+   BANK-ADJUSTED PRICE HEADER + LIVE PRICE
+===================================================== */
+
+.main-price-title-row {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 10px;
+
+    margin-bottom: 3px;
+
+}
+
 .main-price-title {
 
     color:
@@ -437,83 +456,98 @@ h1 {
 
     font-size: 11px;
 
-    margin-bottom: 3px;
+    white-space:
+        nowrap;
 
 }
 
-
-/* =====================================================
-   BANK ADJUSTED PRICE + LIVE DIRECTION
-===================================================== */
-
-.price-live-row {
+.live-adjusted-price {
 
     display: flex;
 
     align-items: center;
 
-    justify-content: center;
+    justify-content: flex-end;
 
-    gap: 8px;
+    gap: 6px;
 
-    min-height: 31px;
+    min-width: 0;
 
 }
+
+.live-adjusted-number {
+
+    font-size: 11px;
+
+    font-weight: 800;
+
+    color:
+        #f8fafc;
+
+    white-space:
+        nowrap;
+
+}
+
+
+/* باریک و بدون بک‌گراند */
+
+.price-arrow {
+
+    display: inline-block;
+
+    width: 8px;
+
+    height: 8px;
+
+    border-right:
+        1.5px solid
+        currentColor;
+
+    border-top:
+        1.5px solid
+        currentColor;
+
+    flex-shrink: 0;
+
+}
+
+
+/* فلش رو به بالا */
+
+.price-arrow.up {
+
+    color:
+        #34d399;
+
+    transform:
+        rotate(-45deg);
+
+}
+
+
+/* فلش رو به پایین */
+
+.price-arrow.down {
+
+    color:
+        #f87171;
+
+    transform:
+        rotate(135deg);
+
+}
+
+
+/* =====================================================
+   MAIN BANK-ADJUSTED PRICE
+===================================================== */
 
 .main-price-number {
 
     font-size: 25px;
 
     font-weight: 850;
-
-    line-height: 1;
-
-}
-
-.price-direction {
-
-    width: 20px;
-
-    height: 28px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    font-size: 25px;
-
-    font-weight: 300;
-
-    line-height: 1;
-
-    background:
-        none;
-
-    border:
-        none;
-
-}
-
-.price-direction.up {
-
-    color:
-        #34d399;
-
-}
-
-.price-direction.down {
-
-    color:
-        #f87171;
-
-}
-
-.price-direction.same {
-
-    color:
-        #64748b;
 
 }
 
@@ -919,6 +953,29 @@ h1 {
 
     }
 
+    .main-price-title-row {
+
+        gap: 6px;
+
+    }
+
+    .live-adjusted-number {
+
+        font-size:
+            10px;
+
+    }
+
+    .price-arrow {
+
+        width:
+            7px;
+
+        height:
+            7px;
+
+    }
+
 }
 
 </style>
@@ -1047,24 +1104,34 @@ class="main-price"
 id="overallMainPrice">
 
 
+<div class="main-price-title-row">
+
 <div class="main-price-title">
 Bank-Adjusted Price
 </div>
 
+<div class="live-adjusted-price">
 
-<div class="price-live-row">
+<span
+class="live-adjusted-number"
+id="overallLiveAdjusted">
+-
+</span>
+
+<span
+class="price-arrow"
+id="overallPriceArrow">
+</span>
+
+</div>
+
+</div>
+
 
 <div
 class="main-price-number"
 id="overallAdjusted">
 -
-</div>
-
-<div
-class="price-direction"
-id="overallPriceDirection">
-</div>
-
 </div>
 
 
@@ -1305,24 +1372,34 @@ class="main-price"
 id="sixMainPrice">
 
 
+<div class="main-price-title-row">
+
 <div class="main-price-title">
 Bank-Adjusted Price
 </div>
 
+<div class="live-adjusted-price">
 
-<div class="price-live-row">
+<span
+class="live-adjusted-number"
+id="sixLiveAdjusted">
+-
+</span>
+
+<span
+class="price-arrow"
+id="sixPriceArrow">
+</span>
+
+</div>
+
+</div>
+
 
 <div
 class="main-price-number"
 id="sixAdjusted">
 -
-</div>
-
-<div
-class="price-direction"
-id="sixPriceDirection">
-</div>
-
 </div>
 
 
@@ -1577,24 +1654,34 @@ class="main-price"
 id="lastMainPrice">
 
 
+<div class="main-price-title-row">
+
 <div class="main-price-title">
 Bank-Adjusted Price
 </div>
 
+<div class="live-adjusted-price">
 
-<div class="price-live-row">
+<span
+class="live-adjusted-number"
+id="lastLiveAdjusted">
+-
+</span>
+
+<span
+class="price-arrow"
+id="lastPriceArrow">
+</span>
+
+</div>
+
+</div>
+
 
 <div
 class="main-price-number"
 id="lastAdjusted">
 -
-</div>
-
-<div
-class="price-direction"
-id="lastPriceDirection">
-</div>
-
 </div>
 
 
@@ -1943,92 +2030,88 @@ function setProfitLossClass(
 
 
 /* =====================================================
-   LIVE PRICE DIRECTION
-   Compare current live price with previous live price
+   LIVE PRICE ARROW
 ===================================================== */
 
-function updatePriceDirection(
-    id,
+function updateLiveAdjustedPrice(
+
+    prefix,
+
     currentPrice,
-    previousPrice
+
+    previousAdjustedPrice
+
 ) {
 
-    const el = $(id);
+    const livePriceEl =
+        $(prefix + "LiveAdjusted");
 
-    if (!el) {
+    const arrowEl =
+        $(prefix + "PriceArrow");
+
+
+    if (
+        !livePriceEl ||
+        !arrowEl
+    ) {
 
         return;
 
     }
 
 
-    el.className =
-        "price-direction";
+    /* نمایش قیمت لایو */
 
+    livePriceEl.textContent =
+
+        formatNumber(
+
+            currentPrice
+
+        );
+
+
+    /* حذف وضعیت قبلی */
+
+    arrowEl.classList.remove(
+
+        "up",
+
+        "down"
+
+    );
+
+
+    /* مقایسه قیمت لایو با Bank-Adjusted Price */
 
     if (
 
-        !Number.isFinite(
-            Number(currentPrice)
-        )
+        Number(currentPrice) >
 
-        ||
-
-        !Number.isFinite(
-            Number(previousPrice)
-        )
+        Number(previousAdjustedPrice)
 
     ) {
 
-        el.textContent = "";
+        arrowEl.classList.add(
 
-        return;
-
-    }
-
-
-    if (
-
-        Number(currentPrice)
-
-        >
-
-        Number(previousPrice)
-
-    ) {
-
-        el.textContent = "↑";
-
-        el.classList.add(
             "up"
+
         );
 
     }
 
     else if (
 
-        Number(currentPrice)
+        Number(currentPrice) <
 
-        <
-
-        Number(previousPrice)
+        Number(previousAdjustedPrice)
 
     ) {
 
-        el.textContent = "↓";
+        arrowEl.classList.add(
 
-        el.classList.add(
             "down"
-        );
 
-    }
-
-    else {
-
-        el.textContent = "→";
-
-        el.classList.add(
-            "same"
         );
 
     }
@@ -2279,10 +2362,15 @@ function daysBetweenInclusive(
         Math.floor(
 
             (
+
                 endDate -
+
                 startDate
+
             )
+
             /
+
             86400000
 
         )
@@ -2761,8 +2849,11 @@ function calculatePortfolio(
         lots.reduce(
 
             (
+
                 sum,
+
                 lot
+
             ) =>
 
                 sum +
@@ -2779,8 +2870,11 @@ function calculatePortfolio(
         lots.reduce(
 
             (
+
                 sum,
+
                 lot
+
             ) =>
 
                 sum
@@ -2803,6 +2897,7 @@ function calculatePortfolio(
         ?
 
         paidAmount /
+
         currentQuantity
 
         :
@@ -2822,6 +2917,7 @@ function calculatePortfolio(
             compoundValue(
 
                 lot.amount *
+
                 lot.price,
 
                 lot.date,
@@ -2849,6 +2945,7 @@ function calculatePortfolio(
         ?
 
         bankValue /
+
         currentQuantity
 
         :
@@ -3944,96 +4041,6 @@ async function init() {
     );
 
 
-    /* =================================================
-       LIVE PRICE DIRECTION
-    ================================================= */
-
-    let previousPrice = null;
-
-
-    try {
-
-        const savedPrice =
-
-            localStorage.getItem(
-
-                "dashboardPreviousLivePrice"
-
-            );
-
-
-        if (
-            savedPrice !== null
-        ) {
-
-            const parsed =
-
-                Number(savedPrice);
-
-
-            if (
-                Number.isFinite(parsed)
-            ) {
-
-                previousPrice = parsed;
-
-            }
-
-        }
-
-    }
-
-    catch (e) {}
-
-
-    updatePriceDirection(
-
-        "overallPriceDirection",
-
-        currentPrice,
-
-        previousPrice
-
-    );
-
-
-    updatePriceDirection(
-
-        "sixPriceDirection",
-
-        currentPrice,
-
-        previousPrice
-
-    );
-
-
-    updatePriceDirection(
-
-        "lastPriceDirection",
-
-        currentPrice,
-
-        previousPrice
-
-    );
-
-
-    try {
-
-        localStorage.setItem(
-
-            "dashboardPreviousLivePrice",
-
-            String(currentPrice)
-
-        );
-
-    }
-
-    catch (e) {}
-
-
     const transactions =
 
         Array.isArray(
@@ -4107,6 +4114,17 @@ async function init() {
     );
 
 
+    updateLiveAdjustedPrice(
+
+        "overall",
+
+        currentPrice,
+
+        overall.bankAdjustedPrice
+
+    );
+
+
     /* =================================================
        LAST 6
     ================================================= */
@@ -4146,6 +4164,17 @@ async function init() {
     );
 
 
+    updateLiveAdjustedPrice(
+
+        "six",
+
+        currentPrice,
+
+        six.bankAdjustedPrice
+
+    );
+
+
     /* =================================================
        LAST PERIOD
     ================================================= */
@@ -4179,6 +4208,17 @@ async function init() {
         last,
 
         "last"
+
+    );
+
+
+    updateLiveAdjustedPrice(
+
+        "last",
+
+        currentPrice,
+
+        last.bankAdjustedPrice
 
     );
 
