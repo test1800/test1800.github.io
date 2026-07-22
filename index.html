@@ -451,7 +451,7 @@ h1 {
 
 
 /* =====================================================
-   UNREALIZED P/L
+   UNREALIZED P/L PERCENTAGE AND AMOUNT
 ===================================================== */
 
 .pl-container {
@@ -513,81 +513,6 @@ h1 {
     font-size: 17px;
 
     font-weight: 850;
-
-}
-
-
-/* =====================================================
-   REALIZED P/L
-===================================================== */
-
-.realized-container {
-
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap: 7px;
-
-    margin-top: 7px;
-
-}
-
-.realized-box {
-
-    min-width: 0;
-
-    padding:
-        6px
-        7px;
-
-    border-radius: 9px;
-
-    background:
-        rgba(255,255,255,.035);
-
-    border:
-        1px solid
-        rgba(255,255,255,.055);
-
-    display: flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        space-between;
-
-    gap: 6px;
-
-}
-
-.realized-label {
-
-    color:
-        #94a3b8;
-
-    font-size: 8px;
-
-    line-height: 1.2;
-
-    white-space:
-        nowrap;
-
-}
-
-.realized-value {
-
-    font-size: 10px;
-
-    font-weight: 800;
-
-    white-space:
-        nowrap;
-
-    text-align:
-        right;
 
 }
 
@@ -694,6 +619,83 @@ h1 {
 
 }
 
+
+/* =====================================================
+   COMBINED REALIZED P/L BOX
+===================================================== */
+
+.realized-combined {
+
+    display: flex;
+
+    flex-direction:
+        column;
+
+    justify-content:
+        center;
+
+    gap: 5px;
+
+    min-width: 0;
+
+}
+
+
+.realized-row {
+
+    width: 100%;
+
+    display: flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap: 8px;
+
+    min-width: 0;
+
+}
+
+
+.realized-label {
+
+    color:
+        #94a3b8;
+
+    font-size: 8px;
+
+    line-height: 1.2;
+
+    white-space:
+        nowrap;
+
+}
+
+
+.realized-value {
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    white-space:
+        nowrap;
+
+    text-align:
+        right;
+
+    flex-shrink: 0;
+
+}
+
+
+/* =====================================================
+   METRIC TEXT
+===================================================== */
+
 .metric-label {
 
     color:
@@ -788,6 +790,7 @@ h1 {
 
 }
 
+
 @media (max-width:650px) {
 
     .container {
@@ -839,13 +842,15 @@ h1 {
 
     .realized-label {
 
-        font-size: 7px;
+        font-size:
+            7px;
 
     }
 
     .realized-value {
 
-        font-size: 9px;
+        font-size:
+            9px;
 
     }
 
@@ -951,7 +956,7 @@ style="display:none;">
 
 
 <!-- =================================================
-     OVERALL
+     OVERALL PERFORMANCE
 ================================================= -->
 
 <div class="card">
@@ -989,7 +994,7 @@ id="overallAdjusted">
 </div>
 
 
-<!-- UNREALIZED PERCENT -->
+<!-- UNREALIZED PERCENTAGES -->
 
 <div class="pl-container">
 
@@ -1028,7 +1033,7 @@ id="overallPLBank">
 </div>
 
 
-<!-- UNREALIZED AMOUNT -->
+<!-- UNREALIZED AMOUNTS -->
 
 <div class="pl-container">
 
@@ -1161,19 +1166,19 @@ id="overallBank">
 </div>
 
 
-<!-- =================================================
-     REALIZED P/L IS HERE
-     INSTEAD OF UNREALIZED DIFFERENCE
-================================================= -->
+<!-- ONE BOX FOR BOTH REALIZED VALUES -->
 
-<div class="metric">
+<div class="metric realized-combined">
 
-<div class="metric-label">
+
+<div class="realized-row">
+
+<div class="realized-label">
 Realized P/L vs Purchase
 </div>
 
 <div
-class="metric-value"
+class="realized-value"
 id="overallRealizedPurchase">
 -
 </div>
@@ -1181,17 +1186,20 @@ id="overallRealizedPurchase">
 </div>
 
 
-<div class="metric">
+<div class="realized-row">
 
-<div class="metric-label">
+<div class="realized-label">
 Realized P/L vs Bank
 </div>
 
 <div
-class="metric-value"
+class="realized-value"
 id="overallRealizedBank">
 -
 </div>
+
+</div>
+
 
 </div>
 
@@ -1408,14 +1416,17 @@ id="sixBank">
 </div>
 
 
-<div class="metric">
+<div class="metric realized-combined">
 
-<div class="metric-label">
+
+<div class="realized-row">
+
+<div class="realized-label">
 Realized P/L vs Purchase
 </div>
 
 <div
-class="metric-value"
+class="realized-value"
 id="sixRealizedPurchase">
 -
 </div>
@@ -1423,17 +1434,20 @@ id="sixRealizedPurchase">
 </div>
 
 
-<div class="metric">
+<div class="realized-row">
 
-<div class="metric-label">
+<div class="realized-label">
 Realized P/L vs Bank
 </div>
 
 <div
-class="metric-value"
+class="realized-value"
 id="sixRealizedBank">
 -
 </div>
+
+</div>
+
 
 </div>
 
@@ -1667,14 +1681,17 @@ id="lastBank">
 </div>
 
 
-<div class="metric">
+<div class="metric realized-combined">
 
-<div class="metric-label">
+
+<div class="realized-row">
+
+<div class="realized-label">
 Realized P/L vs Purchase
 </div>
 
 <div
-class="metric-value"
+class="realized-value"
 id="lastRealizedPurchase">
 -
 </div>
@@ -1682,17 +1699,20 @@ id="lastRealizedPurchase">
 </div>
 
 
-<div class="metric">
+<div class="realized-row">
 
-<div class="metric-label">
+<div class="realized-label">
 Realized P/L vs Bank
 </div>
 
 <div
-class="metric-value"
+class="realized-value"
 id="lastRealizedBank">
 -
 </div>
+
+</div>
+
 
 </div>
 
@@ -3023,6 +3043,8 @@ function displaySection(
     );
 
 
+    /* Unrealized percentages */
+
     safeText(
 
         prefix +
@@ -3050,6 +3072,8 @@ function displaySection(
 
     );
 
+
+    /* Unrealized amounts */
 
     safeText(
 
@@ -3079,6 +3103,8 @@ function displaySection(
     );
 
 
+    /* Realized amounts */
+
     safeText(
 
         prefix +
@@ -3103,6 +3129,7 @@ function displaySection(
             result.realizedBank
 
         )
+
 
     );
 
@@ -3461,7 +3488,7 @@ async function getCurrentPrice(
 
 
 /* =====================================================
-   REFRESH
+   REFRESH AND SCROLL POSITION
 ===================================================== */
 
 let countdownTimer =
