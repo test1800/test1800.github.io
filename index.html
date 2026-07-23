@@ -150,7 +150,11 @@ h1 {
     margin-left: 8px;
 
 }
-
+.update-countdown {
+    color:#64748b;
+    font-size:10px;
+    margin-left:6px;
+}
 .live-price {
 
     margin-top: 12px;
@@ -1022,7 +1026,13 @@ Financial Dashboard
 <span
 class="update-time"
 id="updateTime">
-Last Update: - (<span id="countdown">30</span>s)
+Last Update: -
+</span>
+
+<span
+class="update-countdown"
+id="updateCountdown">
+30s
 </span>
 
 </div>
@@ -1065,17 +1075,7 @@ id="topPriceArrow">
 Bank Rate:
 <span id="bankRate">-</span>
 </div>
-
-
-<div class="refresh-info">
-
-<span id="countdown">
-30
-</span>
-
-<span>s</span>
-
-</div>
+<div class="refresh-info"></div>
 
 </div>
 
@@ -4543,9 +4543,9 @@ function startAutoRefresh() {
     let seconds = 30;
 
     safeText(
-        "countdown",
-        seconds
-    );
+    "updateCountdown",
+    seconds + "s"
+);
 
     countdownTimer = setInterval(
         async () => {
@@ -4557,9 +4557,9 @@ function startAutoRefresh() {
             }
 
             safeText(
-                "countdown",
-                seconds
-            );
+    "updateCountdown",
+    seconds + "s"
+);
 
             if (seconds === 0) {
 
