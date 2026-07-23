@@ -4233,6 +4233,238 @@ async function getCurrentPrice(
 /* =====================================================
    REFRESH
 ===================================================== */
+async function refreshDashboardData() {
+
+    try {
+
+        const dataResponse = await fetch(
+            "data.json?x=" + Date.now(),
+            {
+                cache: "no-store"
+            }
+        );
+
+        if (!dataResponse.ok) {
+            throw new Error(
+                "Cannot load data.json"
+            );
+        }
+
+        const data =
+            await dataResponse.json();
+
+        saveLocalData(data);
+
+
+        const annualBankRate =
+            Number(
+                data.annualBankRate || 40
+            );
+
+
+        const divisor =
+            Number(
+                data.priceDivisor || 10
+            );
+
+
+        let currentPrice =
+            await getCurrentPrice(
+                data.priceApi,
+                divisor
+            );
+
+
+        saveLocalPrice(
+            currentPrice
+        );
+
+
+        const today =
+            getTodayJalali();
+
+
+        safeText(
+            "today",
+            today
+        );
+
+
+        safeText(
+            "currentPrice",
+            formatNumber(
+                currentPrice
+            )
+        );
+
+
+        safeText(
+            "bankRate",
+            annualBankRate + "%"
+        );
+
+
+        const previousLivePrice =
+            Number(
+                sessionStorage.getItem(
+                    "previousLivePrice"
+                )
+            );
+
+
+        setPriceArrow(
+            "topPriceArrow",
+            currentPrice,
+            previousLivePrice
+        );
+
+
+        try {
+
+            sessionStorage.setItem(
+                "previousLivePrice",
+                String(currentPrice)
+            );
+
+        }
+        catch (e) {}
+
+
+        safeText(
+            "updateTime",
+            "Last Update: " +
+            new Date().toLocaleTimeString(
+                "en-US",
+                {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: false
+                }
+            )
+        );
+
+
+        const transactions =
+            Array.isArray(
+                data.transactions
+            )
+            ?
+            data.transactions
+                .slice()
+                .sort(
+                    (a, b) =>
+                        dateNumber(a.date) -
+                        dateNumber(b.date)
+                )
+            :
+            [];
+
+
+        const overall =
+            calculatePortfolio(
+                transactions,
+                currentPrice,
+                today,
+                annualBankRate
+            );
+
+
+        displaySection(
+            overall,
+            "overall",
+            previousLivePrice
+        );
+
+
+        const sixTransactions =
+            getLastPeriods(
+                transactions,
+                6
+            );
+
+
+        const six =
+            calculatePortfolio(
+                sixTransactions,
+                currentPrice,
+                today,
+                annualBankRate
+            );
+
+
+        displaySection(
+            six,
+            "six",
+            previousLivePrice
+        );
+
+
+        const lastTransactions =
+            getLastPeriod(
+                transactions
+            );
+
+
+        const last =
+            calculatePortfolio(
+                lastTransactions,
+                currentPrice,
+                today,
+                annualBankRate
+            );
+
+
+        displaySection(
+            last,
+            "last",
+            previousLivePrice
+        );
+
+
+        displayLastAction(
+            lastTransactions
+        );
+
+
+        safeText(
+            "lastTrades",
+            last.buyCount +
+            " IN  •  " +
+            last.sellCount +
+            " OUT"
+        );
+
+
+        showConnectionStatus(
+            false,
+            "Online • Live Data"
+        );
+
+
+        console.log(
+            "Dashboard updated without page reload"
+        );
+
+    }
+
+    catch (error) {
+
+        console.warn(
+            "Automatic refresh failed:",
+            error
+        );
+
+
+        showConnectionStatus(
+            true,
+            "Update Failed • Showing Last Saved Data"
+        );
+
+    }
+
+}
+
 
 let countdownTimer =
     null;
@@ -4313,86 +4545,42 @@ function restoreScrollPosition() {
 
 function startAutoRefresh() {
 
-    clearInterval(
+    clearInterval(countdownTimer);
 
-        countdownTimer
-
-    );
-
-
-    clearTimeout(
-
-        refreshTimer
-
-    );
-
+    clearTimeout(refreshTimer);
 
     let seconds = 30;
 
-
     safeText(
-
         "countdown",
-
         seconds
-
     );
 
+    countdownTimer = setInterval(
+        async () => {
 
-    countdownTimer =
+            seconds--;
 
-        setInterval(
+            if (seconds < 0) {
+                seconds = 30;
+            }
 
-            () => {
+            safeText(
+                "countdown",
+                seconds
+            );
 
-                seconds--;
+            if (seconds === 0) {
 
+                await refreshDashboardData();
 
-                if (
+            }
 
-                    seconds < 0
-
-                ) {
-
-                    seconds = 30;
-
-                }
-
-
-                safeText(
-
-                    "countdown",
-
-                    seconds
-
-                );
-
-            },
-
-            1000
-
-        );
-
-
-    refreshTimer =
-
-        setTimeout(
-
-            () => {
-
-                saveScrollPosition();
-
-
-                location.reload();
-
-            },
-
-            30000
-
-        );
+        },
+        1000
+    );
 
 }
-
 
 function manualRefresh() {
 
