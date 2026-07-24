@@ -1044,85 +1044,6 @@ id="updateCountdown">
 
 <div class="live-price">
 
-    <div>
-
-        <div class="live-label">
-            Live Market
-        </div>
-
-        <div class="live-number-row">
-
-           <div class="live-number" id="currentPrice">
-    -
-</div>
-
-<div class="live-number" id="wallexPrice">
-    -
-</div>
-
-<div
-    class="price-arrow arrow-flat"
-    id="wallexPriceArrow">
-    →
-</div>
-
-            <div
-                class="price-arrow arrow-flat"
-                id="topPriceArrow">
-                →
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <div>
-
-        <div class="live-label">
-            USDT / TMN
-        </div>
-
-        <div class="live-number-row">
-
-            <div
-                class="live-number"
-                id="usdtPrice">
-                -
-            </div>
-
-            <div
-                class="price-arrow arrow-flat"
-                id="usdtPriceArrow">
-                →
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <div class="live-footer">
-
-        <div>
-            Bank Rate:
-            <span id="bankRate">-</span>
-        </div>
-
-        <div class="refresh-info">
-
-            <span id="updateCountdown">
-                5
-            </span>
-
-            <span>s</span>
-
-        </div>
-
-    </div>
-
-</div>
-
 <div>
 
 <div class="live-label">
@@ -4299,84 +4220,7 @@ async function getCurrentPrice(
 
 }
 
-async function getWallexPrice() {
 
-    const response = await fetch(
-        "https://api.wallex.ir/v1/trades?symbol=USDTTMN",
-        {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            },
-            cache: "no-store"
-        }
-    );
-
-    if (!response.ok) {
-        throw new Error("Unable to get Wallex price");
-    }
-
-    const data = await response.json();
-
-    const price = Number(
-    data.result?.latestTrades?.[0]?.price
-);
-
-    if (!Number.isFinite(price)) {
-        throw new Error("Invalid Wallex price");
-    }
-
-    return price ;
-}
-
-/* =====================================================
-   USDT / TMN PRICE
-===================================================== */
-
-async function getUSDTPrice() {
-
-    const response = await fetch(
-        "https://api.wallex.ir/v1/trades?symbol=USDTTMN",
-        {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            },
-            cache: "no-store"
-        }
-    );
-
-    if (!response.ok) {
-
-        throw new Error(
-            "Unable to get USDT price"
-        );
-
-    }
-
-    const data =
-        await response.json();
-
-    const price =
-        Number(
-            data.result.lastPrice
-            ||
-            data.result.price
-            ||
-            data.lastTradePrice
-        );
-
-    if (!Number.isFinite(price)) {
-
-        throw new Error(
-            "Invalid USDT price"
-        );
-
-    }
-
-    return price;
-
-}
 /* =====================================================
    REFRESH
 ===================================================== */
@@ -4443,130 +4287,7 @@ async function refreshDashboardData() {
                 currentPrice
             )
         );
-        
-        /* =================================================
-   UPDATE WALLEX PRICE
-================================================= */
 
-try {
-
-    const wallexPrice =
-        await getWallexPrice();
-
-    safeText(
-        "wallexPrice",
-        formatNumber(wallexPrice)
-    );
-
-    const previousWallexPrice =
-        Number(
-            sessionStorage.getItem(
-                "previousWallexPrice"
-            )
-        );
-
-    setPriceArrow(
-        "wallexPriceArrow",
-        wallexPrice,
-        previousWallexPrice
-    );
-
-    try {
-
-        sessionStorage.setItem(
-            "previousWallexPrice",
-            String(
-                wallexPrice
-            )
-        );
-
-    }
-    catch (e) {}
-
-}
-catch (error) {
-
-    console.warn(
-        "Unable to update Wallex price:",
-        error
-    );
-
-}
-/* =================================================
-   USDT PRICE
-================================================= */
-
-try {
-
-    const usdtPrice =
-        await getUSDTPrice();
-
-    safeText(
-        "usdtPrice",
-        formatNumber(
-            usdtPrice
-        )
-    );
-
-    let previousUSDTPrice = null;
-
-    try {
-
-        const savedUSDTPrice =
-            sessionStorage.getItem(
-                "previousUSDTPrice"
-            );
-
-        if (
-            savedUSDTPrice !== null
-        ) {
-
-            const parsed =
-                Number(
-                    savedUSDTPrice
-                );
-
-            if (
-                Number.isFinite(parsed)
-            ) {
-
-                previousUSDTPrice =
-                    parsed;
-
-            }
-
-        }
-
-    }
-    catch (e) {}
-
-    setPriceArrow(
-        "usdtPriceArrow",
-        usdtPrice,
-        previousUSDTPrice
-    );
-
-    try {
-
-        sessionStorage.setItem(
-            "previousUSDTPrice",
-            String(
-                usdtPrice
-            )
-        );
-
-    }
-    catch (e) {}
-
-}
-catch (error) {
-
-    console.warn(
-        "Unable to load USDT price:",
-        error
-    );
-
-}
 
         safeText(
             "bankRate",
@@ -4938,8 +4659,6 @@ async function init() {
     let usingCachedData = false;
 
     let usingCachedPrice = false;
-    
-    let wallexPrice = null;
 
 
     /* =================================================
@@ -5099,32 +4818,9 @@ async function init() {
     }
 
 
-try {
-
-    wallexPrice = await getWallexPrice();
-
-}
-catch (error) {
-
-    console.warn(
-        "Wallex price unavailable:",
-        error
-    );
-
-    wallexPrice = null;
-
-}
-
     const today =
 
         getTodayJalali();
-
-safeText(
-    "wallexPrice",
-    wallexPrice !== null
-        ? formatNumber(wallexPrice)
-        : "-"
-);
 
 
     safeText(
