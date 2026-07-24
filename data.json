@@ -1,5 +1,6 @@
 {
   "priceApi": "https://apiv2.nobitex.ir/v3/orderbook/USDTIRT",
+  "exirApi": "https://api.exir.io/v2/ticker?symbol=usdt-irt",
   "priceDivisor": 10,
   "annualBankRate": 40,
   "transactions": [
