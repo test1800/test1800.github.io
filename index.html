@@ -1067,7 +1067,19 @@ class="live-number"
 id="currentPrice">
 -
 </div>
+<div class="live-number-row">
+    <div
+        class="live-number"
+        id="wallexPrice">
+        -
+    </div>
 
+    <div
+        class="price-arrow arrow-flat"
+        id="wallexPriceArrow">
+        →
+    </div>
+</div>
 <div
 class="price-arrow arrow-flat"
 id="topPriceArrow">
@@ -4290,7 +4302,60 @@ async function getWallexPrice() {
     return price;
 }
 
+async function getWallexPrice() {
 
+    const response = await fetch(
+        "https://api.wallex.ir/v1/trades?symbol=USDTTMN",
+        {
+            cache: "no-store"
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error(
+            "Wallex API Error"
+        );
+    }
+
+    const data =
+        await response.json();
+
+    if (
+        !data ||
+        !data.result ||
+        !Array.isArray(data.result)
+    ) {
+        throw new Error(
+            "Invalid Wallex API response"
+        );
+    }
+
+    if (
+        data.result.length === 0
+    ) {
+        throw new Error(
+            "No Wallex trades"
+        );
+    }
+
+    const lastTrade =
+        data.result[0];
+
+    const price =
+        Number(
+            lastTrade.price
+        );
+
+    if (
+        !Number.isFinite(price)
+    ) {
+        throw new Error(
+            "Invalid Wallex price"
+        );
+    }
+
+    return price;
+}
 /* =====================================================
    REFRESH
 ===================================================== */
@@ -4335,7 +4400,23 @@ async function refreshDashboardData() {
                 divisor
             );
 
+let wallexPrice =
+    null;
 
+try {
+
+    wallexPrice =
+        await getWallexPrice();
+
+}
+catch (error) {
+
+    console.warn(
+        "Wallex price update failed:",
+        error
+    );
+
+}
         let wallexPrice =
             null;
 
@@ -4397,7 +4478,43 @@ async function refreshDashboardData() {
             currentPrice,
             previousLivePrice
         );
+const previousWallexPrice =
+    Number(
+        sessionStorage.getItem(
+            "previousWallexPrice"
+        )
+    );
 
+if (
+    wallexPrice !== null
+) {
+
+    safeText(
+        "wallexPrice",
+        formatNumber(
+            wallexPrice
+        )
+    );
+
+    setPriceArrow(
+        "wallexPriceArrow",
+        wallexPrice,
+        previousWallexPrice
+    );
+
+    try {
+
+        sessionStorage.setItem(
+            "previousWallexPrice",
+            String(
+                wallexPrice
+            )
+        );
+
+    }
+    catch (e) {}
+
+}
 
         if (wallexPrice !== null) {
 
