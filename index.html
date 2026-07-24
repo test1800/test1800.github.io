@@ -1054,74 +1054,43 @@ id="updateCountdown">
 
 <div class="live-price">
 
-    <div class="live-market-prices">
+<div>
 
-        <!-- Nobitex -->
-        <div class="exchange-price">
+<div class="live-label">
+Live Market
+</div>
 
-            <div class="exchange-title">
-                Nobitex
-            </div>
+<div class="live-number-row">
 
-            <div class="live-number-row">
+<div
+class="live-number"
+id="currentPrice">
+-
+</div>
 
-                <div
-                    class="live-number"
-                    id="currentPrice">
-                    -
-                </div>
-
-                <div
-                    class="price-arrow arrow-flat"
-                    id="topPriceArrow">
-                    →
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- Wallex -->
-        <div class="exchange-price">
-
-            <div class="exchange-title">
-                Wallex
-            </div>
-
-            <div class="live-number-row">
-
-                <div
-                    class="live-number"
-                    id="wallexPrice">
-                    -
-                </div>
-
-                <div
-                    class="price-arrow arrow-flat"
-                    id="wallexPriceArrow">
-                    →
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <div class="live-footer">
-
-        <div>
-            Bank Rate:
-            <span id="bankRate">-</span>
-        </div>
-
-        <div class="refresh-info"></div>
-
-    </div>
+<div
+class="price-arrow arrow-flat"
+id="topPriceArrow">
+→
+</div>
 
 </div>
+
+</div>
+
+
+<div class="live-footer">
+
+<div>
+Bank Rate:
+<span id="bankRate">-</span>
+</div>
+<div class="refresh-info"></div>
+
+</div>
+
+</div>
+
 
 <div
 id="connectionStatus"
@@ -4895,39 +4864,7 @@ async function init() {
         "%"
 
     );
-async function getWallexPrice() {
 
-    const response = await fetch(
-        "https://api.wallex.ir/v1/trades?symbol=USDTTMN",
-        {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            },
-            cache: "no-store"
-        }
-    );
-
-    if (!response.ok) {
-        throw new Error(
-            "Unable to get Wallex price"
-        );
-    }
-
-    const data = await response.json();
-
-    const price = Number(
-        data?.result?.latestTrades?.[0]?.price
-    );
-
-    if (!Number.isFinite(price)) {
-        throw new Error(
-            "Invalid Wallex price"
-        );
-    }
-
-    return price;
-}
 
     /* =================================================
        STATUS
@@ -5272,79 +5209,7 @@ async function getWallexPrice() {
 
     );
 
-.live-market-prices {
-    display: flex;
-    align-items: center;
-    gap: 22px;
-    min-width: 0;
-}
 
-.exchange-price {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-.exchange-title {
-    color: #94a3b8;
-    font-size: 10px;
-    margin-bottom: 2px;
-    font-weight: 700;
-}
-
-.exchange-price .live-number-row {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 7px;
-}
-
-.exchange-price .live-number {
-    white-space: nowrap;
-}
-
-
-/* موبایل */
-@media (max-width:650px) {
-
-    .live-price {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-    }
-
-    .live-market-prices {
-        flex: 1;
-        min-width: 0;
-        gap: 12px;
-    }
-
-    .exchange-price {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .exchange-price .live-number {
-        font-size: 19px;
-    }
-
-    .exchange-price .price-arrow {
-        width: 14px;
-        font-size: 20px;
-    }
-
-    .exchange-title {
-        font-size: 9px;
-    }
-
-    .live-footer {
-        flex-shrink: 0;
-        margin-top: 0;
-        text-align: right;
-    }
-
-}
     /* =================================================
        LAST PERIOD
     ================================================= */
