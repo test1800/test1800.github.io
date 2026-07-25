@@ -3279,7 +3279,7 @@ function calculatePortfolio(
 
     transactions,
 
-    currentPrice,
+    marketPrice,
 
     today,
 
@@ -4616,6 +4616,48 @@ async function refreshDashboardData() {
         );
 
 
+/* ===== PRICE USED FOR CALCULATIONS ===== */
+
+const savedNobitex = loadLocalPrice();
+
+const savedExir = Number(
+    localStorage.getItem("financialDashboardExirPrice")
+);
+
+let marketPrice;
+
+const nobitex =
+    Number.isFinite(currentPrice)
+        ? currentPrice
+        : savedNobitex;
+
+const exir =
+    Number.isFinite(exirPrice)
+        ? exirPrice
+        : (Number.isFinite(savedExir) ? savedExir : null);
+
+if (Number.isFinite(nobitex) && Number.isFinite(exir)) {
+
+    marketPrice = (nobitex + exir) / 2;
+
+}
+else if (Number.isFinite(nobitex)) {
+
+    marketPrice = nobitex;
+
+}
+else if (Number.isFinite(exir)) {
+
+    marketPrice = exir;
+
+}
+else {
+
+    marketPrice = 0;
+
+}
+
+
         const today =
             getTodayJalali();
 
@@ -4729,7 +4771,7 @@ async function refreshDashboardData() {
         const overall =
             calculatePortfolio(
                 transactions,
-                currentPrice,
+                marketPrice,
                 today,
                 annualBankRate
             );
@@ -4752,7 +4794,7 @@ async function refreshDashboardData() {
         const six =
             calculatePortfolio(
                 sixTransactions,
-                currentPrice,
+                marketPrice,
                 today,
                 annualBankRate
             );
@@ -4774,7 +4816,7 @@ async function refreshDashboardData() {
         const last =
             calculatePortfolio(
                 lastTransactions,
-                currentPrice,
+                marketPrice,
                 today,
                 annualBankRate
             );
@@ -5278,6 +5320,32 @@ safeText(
     exirPrice === null ? "-" : formatNumber(exirPrice)
 );
 
+
+
+let marketPrice;
+
+if (Number.isFinite(currentPrice) && Number.isFinite(exirPrice)) {
+
+    marketPrice = (currentPrice + exirPrice) / 2;
+
+}
+else if (Number.isFinite(currentPrice)) {
+
+    marketPrice = currentPrice;
+
+}
+else if (Number.isFinite(exirPrice)) {
+
+    marketPrice = exirPrice;
+
+}
+else {
+
+    marketPrice = loadLocalPrice();
+
+}
+
+
     /* =================================================
        STATUS
     ================================================= */
@@ -5612,7 +5680,7 @@ safeText(
 
             transactions,
 
-            currentPrice,
+            marketPrice,
 
             today,
 
@@ -5653,7 +5721,7 @@ safeText(
 
             sixTransactions,
 
-            currentPrice,
+            marketPrice,
 
             today,
 
@@ -5692,7 +5760,7 @@ safeText(
 
             lastTransactions,
 
-            currentPrice,
+            marketPrice,
 
             today,
 
