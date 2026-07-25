@@ -174,12 +174,29 @@ h1 {
 
     display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        space-between;
+    justify-content: space-between;
 
+    gap: 18px;
+
+}
+
+.live-price-left {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 1 1 50%;
+    min-width: 0;
+}
+
+.live-price-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 18px;
+    flex: 1 1 50%;
+    min-width: 0;
 }
 
 .live-label {
@@ -188,6 +205,10 @@ h1 {
         #94a3b8;
 
     font-size: 11px;
+
+    flex: 0 0 auto;
+
+    text-align: center;
 
 }
 
@@ -200,6 +221,20 @@ h1 {
     justify-content: flex-start;
 
     gap: 9px;
+
+    flex: 0 0 auto;
+
+}
+
+.live-price-item {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    min-width: 0;
 
 }
 
@@ -952,8 +987,51 @@ h1 {
 
     .live-price {
 
-        display:
-            block;
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 8px;
+
+    }
+
+    .live-price-left,
+    .live-price-right {
+        flex: 1 1 50%;
+        min-width: 0;
+    }
+
+    .live-price-right {
+        gap: 7px;
+    }
+
+    .live-number-row {
+
+        gap: 7px;
+
+        flex-wrap: nowrap;
+
+    }
+
+    .live-price-item {
+
+        gap: 7px;
+
+    }
+
+    .live-price-item .live-number {
+
+        font-size: 20px;
+
+    }
+
+    .live-price-item .price-arrow {
+
+        font-size: 21px;
+
+        width: 14px;
 
     }
 
@@ -1054,13 +1132,35 @@ id="updateCountdown">
 
 <div class="live-price">
 
-<div>
+<div class="live-price-left">
+
+<div class="live-price-item">
+
+<div
+class="live-number"
+id="exirPrice">
+-
+</div>
+
+<div
+class="price-arrow arrow-flat"
+id="exirPriceArrow">
+→
+</div>
+
+</div>
+
+</div>
+
+<div class="live-price-right">
 
 <div class="live-label">
 Live Market
 </div>
 
 <div class="live-number-row">
+
+<div class="live-price-item">
 
 <div
 class="live-number"
@@ -1076,16 +1176,16 @@ id="topPriceArrow">
 
 </div>
 
-</div>
-
-
 <div class="live-footer">
 
 <div>
 Bank Rate:
 <span id="bankRate">-</span>
 </div>
-<div class="refresh-info"></div>
+
+</div>
+
+</div>
 
 </div>
 
@@ -4231,6 +4331,109 @@ async function getCurrentPrice(
 }
 
 
+async function getExirPrice(
+
+    apiUrl
+
+) {
+
+    const response =
+
+        await fetch(
+
+            apiUrl,
+
+            {
+
+                method: "GET",
+
+                headers: {
+
+                    "Accept":
+                        "application/json"
+
+                },
+
+                cache: "no-store"
+
+            }
+
+        );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+
+            "Unable to get Exir current price"
+
+        );
+
+    }
+
+
+    const data = await response.json();
+
+
+    const candidates = [
+
+        data?.last,
+
+        data?.lastTradePrice,
+
+        data?.lastPrice,
+
+        data?.price,
+
+        data?.ticker?.last,
+
+        data?.ticker?.lastTradePrice,
+
+        data?.data?.last,
+
+        data?.data?.lastTradePrice,
+
+        data?.data?.price
+
+    ];
+
+
+    const rawPrice = candidates.find(
+
+        value =>
+
+            value !== null
+
+            &&
+
+            value !== undefined
+
+            &&
+
+            value !== ""
+
+    );
+
+
+    const price = Number(rawPrice);
+
+
+    if (!Number.isFinite(price)) {
+
+        throw new Error(
+
+            "Invalid Exir price"
+
+        );
+
+    }
+
+
+    return price;
+
+}
+
+
 /* =====================================================
    REFRESH
 ===================================================== */
@@ -4275,9 +4478,19 @@ async function refreshDashboardData() {
                 divisor
             );
 
+        let exirPrice =
+            await getExirPrice(
+                data.exirApi
+            );
+
 
         saveLocalPrice(
             currentPrice
+        );
+
+        localStorage.setItem(
+            "financialDashboardExirPrice",
+            String(exirPrice)
         );
 
 
@@ -4295,6 +4508,13 @@ async function refreshDashboardData() {
             "currentPrice",
             formatNumber(
                 currentPrice
+            )
+        );
+
+        safeText(
+            "exirPrice",
+            formatNumber(
+                exirPrice
             )
         );
 
@@ -4318,6 +4538,28 @@ async function refreshDashboardData() {
             currentPrice,
             previousLivePrice
         );
+
+        const previousExirPrice = Number(
+            sessionStorage.getItem(
+                "previousExirPrice"
+            )
+        );
+
+        setPriceArrow(
+            "exirPriceArrow",
+            exirPrice,
+            previousExirPrice
+        );
+
+        try {
+
+            sessionStorage.setItem(
+                "previousExirPrice",
+                String(exirPrice)
+            );
+
+        }
+        catch (e) {}
 
 
         try {
@@ -4666,6 +4908,8 @@ async function init() {
 
     let currentPrice = null;
 
+    let exirPrice = null;
+
     let usingCachedData = false;
 
     let usingCachedPrice = false;
@@ -4857,6 +5101,19 @@ async function init() {
 
     safeText(
 
+        "exirPrice",
+
+        exirPrice === null
+        ? "-"
+        : formatNumber(
+            exirPrice
+        )
+
+    );
+
+
+    safeText(
+
         "bankRate",
 
         annualBankRate +
@@ -4864,6 +5121,47 @@ async function init() {
         "%"
 
     );
+
+
+    /* =================================================
+       LOAD EXIR PRICE
+    ================================================= */
+
+    try {
+
+        exirPrice =
+            await getExirPrice(
+                data.exirApi
+            );
+
+        localStorage.setItem(
+            "financialDashboardExirPrice",
+            String(exirPrice)
+        );
+
+    }
+
+    catch (error) {
+
+        console.warn(
+            "Using cached Exir price:",
+            error
+        );
+
+        const savedExirPrice =
+            localStorage.getItem(
+                "financialDashboardExirPrice"
+            );
+
+        const parsedExirPrice =
+            Number(savedExirPrice);
+
+        exirPrice =
+            Number.isFinite(parsedExirPrice)
+            ? parsedExirPrice
+            : null;
+
+    }
 
 
     /* =================================================
@@ -5084,6 +5382,57 @@ async function init() {
             )
 
         );
+
+    }
+
+    catch (e) {}
+
+
+    let previousExirPrice = null;
+
+    try {
+
+        const savedExirPrice =
+            sessionStorage.getItem(
+                "previousExirPrice"
+            );
+
+        const parsedExirPrice =
+            Number(savedExirPrice);
+
+        if (Number.isFinite(parsedExirPrice)) {
+            previousExirPrice = parsedExirPrice;
+        }
+
+    }
+
+    catch (e) {}
+
+
+    setPriceArrow(
+
+        "exirPriceArrow",
+
+        exirPrice,
+
+        previousExirPrice
+
+    );
+
+
+    try {
+
+        if (exirPrice !== null) {
+
+            sessionStorage.setItem(
+
+                "previousExirPrice",
+
+                String(exirPrice)
+
+            );
+
+        }
 
     }
 
