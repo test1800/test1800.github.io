@@ -156,32 +156,149 @@ h1 {
     margin-left:6px;
 }
 .live-price {
-
     margin-top: 12px;
-
-    padding:
-        11px
-        16px;
-
+    padding: 11px 16px;
     border-radius: 13px;
-
-    background:
-        rgba(2,6,23,.55);
-
-    border:
-        1px solid
-        rgba(255,255,255,.06);
+    background: rgba(2,6,23,.55);
+    border: 1px solid rgba(255,255,255,.06);
 
     display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 18px;
-
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
 }
 
+/* ردیف بالایی: Live Market • Bank Rate: 40% */
+.live-market-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 9px;
+
+    color: #94a3b8;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.live-market-title {
+    font-weight: 600;
+}
+
+.live-market-separator {
+    opacity: .55;
+}
+
+.live-market-bank {
+    font-size: 10px;
+    color: #64748b;
+}
+
+/* ردیف قیمت‌ها */
+.live-price-values {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 28px;
+}
+
+/* سمت چپ: Exir */
+.live-price-left {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 1 1 50%;
+    min-width: 0;
+}
+
+/* سمت راست: Nobitex */
+.live-price-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1 1 50%;
+    min-width: 0;
+}
+
+/* هر قیمت */
+.live-price-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+}
+
+.live-number {
+    font-size: 28px;
+    font-weight: 850;
+    white-space: nowrap;
+}
+
+/* فلش‌ها؛ همان ظاهر قبلی */
+.price-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 18px;
+    height: 25px;
+
+    font-size: 25px;
+    font-weight: 300;
+    line-height: 1;
+
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+.arrow-up {
+    color: #34d399;
+}
+
+.arrow-down {
+    color: #f87171;
+}
+
+.arrow-flat {
+    color: #94a3b8;
+}
+
+/* موبایل: دو قیمت زیر هم نروند */
+@media (max-width: 650px) {
+
+    .live-price {
+        padding: 10px 10px;
+    }
+
+    .live-market-header {
+        gap: 7px;
+        font-size: 10px;
+    }
+
+    .live-market-bank {
+        font-size: 9px;
+    }
+
+    .live-price-values {
+        gap: 14px;
+    }
+
+    .live-number {
+        font-size: 20px;
+    }
+
+    .price-arrow {
+        width: 15px;
+        height: 22px;
+        font-size: 21px;
+    }
+
+    .live-price-item {
+        gap: 6px;
+    }
+}
 .live-price-left {
     display: flex;
     align-items: center;
