@@ -1337,84 +1337,133 @@ id="updateCountdown">
 30s
 </span>
 
-</div>
-
-</div>
-
-</div>
+</head>
 
 
-<div class="live-price">
+<body>
 
-    <!-- Live Market و Bank Rate در یک خط، وسط صفحه -->
-    <div class="live-market-header">
+<div class="container">
 
-        <span class="live-market-title">
-            Live Market
-        </span>
 
-        <span class="live-market-separator">
-            •
-        </span>
+<header>
 
-        <span class="live-market-bank">
-            Bank Rate:
-            <span id="bankRate">
-                -
+    <div class="header-top">
+
+        <div>
+
+            <h1>
+                Financial Dashboard
+            </h1>
+
+            <div class="today">
+
+                <span id="today">
+                    -
+                </span>
+
+                <span
+                    class="update-time"
+                    id="updateTime"
+                >
+                    Last Update: -
+                </span>
+
+                <span
+                    class="update-countdown"
+                    id="updateCountdown"
+                >
+                    30s
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="live-price">
+
+        <div class="live-market-header">
+
+            <span class="live-market-title">
+                Live Market
             </span>
-        </span>
 
-    </div>
+            <span class="live-market-separator">
+                •
+            </span>
 
+            <span class="live-market-bank">
 
-    <!-- دو قیمت در یک ردیف -->
-    <div class="live-price-values">
+                Bank Rate:
 
-        <!-- قیمتNobitex - سمت چپ -->
-        <div class="live-price-left">
-
-            <div class="live-price-item">
-
-                <div
-                    class="live-number"
-                    id="currentPrice">
+                <span id="bankRate">
                     -
+                </span>
+
+            </span>
+
+        </div>
+
+
+        <div class="live-price-values">
+
+
+            <div class="live-price-left">
+
+                <div class="live-price-item">
+
+                    <div
+                        class="live-number"
+                        id="currentPrice"
+                    >
+                        -
+                    </div>
+
+                    <div
+                        class="price-arrow arrow-flat"
+                        id="topPriceArrow"
+                    >
+                        →
+                    </div>
+
                 </div>
 
-                <div
-                    class="price-arrow arrow-flat"
-                    id="topPriceArrow">
-                    →
+            </div>
+
+
+            <div class="live-price-right">
+
+                <div class="live-price-item">
+
+                    <div
+                        class="live-number"
+                        id="exirPrice"
+                    >
+                        -
+                    </div>
+
+                    <div
+                        class="price-arrow arrow-flat"
+                        id="exirPriceArrow"
+                    >
+                        →
+                    </div>
+
                 </div>
 
             </div>
 
         </div>
 
-
-        <!-- قیمت  Exir - سمت راست -->
-        <div class="live-price-right">
-
-            <div class="live-price-item">
-
-                <div
-                    class="live-number"
-                    id="exirPrice">
-                    -
-                </div>
-
-                <div
-                    class="price-arrow arrow-flat"
-                    id="exirPriceArrow">
-                    →
-                </div>
-
-            </div>
-
-        </div>
-
     </div>
 
+
+    <div
+        id="connectionStatus"
+        class="connection-status"
+    ></div>
 
 </header>
 
@@ -1423,17 +1472,18 @@ id="updateCountdown">
 
 
 <div
-id="loading"
-class="loading">
-
-Loading...
-
+    id="loading"
+    class="loading"
+>
+    Loading...
 </div>
 
 
 <div
-id="dashboard"
-style="display:none;">
+    id="dashboard"
+    style="display:none;"
+>
+
 
 
 <!-- OVERALL -->
