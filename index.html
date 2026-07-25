@@ -324,8 +324,6 @@ h1 {
 }
 
 .live-number {
-font-size:58px;
-font-weight:900;
 
     font-size: 28px;
 
@@ -1025,8 +1023,7 @@ font-weight:900;
     }
 
     .live-price-values {
-justify-content:center;
-gap:50px;
+
         gap: 14px;
 
     }
@@ -1086,115 +1083,6 @@ gap:50px;
 
 }
 
-
-
-    /* ==========================================================
-   600×200 MINI MODE
-========================================================== */
-
-@media screen and (max-width:600px), screen and (max-height:220px){
-
-html,
-body{
-    width:100%;
-    height:100%;
-    margin:0;
-    overflow:hidden;
-}
-
-body{
-    background:#0b1220;
-}
-
-/* مخفی کردن همه چیز */
-
-#dashboard,
-#errorBox,
-#loading,
-.header-top,
-.live-market-header{
-    display:none !important;
-}
-
-header{
-    width:100vw;
-    height:100vh;
-    margin:0;
-    padding:0;
-
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-
-    background:rgba(18,25,40,.95);
-    backdrop-filter:blur(12px);
-}
-
-.live-price{
-
-    width:100%;
-    max-width:580px;
-
-    background:transparent;
-    border:none;
-    box-shadow:none;
-
-    padding:0;
-    margin:0;
-}
-
-.live-price-values{
-
-    display:flex;
-
-    justify-content:center;
-    align-items:center;
-
-    gap:50px;
-}
-
-.live-number{
-
-    font-size:58px !important;
-    font-weight:900;
-    line-height:1;
-
-    letter-spacing:1px;
-}
-
-.price-arrow{
-
-    font-size:34px !important;
-
-    width:auto;
-    height:auto;
-}
-
-#connectionStatus{
-
-    display:flex !important;
-
-    justify-content:center;
-    align-items:center;
-
-    margin-top:18px;
-
-    padding:8px 22px;
-
-    border-radius:999px;
-
-    font-size:15px;
-    font-weight:700;
-
-    background:#1e293b;
-
-    color:#fff;
-
-    box-shadow:0 0 18px rgba(0,0,0,.35);
-}
-}
-    
 </style>
 
 </head>
@@ -1325,7 +1213,6 @@ header{
         class="connection-status"
     ></div>
 
-<div id="miniSpacer"></div>
 </header>
 
 
@@ -5304,6 +5191,7 @@ if (
 }
 
 </script>
+
 
 </body>
 
