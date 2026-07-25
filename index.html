@@ -3279,7 +3279,7 @@ function calculatePortfolio(
 
     transactions,
 
-    marketPrice,
+    currentPrice,
 
     today,
 
@@ -4616,33 +4616,6 @@ async function refreshDashboardData() {
         );
 
 
-/* ===== PRICE USED FOR CALCULATIONS ===== */
-
-let marketPrice;
-
-if (Number.isFinite(currentPrice) && Number.isFinite(exirPrice)) {
-
-    marketPrice = (currentPrice + exirPrice) / 2;
-
-}
-else if (Number.isFinite(currentPrice)) {
-
-    marketPrice = currentPrice;
-
-}
-else if (Number.isFinite(exirPrice)) {
-
-    marketPrice = exirPrice;
-
-}
-else {
-
-    marketPrice = loadLocalPrice();
-
-}
-
-
-
         const today =
             getTodayJalali();
 
@@ -4756,7 +4729,7 @@ else {
         const overall =
             calculatePortfolio(
                 transactions,
-                marketPrice,
+                currentPrice,
                 today,
                 annualBankRate
             );
@@ -4779,7 +4752,7 @@ else {
         const six =
             calculatePortfolio(
                 sixTransactions,
-                marketPrice,
+                currentPrice,
                 today,
                 annualBankRate
             );
@@ -4801,7 +4774,7 @@ else {
         const last =
             calculatePortfolio(
                 lastTransactions,
-                marketPrice,
+                currentPrice,
                 today,
                 annualBankRate
             );
@@ -5305,32 +5278,6 @@ safeText(
     exirPrice === null ? "-" : formatNumber(exirPrice)
 );
 
-
-
-let marketPrice;
-
-if (Number.isFinite(currentPrice) && Number.isFinite(exirPrice)) {
-
-    marketPrice = (currentPrice + exirPrice) / 2;
-
-}
-else if (Number.isFinite(currentPrice)) {
-
-    marketPrice = currentPrice;
-
-}
-else if (Number.isFinite(exirPrice)) {
-
-    marketPrice = exirPrice;
-
-}
-else {
-
-    marketPrice = loadLocalPrice();
-
-}
-
-
     /* =================================================
        STATUS
     ================================================= */
@@ -5665,7 +5612,7 @@ else {
 
             transactions,
 
-            marketPrice,
+            currentPrice,
 
             today,
 
@@ -5706,7 +5653,7 @@ else {
 
             sixTransactions,
 
-            marketPrice,
+            currentPrice,
 
             today,
 
@@ -5745,7 +5692,7 @@ else {
 
             lastTransactions,
 
-            marketPrice,
+            currentPrice,
 
             today,
 
