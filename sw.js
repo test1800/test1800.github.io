@@ -1,297 +1,167 @@
+"use strict";
+
+/* =====================================================
+   CONFIGURATION
+===================================================== */
+
 const CACHE_NAME = "financial-dashboard-v4";
 
-const STATIC_CACHE = [
+const STATIC_CACHE = `${CACHE_NAME}-static`;
+const DATA_CACHE = `${CACHE_NAME}-data`;
+const RUNTIME_CACHE = `${CACHE_NAME}-runtime`;
+
+const STATIC_FILES = [
     "./",
     "./index.html",
     "./manifest.json",
-    "./icon.png"
+    "./icon.png",
+    "./data.json"
 ];
-
-const DATA_CACHE_KEY = "./data.json";
 
 
 /* =====================================================
    INSTALL
 ===================================================== */
 
-self.addEventListener(
+self.addEventListener("install", event => {
 
-    "install",
+    event.waitUntil(
 
-    event => {
+        caches.open(STATIC_CACHE)
 
-        event.waitUntil(
+            .then(cache => {
 
-            caches.open(
+                return cache.addAll(STATIC_FILES);
 
-                CACHE_NAME
+            })
 
-            )
+            .then(() => {
 
-            .then(
+                return self.skipWaiting();
 
-                cache =>
+            })
 
-                    cache.addAll(
+    );
 
-                        STATIC_CACHE
-
-                    )
-
-            )
-
-            .then(
-
-                () =>
-
-                    self.skipWaiting()
-
-            )
-
-        );
-
-    }
-
-);
+});
 
 
 /* =====================================================
    ACTIVATE
 ===================================================== */
 
-self.addEventListener(
+self.addEventListener("activate", event => {
 
-    "activate",
+    const validCaches = [
 
-    event => {
+        STATIC_CACHE,
+        DATA_CACHE,
+        RUNTIME_CACHE
 
-        event.waitUntil(
+    ];
 
-            caches.keys()
+    event.waitUntil(
 
-                .then(
+        caches.keys()
 
-                    cacheNames => {
+            .then(cacheNames => {
 
-                        return Promise.all(
+                return Promise.all(
 
-                            cacheNames
+                    cacheNames
 
-                                .filter(
+                        .filter(cacheName => {
 
-                                    cacheName =>
+                            return (
 
-                                        cacheName !== CACHE_NAME
+                                cacheName.startsWith(
 
-                                )
-
-                                .map(
-
-                                    cacheName =>
-
-                                        caches.delete(
-
-                                            cacheName
-
-                                        )
+                                    "financial-dashboard-"
 
                                 )
 
-                        );
+                                &&
 
-                    }
+                                !validCaches.includes(
 
-                )
+                                    cacheName
 
-                .then(
+                                )
 
-                    () =>
+                            );
 
-                        self.clients.claim()
+                        })
 
-                )
+                        .map(cacheName => {
 
-        );
+                            return caches.delete(
 
-    }
+                                cacheName
 
-);
+                            );
+
+                        })
+
+                );
+
+            })
+
+            .then(() => {
+
+                return self.clients.claim();
+
+            })
+
+    );
+
+});
 
 
 /* =====================================================
    FETCH ROUTER
 ===================================================== */
 
-self.addEventListener(
+self.addEventListener("fetch", event => {
 
-    "fetch",
+    const request = event.request;
 
-    event => {
 
-        const request = event.request;
+    /*
+       فقط GET
+    */
 
+    if (
 
-        if (
+        request.method !== "GET"
 
-            request.method !== "GET"
+    ) {
 
-        ) {
+        return;
 
-            return;
+    }
 
-        }
 
+    const url = new URL(
 
-        const url = new URL(
+        request.url
 
-            request.url
+    );
 
-        );
 
+    /*
+       Navigation
+       Offline fallback
+    */
 
-        /*
-           SERVICE WORKER
-           همیشه از Network
-        */
+    if (
 
-        if (
+        request.mode === "navigate"
 
-            url.pathname.endsWith(
-
-                "/sw.js"
-
-            )
-
-        ) {
-
-            event.respondWith(
-
-                fetch(
-
-                    request,
-
-                    {
-
-                        cache:
-
-                            "no-store"
-
-                    }
-
-                )
-
-            );
-
-            return;
-
-        }
-
-
-        /*
-           DATA.JSON
-           Network First
-           Cache Fallback
-        */
-
-        if (
-
-            url.origin ===
-
-            self.location.origin
-
-            &&
-
-            url.pathname.endsWith(
-
-                "/data.json"
-
-            )
-
-        ) {
-
-            event.respondWith(
-
-                networkFirstData()
-
-            );
-
-            return;
-
-        }
-
-
-        /*
-           EXTERNAL API
-           Network Only
-           بدون Cache
-        */
-
-        if (
-
-            url.origin !==
-
-            self.location.origin
-
-        ) {
-
-            event.respondWith(
-
-                networkOnly(
-
-                    request
-
-                )
-
-            );
-
-            return;
-
-        }
-
-
-        /*
-           HTML DOCUMENT
-           Network First
-           Cache Fallback
-        */
-
-        if (
-
-            request.mode ===
-
-            "navigate"
-
-            ||
-
-            request.destination ===
-
-            "document"
-
-        ) {
-
-            event.respondWith(
-
-                networkFirst(
-
-                    request
-
-                )
-
-            );
-
-            return;
-
-        }
-
-
-        /*
-           STATIC FILES
-           Cache First
-        */
+    ) {
 
         event.respondWith(
 
-            cacheFirst(
+            networkFirstNavigation(
 
                 request
 
@@ -299,12 +169,317 @@ self.addEventListener(
 
         );
 
+        return;
+
     }
 
-);
+
+    /*
+       data.json
+       Network First
+    */
+
+    if (
+
+        url.origin === self.location.origin
+
+        &&
+
+        url.pathname.endsWith(
+
+            "/data.json"
+
+        )
+
+    ) {
+
+        event.respondWith(
+
+            networkFirstData(
+
+                request
+
+            )
+
+        );
+
+        return;
+
+    }
+
+
+    /*
+       External APIs
+       فقط Network
+       بدون Cache کردن پاسخ‌های لحظه‌ای
+    */
+
+    if (
+
+        url.origin !== self.location.origin
+
+    ) {
+
+        event.respondWith(
+
+            networkOnly(
+
+                request
+
+            )
+
+        );
+
+        return;
+
+    }
+
+
+    /*
+       Local Static Files
+       Stale While Revalidate
+    */
+
+    event.respondWith(
+
+        staleWhileRevalidate(
+
+            request
+
+        )
+
+    );
+
+});
 
 
 /* =====================================================
+   NAVIGATION
+   NETWORK FIRST
+===================================================== */
+
+async function networkFirstNavigation(
+
+    request
+
+) {
+
+    try {
+
+        const response = await fetch(
+
+            request
+
+        );
+
+
+        if (
+
+            response
+
+            &&
+
+            response.ok
+
+        ) {
+
+            const cache = await caches.open(
+
+                STATIC_CACHE
+
+            );
+
+            await cache.put(
+
+                request,
+
+                response.clone()
+
+            );
+
+        }
+
+
+        return response;
+
+    }
+
+    catch (error) {
+
+        const cachedResponse = await caches.match(
+
+            request
+
+        );
+
+
+        if (
+
+            cachedResponse
+
+        ) {
+
+            return cachedResponse;
+
+        }
+
+
+        const fallback = await caches.match(
+
+            "./index.html"
+
+        );
+
+
+        if (
+
+            fallback
+
+        ) {
+
+            return fallback;
+
+        }
+
+
+        return new Response(
+
+            "Offline",
+
+            {
+
+                status: 503,
+
+                headers: {
+
+                    "Content-Type":
+
+                        "text/plain; charset=utf-8"
+
+                }
+
+            }
+
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   DATA.JSON
+   NETWORK FIRST
+===================================================== */
+
+async function networkFirstData(
+
+    request
+
+) {
+
+    try {
+
+        const response = await fetch(
+
+            request,
+
+            {
+
+                cache: "no-store"
+
+            }
+
+        );
+
+
+        if (
+
+            response
+
+            &&
+
+            response.ok
+
+        ) {
+
+            const cache = await caches.open(
+
+                DATA_CACHE
+
+            );
+
+
+            await cache.put(
+
+                request,
+
+                response.clone()
+
+            );
+
+        }
+
+
+        return response;
+
+    }
+
+    catch (error) {
+
+        const cachedResponse = await caches.match(
+
+            request
+
+        );
+
+
+        if (
+
+            cachedResponse
+
+        ) {
+
+            return cachedResponse;
+
+        }
+
+
+        return new Response(
+
+            JSON.stringify({
+
+                error: "Offline",
+
+                message:
+
+                    "Cached data is not available."
+
+            }),
+
+            {
+
+                status: 503,
+
+                headers: {
+
+                    "Content-Type":
+
+                        "application/json"
+
+                }
+
+            }
+
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   EXTERNAL REQUESTS
    NETWORK ONLY
 ===================================================== */
 
@@ -314,237 +489,111 @@ async function networkOnly(
 
 ) {
 
-    return fetch(
+    try {
+
+        return await fetch(
+
+            request
+
+        );
+
+    }
+
+    catch (error) {
+
+        return new Response(
+
+            JSON.stringify({
+
+                error: "Network unavailable"
+
+            }),
+
+            {
+
+                status: 503,
+
+                headers: {
+
+                    "Content-Type":
+
+                        "application/json"
+
+                }
+
+            }
+
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   STATIC FILES
+   STALE WHILE REVALIDATE
+===================================================== */
+
+async function staleWhileRevalidate(
+
+    request
+
+) {
+
+    const cachedResponse = await caches.match(
 
         request
 
     );
 
-}
+
+    const networkResponse = fetch(
+
+        request
+
+    )
+
+        .then(async response => {
 
 
-/* =====================================================
-   NETWORK FIRST
-===================================================== */
+            if (
 
-async function networkFirst(
+                response
 
-    request
+                &&
 
-) {
+                response.ok
 
-    try {
+            ) {
 
-        const response =
+                const cache = await caches.open(
 
-            await fetch(
-
-                request,
-
-                {
-
-                    cache:
-
-                        "no-store"
-
-                }
-
-            );
-
-
-        if (
-
-            response
-
-            &&
-
-            response.ok
-
-        ) {
-
-            const cache =
-
-                await caches.open(
-
-                    CACHE_NAME
+                    RUNTIME_CACHE
 
                 );
 
 
-            await cache.put(
+                await cache.put(
 
-                request,
+                    request,
 
-                response.clone()
+                    response.clone()
 
-            );
+                );
 
-        }
+            }
 
 
-        return response;
+            return response;
 
-    }
+        })
 
-    catch (
+        .catch(() => {
 
-        error
+            return null;
 
-    ) {
-
-        const cachedResponse =
-
-            await caches.match(
-
-                request
-
-            );
-
-
-        if (
-
-            cachedResponse
-
-        ) {
-
-            return cachedResponse;
-
-        }
-
-
-        throw error;
-
-    }
-
-}
-
-
-/* =====================================================
-   DATA.JSON NETWORK FIRST
-===================================================== */
-
-async function networkFirstData() {
-
-    const cache =
-
-        await caches.open(
-
-            CACHE_NAME
-
-        );
-
-
-    const cacheKey =
-
-        new Request(
-
-            DATA_CACHE_KEY
-
-        );
-
-
-    try {
-
-        const response =
-
-            await fetch(
-
-                DATA_CACHE_KEY
-
-                +
-
-                "?v="
-
-                +
-
-                Date.now(),
-
-                {
-
-                    cache:
-
-                        "no-store"
-
-                }
-
-            );
-
-
-        if (
-
-            response
-
-            &&
-
-            response.ok
-
-        ) {
-
-            await cache.put(
-
-                cacheKey,
-
-                response.clone()
-
-            );
-
-        }
-
-
-        return response;
-
-    }
-
-    catch (
-
-        error
-
-    ) {
-
-        const cachedResponse =
-
-            await cache.match(
-
-                cacheKey
-
-            );
-
-
-        if (
-
-            cachedResponse
-
-        ) {
-
-            return cachedResponse;
-
-        }
-
-
-        throw error;
-
-    }
-
-}
-
-
-/* =====================================================
-   CACHE FIRST
-===================================================== */
-
-async function cacheFirst(
-
-    request
-
-) {
-
-    const cachedResponse =
-
-        await caches.match(
-
-            request
-
-        );
+        });
 
 
     if (
@@ -558,46 +607,39 @@ async function cacheFirst(
     }
 
 
-    const response =
-
-        await fetch(
-
-            request
-
-        );
+    const response = await networkResponse;
 
 
     if (
 
         response
 
-        &&
-
-        response.ok
-
     ) {
 
-        const cache =
-
-            await caches.open(
-
-                CACHE_NAME
-
-            );
-
-
-        await cache.put(
-
-            request,
-
-            response.clone()
-
-        );
+        return response;
 
     }
 
 
-    return response;
+    return new Response(
+
+        "Resource unavailable",
+
+        {
+
+            status: 503,
+
+            headers: {
+
+                "Content-Type":
+
+                    "text/plain; charset=utf-8"
+
+            }
+
+        }
+
+    );
 
 }
 
@@ -611,6 +653,7 @@ self.addEventListener(
     "push",
 
     event => {
+
 
         let data = {
 
@@ -639,45 +682,33 @@ self.addEventListener(
 
         try {
 
+
             if (
 
                 event.data
 
             ) {
 
-                try {
 
-                    data = {
+                const payload =
 
-                        ...data,
+                    event.data.json();
 
-                        ...event.data.json()
 
-                    };
+                data = {
 
-                }
+                    ...data,
 
-                catch (
+                    ...payload
 
-                    jsonError
-
-                ) {
-
-                    data.body =
-
-                        event.data.text();
-
-                }
+                };
 
             }
 
         }
 
-        catch (
+        catch (error) {
 
-            error
-
-        ) {
 
             console.error(
 
@@ -704,25 +735,15 @@ self.addEventListener(
 
                 data.badge,
 
-            vibrate:
+            vibrate: [
 
-                [
+                200,
 
-                    200,
+                100,
 
-                    100,
+                200
 
-                    200
-
-                ],
-
-            data: {
-
-                url:
-
-                    data.url
-
-            },
+            ],
 
             tag:
 
@@ -730,22 +751,28 @@ self.addEventListener(
 
             renotify:
 
-                true
+                true,
+
+            data: {
+
+                url:
+
+                    data.url
+
+            }
 
         };
 
 
         event.waitUntil(
 
-            self.registration
+            self.registration.showNotification(
 
-                .showNotification(
+                data.title,
 
-                    data.title,
+                options
 
-                    options
-
-                )
+            )
 
         );
 
@@ -764,133 +791,68 @@ self.addEventListener(
 
     event => {
 
+
         event.notification.close();
-
-
-        const relativeUrl =
-
-            event.notification
-
-                .data
-
-                &&
-
-            event.notification.data.url
-
-                ?
-
-            event.notification.data.url
-
-                :
-
-            "./index.html";
 
 
         const targetUrl =
 
-            new URL(
+            event.notification
 
-                relativeUrl,
+            &&
 
-                self.registration.scope
+            event.notification.data
 
-            ).href;
+            &&
+
+            event.notification.data.url
+
+                ? event.notification.data.url
+
+                : "./index.html";
 
 
         event.waitUntil(
 
-            clients.matchAll(
 
-                {
+            clients.matchAll({
 
-                    type:
+                type:
 
-                        "window",
+                    "window",
 
-                    includeUncontrolled:
+                includeUncontrolled:
 
-                        true
+                    true
 
-                }
+            })
 
-            )
 
-            .then(
+                .then(clientList => {
 
-                clientList => {
 
                     for (
 
-                        const client
-
-                        of
-
-                        clientList
+                        const client of clientList
 
                     ) {
 
+
                         if (
 
-                            client.url
-
-                            ===
-
-                            targetUrl
-
-                            &&
-
-                            "focus"
-
-                            in
-
-                            client
+                            "focus" in client
 
                         ) {
 
+
+                            client.navigate(
+
+                                targetUrl
+
+                            );
+
+
                             return client.focus();
-
-                        }
-
-                    }
-
-
-                    for (
-
-                        const client
-
-                        of
-
-                        clientList
-
-                    ) {
-
-                        if (
-
-                            "navigate"
-
-                            in
-
-                            client
-
-                        )
-
-                        {
-
-                            return client
-
-                                .navigate(
-
-                                    targetUrl
-
-                                )
-
-                                .then(
-
-                                    () =>
-
-                                        client.focus()
-
-                                );
 
                         }
 
@@ -903,6 +865,7 @@ self.addEventListener(
 
                     ) {
 
+
                         return clients.openWindow(
 
                             targetUrl
@@ -911,9 +874,7 @@ self.addEventListener(
 
                     }
 
-                }
-
-            )
+                })
 
         );
 
