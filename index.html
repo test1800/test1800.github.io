@@ -156,149 +156,32 @@ h1 {
     margin-left:6px;
 }
 .live-price {
+
     margin-top: 12px;
-    padding: 11px 16px;
+
+    padding:
+        11px
+        16px;
+
     border-radius: 13px;
-    background: rgba(2,6,23,.55);
-    border: 1px solid rgba(255,255,255,.06);
+
+    background:
+        rgba(2,6,23,.55);
+
+    border:
+        1px solid
+        rgba(255,255,255,.06);
 
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-}
 
-/* ردیف بالایی: Live Market • Bank Rate: 40% */
-.live-market-header {
-    display: flex;
-    justify-content: center;
     align-items: center;
-    gap: 9px;
 
-    color: #94a3b8;
-    font-size: 11px;
-    white-space: nowrap;
-}
-
-.live-market-title {
-    font-weight: 600;
-}
-
-.live-market-separator {
-    opacity: .55;
-}
-
-.live-market-bank {
-    font-size: 10px;
-    color: #64748b;
-}
-
-/* ردیف قیمت‌ها */
-.live-price-values {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
-    width: 100%;
-    gap: 28px;
+
+    gap: 18px;
+
 }
 
-/* سمت چپ: Exir */
-.live-price-left {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    flex: 1 1 50%;
-    min-width: 0;
-}
-
-/* سمت راست: Nobitex */
-.live-price-right {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    flex: 1 1 50%;
-    min-width: 0;
-}
-
-/* هر قیمت */
-.live-price-item {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    min-width: 0;
-}
-
-.live-number {
-    font-size: 28px;
-    font-weight: 850;
-    white-space: nowrap;
-}
-
-/* فلش‌ها؛ همان ظاهر قبلی */
-.price-arrow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    width: 18px;
-    height: 25px;
-
-    font-size: 25px;
-    font-weight: 300;
-    line-height: 1;
-
-    background: transparent;
-    border: none;
-    padding: 0;
-    margin: 0;
-}
-
-.arrow-up {
-    color: #34d399;
-}
-
-.arrow-down {
-    color: #f87171;
-}
-
-.arrow-flat {
-    color: #94a3b8;
-}
-
-/* موبایل: دو قیمت زیر هم نروند */
-@media (max-width: 650px) {
-
-    .live-price {
-        padding: 10px 10px;
-    }
-
-    .live-market-header {
-        gap: 7px;
-        font-size: 10px;
-    }
-
-    .live-market-bank {
-        font-size: 9px;
-    }
-
-    .live-price-values {
-        gap: 14px;
-    }
-
-    .live-number {
-        font-size: 20px;
-    }
-
-    .price-arrow {
-        width: 15px;
-        height: 22px;
-        font-size: 21px;
-    }
-
-    .live-price-item {
-        gap: 6px;
-    }
-}
 .live-price-left {
     display: flex;
     align-items: center;
@@ -1249,78 +1132,64 @@ id="updateCountdown">
 
 <div class="live-price">
 
-    <!-- Live Market و Bank Rate در یک خط، وسط صفحه -->
-    <div class="live-market-header">
+<div class="live-price-left">
 
-        <span class="live-market-title">
-            Live Market
-        </span>
+<div class="live-price-item">
 
-        <span class="live-market-separator">
-            •
-        </span>
+<div
+class="live-number"
+id="exirPrice">
+-
+</div>
 
-        <span class="live-market-bank">
-            Bank Rate:
-            <span id="bankRate">
-                -
-            </span>
-        </span>
-
-    </div>
-
-
-    <!-- دو قیمت در یک ردیف -->
-    <div class="live-price-values">
-
-        <!-- قیمت Exir - سمت چپ -->
-        <div class="live-price-left">
-
-            <div class="live-price-item">
-
-                <div
-                    class="live-number"
-                    id="exirPrice">
-                    -
-                </div>
-
-                <div
-                    class="price-arrow arrow-flat"
-                    id="exirPriceArrow">
-                    →
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- قیمت Nobitex - سمت راست -->
-        <div class="live-price-right">
-
-            <div class="live-price-item">
-
-                <div
-                    class="live-number"
-                    id="currentPrice">
-                    -
-                </div>
-
-                <div
-                    class="price-arrow arrow-flat"
-                    id="topPriceArrow">
-                    →
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
+<div
+class="price-arrow arrow-flat"
+id="exirPriceArrow">
+→
+</div>
 
 </div>
 
+</div>
 
+<div class="live-price-right">
+
+<div class="live-label">
+Live Market
+</div>
+
+<div class="live-number-row">
+
+<div class="live-price-item">
+
+<div
+class="live-number"
+id="currentPrice">
+-
+</div>
+
+<div
+class="price-arrow arrow-flat"
+id="topPriceArrow">
+→
+</div>
+
+</div>
+
+<div class="live-footer">
+
+<div>
+Bank Rate:
+<span id="bankRate">-</span>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
 
 
 <div
@@ -4624,69 +4493,7 @@ async function refreshDashboardData() {
             String(exirPrice)
         );
 
-let currentPrice =
-    await getCurrentPrice(
-        data.priceApi,
-        divisor
-    );
 
-let exirPrice;
-
-try {
-
-    // دریافت قیمت جدید Exir
-    exirPrice =
-        await getExirPrice(
-            data.exirApi
-        );
-
-    // ذخیره آخرین قیمت معتبر
-    localStorage.setItem(
-        "financialDashboardExirPrice",
-        String(exirPrice)
-    );
-
-}
-catch (exirError) {
-
-    console.warn(
-        "Exir price request failed:",
-        exirError
-    );
-
-    // اگر در Refresh درخواست Exir خطا داد
-    // آخرین قیمت معتبر را نگه می‌داریم
-    const savedExirPrice =
-        Number(
-            localStorage.getItem(
-                "financialDashboardExirPrice"
-            )
-        );
-
-    if (
-        Number.isFinite(
-            savedExirPrice
-        )
-        &&
-        savedExirPrice > 0
-    ) {
-
-        exirPrice =
-            savedExirPrice;
-
-    }
-    else {
-
-        // اگر هیچ قیمت قبلی نداریم
-        // مقدار صفر به جای خط نمایش داده شود
-        exirPrice = 0;
-
-    }
-}
-
-saveLocalPrice(
-    currentPrice
-);
         const today =
             getTodayJalali();
 
