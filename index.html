@@ -33,6 +33,131 @@
     href="icon.png"
 >
 
+/* =====================================================
+   VERY SMALL SCREEN MODE
+   Show only Live Market
+===================================================== */
+
+@media (max-width: 420px) {
+
+    body {
+
+        min-width: 340px;
+
+        overflow-x: auto;
+
+    }
+
+    .container {
+
+        min-width: 340px;
+
+        padding:
+            8px;
+
+    }
+
+    header {
+
+        position: static;
+
+        min-width: 324px;
+
+        padding:
+            10px;
+
+    }
+
+    .header-top {
+
+        display: none;
+
+    }
+
+    #connectionStatus {
+
+        display: none !important;
+
+    }
+
+    #errorBox,
+    #loading,
+    #dashboard {
+
+        display: none !important;
+
+    }
+
+    .live-price {
+
+        display: flex;
+
+        min-width: 304px;
+
+        margin: 0;
+
+        padding:
+            12px
+            10px;
+
+        gap: 10px;
+
+    }
+
+    .live-market-header {
+
+        font-size: 10px;
+
+        white-space: nowrap;
+
+    }
+
+    .live-price-values {
+
+        min-width: 280px;
+
+        gap: 12px;
+
+    }
+
+    .live-price-left,
+    .live-price-right {
+
+        flex: 1 1 50%;
+
+        min-width: 0;
+
+    }
+
+    .live-price-item {
+
+        gap: 5px;
+
+    }
+
+    .live-number {
+
+        font-size: 20px;
+
+        white-space: nowrap;
+
+    }
+
+    .price-arrow {
+
+        flex-shrink: 0;
+
+        width: 15px;
+
+        font-size: 20px;
+
+    }
+
+}
+
+
+
+    
 <style>
 
 /* =====================================================
