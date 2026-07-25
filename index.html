@@ -338,18 +338,31 @@ h1 {
 
     line-height: 1;
 
+    background:
+        transparent;
+
+    border: none;
+
+    padding: 0;
+
 }
 
 .arrow-up {
+
     color: #34d399;
+
 }
 
 .arrow-down {
+
     color: #f87171;
+
 }
 
 .arrow-flat {
+
     color: #94a3b8;
+
 }
 
 .connection-status {
@@ -400,6 +413,12 @@ h1 {
     border:
         1px solid
         rgba(16,185,129,.20);
+
+}
+
+#errorBox {
+
+    margin-bottom: 12px;
 
 }
 
@@ -1035,7 +1054,9 @@ h1 {
 
         <div class="today">
 
-            <span id="today">-</span>
+            <span id="today">
+                -
+            </span>
 
             <span
                 class="update-time"
@@ -1073,7 +1094,9 @@ h1 {
 
             Bank Rate:
 
-            <span id="bankRate">-</span>
+            <span id="bankRate">
+                -
+            </span>
 
         </span>
 
@@ -1146,12 +1169,7 @@ h1 {
     Loading...
 </div>
 
-<div
-    id="dashboard"
-    style="display:none;"
->
-
-<!-- OVERALL -->
+<div id="dashboard">
 
 <div class="card">
 
@@ -1422,8 +1440,6 @@ h1 {
 
 </div>
 
-<!-- LAST 6 -->
-
 <div class="card">
 
 ```
@@ -1692,8 +1708,6 @@ h1 {
 ```
 
 </div>
-
-<!-- LAST PERIOD -->
 
 <div class="card">
 
@@ -2024,11 +2038,13 @@ function formatMoneySigned(value) {
 
     }
 
-    const rounded = Math.round(number);
+    const rounded =
+        Math.round(number);
 
     return rounded > 0
 
-        ? "+" + rounded.toLocaleString("en-US")
+        ? "+" +
+          rounded.toLocaleString("en-US")
 
         : rounded.toLocaleString("en-US");
 
@@ -2095,14 +2111,8 @@ const CACHE_KEYS = {
     PRICE:
         "financialDashboardPrice",
 
-    PRICE_TIME:
-        "financialDashboardPriceTime",
-
     EXIR_PRICE:
-        "financialDashboardExirPrice",
-
-    EXIR_TIME:
-        "financialDashboardExirPriceTime"
+        "financialDashboardExirPrice"
 
 };
 
@@ -2122,10 +2132,7 @@ function saveLocalData(data) {
 
     catch (error) {
 
-        console.error(
-            "Cannot save data:",
-            error
-        );
+        console.error(error);
 
     }
 
@@ -2163,14 +2170,6 @@ function saveLocalPrice(price) {
             CACHE_KEYS.PRICE,
 
             String(price)
-
-        );
-
-        localStorage.setItem(
-
-            CACHE_KEYS.PRICE_TIME,
-
-            new Date().toISOString()
 
         );
 
@@ -2216,14 +2215,6 @@ function saveLocalExirPrice(price) {
             CACHE_KEYS.EXIR_PRICE,
 
             String(price)
-
-        );
-
-        localStorage.setItem(
-
-            CACHE_KEYS.EXIR_TIME,
-
-            new Date().toISOString()
 
         );
 
@@ -2280,17 +2271,7 @@ function showConnectionStatus(
             : "connection-status online";
 
     element.textContent =
-        message ||
-
-        (
-
-            offline
-
-                ? "Offline Mode • Showing Last Saved Data"
-
-                : "Online • Live Data"
-
-        );
+        message;
 
 }
 
@@ -3212,19 +3193,16 @@ function getLastPeriods(
     count
 ) {
 
-    const periods =
-        buildPeriods(
-            transactions
-        );
+    return buildPeriods(
+        transactions
+    )
 
-    return periods
+    .slice(-count)
 
-        .slice(-count)
-
-        .flatMap(
-            period =>
-                period.transactions
-        );
+    .flatMap(
+        period =>
+            period.transactions
+    );
 
 }
 
@@ -3476,7 +3454,6 @@ function displaySection(
         if (result.plBank >= 0) {
 
             resultBox.textContent =
-
                 "Investment return is better than bank";
 
             resultBox.style.color =
@@ -3487,7 +3464,6 @@ function displaySection(
         else {
 
             resultBox.textContent =
-
                 "Bank return is better than investment";
 
             resultBox.style.color =
@@ -3505,17 +3481,11 @@ function displaySection(
         tradeCount.textContent =
 
             result.buyCount
-
             +
-
             " IN  •  "
-
             +
-
             result.sellCount
-
             +
-
             " OUT";
 
     }
@@ -3722,7 +3692,7 @@ async function getExirPrice(
                     "Accept":
                         "application/json"
 
-                },
+                    },
 
                 cache:
                     "no-store"
@@ -3877,529 +3847,362 @@ function resolveCalculationPrice(
 
 ) {
 
-    const validNobitex =
-        Number.isFinite(
-            Number(nobitexPrice)
-        )
+    const prices = [
 
-        ?
+        nobitexPrice,
 
-        Number(nobitexPrice)
+        exirPrice,
 
-        :
+        cachedNobitexPrice,
 
-        null;
+        cachedExirPrice
 
-    const validExir =
-        Number.isFinite(
-            Number(exirPrice)
-        )
+    ]
 
-        ?
+    .map(Number)
 
-        Number(exirPrice)
+    .filter(
+        Number.isFinite
+    );
 
-        :
-
-        null;
-
-    const validCachedNobitex =
-        Number.isFinite(
-            Number(cachedNobitexPrice)
-        )
-
-        ?
-
-        Number(cachedNobitexPrice)
-
-        :
-
-        null;
-
-    const validCachedExir =
-        Number.isFinite(
-            Number(cachedExirPrice)
-        )
-
-        ?
-
-        Number(cachedExirPrice)
-
-        :
-
-        null;
-
-    const validDefault =
-        Number.isFinite(
-            Number(defaultPrice)
-        )
-
-        ?
-
-        Number(defaultPrice)
-
-        :
-
-        0;
-
-    if (
-
-        validNobitex !== null
-
-        &&
-
-        validExir !== null
-
-    ) {
+    if (prices.length >= 2) {
 
         return (
 
-            validNobitex
-            +
-            validExir
+            prices[0] +
+            prices[1]
 
-        )
-
-        /
-
-        2;
+        ) / 2;
 
     }
 
-    if (
-        validNobitex !== null
-    ) {
+    if (prices.length === 1) {
 
-        return validNobitex;
+        return prices[0];
 
     }
 
-    if (
-        validExir !== null
-    ) {
-
-        return validExir;
-
-    }
-
-    if (
-
-        validCachedNobitex !== null
-
-        &&
-
-        validCachedExir !== null
-
-    ) {
-
-        return (
-
-            validCachedNobitex
-            +
-            validCachedExir
-
-        )
-
-        /
-
-        2;
-
-    }
-
-    if (
-        validCachedNobitex !== null
-    ) {
-
-        return validCachedNobitex;
-
-    }
-
-    if (
-        validCachedExir !== null
-    ) {
-
-        return validCachedExir;
-
-    }
-
-    return validDefault;
+    return Number(defaultPrice) || 0;
 
 }
 
 async function refreshDashboardData() {
 
+    const loaded =
+        await loadData();
+
+    const data =
+        loaded.data;
+
+    const annualBankRate =
+        Number(
+            data.annualBankRate || 40
+        );
+
+    const divisor =
+        Number(
+            data.priceDivisor || 10
+        );
+
+    const defaultPrice =
+        Number(
+            data.defaultPrice
+        );
+
+    const cachedNobitexPrice =
+        loadLocalPrice();
+
+    const cachedExirPrice =
+        loadLocalExirPrice();
+
+    let nobitexPrice =
+        null;
+
+    let exirPrice =
+        null;
+
     try {
 
-        const loaded =
-            await loadData();
+        nobitexPrice =
+            await getCurrentPrice(
 
-        const data =
-            loaded.data;
+                data.priceApi,
 
-        const annualBankRate =
-            Number(
-                data.annualBankRate || 40
-            );
-
-        const divisor =
-            Number(
-                data.priceDivisor || 10
-            );
-
-        const defaultPrice =
-            Number(
-                data.defaultPrice
-            );
-
-        const cachedNobitexPrice =
-            loadLocalPrice();
-
-        const cachedExirPrice =
-            loadLocalExirPrice();
-
-        let nobitexPrice =
-            null;
-
-        let exirPrice =
-            null;
-
-        try {
-
-            nobitexPrice =
-                await getCurrentPrice(
-
-                    data.priceApi,
-
-                    divisor
-
-                );
-
-            saveLocalPrice(
-                nobitexPrice
-            );
-
-        }
-
-        catch (error) {
-
-            console.warn(
-                "Nobitex unavailable:",
-                error.message
-            );
-
-        }
-
-        try {
-
-            exirPrice =
-                await getExirPrice(
-                    data.exirApi
-                );
-
-            saveLocalExirPrice(
-                exirPrice
-            );
-
-        }
-
-        catch (error) {
-
-            console.warn(
-                "Exir unavailable:",
-                error.message
-            );
-
-        }
-
-        const calculationPrice =
-
-            resolveCalculationPrice(
-
-                nobitexPrice,
-
-                exirPrice,
-
-                cachedNobitexPrice,
-
-                cachedExirPrice,
-
-                defaultPrice
+                divisor
 
             );
 
-        const today =
-            getTodayJalali();
-
-        safeText(
-            "today",
-            today
-        );
-
-        safeText(
-
-            "currentPrice",
-
-            nobitexPrice === null
-
-                ? "-"
-
-                : formatNumber(
-                    nobitexPrice
-                )
-
-        );
-
-        safeText(
-
-            "exirPrice",
-
-            exirPrice === null
-
-                ? "-"
-
-                : formatNumber(
-                    exirPrice
-                )
-
-        );
-
-        safeText(
-
-            "bankRate",
-
-            annualBankRate + "%"
-
-        );
-
-        const transactions =
-
-            Array.isArray(
-                data.transactions
-            )
-
-                ?
-
-                data.transactions
-
-                    .slice()
-
-                    .sort(
-
-                        (a, b) =>
-
-                            dateNumber(a.date)
-
-                            -
-
-                            dateNumber(b.date)
-
-                    )
-
-                :
-
-                [];
-
-        const overall =
-            calculatePortfolio(
-
-                transactions,
-
-                calculationPrice,
-
-                today,
-
-                annualBankRate
-
-            );
-
-        displaySection(
-
-            overall,
-
-            "overall"
-
-        );
-
-        const sixTransactions =
-
-            getLastPeriods(
-
-                transactions,
-
-                6
-
-            );
-
-        const six =
-            calculatePortfolio(
-
-                sixTransactions,
-
-                calculationPrice,
-
-                today,
-
-                annualBankRate
-
-            );
-
-        displaySection(
-
-            six,
-
-            "six"
-
-        );
-
-        const lastTransactions =
-
-            getLastPeriod(
-
-                transactions
-
-            );
-
-        const last =
-            calculatePortfolio(
-
-                lastTransactions,
-
-                calculationPrice,
-
-                today,
-
-                annualBankRate
-
-            );
-
-        displaySection(
-
-            last,
-
-            "last"
-
-        );
-
-        displayLastAction(
-
-            lastTransactions
-
-        );
-
-        safeText(
-
-            "lastTrades",
-
-            last.buyCount
-
-            +
-
-            " IN  •  "
-
-            +
-
-            last.sellCount
-
-            +
-
-            " OUT"
-
-        );
-
-        setPriceArrow(
-
-            "topPriceArrow",
-
-            nobitexPrice,
-
-            exirPrice
-
-        );
-
-        setPriceArrow(
-
-            "exirPriceArrow",
-
-            exirPrice,
-
+        saveLocalPrice(
             nobitexPrice
-
         );
-
-        safeText(
-
-            "updateTime",
-
-            "Last Update: " +
-
-            new Date()
-                .toLocaleTimeString(
-
-                    "en-US",
-
-                    {
-
-                        hour:
-                            "2-digit",
-
-                        minute:
-                            "2-digit",
-
-                        second:
-                            "2-digit",
-
-                        hour12:
-                            false
-
-                    }
-
-                )
-
-        );
-
-        showConnectionStatus(
-
-            loaded.cached,
-
-            loaded.cached
-
-                ? "Offline Mode • Showing Last Saved Data"
-
-                : "Online • Live Data"
-
-        );
-
-        $("loading").style.display =
-            "none";
-
-        $("dashboard").style.display =
-            "grid";
-
-        return true;
 
     }
 
     catch (error) {
 
-        console.error(
-
-            "Dashboard refresh failed:",
-
-            error
-
+        console.warn(
+            "Nobitex unavailable:",
+            error.message
         );
-
-        showConnectionStatus(
-
-            true,
-
-            "Update Failed • Showing Last Saved Data"
-
-        );
-
-        return false;
 
     }
+
+    try {
+
+        exirPrice =
+            await getExirPrice(
+                data.exirApi
+            );
+
+        saveLocalExirPrice(
+            exirPrice
+        );
+
+    }
+
+    catch (error) {
+
+        console.warn(
+            "Exir unavailable:",
+            error.message
+        );
+
+    }
+
+    const calculationPrice =
+
+        resolveCalculationPrice(
+
+            nobitexPrice,
+
+            exirPrice,
+
+            cachedNobitexPrice,
+
+            cachedExirPrice,
+
+            defaultPrice
+
+        );
+
+    const today =
+        getTodayJalali();
+
+    safeText(
+        "today",
+        today
+    );
+
+    safeText(
+
+        "currentPrice",
+
+        nobitexPrice === null
+
+            ? "-"
+
+            : formatNumber(
+                nobitexPrice
+            )
+
+    );
+
+    safeText(
+
+        "exirPrice",
+
+        exirPrice === null
+
+            ? "-"
+
+            : formatNumber(
+                exirPrice
+            )
+
+    );
+
+    safeText(
+
+        "bankRate",
+
+        annualBankRate + "%"
+
+    );
+
+    const transactions =
+
+        Array.isArray(
+            data.transactions
+        )
+
+            ?
+
+            data.transactions
+
+                .slice()
+
+                .sort(
+
+                    (a, b) =>
+
+                        dateNumber(a.date)
+
+                        -
+
+                        dateNumber(b.date)
+
+                )
+
+            :
+
+            [];
+
+    const overall =
+        calculatePortfolio(
+
+            transactions,
+
+            calculationPrice,
+
+            today,
+
+            annualBankRate
+
+        );
+
+    displaySection(
+
+        overall,
+
+        "overall"
+
+    );
+
+    const sixTransactions =
+
+        getLastPeriods(
+
+            transactions,
+
+            6
+
+        );
+
+    const six =
+        calculatePortfolio(
+
+            sixTransactions,
+
+            calculationPrice,
+
+            today,
+
+            annualBankRate
+
+        );
+
+    displaySection(
+
+        six,
+
+        "six"
+
+    );
+
+    const lastTransactions =
+
+        getLastPeriod(
+
+            transactions
+
+        );
+
+    const last =
+        calculatePortfolio(
+
+            lastTransactions,
+
+            calculationPrice,
+
+            today,
+
+            annualBankRate
+
+        );
+
+    displaySection(
+
+        last,
+
+        "last"
+
+    );
+
+    displayLastAction(
+
+        lastTransactions
+
+    );
+
+    safeText(
+
+        "lastTrades",
+
+        last.buyCount
+        +
+        " IN  •  "
+        +
+        last.sellCount
+        +
+        " OUT"
+
+    );
+
+    safeText(
+
+        "updateTime",
+
+        "Last Update: " +
+
+        new Date()
+            .toLocaleTimeString(
+
+                "en-US",
+
+                {
+
+                    hour:
+                        "2-digit",
+
+                    minute:
+                        "2-digit",
+
+                    second:
+                        "2-digit",
+
+                    hour12:
+                        false
+
+                }
+
+            )
+
+    );
+
+    showConnectionStatus(
+
+        loaded.cached,
+
+        loaded.cached
+
+            ? "Offline Mode • Showing Last Saved Data"
+
+            : "Online • Live Data"
+
+    );
+
+    $("loading").style.display =
+        "none";
 
 }
 
@@ -4510,7 +4313,19 @@ function startAutoRefresh() {
                     seconds === 0
                 ) {
 
-                    await refreshDashboardData();
+                    try {
+
+                        await refreshDashboardData();
+
+                    }
+
+                    catch (error) {
+
+                        console.error(
+                            error
+                        );
+
+                    }
 
                 }
 
@@ -4519,16 +4334,6 @@ function startAutoRefresh() {
             1000
 
         );
-
-}
-
-async function manualRefresh() {
-
-    saveScrollPosition();
-
-    await refreshDashboardData();
-
-    restoreScrollPosition();
 
 }
 
@@ -4572,7 +4377,19 @@ window.addEventListener(
 
         );
 
-        await refreshDashboardData();
+        try {
+
+            await refreshDashboardData();
+
+        }
+
+        catch (error) {
+
+            console.error(
+                error
+            );
+
+        }
 
     }
 
@@ -4580,7 +4397,42 @@ window.addEventListener(
 
 async function init() {
 
-    await refreshDashboardData();
+    try {
+
+        await refreshDashboardData();
+
+    }
+
+    catch (error) {
+
+        console.error(
+
+            "Dashboard refresh failed:",
+
+            error
+
+        );
+
+        $("loading").style.display =
+            "none";
+
+        const errorDiv =
+            document.createElement(
+                "div"
+            );
+
+        errorDiv.className =
+            "error";
+
+        errorDiv.textContent =
+            error.message;
+
+        $("errorBox")
+            .appendChild(
+                errorDiv
+            );
+
+    }
 
     restoreScrollPosition();
 
@@ -4588,38 +4440,7 @@ async function init() {
 
 }
 
-init()
-
-    .catch(
-
-        error => {
-
-            console.error(
-                error
-            );
-
-            $("loading").style.display =
-                "none";
-
-            const errorDiv =
-                document.createElement(
-                    "div"
-                );
-
-            errorDiv.className =
-                "error";
-
-            errorDiv.textContent =
-                error.message;
-
-            $("errorBox")
-                .appendChild(
-                    errorDiv
-                );
-
-        }
-
-    );
+init();
 
 </script>
 
