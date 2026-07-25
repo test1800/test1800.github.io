@@ -1083,51 +1083,74 @@ h1 {
 
 }
 
+
 /* =====================================================
-   VERY SMALL SCREEN MODE
-   Show only Live Market
+   COMPACT LIVE MARKET MODE
+   ONLY LIVE MARKET REMAINS
 ===================================================== */
 
 @media (max-width: 420px) {
 
+    html,
     body {
 
-        min-width: 340px;
+        width: 100%;
 
-        overflow-x: auto;
+        min-width: 100%;
+
+        height: 100%;
+
+        min-height: 100%;
+
+        overflow: hidden;
 
     }
+
 
     .container {
 
-        min-width: 340px;
+        width: 100%;
 
-        padding: 8px;
+        height: 100vh;
+
+        min-height: 100vh;
+
+        padding: 0;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
 
     }
+
 
     header {
 
-        position: static;
+        width: 100%;
 
-        min-width: 324px;
+        height: auto;
 
-        padding: 10px;
+        margin: 0;
+
+        padding: 0;
+
+        border-radius: 0;
+
+        background: transparent;
+
+        border: none;
+
+        box-shadow: none;
+
+        backdrop-filter: none;
 
     }
 
-    .header-top {
 
-        display: none;
-
-    }
-
-    #connectionStatus {
-
-        display: none !important;
-
-    }
-
+    .header-top,
+    .connection-status,
     #errorBox,
     #loading,
     #dashboard {
@@ -1136,73 +1159,144 @@ h1 {
 
     }
 
+
     .live-price {
 
         display: flex;
 
-        min-width: 304px;
+        width: 100%;
+
+        min-width: 320px;
+
+        max-width: 420px;
+
+        min-height: 92px;
 
         margin: 0;
 
-        padding: 12px 10px;
+        padding:
+            14px
+            16px;
+
+        border-radius: 0;
+
+        justify-content: center;
 
         gap: 10px;
 
+        background:
+
+            linear-gradient(
+                145deg,
+                rgba(255,255,255,.07),
+                rgba(255,255,255,.025)
+            );
+
+        border-top:
+            1px solid
+            rgba(255,255,255,.09);
+
+        border-bottom:
+            1px solid
+            rgba(255,255,255,.09);
+
+        box-shadow:
+            0 15px 40px
+            rgba(0,0,0,.30);
+
     }
+
 
     .live-market-header {
 
-        font-size: 10px;
-
-        white-space: nowrap;
+        font-size: 11px;
 
     }
+
 
     .live-price-values {
 
-        min-width: 280px;
-
-        gap: 12px;
+        gap: 28px;
 
     }
 
-    .live-price-left,
-    .live-price-right {
-
-        flex: 1 1 50%;
-
-        min-width: 0;
-
-    }
-
-    .live-price-item {
-
-        gap: 5px;
-
-    }
 
     .live-number {
 
-        font-size: 20px;
+        font-size: 28px;
 
-        white-space: nowrap;
+        font-weight: 850;
 
     }
 
+
     .price-arrow {
 
-        flex-shrink: 0;
+        width: 18px;
 
-        width: 15px;
+        height: 25px;
 
-        font-size: 20px;
+        font-size: 25px;
 
     }
 
 }
 
 
-    
+/* =====================================================
+   VERY SMALL WIDTH
+===================================================== */
+
+@media (max-width: 350px) {
+
+    .live-price {
+
+        min-width: 320px;
+
+        padding-left: 10px;
+
+        padding-right: 10px;
+
+    }
+
+
+    .live-price-values {
+
+        gap: 18px;
+
+    }
+
+
+    .live-number {
+
+        font-size: 25px;
+
+    }
+
+}
+
+
+/* =====================================================
+   VERY SMALL HEIGHT
+===================================================== */
+
+@media (max-height: 300px) {
+
+    .container {
+
+        align-items: center;
+
+    }
+
+
+    .live-price {
+
+        min-height: 88px;
+
+    }
+
+}
+
 </style>
 
 </head>
@@ -3609,20 +3703,6 @@ function displaySection(
     prefix
 ) {
 
-    /*
-       Average Purchase is calculated independently
-       for each section from that section's transactions.
-
-       Overall:
-       Overall Average Purchase
-
-       Six:
-       Last 6 Periods Average Purchase
-
-       Last:
-       Last Period Average Purchase
-    */
-
     safeText(
 
         prefix + "Average",
@@ -3666,16 +3746,6 @@ function displaySection(
 
     );
 
-
-    /*
-       Arrow logic:
-
-       Live Price > Average Purchase → ↑
-
-       Live Price < Average Purchase → ↓
-
-       Live Price = Average Purchase → →
-    */
 
     setPriceArrow(
 
@@ -4312,55 +4382,6 @@ async function loadData() {
    PRICE RESOLUTION
 ===================================================== */
 
-/*
-    DISPLAY:
-
-    currentPrice
-        =
-    Real Nobitex Price
-
-    exirPrice
-        =
-    Real Exir Price
-
-
-    CALCULATIONS:
-
-    If both live prices exist:
-
-        calculationPrice
-            =
-        (Nobitex + Exir) / 2
-
-
-    If only one exists:
-
-        calculationPrice
-            =
-        available live price
-
-
-    If live prices are unavailable:
-
-        cached prices are used.
-
-    The resolved calculationPrice is used for:
-
-        Overall
-
-        Last 6 Periods
-
-        Last Period
-
-        Current Value
-
-        Unrealized P/L
-
-        Bank comparison
-
-        All dashboard calculations
-*/
-
 function resolveCalculationPrice(
 
     nobitexPrice,
@@ -4489,6 +4510,7 @@ function resolveCalculationPrice(
 
 
     if (
+
         validCachedNobitex !== null
 
         &&
@@ -4637,18 +4659,6 @@ async function refreshDashboardData() {
         }
 
 
-        /*
-           IMPORTANT:
-
-           This is the price used in ALL
-           portfolio calculations.
-
-           If both exchanges are available:
-
-           calculationPrice =
-           (Nobitex + Exir) / 2
-        */
-
         const calculationPrice =
 
             resolveCalculationPrice(
@@ -4676,14 +4686,6 @@ async function refreshDashboardData() {
         );
 
 
-        /*
-           TOP LEFT:
-
-           Real Nobitex Price
-
-           NOT calculationPrice
-        */
-
         safeText(
 
             "currentPrice",
@@ -4698,12 +4700,6 @@ async function refreshDashboardData() {
 
         );
 
-
-        /*
-           TOP RIGHT:
-
-           Real Exir Price
-        */
 
         safeText(
 
@@ -4758,13 +4754,6 @@ async function refreshDashboardData() {
                 [];
 
 
-        /*
-           OVERALL
-
-           Uses the average of Nobitex and Exir
-           as currentPrice when both are available.
-        */
-
         const overall =
             calculatePortfolio(
 
@@ -4787,12 +4776,6 @@ async function refreshDashboardData() {
 
         );
 
-
-        /*
-           LAST 6
-
-           Uses the SAME calculationPrice.
-        */
 
         const sixTransactions =
 
@@ -4827,12 +4810,6 @@ async function refreshDashboardData() {
 
         );
 
-
-        /*
-           LAST PERIOD
-
-           Uses the SAME calculationPrice.
-        */
 
         const lastTransactions =
 
