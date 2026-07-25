@@ -1,166 +1,356 @@
-const CACHE_NAME = "financial-dashboard-v3";
+const CACHE_NAME = "financial-dashboard-v4";
 
-const STATIC_FILES = [
+const STATIC_CACHE = [
     "./",
     "./index.html",
     "./manifest.json",
-    "./icon.png",
-    "./data.json"
+    "./icon.png"
 ];
+
+const DATA_CACHE_KEY = "./data.json";
 
 
 /* =====================================================
    INSTALL
 ===================================================== */
 
-self.addEventListener("install", event => {
+self.addEventListener(
 
-    event.waitUntil(
+    "install",
 
-        caches.open(CACHE_NAME)
+    event => {
 
-            .then(cache => {
+        event.waitUntil(
 
-                return cache.addAll(STATIC_FILES);
+            caches.open(
 
-            })
+                CACHE_NAME
 
-            .then(() => {
+            )
 
-                return self.skipWaiting();
+            .then(
 
-            })
+                cache =>
 
-    );
+                    cache.addAll(
 
-});
+                        STATIC_CACHE
+
+                    )
+
+            )
+
+            .then(
+
+                () =>
+
+                    self.skipWaiting()
+
+            )
+
+        );
+
+    }
+
+);
 
 
 /* =====================================================
    ACTIVATE
 ===================================================== */
 
-self.addEventListener("activate", event => {
+self.addEventListener(
 
-    event.waitUntil(
+    "activate",
 
-        caches.keys()
+    event => {
 
-            .then(keys => {
+        event.waitUntil(
 
-                return Promise.all(
+            caches.keys()
 
-                    keys
+                .then(
 
-                        .filter(key => key !== CACHE_NAME)
+                    cacheNames => {
 
-                        .map(key => caches.delete(key))
+                        return Promise.all(
 
-                );
+                            cacheNames
 
-            })
+                                .filter(
 
-            .then(() => {
+                                    cacheName =>
 
-                return self.clients.claim();
+                                        cacheName !== CACHE_NAME
 
-            })
+                                )
 
-    );
+                                .map(
 
-});
+                                    cacheName =>
+
+                                        caches.delete(
+
+                                            cacheName
+
+                                        )
+
+                                )
+
+                        );
+
+                    }
+
+                )
+
+                .then(
+
+                    () =>
+
+                        self.clients.claim()
+
+                )
+
+        );
+
+    }
+
+);
 
 
 /* =====================================================
-   FETCH
+   FETCH ROUTER
 ===================================================== */
 
-self.addEventListener("fetch", event => {
+self.addEventListener(
 
-    const request = event.request;
+    "fetch",
 
-    if (request.method !== "GET") {
+    event => {
 
-        return;
-
-    }
-
-    const url = new URL(request.url);
+        const request = event.request;
 
 
-    /*
-       data.json
-       Network First
-       Offline => Cached Version
-    */
+        if (
 
-    if (
+            request.method !== "GET"
 
-        url.origin === self.location.origin
+        ) {
 
-        &&
+            return;
 
-        url.pathname.endsWith("/data.json")
+        }
 
-    ) {
 
-        event.respondWith(
+        const url = new URL(
 
-            networkFirst(request)
+            request.url
 
         );
 
-        return;
 
-    }
+        /*
+           SERVICE WORKER
+           همیشه از Network
+        */
+
+        if (
+
+            url.pathname.endsWith(
+
+                "/sw.js"
+
+            )
+
+        ) {
+
+            event.respondWith(
+
+                fetch(
+
+                    request,
+
+                    {
+
+                        cache:
+
+                            "no-store"
+
+                    }
+
+                )
+
+            );
+
+            return;
+
+        }
 
 
-    /*
-       External API
-       Network First
-       Offline => Cached Version
-    */
+        /*
+           DATA.JSON
+           Network First
+           Cache Fallback
+        */
 
-    if (
+        if (
 
-        url.origin !== self.location.origin
+            url.origin ===
 
-    ) {
+            self.location.origin
+
+            &&
+
+            url.pathname.endsWith(
+
+                "/data.json"
+
+            )
+
+        ) {
+
+            event.respondWith(
+
+                networkFirstData()
+
+            );
+
+            return;
+
+        }
+
+
+        /*
+           EXTERNAL API
+           Network Only
+           بدون Cache
+        */
+
+        if (
+
+            url.origin !==
+
+            self.location.origin
+
+        ) {
+
+            event.respondWith(
+
+                networkOnly(
+
+                    request
+
+                )
+
+            );
+
+            return;
+
+        }
+
+
+        /*
+           HTML DOCUMENT
+           Network First
+           Cache Fallback
+        */
+
+        if (
+
+            request.mode ===
+
+            "navigate"
+
+            ||
+
+            request.destination ===
+
+            "document"
+
+        ) {
+
+            event.respondWith(
+
+                networkFirst(
+
+                    request
+
+                )
+
+            );
+
+            return;
+
+        }
+
+
+        /*
+           STATIC FILES
+           Cache First
+        */
 
         event.respondWith(
 
-            networkFirst(request)
+            cacheFirst(
+
+                request
+
+            )
 
         );
 
-        return;
-
     }
 
+);
 
-    /*
-       Local Files
-       Cache First
-    */
 
-    event.respondWith(
+/* =====================================================
+   NETWORK ONLY
+===================================================== */
 
-        cacheFirst(request)
+async function networkOnly(
+
+    request
+
+) {
+
+    return fetch(
+
+        request
 
     );
 
-});
+}
 
 
 /* =====================================================
    NETWORK FIRST
 ===================================================== */
 
-async function networkFirst(request) {
+async function networkFirst(
+
+    request
+
+) {
 
     try {
 
-        const response = await fetch(request);
+        const response =
+
+            await fetch(
+
+                request,
+
+                {
+
+                    cache:
+
+                        "no-store"
+
+                }
+
+            );
+
 
         if (
 
@@ -172,11 +362,14 @@ async function networkFirst(request) {
 
         ) {
 
-            const cache = await caches.open(
+            const cache =
 
-                CACHE_NAME
+                await caches.open(
 
-            );
+                    CACHE_NAME
+
+                );
+
 
             await cache.put(
 
@@ -188,23 +381,145 @@ async function networkFirst(request) {
 
         }
 
+
         return response;
 
     }
 
-    catch (error) {
+    catch (
 
-        const cachedResponse = await caches.match(
+        error
 
-            request
+    ) {
 
-        );
+        const cachedResponse =
 
-        if (cachedResponse) {
+            await caches.match(
+
+                request
+
+            );
+
+
+        if (
+
+            cachedResponse
+
+        ) {
 
             return cachedResponse;
 
         }
+
+
+        throw error;
+
+    }
+
+}
+
+
+/* =====================================================
+   DATA.JSON NETWORK FIRST
+===================================================== */
+
+async function networkFirstData() {
+
+    const cache =
+
+        await caches.open(
+
+            CACHE_NAME
+
+        );
+
+
+    const cacheKey =
+
+        new Request(
+
+            DATA_CACHE_KEY
+
+        );
+
+
+    try {
+
+        const response =
+
+            await fetch(
+
+                DATA_CACHE_KEY
+
+                +
+
+                "?v="
+
+                +
+
+                Date.now(),
+
+                {
+
+                    cache:
+
+                        "no-store"
+
+                }
+
+            );
+
+
+        if (
+
+            response
+
+            &&
+
+            response.ok
+
+        ) {
+
+            await cache.put(
+
+                cacheKey,
+
+                response.clone()
+
+            );
+
+        }
+
+
+        return response;
+
+    }
+
+    catch (
+
+        error
+
+    ) {
+
+        const cachedResponse =
+
+            await cache.match(
+
+                cacheKey
+
+            );
+
+
+        if (
+
+            cachedResponse
+
+        ) {
+
+            return cachedResponse;
+
+        }
+
 
         throw error;
 
@@ -217,23 +532,39 @@ async function networkFirst(request) {
    CACHE FIRST
 ===================================================== */
 
-async function cacheFirst(request) {
+async function cacheFirst(
 
-    const cachedResponse = await caches.match(
+    request
 
-        request
+) {
 
-    );
+    const cachedResponse =
+
+        await caches.match(
+
+            request
+
+        );
 
 
-    if (cachedResponse) {
+    if (
+
+        cachedResponse
+
+    ) {
 
         return cachedResponse;
 
     }
 
 
-    const response = await fetch(request);
+    const response =
+
+        await fetch(
+
+            request
+
+        );
 
 
     if (
@@ -246,11 +577,14 @@ async function cacheFirst(request) {
 
     ) {
 
-        const cache = await caches.open(
+        const cache =
 
-            CACHE_NAME
+            await caches.open(
 
-        );
+                CACHE_NAME
+
+            );
+
 
         await cache.put(
 
@@ -280,36 +614,70 @@ self.addEventListener(
 
         let data = {
 
-            title: "Financial Dashboard",
+            title:
 
-            body: "Price Alert",
+                "Financial Dashboard",
 
-            icon: "./icon.png",
+            body:
 
-            badge: "./icon.png",
+                "Price Alert",
 
-            url: "./index.html"
+            icon:
+
+                "./icon.png",
+
+            badge:
+
+                "./icon.png",
+
+            url:
+
+                "./index.html"
 
         };
 
 
         try {
 
-            if (event.data) {
+            if (
 
-                data = {
+                event.data
 
-                    ...data,
+            ) {
 
-                    ...event.data.json()
+                try {
 
-                };
+                    data = {
+
+                        ...data,
+
+                        ...event.data.json()
+
+                    };
+
+                }
+
+                catch (
+
+                    jsonError
+
+                ) {
+
+                    data.body =
+
+                        event.data.text();
+
+                }
 
             }
 
         }
 
-        catch (error) {
+        catch (
+
+            error
+
+        ) {
 
             console.error(
 
@@ -324,44 +692,60 @@ self.addEventListener(
 
         const options = {
 
-            body: data.body,
+            body:
 
-            icon: data.icon,
+                data.body,
 
-            badge: data.badge,
+            icon:
 
-            vibrate: [
+                data.icon,
 
-                200,
+            badge:
 
-                100,
+                data.badge,
 
-                200
+            vibrate:
 
-            ],
+                [
+
+                    200,
+
+                    100,
+
+                    200
+
+                ],
 
             data: {
 
-                url: data.url
+                url:
+
+                    data.url
 
             },
 
-            tag: "financial-price-alert",
+            tag:
 
-            renotify: true
+                "financial-price-alert",
+
+            renotify:
+
+                true
 
         };
 
 
         event.waitUntil(
 
-            self.registration.showNotification(
+            self.registration
 
-                data.title,
+                .showNotification(
 
-                options
+                    data.title,
 
-            )
+                    options
+
+                )
 
         );
 
@@ -383,28 +767,53 @@ self.addEventListener(
         event.notification.close();
 
 
-        const url =
+        const relativeUrl =
 
-            event.notification.data
+            event.notification
 
-            &&
+                .data
+
+                &&
 
             event.notification.data.url
 
-                ? event.notification.data.url
+                ?
 
-                : "./index.html";
+            event.notification.data.url
+
+                :
+
+            "./index.html";
+
+
+        const targetUrl =
+
+            new URL(
+
+                relativeUrl,
+
+                self.registration.scope
+
+            ).href;
 
 
         event.waitUntil(
 
-            clients.matchAll({
+            clients.matchAll(
 
-                type: "window",
+                {
 
-                includeUncontrolled: true
+                    type:
 
-            })
+                        "window",
+
+                    includeUncontrolled:
+
+                        true
+
+                }
+
+            )
 
             .then(
 
@@ -412,19 +821,76 @@ self.addEventListener(
 
                     for (
 
-                        const client of clientList
+                        const client
+
+                        of
+
+                        clientList
 
                     ) {
 
                         if (
 
-                            "focus" in client
+                            client.url
+
+                            ===
+
+                            targetUrl
+
+                            &&
+
+                            "focus"
+
+                            in
+
+                            client
 
                         ) {
 
-                            client.navigate(url);
-
                             return client.focus();
+
+                        }
+
+                    }
+
+
+                    for (
+
+                        const client
+
+                        of
+
+                        clientList
+
+                    ) {
+
+                        if (
+
+                            "navigate"
+
+                            in
+
+                            client
+
+                        )
+
+                        {
+
+                            return client
+
+                                .navigate(
+
+                                    targetUrl
+
+                                )
+
+                                .then(
+
+                                    () =>
+
+                                        client.focus()
+
+                                );
 
                         }
 
@@ -439,7 +905,7 @@ self.addEventListener(
 
                         return clients.openWindow(
 
-                            url
+                            targetUrl
 
                         );
 
