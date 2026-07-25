@@ -1,5 +1,7 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
@@ -8,12 +10,18 @@
 <title>Financial Dashboard</title>
 
 <link rel="manifest" href="manifest.json">
+
 <meta name="theme-color" content="#0b1220">
 
 <link rel="icon" type="image/png" href="icon.png">
+
 <link rel="apple-touch-icon" href="icon.png">
 
 <style>
+
+/* =====================================================
+   RESET
+===================================================== */
 
 * {
     box-sizing: border-box;
@@ -62,9 +70,14 @@ body {
 
 }
 
+/* =====================================================
+   LAYOUT
+===================================================== */
+
 .container {
 
     width: 100%;
+
     max-width: 1400px;
 
     margin: auto;
@@ -75,6 +88,10 @@ body {
         20px;
 
 }
+
+/* =====================================================
+   HEADER
+===================================================== */
 
 header {
 
@@ -150,406 +167,321 @@ h1 {
     margin-left: 8px;
 
 }
+
 .update-countdown {
-    color:#64748b;
-    font-size:10px;
-    margin-left:6px;
-}
-.live-price {
-    margin-top: 12px;
-    padding: 11px 16px;
-    border-radius: 13px;
-    background: rgba(2,6,23,.55);
-    border: 1px solid rgba(255,255,255,.06);
-
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-}
-
-/* ردیف بالایی: Live Market • Bank Rate: 40% */
-.live-market-header {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 9px;
-
-    color: #94a3b8;
-    font-size: 11px;
-    white-space: nowrap;
-}
-
-.live-market-title {
-    font-weight: 600;
-}
-
-.live-market-separator {
-    opacity: .55;
-}
-
-.live-market-bank {
-    font-size: 10px;
-    color: #64748b;
-}
-
-/* ردیف قیمت‌ها */
-.live-price-values {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    gap: 28px;
-}
-
-/* سمت چپ: Exir */
-.live-price-left {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    flex: 1 1 50%;
-    min-width: 0;
-}
-
-/* سمت راست: Nobitex */
-.live-price-right {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    flex: 1 1 50%;
-    min-width: 0;
-}
-
-/* هر قیمت */
-.live-price-item {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    min-width: 0;
-}
-
-.live-number {
-    font-size: 28px;
-    font-weight: 850;
-    white-space: nowrap;
-}
-
-/* فلش‌ها؛ همان ظاهر قبلی */
-.price-arrow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    width: 18px;
-    height: 25px;
-
-    font-size: 25px;
-    font-weight: 300;
-    line-height: 1;
-
-    background: transparent;
-    border: none;
-    padding: 0;
-    margin: 0;
-}
-
-.arrow-up {
-    color: #34d399;
-}
-
-.arrow-down {
-    color: #f87171;
-}
-
-.arrow-flat {
-    color: #94a3b8;
-}
-
-/* موبایل: دو قیمت زیر هم نروند */
-@media (max-width: 650px) {
-
-    .live-price {
-        padding: 10px 10px;
-    }
-
-    .live-market-header {
-        gap: 7px;
-        font-size: 10px;
-    }
-
-    .live-market-bank {
-        font-size: 9px;
-    }
-
-    .live-price-values {
-        gap: 14px;
-    }
-
-    .live-number {
-        font-size: 20px;
-    }
-
-    .price-arrow {
-        width: 15px;
-        height: 22px;
-        font-size: 21px;
-    }
-
-    .live-price-item {
-        gap: 6px;
-    }
-}
-.live-price-left {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    flex: 1 1 50%;
-    min-width: 0;
-}
-
-.live-price-right {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 18px;
-    flex: 1 1 50%;
-    min-width: 0;
-}
-
-.live-label {
-
-    color:
-        #94a3b8;
-
-    font-size: 11px;
-
-    flex: 0 0 auto;
-
-    text-align: center;
-
-}
-
-.live-number-row {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: flex-start;
-
-    gap: 9px;
-
-    flex: 0 0 auto;
-
-}
-
-.live-price-item {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 9px;
-
-    min-width: 0;
-
-}
-
-.live-number {
-
-    font-size: 28px;
-
-    font-weight: 850;
-
-}
-
-.price-arrow {
-
-    display: inline-flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    width: 18px;
-
-    height: 25px;
-
-    font-size: 25px;
-
-    font-weight: 300;
-
-    line-height: 1;
-
-    background: transparent;
-
-    border: none;
-
-    padding: 0;
-
-    margin: 0;
-
-}
-
-.arrow-up {
-
-    color: #34d399;
-
-}
-
-.arrow-down {
-
-    color: #f87171;
-
-}
-
-.arrow-flat {
-
-    color: #94a3b8;
-
-}
-
-.live-footer {
-
-    color:
-        #94a3b8;
-
-    font-size: 12px;
-
-    text-align: right;
-
-}
-
-.refresh-info {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: flex-end;
-
-    gap: 6px;
-
-    margin-top: 4px;
 
     color:
         #64748b;
 
-    font-size: 9px;
+    font-size: 10px;
 
-    font-weight: 600;
-
-}
-
-#countdown {
-
-    min-width: 18px;
-
-    text-align: right;
-
-    color:
-        #94a3b8;
-
-}
-
-.refresh-btn {
-
-    width: 22px;
-
-    height: 22px;
-
-    padding: 0;
-
-    border:
-        1px solid
-        rgba(255,255,255,.10);
-
-    border-radius: 7px;
-
-    background:
-        rgba(255,255,255,.04);
-
-    color:
-        #94a3b8;
-
-    font-size: 13px;
-
-    cursor: pointer;
-
-}
-
-.refresh-btn:hover {
-
-    background:
-        rgba(255,255,255,.09);
-
-    color:
-        #f8fafc;
+    margin-left: 6px;
 
 }
 
 /* =====================================================
-   OFFLINE STATUS
+   LIVE PRICE
+===================================================== */
+
+.live-price {
+
+    margin-top: 12px;
+
+    padding:
+        11px
+        16px;
+
+    border-radius: 13px;
+
+    background:
+        rgba(2,6,23,.55);
+
+    border:
+        1px solid
+        rgba(255,255,255,.06);
+
+    display: flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        stretch;
+
+    gap: 8px;
+
+}
+
+.live-market-header {
+
+    display: flex;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+
+    gap: 9px;
+
+    color:
+        #94a3b8;
+
+    font-size: 11px;
+
+    white-space:
+        nowrap;
+
+}
+
+.live-market-title {
+
+    font-weight:
+        600;
+
+}
+
+.live-market-separator {
+
+    opacity:
+        .55;
+
+}
+
+.live-market-bank {
+
+    font-size:
+        10px;
+
+    color:
+        #64748b;
+
+}
+
+.live-price-values {
+
+    display: flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    width:
+        100%;
+
+    gap:
+        28px;
+
+}
+
+.live-price-left,
+.live-price-right {
+
+    display: flex;
+
+    align-items:
+        center;
+
+    min-width:
+        0;
+
+    flex:
+        1 1 50%;
+
+}
+
+.live-price-left {
+
+    justify-content:
+        flex-start;
+
+}
+
+.live-price-right {
+
+    justify-content:
+        flex-end;
+
+}
+
+.live-price-item {
+
+    display: flex;
+
+    align-items:
+        center;
+
+    gap:
+        9px;
+
+    min-width:
+        0;
+
+}
+
+.live-number {
+
+    font-size:
+        28px;
+
+    font-weight:
+        850;
+
+    white-space:
+        nowrap;
+
+}
+
+.price-arrow {
+
+    display: inline-flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    width:
+        18px;
+
+    height:
+        25px;
+
+    font-size:
+        25px;
+
+    font-weight:
+        300;
+
+    line-height:
+        1;
+
+    background:
+        transparent;
+
+    border:
+        none;
+
+    padding:
+        0;
+
+    margin:
+        0;
+
+}
+
+.arrow-up {
+
+    color:
+        #34d399;
+
+}
+
+.arrow-down {
+
+    color:
+        #f87171;
+
+}
+
+.arrow-flat {
+
+    color:
+        #94a3b8;
+
+}
+
+/* =====================================================
+   CONNECTION STATUS
 ===================================================== */
 
 .connection-status {
 
-    display: none;
+    display:
+        none;
 
-    margin-top: 8px;
+    margin-top:
+        8px;
 
-    padding: 7px 10px;
+    padding:
+        7px
+        10px;
 
-    border-radius: 9px;
+    border-radius:
+        9px;
 
-    font-size: 10px;
+    font-size:
+        10px;
 
-    font-weight: 700;
+    font-weight:
+        700;
 
-    text-align: center;
+    text-align:
+        center;
 
 }
 
 .connection-status.offline {
 
-    display: block;
+    display:
+        block;
 
-    color: #fbbf24;
+    color:
+        #fbbf24;
 
-    background: rgba(245,158,11,.10);
+    background:
+        rgba(245,158,11,.10);
 
-    border: 1px solid rgba(245,158,11,.20);
+    border:
+        1px solid
+        rgba(245,158,11,.20);
 
 }
 
 .connection-status.online {
 
-    display: block;
+    display:
+        block;
 
-    color: #34d399;
+    color:
+        #34d399;
 
-    background: rgba(16,185,129,.10);
+    background:
+        rgba(16,185,129,.10);
 
-    border: 1px solid rgba(16,185,129,.20);
+    border:
+        1px solid
+        rgba(16,185,129,.20);
 
 }
 
+/* =====================================================
+   DASHBOARD
+===================================================== */
+
 #dashboard {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(3, minmax(0, 1fr));
 
-    gap: 12px;
+    gap:
+        12px;
 
 }
 
 .card {
 
-    padding: 12px;
+    padding:
+        12px;
 
-    border-radius: 17px;
+    border-radius:
+        17px;
 
     background:
 
@@ -571,7 +503,8 @@ h1 {
 
 .card-header {
 
-    display: flex;
+    display:
+        flex;
 
     align-items:
         center;
@@ -579,26 +512,31 @@ h1 {
     justify-content:
         space-between;
 
-    margin-bottom: 9px;
+    margin-bottom:
+        9px;
 
 }
 
 .card-title {
 
-    font-size: 17px;
+    font-size:
+        17px;
 
-    font-weight: 800;
+    font-weight:
+        800;
 
 }
 
 .period-info {
 
-    display: flex;
+    display:
+        flex;
 
     align-items:
         center;
 
-    gap: 5px;
+    gap:
+        5px;
 
 }
 
@@ -607,12 +545,17 @@ h1 {
     color:
         #94a3b8;
 
-    font-size: 8px;
+    font-size:
+        8px;
 
     white-space:
         nowrap;
 
 }
+
+/* =====================================================
+   ACTION BADGES
+===================================================== */
 
 .action-badge {
 
@@ -620,11 +563,14 @@ h1 {
         4px
         7px;
 
-    border-radius: 6px;
+    border-radius:
+        6px;
 
-    font-size: 8px;
+    font-size:
+        8px;
 
-    font-weight: 800;
+    font-weight:
+        800;
 
 }
 
@@ -656,13 +602,20 @@ h1 {
 
 }
 
+/* =====================================================
+   MAIN PRICE
+===================================================== */
+
 .main-price {
 
-    padding: 9px;
+    padding:
+        9px;
 
-    margin-bottom: 9px;
+    margin-bottom:
+        9px;
 
-    border-radius: 13px;
+    border-radius:
+        13px;
 
     text-align:
         center;
@@ -703,31 +656,42 @@ h1 {
 
 .main-price-values {
 
-    display: flex;
+    display:
+        flex;
 
-    align-items: center;
+    align-items:
+        center;
 
-    justify-content: center;
+    justify-content:
+        center;
 
-    gap: 18px;
+    gap:
+        18px;
 
-    width: 100%;
+    width:
+        100%;
 
 }
 
 .main-price-side {
 
-    flex: 1;
+    flex:
+        1;
 
-    min-width: 0;
+    min-width:
+        0;
 
-    display: flex;
+    display:
+        flex;
 
-    flex-direction: column;
+    flex-direction:
+        column;
 
-    align-items: center;
+    align-items:
+        center;
 
-    justify-content: center;
+    justify-content:
+        center;
 
 }
 
@@ -736,64 +700,74 @@ h1 {
     color:
         #94a3b8;
 
-    font-size: 11px;
+    font-size:
+        11px;
 
-    margin-bottom: 3px;
+    margin-bottom:
+        3px;
 
 }
 
-.main-price-number {
+.main-price-number,
+.live-main-number {
 
-    font-size: 25px;
+    font-size:
+        25px;
 
-    font-weight: 850;
+    font-weight:
+        850;
 
-    white-space: nowrap;
+    white-space:
+        nowrap;
 
 }
 
 .live-main-number-row {
 
-    display: flex;
+    display:
+        flex;
 
-    align-items: center;
+    align-items:
+        center;
 
-    justify-content: center;
+    justify-content:
+        center;
 
-    gap: 7px;
-
-}
-
-.live-main-number {
-
-    font-size: 25px;
-
-    font-weight: 850;
-
-    white-space: nowrap;
+    gap:
+        7px;
 
 }
+
+/* =====================================================
+   P/L
+===================================================== */
 
 .pl-container {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         1fr 1fr;
 
-    gap: 7px;
+    gap:
+        7px;
 
-    margin-top: 8px;
+    margin-top:
+        8px;
 
 }
 
 .pl-box {
 
-    min-height: 58px;
+    min-height:
+        58px;
 
-    padding: 6px;
+    padding:
+        6px;
 
-    display: flex;
+    display:
+        flex;
 
     flex-direction:
         column;
@@ -804,7 +778,8 @@ h1 {
     align-items:
         center;
 
-    border-radius: 9px;
+    border-radius:
+        9px;
 
     background:
         rgba(2,6,23,.38);
@@ -820,193 +795,24 @@ h1 {
     color:
         #94a3b8;
 
-    font-size: 9px;
+    font-size:
+        9px;
 
-    line-height: 1.25;
+    line-height:
+        1.25;
 
-    margin-bottom: 3px;
+    margin-bottom:
+        3px;
 
 }
 
 .pl-value {
 
-    font-size: 17px;
-
-    font-weight: 850;
-
-}
-
-.result {
-
-    margin-top: 7px;
-
-    font-size: 9px;
-
-    font-weight: 750;
-
-}
-
-.comparison {
-
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap: 7px;
-
-}
-
-.compare-box {
-
-    padding: 9px;
-
-    border-radius: 9px;
-
-    background:
-        rgba(255,255,255,.035);
-
-    border:
-        1px solid
-        rgba(255,255,255,.055);
-
-}
-
-.compare-label {
-
-    color:
-        #94a3b8;
-
-    font-size: 9px;
-
-    margin-bottom: 4px;
-
-}
-
-.compare-value {
-
-    font-size: 14px;
-
-    font-weight: 800;
-
-    white-space:
-        nowrap;
-
-}
-
-.metrics {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(2,1fr);
-
-    gap: 7px;
-
-    margin-top: 7px;
-
-}
-
-.metric {
-
-    padding: 8px;
-
-    min-height: 55px;
-
-    border-radius: 9px;
-
-    background:
-        rgba(255,255,255,.035);
-
-    border:
-        1px solid
-        rgba(255,255,255,.055);
-
-}
-
-.realized-combined {
-
-    display: flex;
-
-    flex-direction:
-        column;
-
-    justify-content:
-        center;
-
-    gap: 5px;
-
-    min-width: 0;
-
-}
-
-.realized-row {
-
-    width: 100%;
-
-    display: flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        space-between;
-
-    gap: 8px;
-
-    min-width: 0;
-
-}
-
-.realized-label {
-
-    color:
-        #94a3b8;
-
-    font-size: 8px;
-
-    line-height: 1.2;
-
-    white-space:
-        nowrap;
-
-}
-
-.realized-value {
-
-    font-size: 10px;
-
-    font-weight: 800;
-
-    white-space:
-        nowrap;
-
-    text-align:
-        right;
-
-    flex-shrink: 0;
-
-}
-
-.metric-label {
-
-    color:
-        #94a3b8;
-
-    font-size: 9px;
-
-    margin-bottom: 4px;
-
-}
-
-.metric-value {
-
-    font-size: 14px;
-
-    font-weight: 750;
-
-    white-space:
-        nowrap;
+    font-size:
+        17px;
+
+    font-weight:
+        850;
 
 }
 
@@ -1024,13 +830,235 @@ h1 {
 
 }
 
+.result {
+
+    margin-top:
+        7px;
+
+    font-size:
+        9px;
+
+    font-weight:
+        750;
+
+}
+
+/* =====================================================
+   COMPARISON
+===================================================== */
+
+.comparison {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap:
+        7px;
+
+}
+
+.compare-box {
+
+    padding:
+        9px;
+
+    border-radius:
+        9px;
+
+    background:
+        rgba(255,255,255,.035);
+
+    border:
+        1px solid
+        rgba(255,255,255,.055);
+
+}
+
+.compare-label {
+
+    color:
+        #94a3b8;
+
+    font-size:
+        9px;
+
+    margin-bottom:
+        4px;
+
+}
+
+.compare-value {
+
+    font-size:
+        14px;
+
+    font-weight:
+        800;
+
+    white-space:
+        nowrap;
+
+}
+
+/* =====================================================
+   METRICS
+===================================================== */
+
+.metrics {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(2,1fr);
+
+    gap:
+        7px;
+
+    margin-top:
+        7px;
+
+}
+
+.metric {
+
+    padding:
+        8px;
+
+    min-height:
+        55px;
+
+    border-radius:
+        9px;
+
+    background:
+        rgba(255,255,255,.035);
+
+    border:
+        1px solid
+        rgba(255,255,255,.055);
+
+}
+
+.metric-label {
+
+    color:
+        #94a3b8;
+
+    font-size:
+        9px;
+
+    margin-bottom:
+        4px;
+
+}
+
+.metric-value {
+
+    font-size:
+        14px;
+
+    font-weight:
+        750;
+
+    white-space:
+        nowrap;
+
+}
+
+.realized-combined {
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    justify-content:
+        center;
+
+    gap:
+        5px;
+
+    min-width:
+        0;
+
+}
+
+.realized-row {
+
+    width:
+        100%;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        8px;
+
+    min-width:
+        0;
+
+}
+
+.realized-label {
+
+    color:
+        #94a3b8;
+
+    font-size:
+        8px;
+
+    line-height:
+        1.2;
+
+    white-space:
+        nowrap;
+
+}
+
+.realized-value {
+
+    font-size:
+        10px;
+
+    font-weight:
+        800;
+
+    white-space:
+        nowrap;
+
+    text-align:
+        right;
+
+    flex-shrink:
+        0;
+
+}
+
+/* =====================================================
+   STATES
+===================================================== */
+
 .error {
 
-    padding: 12px;
+    padding:
+        12px;
 
-    margin-bottom: 12px;
+    margin-bottom:
+        12px;
 
-    border-radius: 10px;
+    border-radius:
+        10px;
 
     color:
         #f87171;
@@ -1049,14 +1077,19 @@ h1 {
     text-align:
         center;
 
-    padding: 35px;
+    padding:
+        35px;
 
     color:
         #94a3b8;
 
 }
 
-@media (max-width:1100px) {
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 1100px) {
 
     #dashboard {
 
@@ -1067,7 +1100,7 @@ h1 {
 
 }
 
-@media (max-width:650px) {
+@media (max-width: 650px) {
 
     .container {
 
@@ -1080,11 +1113,14 @@ h1 {
 
     header {
 
-        position: sticky;
+        position:
+            sticky;
 
-        top: 0;
+        top:
+            0;
 
-        z-index: 1000;
+        z-index:
+            1000;
 
     }
 
@@ -1104,87 +1140,88 @@ h1 {
 
     .live-price {
 
-        display: flex;
-
-        align-items: center;
-
-        justify-content: space-between;
-
-        gap: 8px;
+        padding:
+            10px;
 
     }
 
-    .live-price-left,
+    .live-market-header {
+
+        gap:
+            7px;
+
+        font-size:
+            10px;
+
+    }
+
+    .live-market-bank {
+
+        font-size:
+            9px;
+
+    }
+
+    .live-price-values {
+
+        gap:
+            14px;
+
+    }
+
     .live-price-right {
-        flex: 1 1 50%;
-        min-width: 0;
-    }
 
-    .live-price-right {
-        gap: 7px;
-    }
-
-    .live-number-row {
-
-        gap: 7px;
-
-        flex-wrap: nowrap;
+        gap:
+            7px;
 
     }
 
     .live-price-item {
 
-        gap: 7px;
+        gap:
+            6px;
 
     }
 
-    .live-price-item .live-number {
+    .live-number {
 
-        font-size: 20px;
-
-    }
-
-    .live-price-item .price-arrow {
-
-        font-size: 21px;
-
-        width: 14px;
+        font-size:
+            20px;
 
     }
 
-    .live-footer {
+    .price-arrow {
 
-        margin-top:
-            5px;
+        width:
+            15px;
 
-        text-align:
-            left;
+        height:
+            22px;
 
-    }
-
-    .refresh-info {
-
-        justify-content:
-            flex-start;
+        font-size:
+            21px;
 
     }
 
     .main-price-values {
 
-        gap: 8px;
+        gap:
+            8px;
 
     }
 
     .main-price-number,
     .live-main-number {
 
-        font-size: 21px;
+        font-size:
+            21px;
 
     }
 
     .main-price-title {
 
-        font-size: 10px;
+        font-size:
+            10px;
 
     }
 
@@ -1204,15 +1241,17 @@ h1 {
 
 }
 
+/* =====================================================
+   END CSS
+===================================================== */
+
 </style>
 
 </head>
 
-
 <body>
 
 <div class="container">
-
 
 <header>
 
@@ -1226,18 +1265,24 @@ Financial Dashboard
 
 <div class="today">
 
-<span id="today">-</span>
+<span id="today">
+-
+</span>
 
 <span
 class="update-time"
 id="updateTime">
+
 Last Update: -
+
 </span>
 
 <span
 class="update-countdown"
 id="updateCountdown">
+
 30s
+
 </span>
 
 </div>
@@ -1246,84 +1291,93 @@ id="updateCountdown">
 
 </div>
 
-
 <div class="live-price">
 
-    <!-- Live Market و Bank Rate در یک خط، وسط صفحه -->
-    <div class="live-market-header">
+<div class="live-market-header">
 
-        <span class="live-market-title">
-            Live Market
-        </span>
+<span class="live-market-title">
+Live Market
+</span>
 
-        <span class="live-market-separator">
-            •
-        </span>
+<span class="live-market-separator">
+•
+</span>
 
-        <span class="live-market-bank">
-            Bank Rate:
-            <span id="bankRate">
-                -
-            </span>
-        </span>
+<span class="live-market-bank">
 
-    </div>
+Bank Rate:
 
+<span id="bankRate">
+-
+</span>
 
-    <!-- دو قیمت در یک ردیف -->
-    <div class="live-price-values">
+</span>
 
-        <!-- قیمتNobitex - سمت چپ -->
-        <div class="live-price-left">
+</div>
 
-            <div class="live-price-item">
+<div class="live-price-values">
 
-                <div
-                    class="live-number"
-                    id="currentPrice">
-                    -
-                </div>
+<div class="live-price-left">
 
-                <div
-                    class="price-arrow arrow-flat"
-                    id="topPriceArrow">
-                    →
-                </div>
+<div class="live-price-item">
 
-            </div>
+<div
+class="live-number"
+id="currentPrice">
 
-        </div>
+-
 
+</div>
 
-        <!-- قیمت  Exir - سمت راست -->
-        <div class="live-price-right">
+<div
+class="price-arrow arrow-flat"
+id="topPriceArrow">
 
-            <div class="live-price-item">
+→
 
-                <div
-                    class="live-number"
-                    id="exirPrice">
-                    -
-                </div>
+</div>
 
-                <div
-                    class="price-arrow arrow-flat"
-                    id="exirPriceArrow">
-                    →
-                </div>
+</div>
 
-            </div>
+</div>
 
-        </div>
+<div class="live-price-right">
 
-    </div>
+<div class="live-price-item">
 
+<div
+class="live-number"
+id="exirPrice">
+
+-
+
+</div>
+
+<div
+class="price-arrow arrow-flat"
+id="exirPriceArrow">
+
+→
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<div
+id="connectionStatus"
+class="connection-status">
+
+</div>
 
 </header>
 
-
 <div id="errorBox"></div>
-
 
 <div
 id="loading"
@@ -1333,13 +1387,13 @@ Loading...
 
 </div>
 
-
 <div
 id="dashboard"
 style="display:none;">
 
-
-<!-- OVERALL -->
+<!-- =====================================================
+     OVERALL
+===================================================== -->
 
 <div class="card">
 
@@ -1352,11 +1406,12 @@ Overall Performance
 <div
 class="trade-count"
 id="overallTrades">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div
 class="main-price"
@@ -1373,11 +1428,12 @@ Bank-Adjusted
 <div
 class="main-price-number"
 id="overallAdjusted">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="main-price-side">
 
@@ -1390,14 +1446,16 @@ Live
 <div
 class="live-main-number"
 id="overallLive">
+
 -
+
 </div>
 
 <div
 class="price-arrow arrow-flat"
 id="overallPriceArrow">
+
 →
-</div>
 
 </div>
 
@@ -1405,87 +1463,93 @@ id="overallPriceArrow">
 
 </div>
 
+</div>
 
 <div class="pl-container">
 
 <div class="pl-box">
 
 <div class="pl-label">
-Unrealized P/L<br>
+Unrealized P/L %<br>
 vs Purchase
 </div>
 
 <div
 class="pl-value"
 id="overallPLPurchase">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="pl-box">
 
 <div class="pl-label">
-Unrealized P/L<br>
+Unrealized P/L %<br>
 vs Bank
 </div>
 
 <div
 class="pl-value"
 id="overallPLBank">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div class="pl-container">
 
 <div class="pl-box">
 
 <div class="pl-label">
-Unrealized P/L<br>
+Unrealized P/L Amount<br>
 vs Purchase
 </div>
 
 <div
 class="pl-value"
 id="overallUnrealizedPurchase">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="pl-box">
 
 <div class="pl-label">
-Unrealized P/L<br>
+Unrealized P/L Amount<br>
 vs Bank
 </div>
 
 <div
 class="pl-value"
 id="overallUnrealizedBank">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div
 class="result"
 id="overallResult">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="comparison">
 
@@ -1498,11 +1562,12 @@ Average Purchase
 <div
 class="compare-value"
 id="overallAverage">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="compare-box">
 
@@ -1513,13 +1578,14 @@ Paid Amount
 <div
 class="compare-value"
 id="overallPaid">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div class="metrics">
 
@@ -1532,11 +1598,12 @@ Current Quantity
 <div
 class="metric-value"
 id="overallQuantity">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="metric">
 
@@ -1547,11 +1614,12 @@ Current Value
 <div
 class="metric-value"
 id="overallValue">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="metric realized-combined">
 
@@ -1564,11 +1632,12 @@ Realized P/L vs Purchase
 <div
 class="realized-value"
 id="overallRealizedPurchase">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="realized-row">
 
@@ -1579,13 +1648,14 @@ Realized P/L vs Bank
 <div
 class="realized-value"
 id="overallRealizedBank">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div class="metric">
 
@@ -1596,8 +1666,8 @@ Bank Value
 <div
 class="metric-value"
 id="overallBank">
+
 -
-</div>
 
 </div>
 
@@ -1605,8 +1675,11 @@ id="overallBank">
 
 </div>
 
+</div>
 
-<!-- LAST 6 -->
+<!-- =====================================================
+     LAST 6
+===================================================== -->
 
 <div class="card">
 
@@ -1619,11 +1692,12 @@ Last 6 Periods
 <div
 class="trade-count"
 id="sixTrades">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div
 class="main-price"
@@ -1640,11 +1714,12 @@ Bank-Adjusted
 <div
 class="main-price-number"
 id="sixAdjusted">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="main-price-side">
 
@@ -1657,14 +1732,16 @@ Live
 <div
 class="live-main-number"
 id="sixLive">
+
 -
+
 </div>
 
 <div
 class="price-arrow arrow-flat"
 id="sixPriceArrow">
+
 →
-</div>
 
 </div>
 
@@ -1672,87 +1749,93 @@ id="sixPriceArrow">
 
 </div>
 
+</div>
 
 <div class="pl-container">
 
 <div class="pl-box">
 
 <div class="pl-label">
-Unrealized P/L<br>
+Unrealized P/L %<br>
 vs Purchase
 </div>
 
 <div
 class="pl-value"
 id="sixPLPurchase">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="pl-box">
 
 <div class="pl-label">
-Unrealized P/L<br>
+Unrealized P/L %<br>
 vs Bank
 </div>
 
 <div
 class="pl-value"
 id="sixPLBank">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div class="pl-container">
 
 <div class="pl-box">
 
 <div class="pl-label">
-Unrealized P/L<br>
+Unrealized P/L Amount<br>
 vs Purchase
 </div>
 
 <div
 class="pl-value"
 id="sixUnrealizedPurchase">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="pl-box">
 
 <div class="pl-label">
-Unrealized P/L<br>
+Unrealized P/L Amount<br>
 vs Bank
 </div>
 
 <div
 class="pl-value"
 id="sixUnrealizedBank">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div
 class="result"
 id="sixResult">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="comparison">
 
@@ -1765,11 +1848,12 @@ Average Purchase
 <div
 class="compare-value"
 id="sixAverage">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="compare-box">
 
@@ -1780,13 +1864,14 @@ Paid Amount
 <div
 class="compare-value"
 id="sixPaid">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div class="metrics">
 
@@ -1799,11 +1884,12 @@ Current Quantity
 <div
 class="metric-value"
 id="sixQuantity">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="metric">
 
@@ -1814,11 +1900,12 @@ Current Value
 <div
 class="metric-value"
 id="sixValue">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="metric realized-combined">
 
@@ -1831,11 +1918,12 @@ Realized P/L vs Purchase
 <div
 class="realized-value"
 id="sixRealizedPurchase">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="realized-row">
 
@@ -1846,13 +1934,14 @@ Realized P/L vs Bank
 <div
 class="realized-value"
 id="sixRealizedBank">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div class="metric">
 
@@ -1863,8 +1952,8 @@ Bank Value
 <div
 class="metric-value"
 id="sixBank">
+
 -
-</div>
 
 </div>
 
@@ -1872,8 +1961,11 @@ id="sixBank">
 
 </div>
 
+</div>
 
-<!-- LAST PERIOD -->
+<!-- =====================================================
+     LAST PERIOD
+===================================================== -->
 
 <div class="card">
 
@@ -1888,19 +1980,22 @@ Last Period
 <div
 class="trade-count"
 id="lastTrades">
+
 -
+
 </div>
 
 <div
 class="action-badge"
 id="lastAction">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div
 class="main-price"
@@ -1917,11 +2012,12 @@ Bank-Adjusted
 <div
 class="main-price-number"
 id="lastAdjusted">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="main-price-side">
 
@@ -1934,14 +2030,16 @@ Live
 <div
 class="live-main-number"
 id="lastLive">
+
 -
+
 </div>
 
 <div
 class="price-arrow arrow-flat"
 id="lastPriceArrow">
+
 →
-</div>
 
 </div>
 
@@ -1949,87 +2047,93 @@ id="lastPriceArrow">
 
 </div>
 
+</div>
 
 <div class="pl-container">
 
 <div class="pl-box">
 
 <div class="pl-label">
-Unrealized P/L<br>
+Unrealized P/L %<br>
 vs Purchase
 </div>
 
 <div
 class="pl-value"
 id="lastPLPurchase">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="pl-box">
 
 <div class="pl-label">
-Unrealized P/L<br>
+Unrealized P/L %<br>
 vs Bank
 </div>
 
 <div
 class="pl-value"
 id="lastPLBank">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div class="pl-container">
 
 <div class="pl-box">
 
 <div class="pl-label">
-Unrealized P/L<br>
+Unrealized P/L Amount<br>
 vs Purchase
 </div>
 
 <div
 class="pl-value"
 id="lastUnrealizedPurchase">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="pl-box">
 
 <div class="pl-label">
-Unrealized P/L<br>
+Unrealized P/L Amount<br>
 vs Bank
 </div>
 
 <div
 class="pl-value"
 id="lastUnrealizedBank">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div
 class="result"
 id="lastResult">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="comparison">
 
@@ -2042,11 +2146,12 @@ Average Purchase
 <div
 class="compare-value"
 id="lastAverage">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="compare-box">
 
@@ -2057,13 +2162,14 @@ Paid Amount
 <div
 class="compare-value"
 id="lastPaid">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div class="metrics">
 
@@ -2076,11 +2182,12 @@ Current Quantity
 <div
 class="metric-value"
 id="lastQuantity">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="metric">
 
@@ -2091,11 +2198,12 @@ Current Value
 <div
 class="metric-value"
 id="lastValue">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="metric realized-combined">
 
@@ -2108,11 +2216,12 @@ Realized P/L vs Purchase
 <div
 class="realized-value"
 id="lastRealizedPurchase">
+
 -
-</div>
 
 </div>
 
+</div>
 
 <div class="realized-row">
 
@@ -2123,13 +2232,14 @@ Realized P/L vs Bank
 <div
 class="realized-value"
 id="lastRealizedBank">
+
 -
-</div>
 
 </div>
 
 </div>
 
+</div>
 
 <div class="metric">
 
@@ -2140,8 +2250,8 @@ Bank Value
 <div
 class="metric-value"
 id="lastBank">
+
 -
-</div>
 
 </div>
 
@@ -2149,11 +2259,11 @@ id="lastBank">
 
 </div>
 
-
 </div>
 
 </div>
 
+</div>
 
 <script>
 
@@ -2167,82 +2277,82 @@ function $(id) {
 
 }
 
-
 function safeText(id, value) {
 
-    const el = $(id);
+    const element = $(id);
 
-    if (el) {
+    if (element) {
 
-        el.textContent = value;
+        element.textContent =
+            value;
 
     }
 
 }
 
-
 function formatNumber(value) {
 
-    if (!Number.isFinite(Number(value))) {
+    const number =
+        Number(value);
+
+    if (!Number.isFinite(number)) {
 
         return "-";
 
     }
 
-    return Math.round(Number(value))
+    return Math.round(number)
         .toLocaleString("en-US");
 
 }
 
-
 function formatMoneySigned(value) {
 
-    if (!Number.isFinite(Number(value))) {
+    const number =
+        Number(value);
+
+    if (!Number.isFinite(number)) {
 
         return "-";
 
     }
 
-    const n =
-        Math.round(Number(value));
+    const rounded =
+        Math.round(number);
 
-
-    if (n > 0) {
+    if (rounded > 0) {
 
         return "+" +
-            n.toLocaleString("en-US");
+            rounded.toLocaleString("en-US");
 
     }
 
-
-    return n.toLocaleString("en-US");
+    return rounded.toLocaleString("en-US");
 
 }
 
-
 function formatPercent(value) {
 
-    if (!Number.isFinite(Number(value))) {
+    const number =
+        Number(value);
+
+    if (!Number.isFinite(number)) {
 
         return "-";
 
     }
 
-    const n =
-        Number(value);
-
-
     return (
 
-        n >= 0
-        ? "+"
-        : ""
+        number >= 0
+            ? "+"
+            : ""
 
     )
 
     +
 
-    n.toFixed(2)
+    number.toFixed(2)
 
     +
 
@@ -2250,35 +2360,34 @@ function formatPercent(value) {
 
 }
 
-
 function setProfitLossClass(id, value) {
 
-    const el = $(id);
+    const element =
+        $(id);
 
-    if (!el) {
+    if (!element) {
 
         return;
 
     }
 
-    el.classList.remove(
+    element.classList.remove(
         "profit",
         "loss"
     );
 
-    el.classList.add(
+    element.classList.add(
 
         Number(value) >= 0
-        ? "profit"
-        : "loss"
+            ? "profit"
+            : "loss"
 
     );
 
 }
 
-
 /* =====================================================
-   OFFLINE CACHE
+   CACHE
 ===================================================== */
 
 const CACHE_KEYS = {
@@ -2290,10 +2399,15 @@ const CACHE_KEYS = {
         "financialDashboardPrice",
 
     PRICE_TIME:
-        "financialDashboardPriceTime"
+        "financialDashboardPriceTime",
+
+    EXIR_PRICE:
+        "financialDashboardExirPrice",
+
+    EXIR_PRICE_TIME:
+        "financialDashboardExirPriceTime"
 
 };
-
 
 function saveLocalData(data) {
 
@@ -2307,53 +2421,39 @@ function saveLocalData(data) {
 
         );
 
-        return true;
-
     }
 
-    catch (e) {
+    catch (error) {
 
         console.error(
             "Cannot save dashboard data:",
-            e
+            error
         );
-
-        return false;
 
     }
 
 }
-
 
 function loadLocalData() {
 
     try {
 
         const saved =
-
             localStorage.getItem(
-
                 CACHE_KEYS.DATA
-
             );
 
-
-        if (!saved) {
-
-            return null;
-
-        }
-
-
-        return JSON.parse(saved);
+        return saved
+            ? JSON.parse(saved)
+            : null;
 
     }
 
-    catch (e) {
+    catch (error) {
 
         console.error(
-            "Cannot load cached dashboard data:",
-            e
+            "Cannot load cached data:",
+            error
         );
 
         return null;
@@ -2361,7 +2461,6 @@ function loadLocalData() {
     }
 
 }
-
 
 function saveLocalPrice(price) {
 
@@ -2375,7 +2474,6 @@ function saveLocalPrice(price) {
 
         );
 
-
         localStorage.setItem(
 
             CACHE_KEYS.PRICE_TIME,
@@ -2384,55 +2482,30 @@ function saveLocalPrice(price) {
 
         );
 
-        return true;
-
     }
 
-    catch (e) {
+    catch (error) {
 
         console.error(
-            "Cannot save cached price:",
-            e
+            "Cannot save price:",
+            error
         );
-
-        return false;
 
     }
 
 }
-
 
 function loadLocalPrice() {
 
     try {
 
         const saved =
-
             localStorage.getItem(
-
                 CACHE_KEYS.PRICE
-
             );
-
-
-        if (
-
-            saved === null
-
-            ||
-
-            saved === ""
-
-        ) {
-
-            return null;
-
-        }
-
 
         const price =
             Number(saved);
-
 
         return Number.isFinite(price)
             ? price
@@ -2440,7 +2513,7 @@ function loadLocalPrice() {
 
     }
 
-    catch (e) {
+    catch (error) {
 
         return null;
 
@@ -2448,19 +2521,71 @@ function loadLocalPrice() {
 
 }
 
+function saveLocalExirPrice(price) {
 
-function getCachedPriceTime() {
+    try {
+
+        localStorage.setItem(
+
+            CACHE_KEYS.EXIR_PRICE,
+
+            String(price)
+
+        );
+
+        localStorage.setItem(
+
+            CACHE_KEYS.EXIR_PRICE_TIME,
+
+            new Date().toISOString()
+
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Cannot save Exir price:",
+            error
+        );
+
+    }
+
+}
+
+function loadLocalExirPrice() {
 
     try {
 
         const saved =
-
             localStorage.getItem(
-
-                CACHE_KEYS.PRICE_TIME
-
+                CACHE_KEYS.EXIR_PRICE
             );
 
+        const price =
+            Number(saved);
+
+        return Number.isFinite(price)
+            ? price
+            : null;
+
+    }
+
+    catch (error) {
+
+        return null;
+
+    }
+
+}
+
+function getCachedPriceTime(key) {
+
+    try {
+
+        const saved =
+            localStorage.getItem(key);
 
         if (!saved) {
 
@@ -2468,10 +2593,8 @@ function getCachedPriceTime() {
 
         }
 
-
         const date =
             new Date(saved);
-
 
         if (
             Number.isNaN(
@@ -2482,7 +2605,6 @@ function getCachedPriceTime() {
             return "";
 
         }
-
 
         return date.toLocaleString(
 
@@ -2517,7 +2639,7 @@ function getCachedPriceTime() {
 
     }
 
-    catch (e) {
+    catch (error) {
 
         return "";
 
@@ -2525,9 +2647,8 @@ function getCachedPriceTime() {
 
 }
 
-
 /* =====================================================
-   CONNECTION STATUS
+   CONNECTION
 ===================================================== */
 
 function showConnectionStatus(
@@ -2538,51 +2659,35 @@ function showConnectionStatus(
 
 ) {
 
-    const el =
+    const element =
         $("connectionStatus");
 
-
-    if (!el) {
+    if (!element) {
 
         return;
 
     }
 
+    element.className =
 
-    if (offline) {
+        offline
+            ? "connection-status offline"
+            : "connection-status online";
 
-        el.className =
-            "connection-status offline";
+    element.textContent =
 
+        message
+        ||
 
-        el.textContent =
+        (
 
-            message
+            offline
+                ? "Offline Mode • Showing Last Saved Data"
+                : "Online • Live Data"
 
-            ||
-
-            "Offline Mode • Showing Last Saved Data";
-
-    }
-
-    else {
-
-        el.className =
-            "connection-status online";
-
-
-        el.textContent =
-
-            message
-
-            ||
-
-            "Online • Live Data";
-
-    }
+        );
 
 }
-
 
 /* =====================================================
    PRICE ARROW
@@ -2598,33 +2703,28 @@ function setPriceArrow(
 
 ) {
 
-    const el = $(id);
+    const element =
+        $(id);
 
-    if (!el) {
+    if (!element) {
 
         return;
 
     }
 
-
-    el.classList.remove(
+    element.classList.remove(
 
         "arrow-up",
-
         "arrow-down",
-
         "arrow-flat"
 
     );
 
-
     const current =
         Number(currentPrice);
 
-
     const previous =
         Number(previousPrice);
-
 
     if (
 
@@ -2636,9 +2736,10 @@ function setPriceArrow(
 
     ) {
 
-        el.textContent = "→";
+        element.textContent =
+            "→";
 
-        el.classList.add(
+        element.classList.add(
             "arrow-flat"
         );
 
@@ -2646,18 +2747,17 @@ function setPriceArrow(
 
     }
 
-
     if (
 
         current >
-
         previous
 
     ) {
 
-        el.textContent = "↑";
+        element.textContent =
+            "↑";
 
-        el.classList.add(
+        element.classList.add(
             "arrow-up"
         );
 
@@ -2666,14 +2766,14 @@ function setPriceArrow(
     else if (
 
         current <
-
         previous
 
     ) {
 
-        el.textContent = "↓";
+        element.textContent =
+            "↓";
 
-        el.classList.add(
+        element.classList.add(
             "arrow-down"
         );
 
@@ -2681,16 +2781,16 @@ function setPriceArrow(
 
     else {
 
-        el.textContent = "→";
+        element.textContent =
+            "→";
 
-        el.classList.add(
+        element.classList.add(
             "arrow-flat"
         );
 
     }
 
 }
-
 
 /* =====================================================
    JALALI
@@ -2699,15 +2799,12 @@ function setPriceArrow(
 function jalaliToGregorian(
 
     jy,
-
     jm,
-
     jd
 
 ) {
 
     jy -= 979;
-
 
     let days =
 
@@ -2725,7 +2822,6 @@ function jalaliToGregorian(
             ((jy % 33) + 3) / 4
         );
 
-
     for (
 
         let i = 1;
@@ -2739,14 +2835,13 @@ function jalaliToGregorian(
         days +=
 
             i <= 6
-            ? 31
-            : 30;
+                ? 31
+                : 30;
 
     }
 
-
-    days += jd - 1;
-
+    days +=
+        jd - 1;
 
     let gy =
 
@@ -2760,9 +2855,7 @@ function jalaliToGregorian(
             days / 146097
         );
 
-
     days %= 146097;
-
 
     if (days > 36524) {
 
@@ -2774,9 +2867,7 @@ function jalaliToGregorian(
                 --days / 36524
             );
 
-
         days %= 36524;
-
 
         if (days >= 365) {
 
@@ -2786,7 +2877,6 @@ function jalaliToGregorian(
 
     }
 
-
     gy +=
 
         4 *
@@ -2795,9 +2885,7 @@ function jalaliToGregorian(
             days / 1461
         );
 
-
     days %= 1461;
-
 
     if (days > 365) {
 
@@ -2807,17 +2895,14 @@ function jalaliToGregorian(
                 (days - 1) / 365
             );
 
-
         days =
 
             (days - 1) % 365;
 
     }
 
-
-    let gd =
+    const gd =
         days + 1;
-
 
     const leap =
 
@@ -2835,132 +2920,117 @@ function jalaliToGregorian(
 
         gy % 400 === 0;
 
-
     const monthDays = [
 
         0,
-
         31,
-
         leap ? 29 : 28,
-
         31,
-
         30,
-
         31,
-
         30,
-
         31,
-
         31,
-
         30,
-
         31,
-
         30,
-
         31
 
     ];
 
+    let gm =
+        1;
 
-    let gm = 1;
-
+    let day =
+        gd;
 
     while (
 
-        gd > monthDays[gm]
+        day >
+        monthDays[gm]
 
     ) {
 
-        gd -=
-
+        day -=
             monthDays[gm];
 
         gm++;
 
     }
 
+    return {
 
-    return new Date(
+        year:
+            gy,
 
-        gy,
+        month:
+            gm - 1,
 
-        gm - 1,
+        day
 
-        gd
-
-    );
+    };
 
 }
-
 
 function daysBetweenInclusive(
 
     start,
-
     end
 
 ) {
 
-    const s =
+    const startParts =
+        start.split("/").map(Number);
 
-        start
-
-            .split("/")
-
-            .map(Number);
-
-
-    const e =
-
-        end
-
-            .split("/")
-
-            .map(Number);
-
+    const endParts =
+        end.split("/").map(Number);
 
     const startDate =
-
         jalaliToGregorian(
 
-            s[0],
-
-            s[1],
-
-            s[2]
+            startParts[0],
+            startParts[1],
+            startParts[2]
 
         );
-
 
     const endDate =
-
         jalaliToGregorian(
 
-            e[0],
-
-            e[1],
-
-            e[2]
+            endParts[0],
+            endParts[1],
+            endParts[2]
 
         );
 
+    const startUTC =
+        Date.UTC(
+
+            startDate.year,
+            startDate.month,
+            startDate.day
+
+        );
+
+    const endUTC =
+        Date.UTC(
+
+            endDate.year,
+            endDate.month,
+            endDate.day
+
+        );
 
     return Math.max(
 
         0,
 
-        Math.floor(
+        Math.round(
 
             (
 
-                endDate -
-
-                startDate
+                endUTC -
+                startUTC
 
             )
 
@@ -2978,67 +3048,46 @@ function daysBetweenInclusive(
 
 }
 
-
 function getTodayJalali() {
 
     const now =
         new Date();
 
-
     const gy =
         now.getFullYear();
-
 
     const gm =
         now.getMonth() + 1;
 
-
     const gd =
         now.getDate();
-
 
     const gdm = [
 
         0,
-
         31,
-
         59,
-
         90,
-
         120,
-
         151,
-
         181,
-
         212,
-
         243,
-
         273,
-
         304,
-
         334
 
     ];
 
-
     let jy =
-
         gy > 1600
-        ? 979
-        : 0;
-
+            ? 979
+            : 0;
 
     const y =
-
         gy > 1600
-        ? gy - 1600
-        : gy - 621;
-
+            ? gy - 1600
+            : gy - 621;
 
     let days =
 
@@ -3074,7 +3123,6 @@ function getTodayJalali() {
 
         gdm[gm - 1];
 
-
     jy +=
 
         33 *
@@ -3083,9 +3131,7 @@ function getTodayJalali() {
             days / 12053
         );
 
-
     days %= 12053;
-
 
     jy +=
 
@@ -3095,9 +3141,7 @@ function getTodayJalali() {
             days / 1461
         );
 
-
     days %= 1461;
-
 
     if (days > 365) {
 
@@ -3107,18 +3151,15 @@ function getTodayJalali() {
                 (days - 1) / 365
             );
 
-
         days =
 
             (days - 1) % 365;
 
     }
 
-
     let jm;
 
     let jd;
-
 
     if (days < 186) {
 
@@ -3129,7 +3170,6 @@ function getTodayJalali() {
             Math.floor(
                 days / 31
             );
-
 
         jd =
 
@@ -3149,7 +3189,6 @@ function getTodayJalali() {
                 (days - 186) / 30
             );
 
-
         jd =
 
             1 +
@@ -3157,7 +3196,6 @@ function getTodayJalali() {
             (days - 186) % 30;
 
     }
-
 
     return (
 
@@ -3170,7 +3208,7 @@ function getTodayJalali() {
         +
 
         String(jm)
-            .padStart(2,"0")
+            .padStart(2, "0")
 
         +
 
@@ -3179,53 +3217,42 @@ function getTodayJalali() {
         +
 
         String(jd)
-            .padStart(2,"0")
+            .padStart(2, "0")
 
     );
 
 }
-
 
 function dateNumber(date) {
 
-    const p =
-
-        date
-
-            .split("/")
-
-            .map(Number);
-
+    const parts =
+        date.split("/").map(Number);
 
     return (
 
-        p[0] * 10000
+        parts[0] * 10000
 
         +
 
-        p[1] * 100
+        parts[1] * 100
 
         +
 
-        p[2]
+        parts[2]
 
     );
 
 }
 
-
 /* =====================================================
-   BANK
+   BANK COMPOUND
 ===================================================== */
 
 function compoundValue(
 
     principal,
-
     startDate,
-
     endDate,
-
     annualRate
 
 ) {
@@ -3235,28 +3262,23 @@ function compoundValue(
         daysBetweenInclusive(
 
             startDate,
-
             endDate
 
         );
 
-
     const dailyRate =
 
         annualRate
-
         /
-
         100
-
         /
-
         365;
-
 
     return (
 
-        principal *
+        principal
+
+        *
 
         Math.pow(
 
@@ -3270,7 +3292,6 @@ function compoundValue(
 
 }
 
-
 /* =====================================================
    PORTFOLIO FIFO
 ===================================================== */
@@ -3278,50 +3299,91 @@ function compoundValue(
 function calculatePortfolio(
 
     transactions,
-
     currentPrice,
-
     today,
-
     annualRate
 
 ) {
 
     const lots = [];
 
+    let realizedPurchase =
+        0;
 
-    let realizedPurchase = 0;
+    let realizedBank =
+        0;
 
-    let realizedBank = 0;
+    let buyCount =
+        0;
 
+    let sellCount =
+        0;
 
-    let buyCount = 0;
-
-    let sellCount = 0;
-
+    const warnings = [];
 
     for (
 
-        const t of transactions
+        const transaction
+        of transactions
 
     ) {
 
         const amount =
-            Number(t.amount);
-
+            Number(transaction.amount);
 
         const price =
-            Number(t.price);
-
+            Number(transaction.price);
 
         if (
 
-            t.type === "buy"
+            !Number.isFinite(amount)
+
+            ||
+
+            amount <= 0
+
+        ) {
+
+            warnings.push(
+
+                "Invalid transaction amount on " +
+                transaction.date
+
+            );
+
+            continue;
+
+        }
+
+        if (
+
+            !Number.isFinite(price)
+
+            ||
+
+            price < 0
+
+        ) {
+
+            warnings.push(
+
+                "Invalid transaction price on " +
+                transaction.date
+
+            );
+
+            continue;
+
+        }
+
+        if (
+
+            transaction.type ===
+            "buy"
 
         ) {
 
             buyCount++;
-
 
             lots.push({
 
@@ -3330,29 +3392,27 @@ function calculatePortfolio(
                 price,
 
                 date:
-                    t.date
+                    transaction.date
 
             });
 
         }
 
-
         else if (
 
-            t.type === "sell"
+            transaction.type ===
+            "sell"
 
         ) {
 
             sellCount++;
 
-
             let remaining =
                 amount;
 
-
             while (
 
-                remaining > 0
+                remaining > 0.0000001
 
                 &&
 
@@ -3362,7 +3422,6 @@ function calculatePortfolio(
 
                 const lot =
                     lots[0];
-
 
                 const used =
 
@@ -3374,20 +3433,15 @@ function calculatePortfolio(
 
                     );
 
-
                 const purchaseCost =
 
                     used *
-
                     lot.price;
-
 
                 const saleRevenue =
 
                     used *
-
                     price;
-
 
                 const bankCost =
 
@@ -3397,45 +3451,34 @@ function calculatePortfolio(
 
                         lot.date,
 
-                        t.date,
+                        transaction.date,
 
                         annualRate
 
                     );
 
-
                 realizedPurchase +=
 
                     saleRevenue
-
                     -
-
                     purchaseCost;
-
 
                 realizedBank +=
 
                     saleRevenue
-
                     -
-
                     bankCost;
-
 
                 lot.amount -=
                     used;
 
-
                 remaining -=
                     used;
-
 
                 if (
 
                     lot.amount
-
                     <=
-
                     0.0000001
 
                 ) {
@@ -3446,10 +3489,27 @@ function calculatePortfolio(
 
             }
 
+            if (
+
+                remaining >
+                0.0000001
+
+            ) {
+
+                warnings.push(
+
+                    "Sell exceeds available inventory on " +
+                    transaction.date +
+                    ". Unfilled quantity: " +
+                    remaining
+
+                );
+
+            }
+
         }
 
     }
-
 
     const currentQuantity =
 
@@ -3457,20 +3517,17 @@ function calculatePortfolio(
 
             (
 
-                sum,
-
+                total,
                 lot
 
             ) =>
 
-                sum +
-
+                total +
                 lot.amount,
 
             0
 
         );
-
 
     const paidAmount =
 
@@ -3478,46 +3535,40 @@ function calculatePortfolio(
 
             (
 
-                sum,
-
+                total,
                 lot
 
             ) =>
 
-                sum
-
-                +
+                total +
 
                 lot.amount *
-
                 lot.price,
 
             0
 
         );
 
-
     const averagePurchasePrice =
 
         currentQuantity > 0
 
-        ?
+            ?
 
-        paidAmount /
+            paidAmount /
+            currentQuantity
 
-        currentQuantity
+            :
 
-        :
+            0;
 
+    let bankValue =
         0;
-
-
-    let bankValue = 0;
-
 
     for (
 
-        const lot of lots
+        const lot
+        of lots
 
     ) {
 
@@ -3526,7 +3577,6 @@ function calculatePortfolio(
             compoundValue(
 
                 lot.amount *
-
                 lot.price,
 
                 lot.date,
@@ -3539,92 +3589,77 @@ function calculatePortfolio(
 
     }
 
-
     const currentValue =
 
         currentQuantity *
-
         currentPrice;
-
 
     const bankAdjustedPrice =
 
         currentQuantity > 0
 
-        ?
+            ?
 
-        bankValue /
+            bankValue /
+            currentQuantity
 
-        currentQuantity
+            :
 
-        :
-
-        0;
-
+            0;
 
     const unrealizedPurchaseAmount =
 
         currentValue -
-
         paidAmount;
-
 
     const unrealizedBankAmount =
 
         currentValue -
-
         bankValue;
-
 
     const plPurchase =
 
         paidAmount > 0
 
-        ?
+            ?
 
-        (
+            (
 
-            unrealizedPurchaseAmount
+                unrealizedPurchaseAmount
+                /
+                paidAmount
 
-            /
+            )
 
-            paidAmount
+            *
 
-        )
+            100
 
-        *
+            :
 
-        100
-
-        :
-
-        0;
-
+            0;
 
     const plBank =
 
         bankValue > 0
 
-        ?
+            ?
 
-        (
+            (
 
-            unrealizedBankAmount
+                unrealizedBankAmount
+                /
+                bankValue
 
-            /
+            )
 
-            bankValue
+            *
 
-        )
+            100
 
-        *
+            :
 
-        100
-
-        :
-
-        0;
-
+            0;
 
     return {
 
@@ -3656,12 +3691,13 @@ function calculatePortfolio(
 
         buyCount,
 
-        sellCount
+        sellCount,
+
+        warnings
 
     };
 
 }
-
 
 /* =====================================================
    PERIOD ENGINE
@@ -3675,19 +3711,20 @@ function buildPeriods(
 
     const periods = [];
 
-
-    let current = null;
-
+    let current =
+        null;
 
     for (
 
-        const t of transactions
+        const transaction
+        of transactions
 
     ) {
 
         if (
 
-            t.type === "buy"
+            transaction.type ===
+            "buy"
 
         ) {
 
@@ -3707,52 +3744,45 @@ function buildPeriods(
 
             }
 
-
             current = {
 
                 transactions: [
 
-                    t
+                    transaction
 
                 ],
 
                 startDate:
-                    t.date,
+                    transaction.date,
 
                 endDate:
-                    t.date
+                    transaction.date
 
             };
 
         }
 
-
         else if (
 
-            t.type === "sell"
+            transaction.type ===
+            "sell"
 
         ) {
 
-            if (
-
-                current
-
-            ) {
+            if (current) {
 
                 current.transactions.push(
-                    t
+                    transaction
                 );
 
-
                 current.endDate =
-                    t.date;
+                    transaction.date;
 
             }
 
         }
 
     }
-
 
     if (
 
@@ -3770,48 +3800,34 @@ function buildPeriods(
 
     }
 
-
     return periods;
 
 }
 
-
 function getLastPeriods(
 
     transactions,
-
     count
 
 ) {
 
     const periods =
-
         buildPeriods(
-
             transactions
-
         );
 
+    return periods
 
-    const selected =
+        .slice(-count)
 
-        periods.slice(
+        .flatMap(
 
-            -count
+            period =>
+                period.transactions
 
         );
-
-
-    return selected.flatMap(
-
-        period =>
-
-            period.transactions
-
-    );
 
 }
-
 
 function getLastPeriod(
 
@@ -3820,33 +3836,23 @@ function getLastPeriod(
 ) {
 
     const periods =
-
         buildPeriods(
-
             transactions
-
         );
 
-
     if (
-
         periods.length === 0
-
     ) {
 
         return [];
 
     }
 
-
     return periods[
-
         periods.length - 1
-
     ].transactions;
 
 }
-
 
 /* =====================================================
    DISPLAY
@@ -3855,9 +3861,7 @@ function getLastPeriod(
 function displaySection(
 
     result,
-
     prefix,
-
     previousLivePrice
 
 ) {
@@ -3865,67 +3869,50 @@ function displaySection(
     safeText(
 
         prefix +
-
         "Average",
 
         formatNumber(
-
             result.averagePurchasePrice
-
         )
 
     );
 
-
     safeText(
 
         prefix +
-
         "Paid",
 
         formatNumber(
-
             result.paidAmount
-
         )
 
     );
 
-
     safeText(
 
         prefix +
-
         "Adjusted",
 
         formatNumber(
-
             result.bankAdjustedPrice
-
         )
 
     );
-
 
     safeText(
 
         prefix +
-
         "Live",
 
         formatNumber(
-
             result.currentPrice
-
         )
 
     );
-
 
     setPriceArrow(
 
         prefix +
-
         "PriceArrow",
 
         result.currentPrice,
@@ -3934,327 +3921,231 @@ function displaySection(
 
     );
 
-
     safeText(
 
         prefix +
-
         "Quantity",
 
         formatNumber(
-
             result.currentQuantity
-
         )
 
     );
 
-
     safeText(
 
         prefix +
-
         "Value",
 
         formatNumber(
-
             result.currentValue
-
         )
 
     );
 
-
     safeText(
 
         prefix +
-
         "Bank",
 
         formatNumber(
-
             result.bankValue
-
         )
 
     );
 
-
     safeText(
 
         prefix +
-
         "PLPurchase",
 
         formatPercent(
-
             result.plPurchase
-
         )
 
     );
 
-
     safeText(
 
         prefix +
-
         "PLBank",
 
         formatPercent(
-
             result.plBank
-
         )
 
     );
 
-
     safeText(
 
         prefix +
-
         "UnrealizedPurchase",
 
         formatMoneySigned(
-
             result.unrealizedPurchaseAmount
-
         )
 
     );
 
-
     safeText(
 
         prefix +
-
         "UnrealizedBank",
 
         formatMoneySigned(
-
             result.unrealizedBankAmount
-
         )
 
     );
 
-
     safeText(
 
         prefix +
-
         "RealizedPurchase",
 
         formatMoneySigned(
-
             result.realizedPurchase
-
         )
 
     );
-
 
     safeText(
 
         prefix +
-
         "RealizedBank",
 
         formatMoneySigned(
-
             result.realizedBank
-
         )
 
     );
-
 
     setProfitLossClass(
 
         prefix +
-
         "PLPurchase",
 
         result.plPurchase
 
     );
 
-
     setProfitLossClass(
 
         prefix +
-
         "PLBank",
 
         result.plBank
 
     );
 
-
     setProfitLossClass(
 
         prefix +
-
         "UnrealizedPurchase",
 
         result.unrealizedPurchaseAmount
 
     );
 
-
     setProfitLossClass(
 
         prefix +
-
         "UnrealizedBank",
 
         result.unrealizedBankAmount
 
     );
 
-
     setProfitLossClass(
 
         prefix +
-
         "RealizedPurchase",
 
         result.realizedPurchase
 
     );
 
-
     setProfitLossClass(
 
         prefix +
-
         "RealizedBank",
 
         result.realizedBank
 
     );
 
-
     const mainPrice =
-
         $(
 
             prefix +
-
             "MainPrice"
 
         );
 
-
-    if (
-
-        mainPrice
-
-    ) {
+    if (mainPrice) {
 
         mainPrice.classList.remove(
 
             "status-green",
-
             "status-red"
 
         );
 
-
-        if (
+        mainPrice.classList.add(
 
             result.plBank >= 0
+                ? "status-green"
+                : "status-red"
 
-        ) {
-
-            mainPrice.classList.add(
-
-                "status-green"
-
-            );
-
-        }
-
-        else {
-
-            mainPrice.classList.add(
-
-                "status-red"
-
-            );
-
-        }
+        );
 
     }
 
-
     const resultBox =
-
         $(
 
             prefix +
-
             "Result"
 
         );
 
+    if (resultBox) {
 
-    if (
-
-        resultBox
-
-    ) {
-
-        if (
+        resultBox.textContent =
 
             result.plBank >= 0
 
-        ) {
+                ?
 
-            resultBox.textContent =
+                "Investment return is better than bank"
 
-                "Investment return is better than bank";
-
-
-            resultBox.style.color =
-
-                "#34d399";
-
-        }
-
-        else {
-
-            resultBox.textContent =
+                :
 
                 "Bank return is better than investment";
 
+        resultBox.style.color =
 
-            resultBox.style.color =
+            result.plBank >= 0
+
+                ?
+
+                "#34d399"
+
+                :
 
                 "#f87171";
 
-        }
-
     }
 
-
     const tradeCount =
-
         $(
 
             prefix +
-
             "Trades"
 
         );
 
-
-    if (
-
-        tradeCount
-
-    ) {
+    if (tradeCount) {
 
         tradeCount.textContent =
 
@@ -4276,7 +4167,6 @@ function displaySection(
 
 }
 
-
 /* =====================================================
    LAST ACTION
 ===================================================== */
@@ -4288,9 +4178,7 @@ function displayLastAction(
 ) {
 
     const badge =
-
         $("lastAction");
-
 
     if (
 
@@ -4306,28 +4194,22 @@ function displayLastAction(
 
     }
 
-
     const last =
-
         transactions[
-
             transactions.length - 1
-
         ];
-
 
     if (
 
-        last.type === "buy"
+        last.type ===
+        "buy"
 
     ) {
 
         badge.textContent =
             "IN";
 
-
         badge.className =
-
             "action-badge action-buy";
 
     }
@@ -4337,30 +4219,33 @@ function displayLastAction(
         badge.textContent =
             "OUT";
 
-
         badge.className =
-
             "action-badge action-sell";
 
     }
 
 }
 
-
 /* =====================================================
-   PRICE API
+   API
 ===================================================== */
 
 async function getCurrentPrice(
 
     apiUrl,
-
     divisor
 
 ) {
 
-    const response =
+    if (!apiUrl) {
 
+        throw new Error(
+            "Price API is missing"
+        );
+
+    }
+
+    const response =
         await fetch(
 
             apiUrl,
@@ -4372,7 +4257,7 @@ async function getCurrentPrice(
 
                 headers: {
 
-                    "Accept":
+                    Accept:
                         "application/json"
 
                 },
@@ -4384,74 +4269,45 @@ async function getCurrentPrice(
 
         );
 
-
-    if (
-
-        !response.ok
-
-    ) {
+    if (!response.ok) {
 
         throw new Error(
-
             "Unable to get current price"
-
         );
 
     }
-
 
     const data =
-
         await response.json();
 
-
-    if (
-
-        !data.lastTradePrice
-
-    ) {
-
-        throw new Error(
-
-            "Invalid lastTradePrice"
-
-        );
-
-    }
-
+    const rawPrice =
+        data?.lastTradePrice;
 
     const price =
 
-        Number(
-
-            data.lastTradePrice
-
-        )
-
+        Number(rawPrice)
         /
-
         divisor;
-
 
     if (
 
         !Number.isFinite(price)
 
+        ||
+
+        price <= 0
+
     ) {
 
         throw new Error(
-
-            "Invalid price"
-
+            "Invalid current price"
         );
 
     }
 
-
     return price;
 
 }
-
 
 async function getExirPrice(
 
@@ -4459,43 +4315,48 @@ async function getExirPrice(
 
 ) {
 
-    const response =
+    if (!apiUrl) {
 
+        throw new Error(
+            "Exir API is missing"
+        );
+
+    }
+
+    const response =
         await fetch(
 
             apiUrl,
 
             {
 
-                method: "GET",
+                method:
+                    "GET",
 
                 headers: {
 
-                    "Accept":
+                    Accept:
                         "application/json"
 
                 },
 
-                cache: "no-store"
+                cache:
+                    "no-store"
 
             }
 
         );
 
-
     if (!response.ok) {
 
         throw new Error(
-
-            "Unable to get Exir current price"
-
+            "Unable to get Exir price"
         );
 
     }
 
-
-    const data = await response.json();
-
+    const data =
+        await response.json();
 
     const candidates = [
 
@@ -4519,325 +4380,81 @@ async function getExirPrice(
 
     ];
 
+    const rawPrice =
+        candidates.find(
 
-    const rawPrice = candidates.find(
+            value =>
 
-        value =>
+                value !== null
 
-            value !== null
+                &&
 
-            &&
+                value !== undefined
 
-            value !== undefined
+                &&
 
-            &&
-
-            value !== ""
-
-    );
-
-
-    const price = Number(rawPrice);
-
-
-    if (!Number.isFinite(price)) {
-
-        throw new Error(
-
-            "Invalid Exir price"
+                value !== ""
 
         );
 
-    }
+    const price =
+        Number(rawPrice);
 
+    if (
+
+        !Number.isFinite(price)
+
+        ||
+
+        price <= 0
+
+    ) {
+
+        throw new Error(
+            "Invalid Exir price"
+        );
+
+    }
 
     return price;
 
 }
 
-
 /* =====================================================
-   REFRESH
+   TRANSACTIONS
 ===================================================== */
-async function refreshDashboardData() {
 
-    try {
+function getSortedTransactions(data) {
 
-        const dataResponse = await fetch(
-            "data.json?x=" + Date.now(),
-            {
-                cache: "no-store"
-            }
-        );
+    return Array.isArray(
+        data?.transactions
+    )
 
-        if (!dataResponse.ok) {
-            throw new Error(
-                "Cannot load data.json"
-            );
-        }
+        ?
 
-        const data =
-            await dataResponse.json();
+        data.transactions
 
-        saveLocalData(data);
+            .slice()
 
+            .sort(
 
-        const annualBankRate =
-            Number(
-                data.annualBankRate || 40
-            );
+                (a, b) =>
 
+                    dateNumber(a.date)
+                    -
+                    dateNumber(b.date)
 
-        const divisor =
-            Number(
-                data.priceDivisor || 10
-            );
-
-
-        let currentPrice =
-            await getCurrentPrice(
-                data.priceApi,
-                divisor
-            );
-
-        let exirPrice =
-            await getExirPrice(
-                data.exirApi
-            );
-
-
-        saveLocalPrice(
-            currentPrice
-        );
-
-        localStorage.setItem(
-            "financialDashboardExirPrice",
-            String(exirPrice)
-        );
-
-
-        const today =
-            getTodayJalali();
-
-
-        safeText(
-            "today",
-            today
-        );
-
-
-        safeText(
-            "currentPrice",
-            formatNumber(
-                currentPrice
             )
-        );
 
-        safeText(
-            "exirPrice",
-            formatNumber(
-                exirPrice
-            )
-        );
+        :
 
-
-        safeText(
-            "bankRate",
-            annualBankRate + "%"
-        );
-
-
-        const previousLivePrice =
-            Number(
-                sessionStorage.getItem(
-                    "previousLivePrice"
-                )
-            );
-
-
-        setPriceArrow(
-            "topPriceArrow",
-            currentPrice,
-            previousLivePrice
-        );
-
-        const previousExirPrice = Number(
-            sessionStorage.getItem(
-                "previousExirPrice"
-            )
-        );
-
-        setPriceArrow(
-            "exirPriceArrow",
-            exirPrice,
-            previousExirPrice
-        );
-
-        try {
-
-            sessionStorage.setItem(
-                "previousExirPrice",
-                String(exirPrice)
-            );
-
-        }
-        catch (e) {}
-
-
-        try {
-
-            sessionStorage.setItem(
-                "previousLivePrice",
-                String(currentPrice)
-            );
-
-        }
-        catch (e) {}
-
-
-        safeText(
-            "updateTime",
-            "Last Update: " +
-            new Date().toLocaleTimeString(
-                "en-US",
-                {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                    hour12: false
-                }
-            )
-        );
-
-
-        const transactions =
-            Array.isArray(
-                data.transactions
-            )
-            ?
-            data.transactions
-                .slice()
-                .sort(
-                    (a, b) =>
-                        dateNumber(a.date) -
-                        dateNumber(b.date)
-                )
-            :
-            [];
-
-
-        const overall =
-            calculatePortfolio(
-                transactions,
-                currentPrice,
-                today,
-                annualBankRate
-            );
-
-
-        displaySection(
-            overall,
-            "overall",
-            previousLivePrice
-        );
-
-
-        const sixTransactions =
-            getLastPeriods(
-                transactions,
-                6
-            );
-
-
-        const six =
-            calculatePortfolio(
-                sixTransactions,
-                currentPrice,
-                today,
-                annualBankRate
-            );
-
-
-        displaySection(
-            six,
-            "six",
-            previousLivePrice
-        );
-
-
-        const lastTransactions =
-            getLastPeriod(
-                transactions
-            );
-
-
-        const last =
-            calculatePortfolio(
-                lastTransactions,
-                currentPrice,
-                today,
-                annualBankRate
-            );
-
-
-        displaySection(
-            last,
-            "last",
-            previousLivePrice
-        );
-
-
-        displayLastAction(
-            lastTransactions
-        );
-
-
-        safeText(
-            "lastTrades",
-            last.buyCount +
-            " IN  •  " +
-            last.sellCount +
-            " OUT"
-        );
-
-
-        showConnectionStatus(
-            false,
-            "Online • Live Data"
-        );
-
-
-        console.log(
-            "Dashboard updated without page reload"
-        );
-
-    }
-
-    catch (error) {
-
-        console.warn(
-            "Automatic refresh failed:",
-            error
-        );
-
-
-        showConnectionStatus(
-            true,
-            "Update Failed • Showing Last Saved Data"
-        );
-
-    }
+        [];
 
 }
 
-
-let countdownTimer =
-    null;
-
-
-let refreshTimer =
-    null;
-
+/* =====================================================
+   SCROLL
+===================================================== */
 
 function saveScrollPosition() {
 
@@ -4855,23 +4472,20 @@ function saveScrollPosition() {
 
     }
 
-    catch (e) {}
+    catch (error) {}
 
 }
-
 
 function restoreScrollPosition() {
 
     try {
 
         const saved =
-
             sessionStorage.getItem(
 
                 "dashboardScrollY"
 
             );
-
 
         if (
 
@@ -4882,7 +4496,6 @@ function restoreScrollPosition() {
             const y =
                 Number(saved);
 
-
             requestAnimationFrame(
 
                 () => {
@@ -4890,7 +4503,6 @@ function restoreScrollPosition() {
                     window.scrollTo(
 
                         0,
-
                         y
 
                     );
@@ -4903,71 +4515,592 @@ function restoreScrollPosition() {
 
     }
 
-    catch (e) {}
+    catch (error) {}
 
 }
 
+/* =====================================================
+   MARKET PRICE DISPLAY
+===================================================== */
 
-function startAutoRefresh() {
+function updateMarketDisplay(
 
-    clearInterval(countdownTimer);
+    currentPrice,
+    exirPrice,
+    previousLivePrice,
+    previousExirPrice
 
-    clearTimeout(refreshTimer);
-
-    let seconds = 30;
+) {
 
     safeText(
-    "updateCountdown",
-    seconds + "s"
-);
 
-    countdownTimer = setInterval(
-        async () => {
+        "currentPrice",
 
-            seconds--;
+        formatNumber(
+            currentPrice
+        )
 
-            if (seconds < 0) {
-                seconds = 30;
-            }
+    );
 
-            safeText(
-    "updateCountdown",
-    seconds + "s"
-);
+    safeText(
 
-            if (seconds === 0) {
+        "exirPrice",
 
-                await refreshDashboardData();
+        exirPrice === null
 
-            }
+            ?
 
-        },
-        1000
+            "-"
+
+            :
+
+            formatNumber(
+                exirPrice
+            )
+
+    );
+
+    setPriceArrow(
+
+        "topPriceArrow",
+
+        currentPrice,
+
+        previousLivePrice
+
+    );
+
+    setPriceArrow(
+
+        "exirPriceArrow",
+
+        exirPrice,
+
+        previousExirPrice
+
     );
 
 }
 
-function manualRefresh() {
+/* =====================================================
+   RENDER DASHBOARD
+===================================================== */
 
-    saveScrollPosition();
+function renderDashboard(
 
+    data,
+    currentPrice,
+    today,
+    annualBankRate,
+    previousLivePrice
 
-    location.reload();
+) {
+
+    const transactions =
+        getSortedTransactions(
+            data
+        );
+
+    const overall =
+        calculatePortfolio(
+
+            transactions,
+            currentPrice,
+            today,
+            annualBankRate
+
+        );
+
+    displaySection(
+
+        overall,
+        "overall",
+        previousLivePrice
+
+    );
+
+    const sixTransactions =
+        getLastPeriods(
+
+            transactions,
+            6
+
+        );
+
+    const six =
+        calculatePortfolio(
+
+            sixTransactions,
+            currentPrice,
+            today,
+            annualBankRate
+
+        );
+
+    displaySection(
+
+        six,
+        "six",
+        previousLivePrice
+
+    );
+
+    const lastTransactions =
+        getLastPeriod(
+            transactions
+        );
+
+    const last =
+        calculatePortfolio(
+
+            lastTransactions,
+            currentPrice,
+            today,
+            annualBankRate
+
+        );
+
+    displaySection(
+
+        last,
+        "last",
+        previousLivePrice
+
+    );
+
+    displayLastAction(
+        lastTransactions
+    );
+
+    safeText(
+
+        "lastTrades",
+
+        last.buyCount
+        +
+        " IN  •  "
+        +
+        last.sellCount
+        +
+        " OUT"
+
+    );
 
 }
 
+/* =====================================================
+   FETCH DATA
+===================================================== */
 
-window.addEventListener(
+async function fetchDashboardData() {
 
-    "beforeunload",
+    const response =
+        await fetch(
 
-    saveScrollPosition
+            "data.json?x=" +
+            Date.now(),
 
-);
+            {
 
+                cache:
+                    "no-store"
+
+            }
+
+        );
+
+    if (!response.ok) {
+
+        throw new Error(
+            "Cannot load data.json"
+        );
+
+    }
+
+    return await response.json();
+
+}
 
 /* =====================================================
-   ONLINE / OFFLINE EVENTS
+   REFRESH
+===================================================== */
+
+async function refreshDashboardData() {
+
+    try {
+
+        if (!navigator.onLine) {
+
+            showConnectionStatus(
+
+                true,
+
+                "Offline Mode • Showing Last Saved Data"
+
+            );
+
+            return;
+
+        }
+
+        const data =
+            await fetchDashboardData();
+
+        saveLocalData(data);
+
+        const annualBankRate =
+            Number(
+
+                data.annualBankRate
+                ??
+                40
+
+            );
+
+        const divisor =
+            Number(
+
+                data.priceDivisor
+                ??
+                10
+
+            );
+
+        let currentPrice =
+            null;
+
+        let exirPrice =
+            null;
+
+        let mainPriceFromCache =
+            false;
+
+        let exirPriceFromCache =
+            false;
+
+        try {
+
+            currentPrice =
+                await getCurrentPrice(
+
+                    data.priceApi,
+                    divisor
+
+                );
+
+            saveLocalPrice(
+                currentPrice
+            );
+
+        }
+
+        catch (error) {
+
+            console.warn(
+                "Main price update failed:",
+                error
+            );
+
+            currentPrice =
+                loadLocalPrice();
+
+            mainPriceFromCache =
+                true;
+
+        }
+
+        if (
+
+            currentPrice ===
+            null
+
+        ) {
+
+            throw new Error(
+                "No current market price available"
+            );
+
+        }
+
+        try {
+
+            exirPrice =
+                await getExirPrice(
+
+                    data.exirApi
+
+                );
+
+            saveLocalExirPrice(
+                exirPrice
+            );
+
+        }
+
+        catch (error) {
+
+            console.warn(
+                "Exir update failed:",
+                error
+            );
+
+            exirPrice =
+                loadLocalExirPrice();
+
+            exirPriceFromCache =
+                true;
+
+        }
+
+        const today =
+            getTodayJalali();
+
+        safeText(
+
+            "today",
+
+            today
+
+        );
+
+        safeText(
+
+            "bankRate",
+
+            annualBankRate +
+            "%"
+
+        );
+
+        const previousLivePrice =
+            Number(
+
+                sessionStorage.getItem(
+
+                    "previousLivePrice"
+
+                )
+
+            );
+
+        const previousExirPrice =
+            Number(
+
+                sessionStorage.getItem(
+
+                    "previousExirPrice"
+
+                )
+
+            );
+
+        updateMarketDisplay(
+
+            currentPrice,
+            exirPrice,
+            previousLivePrice,
+            previousExirPrice
+
+        );
+
+        renderDashboard(
+
+            data,
+            currentPrice,
+            today,
+            annualBankRate,
+            previousLivePrice
+
+        );
+
+        sessionStorage.setItem(
+
+            "previousLivePrice",
+
+            String(
+                currentPrice
+            )
+
+        );
+
+        if (
+
+            exirPrice !==
+            null
+
+        ) {
+
+            sessionStorage.setItem(
+
+                "previousExirPrice",
+
+                String(
+                    exirPrice
+                )
+
+            );
+
+        }
+
+        safeText(
+
+            "updateTime",
+
+            "Last Update: " +
+
+            new Date().toLocaleTimeString(
+
+                "en-US",
+
+                {
+
+                    hour:
+                        "2-digit",
+
+                    minute:
+                        "2-digit",
+
+                    second:
+                        "2-digit",
+
+                    hour12:
+                        false
+
+                }
+
+            )
+
+        );
+
+        showConnectionStatus(
+
+            mainPriceFromCache ||
+            exirPriceFromCache,
+
+            mainPriceFromCache ||
+            exirPriceFromCache
+
+                ?
+
+                "Partial Offline • Showing Cached Price"
+
+                :
+
+                "Online • Live Data"
+
+        );
+
+    }
+
+    catch (error) {
+
+        console.warn(
+
+            "Refresh failed:",
+
+            error
+
+        );
+
+        showConnectionStatus(
+
+            true,
+
+            "Update Failed • Showing Last Saved Data"
+
+        );
+
+    }
+
+}
+
+/* =====================================================
+   AUTO REFRESH
+===================================================== */
+
+let countdownTimer =
+    null;
+
+function startAutoRefresh() {
+
+    clearInterval(
+        countdownTimer
+    );
+
+    let seconds =
+        30;
+
+    safeText(
+
+        "updateCountdown",
+
+        seconds +
+        "s"
+
+    );
+
+    countdownTimer =
+        setInterval(
+
+            async () => {
+
+                if (!navigator.onLine) {
+
+                    safeText(
+
+                        "updateCountdown",
+
+                        "Offline"
+
+                    );
+
+                    return;
+
+                }
+
+                seconds--;
+
+                if (
+
+                    seconds <=
+                    0
+
+                ) {
+
+                    safeText(
+
+                        "updateCountdown",
+
+                        "Updating..."
+
+                    );
+
+                    await refreshDashboardData();
+
+                    seconds =
+                        30;
+
+                }
+
+                safeText(
+
+                    "updateCountdown",
+
+                    seconds +
+                    "s"
+
+                );
+
+            },
+
+            1000
+
+        );
+
+}
+
+/* =====================================================
+   ONLINE / OFFLINE
 ===================================================== */
 
 window.addEventListener(
@@ -4988,12 +5121,11 @@ window.addEventListener(
 
 );
 
-
 window.addEventListener(
 
     "online",
 
-    () => {
+    async () => {
 
         showConnectionStatus(
 
@@ -5003,22 +5135,19 @@ window.addEventListener(
 
         );
 
-        setTimeout(
-
-            () => {
-
-                location.reload();
-
-            },
-
-            500
-
-        );
+        await refreshDashboardData();
 
     }
 
 );
 
+window.addEventListener(
+
+    "beforeunload",
+
+    saveScrollPosition
+
+);
 
 /* =====================================================
    INIT
@@ -5026,62 +5155,32 @@ window.addEventListener(
 
 async function init() {
 
-    let data = null;
+    let data =
+        null;
 
-    let currentPrice = null;
+    let currentPrice =
+        null;
 
-    let exirPrice = null;
+    let exirPrice =
+        null;
 
-    let usingCachedData = false;
+    let usingCachedData =
+        false;
 
-    let usingCachedPrice = false;
+    let usingCachedPrice =
+        false;
 
-
-    /* =================================================
-       LOAD DATA.JSON
-    ================================================= */
+    let usingCachedExir =
+        false;
 
     try {
 
-        const dataResponse =
-
-            await fetch(
-
-                "data.json?x=" +
-
-                Date.now(),
-
-                {
-
-                    cache:
-                        "no-store"
-
-                }
-
-            );
-
-
-        if (
-
-            !dataResponse.ok
-
-        ) {
-
-            throw new Error(
-
-                "Cannot load data.json"
-
-            );
-
-        }
-
-
         data =
+            await fetchDashboardData();
 
-            await dataResponse.json();
-
-
-        saveLocalData(data);
+        saveLocalData(
+            data
+        );
 
     }
 
@@ -5089,25 +5188,23 @@ async function init() {
 
         console.warn(
 
-            "Using cached data.json:",
+            "Using cached dashboard data:",
 
             error
 
         );
 
-
         data =
             loadLocalData();
 
-
-        usingCachedData = true;
-
+        usingCachedData =
+            true;
 
         if (!data) {
 
             throw new Error(
 
-                "Offline and no saved dashboard data is available. Open the dashboard online at least once."
+                "Offline and no saved dashboard data is available."
 
             );
 
@@ -5115,46 +5212,36 @@ async function init() {
 
     }
 
-
     const annualBankRate =
-
         Number(
 
-            data.annualBankRate || 40
+            data.annualBankRate
+            ??
+            40
 
         );
-
 
     const divisor =
-
         Number(
 
-            data.priceDivisor || 10
+            data.priceDivisor
+            ??
+            10
 
         );
-
-
-    /* =================================================
-       LOAD CURRENT PRICE
-    ================================================= */
 
     try {
 
         currentPrice =
-
             await getCurrentPrice(
 
                 data.priceApi,
-
                 divisor
 
             );
 
-
         saveLocalPrice(
-
             currentPrice
-
         );
 
     }
@@ -5163,41 +5250,70 @@ async function init() {
 
         console.warn(
 
-            "Using cached market price:",
+            "Using cached main price:",
 
             error
 
         );
 
-
         currentPrice =
             loadLocalPrice();
 
-
-        usingCachedPrice = true;
-
-
-        if (
-
-            currentPrice === null
-
-        ) {
-
-            throw new Error(
-
-                "Offline and no saved market price is available. Open the dashboard online at least once."
-
-            );
-
-        }
+        usingCachedPrice =
+            true;
 
     }
 
+    if (
+
+        currentPrice ===
+        null
+
+    ) {
+
+        throw new Error(
+
+            "No current market price is available."
+
+        );
+
+    }
+
+    try {
+
+        exirPrice =
+            await getExirPrice(
+
+                data.exirApi
+
+            );
+
+        saveLocalExirPrice(
+            exirPrice
+        );
+
+    }
+
+    catch (error) {
+
+        console.warn(
+
+            "Using cached Exir price:",
+
+            error
+
+        );
+
+        exirPrice =
+            loadLocalExirPrice();
+
+        usingCachedExir =
+            true;
+
+    }
 
     const today =
-
         getTodayJalali();
-
 
     safeText(
 
@@ -5207,80 +5323,138 @@ async function init() {
 
     );
 
-
-    safeText(
-
-        "currentPrice",
-
-        formatNumber(
-
-            currentPrice
-
-        )
-
-    );
-
-
-    
-
     safeText(
 
         "bankRate",
 
         annualBankRate +
-
         "%"
 
     );
 
+    const previousLivePrice =
+        Number(
 
-    /* =================================================
-       LOAD EXIR PRICE
-    ================================================= */
+            sessionStorage.getItem(
 
-    try {
+                "previousLivePrice"
 
-        exirPrice =
-            await getExirPrice(
-                data.exirApi
-            );
+            )
 
-        localStorage.setItem(
-            "financialDashboardExirPrice",
-            String(exirPrice)
+        );
+
+    const previousExirPrice =
+        Number(
+
+            sessionStorage.getItem(
+
+                "previousExirPrice"
+
+            )
+
+        );
+
+    updateMarketDisplay(
+
+        currentPrice,
+        exirPrice,
+        previousLivePrice,
+        previousExirPrice
+
+    );
+
+    renderDashboard(
+
+        data,
+        currentPrice,
+        today,
+        annualBankRate,
+        previousLivePrice
+
+    );
+
+    sessionStorage.setItem(
+
+        "previousLivePrice",
+
+        String(
+            currentPrice
+        )
+
+    );
+
+    if (
+
+        exirPrice !==
+        null
+
+    ) {
+
+        sessionStorage.setItem(
+
+            "previousExirPrice",
+
+            String(
+                exirPrice
+            )
+
         );
 
     }
 
-    catch (error) {
+    let updateTime =
+        new Date().toLocaleTimeString(
 
-        console.warn(
-            "Using cached Exir price:",
-            error
+            "en-US",
+
+            {
+
+                hour:
+                    "2-digit",
+
+                minute:
+                    "2-digit",
+
+                second:
+                    "2-digit",
+
+                hour12:
+                    false
+
+            }
+
         );
 
-        const savedExirPrice =
-            localStorage.getItem(
-                "financialDashboardExirPrice"
+    if (
+
+        usingCachedPrice
+
+    ) {
+
+        const cachedTime =
+            getCachedPriceTime(
+
+                CACHE_KEYS.PRICE_TIME
+
             );
 
-        const parsedExirPrice =
-            Number(savedExirPrice);
+        if (cachedTime) {
 
-        exirPrice =
-            Number.isFinite(parsedExirPrice)
-            ? parsedExirPrice
-            : null;
+            updateTime =
+                cachedTime;
+
+        }
 
     }
-safeText(
-    "exirPrice",
-    exirPrice === null ? "-" : formatNumber(exirPrice)
-);
 
-    /* =================================================
-       STATUS
-    ================================================= */
+    safeText(
+
+        "updateTime",
+
+        "Last Update: " +
+        updateTime
+
+    );
 
     if (
 
@@ -5294,38 +5468,17 @@ safeText(
 
         usingCachedPrice
 
+        ||
+
+        usingCachedExir
+
     ) {
-
-        let statusMessage =
-
-            "Offline Mode • Showing Last Saved Data";
-
-
-        const cachedTime =
-
-            getCachedPriceTime();
-
-
-        if (
-
-            cachedTime
-
-        ) {
-
-            statusMessage +=
-
-                " • Price Saved: " +
-
-                cachedTime;
-
-        }
-
 
         showConnectionStatus(
 
             true,
 
-            statusMessage
+            "Offline / Cached Data Mode"
 
         );
 
@@ -5343,433 +5496,15 @@ safeText(
 
     }
 
-
-    /* =================================================
-       LAST UPDATE TIME
-    ================================================= */
-
-    let updateTime =
-
-        new Date()
-
-            .toLocaleTimeString(
-
-                "en-US",
-
-                {
-
-                    hour:
-                        "2-digit",
-
-                    minute:
-                        "2-digit",
-
-                    second:
-                        "2-digit",
-
-                    hour12:
-                        false
-
-                }
-
-            );
-
-
-    if (
-
-        usingCachedPrice
-
-    ) {
-
-        const cachedTime =
-
-            getCachedPriceTime();
-
-
-        if (
-
-            cachedTime
-
-        ) {
-
-            updateTime =
-
-                cachedTime;
-
-        }
-
-    }
-
-
-    safeText(
-
-        "updateTime",
-
-        "Last Update: " +
-
-        updateTime
-
-    );
-
-
-    /* =================================================
-       PREVIOUS LIVE PRICE
-    ================================================= */
-
-    let previousLivePrice = null;
-
-
-    try {
-
-        const savedPrice =
-
-            sessionStorage.getItem(
-
-                "previousLivePrice"
-
-            );
-
-
-        if (
-
-            savedPrice !== null
-
-            &&
-
-            savedPrice !== ""
-
-        ) {
-
-            const parsedPrice =
-
-                Number(
-
-                    savedPrice
-
-                );
-
-
-            if (
-
-                Number.isFinite(
-
-                    parsedPrice
-
-                )
-
-            ) {
-
-                previousLivePrice =
-
-                    parsedPrice;
-
-            }
-
-        }
-
-    }
-
-    catch (e) {}
-
-
-    setPriceArrow(
-
-        "topPriceArrow",
-
-        currentPrice,
-
-        previousLivePrice
-
-    );
-
-
-    try {
-
-        sessionStorage.setItem(
-
-            "previousLivePrice",
-
-            String(
-
-                currentPrice
-
-            )
-
-        );
-
-    }
-
-    catch (e) {}
-
-
-    let previousExirPrice = null;
-
-    try {
-
-        const savedExirPrice =
-            sessionStorage.getItem(
-                "previousExirPrice"
-            );
-
-        const parsedExirPrice =
-            Number(savedExirPrice);
-
-        if (Number.isFinite(parsedExirPrice)) {
-            previousExirPrice = parsedExirPrice;
-        }
-
-    }
-
-    catch (e) {}
-
-
-    setPriceArrow(
-
-        "exirPriceArrow",
-
-        exirPrice,
-
-        previousExirPrice
-
-    );
-
-
-    try {
-
-        if (exirPrice !== null) {
-
-            sessionStorage.setItem(
-
-                "previousExirPrice",
-
-                String(exirPrice)
-
-            );
-
-        }
-
-    }
-
-    catch (e) {}
-
-
-    /* =================================================
-       TRANSACTIONS
-    ================================================= */
-
-    const transactions =
-
-        Array.isArray(
-
-            data.transactions
-
-        )
-
-        ?
-
-        data.transactions
-
-            .slice()
-
-            .sort(
-
-                (
-
-                    a,
-
-                    b
-
-                ) =>
-
-                    dateNumber(
-
-                        a.date
-
-                    )
-
-                    -
-
-                    dateNumber(
-
-                        b.date
-
-                    )
-
-            )
-
-        :
-
-        [];
-
-
-    /* =================================================
-       OVERALL
-    ================================================= */
-
-    const overall =
-
-        calculatePortfolio(
-
-            transactions,
-
-            currentPrice,
-
-            today,
-
-            annualBankRate
-
-        );
-
-
-    displaySection(
-
-        overall,
-
-        "overall",
-
-        previousLivePrice
-
-    );
-
-
-    /* =================================================
-       LAST 6
-    ================================================= */
-
-    const sixTransactions =
-
-        getLastPeriods(
-
-            transactions,
-
-            6
-
-        );
-
-
-    const six =
-
-        calculatePortfolio(
-
-            sixTransactions,
-
-            currentPrice,
-
-            today,
-
-            annualBankRate
-
-        );
-
-
-    displaySection(
-
-        six,
-
-        "six",
-
-        previousLivePrice
-
-    );
-
-
-    /* =================================================
-       LAST PERIOD
-    ================================================= */
-
-    const lastTransactions =
-
-        getLastPeriod(
-
-            transactions
-
-        );
-
-
-    const last =
-
-        calculatePortfolio(
-
-            lastTransactions,
-
-            currentPrice,
-
-            today,
-
-            annualBankRate
-
-        );
-
-
-    displaySection(
-
-        last,
-
-        "last",
-
-        previousLivePrice
-
-    );
-
-
-    displayLastAction(
-
-        lastTransactions
-
-    );
-
-
-    safeText(
-
-        "lastTrades",
-
-        last.buyCount
-
-        +
-
-        " IN  •  "
-
-        +
-
-        last.sellCount
-
-        +
-
-        " OUT"
-
-    );
-
-
-    if (
-
-        $("loading")
-
-    ) {
-
-        $("loading").style.display =
-
-            "none";
-
-    }
-
-
-    if (
-
-        $("dashboard")
-
-    ) {
-
-        $("dashboard").style.display =
-
-            "grid";
-
-    }
-
+    $("loading").style.display =
+        "none";
+
+    $("dashboard").style.display =
+        "grid";
 
     restoreScrollPosition();
 
 }
-
 
 /* =====================================================
    START
@@ -5777,70 +5512,47 @@ safeText(
 
 init()
 
-.then(
+    .then(
 
-    () => {
+        () => {
 
-        startAutoRefresh();
+            startAutoRefresh();
 
-        restoreScrollPosition();
+            restoreScrollPosition();
 
-    }
+        }
 
-)
+    )
 
-.catch(
+    .catch(
 
-    error => {
+        error => {
 
-        console.error(
-
-            error
-
-        );
-
-
-        if (
-
-            $("loading")
-
-        ) {
+            console.error(
+                error
+            );
 
             $("loading").style.display =
-
                 "none";
 
-        }
+            const errorDiv =
+                document.createElement(
+                    "div"
+                );
 
+            errorDiv.className =
+                "error";
 
-        if (
+            errorDiv.textContent =
+                error.message;
 
-            $("errorBox")
-
-        ) {
-
-            $("errorBox").innerHTML =
-
-                `
-
-                <div class="error">
-
-                    ${error.message}
-
-                </div>
-
-                `;
+            $("errorBox").replaceChildren(
+                errorDiv
+            );
 
         }
 
-    }
-
-);
-
-</script>
-
-
-<script>
+    );
 
 /* =====================================================
    SERVICE WORKER
@@ -5849,9 +5561,7 @@ init()
 if (
 
     "serviceWorker"
-
     in
-
     navigator
 
 ) {
@@ -5887,7 +5597,6 @@ if (
 
                         );
 
-
                         registration.update();
 
                     }
@@ -5919,4 +5628,6 @@ if (
 </script>
 
 </body>
+
 </html>
+```
