@@ -4614,6 +4614,10 @@ async function refreshDashboardData() {
             "financialDashboardExirPrice",
             String(exirPrice)
         );
+
+
+/* ===== PRICE USED FOR CALCULATIONS ===== */
+
 let marketPrice;
 
 if (Number.isFinite(currentPrice) && Number.isFinite(exirPrice)) {
@@ -4637,46 +4641,6 @@ else {
 
 }
 
-/* ===== PRICE USED FOR CALCULATIONS ===== */
-
-const savedNobitex = loadLocalPrice();
-
-const savedExir = Number(
-    localStorage.getItem("financialDashboardExirPrice")
-);
-
-let marketPrice;
-
-const nobitex =
-    Number.isFinite(currentPrice)
-        ? currentPrice
-        : savedNobitex;
-
-const exir =
-    Number.isFinite(exirPrice)
-        ? exirPrice
-        : (Number.isFinite(savedExir) ? savedExir : null);
-
-if (Number.isFinite(nobitex) && Number.isFinite(exir)) {
-
-    marketPrice = (nobitex + exir) / 2;
-
-}
-else if (Number.isFinite(nobitex)) {
-
-    marketPrice = nobitex;
-
-}
-else if (Number.isFinite(exir)) {
-
-    marketPrice = exir;
-
-}
-else {
-
-    marketPrice = 0;
-
-}
 
 
         const today =
@@ -5336,30 +5300,6 @@ async function init() {
             : null;
 
     }
-let marketPrice;
-
-if (Number.isFinite(currentPrice) && Number.isFinite(exirPrice)) {
-
-    marketPrice = (currentPrice + exirPrice) / 2;
-
-}
-else if (Number.isFinite(currentPrice)) {
-
-    marketPrice = currentPrice;
-
-}
-else if (Number.isFinite(exirPrice)) {
-
-    marketPrice = exirPrice;
-
-}
-else {
-
-    marketPrice = loadLocalPrice();
-
-}
-
-
 safeText(
     "exirPrice",
     exirPrice === null ? "-" : formatNumber(exirPrice)
