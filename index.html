@@ -4614,7 +4614,28 @@ async function refreshDashboardData() {
             "financialDashboardExirPrice",
             String(exirPrice)
         );
+let marketPrice;
 
+if (Number.isFinite(currentPrice) && Number.isFinite(exirPrice)) {
+
+    marketPrice = (currentPrice + exirPrice) / 2;
+
+}
+else if (Number.isFinite(currentPrice)) {
+
+    marketPrice = currentPrice;
+
+}
+else if (Number.isFinite(exirPrice)) {
+
+    marketPrice = exirPrice;
+
+}
+else {
+
+    marketPrice = loadLocalPrice();
+
+}
 
 /* ===== PRICE USED FOR CALCULATIONS ===== */
 
@@ -5315,6 +5336,30 @@ async function init() {
             : null;
 
     }
+let marketPrice;
+
+if (Number.isFinite(currentPrice) && Number.isFinite(exirPrice)) {
+
+    marketPrice = (currentPrice + exirPrice) / 2;
+
+}
+else if (Number.isFinite(currentPrice)) {
+
+    marketPrice = currentPrice;
+
+}
+else if (Number.isFinite(exirPrice)) {
+
+    marketPrice = exirPrice;
+
+}
+else {
+
+    marketPrice = loadLocalPrice();
+
+}
+
+
 safeText(
     "exirPrice",
     exirPrice === null ? "-" : formatNumber(exirPrice)
