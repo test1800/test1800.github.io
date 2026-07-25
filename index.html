@@ -1132,68 +1132,76 @@ id="updateCountdown">
 
 <div class="live-price">
 
-<div class="live-price-left">
+    <!-- Live Market و Bank Rate در یک خط، وسط صفحه -->
+    <div class="live-market-header">
 
-<div class="live-price-item">
+        <span class="live-market-title">
+            Live Market
+        </span>
 
-<div
-class="live-number"
-id="exirPrice">
--
-</div>
+        <span class="live-market-separator">
+            •
+        </span>
 
-<div
-class="price-arrow arrow-flat"
-id="exirPriceArrow">
-→
-</div>
+        <span class="live-market-bank">
+            Bank Rate:
+            <span id="bankRate">
+                -
+            </span>
+        </span>
 
-</div>
-
-</div>
-
-<div class="live-price-right">
-
-<div class="live-label">
-Live Market
-</div>
-
-<div class="live-number-row">
-
-<div class="live-price-item">
-
-<div
-class="live-number"
-id="currentPrice">
--
-</div>
-
-<div
-class="price-arrow arrow-flat"
-id="topPriceArrow">
-→
-</div>
-
-</div>
-
-<div class="live-footer">
-
-<div>
-Bank Rate:
-<span id="bankRate">-</span>
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
+    </div>
 
 
-<div
-id="connectionStatus"
+    <!-- دو قیمت در یک ردیف -->
+    <div class="live-price-values">
+
+        <!-- قیمتNobitex - سمت چپ -->
+        <div class="live-price-left">
+
+            <div class="live-price-item">
+
+                <div
+                    class="live-number"
+                    id="currentPrice">
+                    -
+                </div>
+
+                <div
+                    class="price-arrow arrow-flat"
+                    id="exirPriceArrow">
+                    →
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- قیمت  Exir - سمت راست -->
+        <div class="live-price-right">
+
+            <div class="live-price-item">
+
+                <div
+                    class="live-number"
+                    id="exirPrice">
+                    -
+                </div>
+
+                <div
+                    class="price-arrow arrow-flat"
+                    id="topPriceArrow">
+                    →
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>id="connectionStatus"
 class="connection-status">
 </div>
 
