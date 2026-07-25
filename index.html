@@ -2236,22 +2236,16 @@ const CACHE_KEYS = {
     DATA:
         "financialDashboardData",
 
-    EFFECTIVE_PRICE:
-        "financialDashboardEffectivePrice",
+    PRICE:
+        "financialDashboardPrice",
 
-    EFFECTIVE_PRICE_TIME:
-        "financialDashboardEffectivePriceTime",
-
-    NOBITEX_PRICE:
-        "financialDashboardNobitexPrice",
-
-    NOBITEX_PRICE_TIME:
-        "financialDashboardNobitexPriceTime",
+    PRICE_TIME:
+        "financialDashboardPriceTime",
 
     EXIR_PRICE:
         "financialDashboardExirPrice",
 
-    EXIR_PRICE_TIME:
+    EXIR_TIME:
         "financialDashboardExirPriceTime"
 
 };
@@ -2312,17 +2306,13 @@ function loadLocalData() {
 }
 
 
-function savePriceCache(
-    key,
-    timeKey,
-    price
-) {
+function saveLocalPrice(price) {
 
     try {
 
         localStorage.setItem(
 
-            key,
+            CACHE_KEYS.PRICE,
 
             String(price)
 
@@ -2330,7 +2320,7 @@ function savePriceCache(
 
         localStorage.setItem(
 
-            timeKey,
+            CACHE_KEYS.PRICE_TIME,
 
             new Date().toISOString()
 
@@ -2341,7 +2331,7 @@ function savePriceCache(
     catch (error) {
 
         console.error(
-            "Cannot save price cache:",
+            "Cannot save price:",
             error
         );
 
@@ -2350,7 +2340,7 @@ function savePriceCache(
 }
 
 
-function loadPriceCache(key) {
+function loadLocalPrice() {
 
     try {
 
@@ -2358,7 +2348,7 @@ function loadPriceCache(key) {
             Number(
 
                 localStorage.getItem(
-                    key
+                    CACHE_KEYS.PRICE
                 )
 
             );
@@ -2378,88 +2368,55 @@ function loadPriceCache(key) {
 }
 
 
-function saveEffectivePrice(price) {
-
-    savePriceCache(
-
-        CACHE_KEYS.EFFECTIVE_PRICE,
-
-        CACHE_KEYS.EFFECTIVE_PRICE_TIME,
-
-        price
-
-    );
-
-}
-
-
-function loadEffectivePrice() {
-
-    return loadPriceCache(
-
-        CACHE_KEYS.EFFECTIVE_PRICE
-
-    );
-
-}
-
-
-function getCachedPriceTime() {
+function saveLocalExirPrice(price) {
 
     try {
 
-        const saved =
-            localStorage.getItem(
+        localStorage.setItem(
 
-                CACHE_KEYS.EFFECTIVE_PRICE_TIME
+            CACHE_KEYS.EXIR_PRICE,
 
-            );
+            String(price)
 
-        if (!saved) {
+        );
 
-            return "";
+        localStorage.setItem(
 
-        }
+            CACHE_KEYS.EXIR_TIME,
 
-        const date =
-            new Date(saved);
-
-        return date.toLocaleString(
-
-            "en-US",
-
-            {
-
-                year:
-                    "numeric",
-
-                month:
-                    "2-digit",
-
-                day:
-                    "2-digit",
-
-                hour:
-                    "2-digit",
-
-                minute:
-                    "2-digit",
-
-                second:
-                    "2-digit",
-
-                hour12:
-                    false
-
-            }
+            new Date().toISOString()
 
         );
 
     }
 
+    catch (error) {}
+
+}
+
+
+function loadLocalExirPrice() {
+
+    try {
+
+        const value =
+            Number(
+
+                localStorage.getItem(
+                    CACHE_KEYS.EXIR_PRICE
+                )
+
+            );
+
+        return Number.isFinite(value)
+            ? value
+            : null;
+
+    }
+
     catch (error) {
 
-        return "";
+        return null;
 
     }
 
@@ -2509,10 +2466,22 @@ function showConnectionStatus(
    PRICE ARROW
 ===================================================== */
 
+/*
+    Arrow logic:
+
+    Current Live Price
+            compared with
+    Average Purchase Price
+
+    Current > Average  → ↑
+    Current < Average  → ↓
+    Current = Average  → →
+*/
+
 function setPriceArrow(
     id,
     currentPrice,
-    previousPrice
+    comparisonPrice
 ) {
 
     const element = $(id);
@@ -2532,8 +2501,8 @@ function setPriceArrow(
     const current =
         Number(currentPrice);
 
-    const previous =
-        Number(previousPrice);
+    const comparison =
+        Number(comparisonPrice);
 
     if (
 
@@ -2541,7 +2510,7 @@ function setPriceArrow(
 
         ||
 
-        !Number.isFinite(previous)
+        !Number.isFinite(comparison)
 
     ) {
 
@@ -2555,7 +2524,7 @@ function setPriceArrow(
 
     }
 
-    if (current > previous) {
+    if (current > comparison) {
 
         element.textContent = "↑";
 
@@ -2565,7 +2534,7 @@ function setPriceArrow(
 
     }
 
-    else if (current < previous) {
+    else if (current < comparison) {
 
         element.textContent = "↓";
 
@@ -2781,10 +2750,8 @@ function daysBetweenInclusive(
         Math.floor(
 
             (
-
                 endDate -
                 startDate
-
             )
 
             /
@@ -3492,10 +3459,8 @@ function getLastPeriods(
         .slice(-count)
 
         .flatMap(
-
             period =>
                 period.transactions
-
         );
 
 }
@@ -3519,9 +3484,7 @@ function getLastPeriod(
     }
 
     return periods[
-
         periods.length - 1
-
     ].transactions;
 
 }
@@ -3533,8 +3496,7 @@ function getLastPeriod(
 
 function displaySection(
     result,
-    prefix,
-    previousLivePrice
+    prefix
 ) {
 
     safeText(
@@ -3581,13 +3543,28 @@ function displaySection(
     );
 
 
+    /*
+       IMPORTANT
+
+       Each section has its own comparison:
+
+       Overall:
+       Live vs Overall Average Purchase
+
+       Six:
+       Live vs Six Average Purchase
+
+       Last:
+       Live vs Last Average Purchase
+    */
+
     setPriceArrow(
 
         prefix + "PriceArrow",
 
         result.currentPrice,
 
-        previousLivePrice
+        result.averagePurchasePrice
 
     );
 
@@ -3856,9 +3833,7 @@ function displayLastAction(
 
     const last =
         transactions[
-
             transactions.length - 1
-
         ];
 
     if (
@@ -3894,15 +3869,6 @@ async function getCurrentPrice(
     apiUrl,
     divisor
 ) {
-
-    if (!apiUrl) {
-
-        throw new Error(
-            "Nobitex API URL is missing"
-        );
-
-    }
-
 
     const response =
         await fetch(
@@ -4022,8 +3988,7 @@ async function getCurrentPrice(
 
 
     const price =
-        Number(rawPrice)
-        /
+        Number(rawPrice) /
         divisor;
 
 
@@ -4048,15 +4013,6 @@ async function getCurrentPrice(
 async function getExirPrice(
     apiUrl
 ) {
-
-    if (!apiUrl) {
-
-        throw new Error(
-            "Exir API URL is missing"
-        );
-
-    }
-
 
     const response =
         await fetch(
@@ -4156,180 +4112,6 @@ async function getExirPrice(
 
 
 /* =====================================================
-   EFFECTIVE PRICE
-===================================================== */
-
-/*
-
-   PRIORITY:
-
-   1. Nobitex + Exir
-      => Average
-
-   2. Only Nobitex
-      => Nobitex
-
-   3. Only Exir
-      => Exir
-
-   4. No API price
-      => Cached Effective Price
-
-   5. No cache
-      => data.defaultPrice
-
-*/
-
-function resolveEffectivePrice(
-
-    nobitexPrice,
-
-    exirPrice,
-
-    cachedPrice,
-
-    defaultPrice
-
-) {
-
-    const hasNobitex =
-
-        Number.isFinite(
-            nobitexPrice
-        );
-
-
-    const hasExir =
-
-        Number.isFinite(
-            exirPrice
-        );
-
-
-    if (
-
-        hasNobitex
-
-        &&
-
-        hasExir
-
-    ) {
-
-        return {
-
-            price:
-
-                (
-
-                    nobitexPrice
-                    +
-                    exirPrice
-
-                )
-                /
-                2,
-
-            source:
-                "average"
-
-        };
-
-    }
-
-
-    if (hasNobitex) {
-
-        return {
-
-            price:
-                nobitexPrice,
-
-            source:
-                "nobitex"
-
-        };
-
-    }
-
-
-    if (hasExir) {
-
-        return {
-
-            price:
-                exirPrice,
-
-            source:
-                "exir"
-
-        };
-
-    }
-
-
-    if (
-
-        Number.isFinite(
-            cachedPrice
-        )
-
-    ) {
-
-        return {
-
-            price:
-                cachedPrice,
-
-            source:
-                "cache"
-
-        };
-
-    }
-
-
-    const fallback =
-        Number(
-            defaultPrice
-        );
-
-
-    if (
-
-        Number.isFinite(
-            fallback
-        )
-
-    ) {
-
-        return {
-
-            price:
-                fallback,
-
-            source:
-                "default"
-
-        };
-
-    }
-
-
-    return {
-
-        price:
-            null,
-
-        source:
-            "none"
-
-    };
-
-}
-
-
-/* =====================================================
    LOAD DATA
 ===================================================== */
 
@@ -4373,8 +4155,7 @@ async function loadData() {
 
             data,
 
-            cached:
-                false
+            cached: false
 
         };
 
@@ -4409,6 +4190,175 @@ async function loadData() {
 
 
 /* =====================================================
+   PRICE RESOLUTION
+===================================================== */
+
+/*
+    Priority:
+
+    1. Nobitex + Exir
+       Average of both
+
+    2. Nobitex only
+
+    3. Exir only
+
+    4. Cached Nobitex price
+
+    5. Cached Exir price
+
+    6. data.json defaultPrice
+
+    The resolved price is used for
+    ALL calculations.
+*/
+
+function resolveCalculationPrice(
+
+    nobitexPrice,
+
+    exirPrice,
+
+    cachedNobitexPrice,
+
+    cachedExirPrice,
+
+    defaultPrice
+
+) {
+
+    const validNobitex =
+        Number.isFinite(
+            Number(nobitexPrice)
+        )
+
+        ?
+
+        Number(nobitexPrice)
+
+        :
+
+        null;
+
+
+    const validExir =
+        Number.isFinite(
+            Number(exirPrice)
+        )
+
+        ?
+
+        Number(exirPrice)
+
+        :
+
+        null;
+
+
+    const validCachedNobitex =
+        Number.isFinite(
+            Number(cachedNobitexPrice)
+        )
+
+        ?
+
+        Number(cachedNobitexPrice)
+
+        :
+
+        null;
+
+
+    const validCachedExir =
+        Number.isFinite(
+            Number(cachedExirPrice)
+        )
+
+        ?
+
+        Number(cachedExirPrice)
+
+        :
+
+        null;
+
+
+    const validDefault =
+        Number.isFinite(
+            Number(defaultPrice)
+        )
+
+        ?
+
+        Number(defaultPrice)
+
+        :
+
+        0;
+
+
+    if (
+
+        validNobitex !== null
+
+        &&
+
+        validExir !== null
+
+    ) {
+
+        return (
+
+            validNobitex +
+            validExir
+
+        ) / 2;
+
+    }
+
+
+    if (
+        validNobitex !== null
+    ) {
+
+        return validNobitex;
+
+    }
+
+
+    if (
+        validExir !== null
+    ) {
+
+        return validExir;
+
+    }
+
+
+    if (
+        validCachedNobitex !== null
+    ) {
+
+        return validCachedNobitex;
+
+    }
+
+
+    if (
+        validCachedExir !== null
+    ) {
+
+        return validCachedExir;
+
+    }
+
+
+    return validDefault;
+
+}
+
+
+/* =====================================================
    REFRESH
 ===================================================== */
 
@@ -4426,60 +4376,28 @@ async function refreshDashboardData() {
 
         const annualBankRate =
             Number(
-
-                data.annualBankRate
-
+                data.annualBankRate || 40
             );
-
-
-        const safeAnnualBankRate =
-
-            Number.isFinite(
-                annualBankRate
-            )
-
-                ?
-
-                annualBankRate
-
-                :
-
-                40;
 
 
         const divisor =
             Number(
-
-                data.priceDivisor
-
+                data.priceDivisor || 10
             );
-
-
-        const safeDivisor =
-
-            Number.isFinite(
-                divisor
-            )
-
-                &&
-
-                divisor > 0
-
-                ?
-
-                divisor
-
-                :
-
-                10;
 
 
         const defaultPrice =
             Number(
-
                 data.defaultPrice
-
             );
+
+
+        const cachedNobitexPrice =
+            loadLocalPrice();
+
+
+        const cachedExirPrice =
+            loadLocalExirPrice();
 
 
         let nobitexPrice =
@@ -4490,10 +4408,6 @@ async function refreshDashboardData() {
             null;
 
 
-        /* ---------------------------------------------
-           NOBITEX
-        --------------------------------------------- */
-
         try {
 
             nobitexPrice =
@@ -4501,19 +4415,13 @@ async function refreshDashboardData() {
 
                     data.priceApi,
 
-                    safeDivisor
+                    divisor
 
                 );
 
 
-            savePriceCache(
-
-                CACHE_KEYS.NOBITEX_PRICE,
-
-                CACHE_KEYS.NOBITEX_PRICE_TIME,
-
+            saveLocalPrice(
                 nobitexPrice
-
             );
 
         }
@@ -4521,38 +4429,23 @@ async function refreshDashboardData() {
         catch (error) {
 
             console.warn(
-
                 "Nobitex unavailable:",
-
                 error.message
-
             );
 
         }
 
-
-        /* ---------------------------------------------
-           EXIR
-        --------------------------------------------- */
 
         try {
 
             exirPrice =
                 await getExirPrice(
-
                     data.exirApi
-
                 );
 
 
-            savePriceCache(
-
-                CACHE_KEYS.EXIR_PRICE,
-
-                CACHE_KEYS.EXIR_PRICE_TIME,
-
+            saveLocalExirPrice(
                 exirPrice
-
             );
 
         }
@@ -4560,142 +4453,37 @@ async function refreshDashboardData() {
         catch (error) {
 
             console.warn(
-
                 "Exir unavailable:",
-
                 error.message
-
             );
 
         }
 
 
-        /* ---------------------------------------------
-           FALLBACK CACHE
-        --------------------------------------------- */
+        const calculationPrice =
 
-        const cachedEffectivePrice =
-            loadEffectivePrice();
-
-
-        const effective =
-            resolveEffectivePrice(
+            resolveCalculationPrice(
 
                 nobitexPrice,
 
                 exirPrice,
 
-                cachedEffectivePrice,
+                cachedNobitexPrice,
+
+                cachedExirPrice,
 
                 defaultPrice
 
             );
 
 
-        const currentPrice =
-            effective.price;
-
-
-        if (
-
-            !Number.isFinite(
-                currentPrice
-            )
-
-        ) {
-
-            throw new Error(
-
-                "No valid price available"
-
-            );
-
-        }
-
-
-        /* ---------------------------------------------
-           SAVE EFFECTIVE PRICE
-        --------------------------------------------- */
-
-        if (
-
-            effective.source === "average"
-
-            ||
-
-            effective.source === "nobitex"
-
-            ||
-
-            effective.source === "exir"
-
-        ) {
-
-            saveEffectivePrice(
-                currentPrice
-            );
-
-        }
-
-
-        /* ---------------------------------------------
-           TODAY
-        --------------------------------------------- */
-
         const today =
             getTodayJalali();
 
 
-        /* ---------------------------------------------
-           PREVIOUS PRICES
-        --------------------------------------------- */
-
-        const previousEffectivePrice =
-            Number(
-
-                sessionStorage.getItem(
-
-                    "previousEffectivePrice"
-
-                )
-
-            );
-
-
-        const previousNobitexPrice =
-            Number(
-
-                sessionStorage.getItem(
-
-                    "previousNobitexPrice"
-
-                )
-
-            );
-
-
-        const previousExirPrice =
-            Number(
-
-                sessionStorage.getItem(
-
-                    "previousExirPrice"
-
-                )
-
-            );
-
-
-        /* ---------------------------------------------
-           HEADER
-        --------------------------------------------- */
-
         safeText(
-
             "today",
-
             today
-
         );
 
 
@@ -4703,19 +4491,9 @@ async function refreshDashboardData() {
 
             "currentPrice",
 
-            Number.isFinite(
-                nobitexPrice
+            formatNumber(
+                calculationPrice
             )
-
-                ?
-
-                formatNumber(
-                    nobitexPrice
-                )
-
-                :
-
-                "-"
 
         );
 
@@ -4724,19 +4502,11 @@ async function refreshDashboardData() {
 
             "exirPrice",
 
-            Number.isFinite(
-                exirPrice
-            )
+            exirPrice === null
 
-                ?
+                ? "-"
 
-                formatNumber(
-                    exirPrice
-                )
-
-                :
-
-                "-"
+                : formatNumber(exirPrice)
 
         );
 
@@ -4745,87 +4515,155 @@ async function refreshDashboardData() {
 
             "bankRate",
 
-            safeAnnualBankRate
+            annualBankRate + "%"
+
+        );
+
+
+        const transactions =
+
+            Array.isArray(
+                data.transactions
+            )
+
+                ?
+
+                data.transactions
+
+                    .slice()
+
+                    .sort(
+
+                        (a, b) =>
+
+                            dateNumber(a.date)
+
+                            -
+
+                            dateNumber(b.date)
+
+                    )
+
+                :
+
+                [];
+
+
+        const overall =
+            calculatePortfolio(
+
+                transactions,
+
+                calculationPrice,
+
+                today,
+
+                annualBankRate
+
+            );
+
+
+        displaySection(
+
+            overall,
+
+            "overall"
+
+        );
+
+
+        const sixTransactions =
+
+            getLastPeriods(
+
+                transactions,
+
+                6
+
+            );
+
+
+        const six =
+            calculatePortfolio(
+
+                sixTransactions,
+
+                calculationPrice,
+
+                today,
+
+                annualBankRate
+
+            );
+
+
+        displaySection(
+
+            six,
+
+            "six"
+
+        );
+
+
+        const lastTransactions =
+
+            getLastPeriod(
+
+                transactions
+
+            );
+
+
+        const last =
+            calculatePortfolio(
+
+                lastTransactions,
+
+                calculationPrice,
+
+                today,
+
+                annualBankRate
+
+            );
+
+
+        displaySection(
+
+            last,
+
+            "last"
+
+        );
+
+
+        displayLastAction(
+
+            lastTransactions
+
+        );
+
+
+        safeText(
+
+            "lastTrades",
+
+            last.buyCount
+
             +
 
-            "%"
+            " IN  •  "
+
+            +
+
+            last.sellCount
+
+            +
+
+            " OUT"
 
         );
-
-
-        setPriceArrow(
-
-            "topPriceArrow",
-
-            nobitexPrice,
-
-            previousNobitexPrice
-
-        );
-
-
-        setPriceArrow(
-
-            "exirPriceArrow",
-
-            exirPrice,
-
-            previousExirPrice
-
-        );
-
-
-        sessionStorage.setItem(
-
-            "previousEffectivePrice",
-
-            String(
-                currentPrice
-            )
-
-        );
-
-
-        if (
-
-            Number.isFinite(
-                nobitexPrice
-            )
-
-        ) {
-
-            sessionStorage.setItem(
-
-                "previousNobitexPrice",
-
-                String(
-                    nobitexPrice
-                )
-
-            );
-
-        }
-
-
-        if (
-
-            Number.isFinite(
-                exirPrice
-            )
-
-        ) {
-
-            sessionStorage.setItem(
-
-                "previousExirPrice",
-
-                String(
-                    exirPrice
-                )
-
-            );
-
-        }
 
 
         safeText(
@@ -4860,247 +4698,15 @@ async function refreshDashboardData() {
         );
 
 
-        /* ---------------------------------------------
-           TRANSACTIONS
-        --------------------------------------------- */
-
-        const transactions =
-
-            Array.isArray(
-                data.transactions
-            )
-
-                ?
-
-                data.transactions
-
-                    .slice()
-
-                    .sort(
-
-                        (a, b) =>
-
-                            dateNumber(a.date)
-
-                            -
-
-                            dateNumber(b.date)
-
-                    )
-
-                :
-
-                [];
-
-
-        /* ---------------------------------------------
-           OVERALL
-        --------------------------------------------- */
-
-        const overall =
-            calculatePortfolio(
-
-                transactions,
-
-                currentPrice,
-
-                today,
-
-                safeAnnualBankRate
-
-            );
-
-
-        displaySection(
-
-            overall,
-
-            "overall",
-
-            previousEffectivePrice
-
-        );
-
-
-        /* ---------------------------------------------
-           LAST 6 PERIODS
-        --------------------------------------------- */
-
-        const sixTransactions =
-
-            getLastPeriods(
-
-                transactions,
-
-                6
-
-            );
-
-
-        const six =
-            calculatePortfolio(
-
-                sixTransactions,
-
-                currentPrice,
-
-                today,
-
-                safeAnnualBankRate
-
-            );
-
-
-        displaySection(
-
-            six,
-
-            "six",
-
-            previousEffectivePrice
-
-        );
-
-
-        /* ---------------------------------------------
-           LAST PERIOD
-        --------------------------------------------- */
-
-        const lastTransactions =
-
-            getLastPeriod(
-
-                transactions
-
-            );
-
-
-        const last =
-            calculatePortfolio(
-
-                lastTransactions,
-
-                currentPrice,
-
-                today,
-
-                safeAnnualBankRate
-
-            );
-
-
-        displaySection(
-
-            last,
-
-            "last",
-
-            previousEffectivePrice
-
-        );
-
-
-        displayLastAction(
-
-            lastTransactions
-
-        );
-
-
-        safeText(
-
-            "lastTrades",
-
-            last.buyCount
-
-            +
-
-            " IN  •  "
-
-            +
-
-            last.sellCount
-
-            +
-
-            " OUT"
-
-        );
-
-
-        /* ---------------------------------------------
-           STATUS
-        --------------------------------------------- */
-
-        let statusMessage;
-
-
-        if (
-
-            effective.source === "average"
-
-        ) {
-
-            statusMessage =
-
-                "Online • Average of Nobitex + Exir";
-
-        }
-
-        else if (
-
-            effective.source === "nobitex"
-
-        ) {
-
-            statusMessage =
-
-                "Online • Nobitex Price";
-
-        }
-
-        else if (
-
-            effective.source === "exir"
-
-        ) {
-
-            statusMessage =
-
-                "Online • Exir Price";
-
-        }
-
-        else if (
-
-            effective.source === "cache"
-
-        ) {
-
-            statusMessage =
-
-                "Offline • Showing Cached Price";
-
-        }
-
-        else {
-
-            statusMessage =
-
-                "Offline • Showing Default Price";
-
-        }
-
-
         showConnectionStatus(
 
-            effective.source === "cache"
+            loaded.cached,
 
-            ||
+            loaded.cached
 
-            effective.source === "default",
+                ? "Offline Mode • Showing Last Saved Data"
 
-            statusMessage
+                : "Online • Live Data"
 
         );
 
@@ -5343,7 +4949,6 @@ window.addEventListener(
 
         );
 
-
         await refreshDashboardData();
 
     }
@@ -5365,10 +4970,6 @@ async function init() {
 
 }
 
-
-/* =====================================================
-   START
-===================================================== */
 
 init()
 
