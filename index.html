@@ -5221,18 +5221,7 @@ async function init() {
     );
 
 
-    safeText(
-
-        "exirPrice",
-
-        exirPrice === null
-        ? "-"
-        : formatNumber(
-            exirPrice
-        )
-
-    );
-
+    
 
     safeText(
 
@@ -5284,7 +5273,10 @@ async function init() {
             : null;
 
     }
-
+safeText(
+    "exirPrice",
+    exirPrice === null ? "-" : formatNumber(exirPrice)
+);
 
     /* =================================================
        STATUS
