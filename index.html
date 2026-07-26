@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -34,6 +35,10 @@
 >
 
 <style>
+
+/* =====================================================
+   RESET
+===================================================== */
 
 * {
     box-sizing: border-box;
@@ -78,6 +83,11 @@ body {
 
 }
 
+
+/* =====================================================
+   CONTAINER
+===================================================== */
+
 .container {
 
     width: 100%;
@@ -92,6 +102,11 @@ body {
         20px;
 
 }
+
+
+/* =====================================================
+   HEADER
+===================================================== */
 
 header {
 
@@ -180,6 +195,11 @@ h1 {
 
 }
 
+
+/* =====================================================
+   LIVE MARKET
+===================================================== */
+
 .live-price {
 
     margin-top: 12px;
@@ -251,17 +271,17 @@ h1 {
 
 .live-price-values {
 
-    display: flex;
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
 
     align-items:
         center;
 
-    justify-content:
-        space-between;
-
     width: 100%;
 
-    gap: 20px;
+    gap: 18px;
 
 }
 
@@ -275,9 +295,6 @@ h1 {
         center;
 
     min-width: 0;
-
-    flex:
-        1 1 33.333%;
 
 }
 
@@ -330,11 +347,9 @@ h1 {
 
     display: inline-flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
     width: 18px;
 
@@ -368,6 +383,11 @@ h1 {
         #94a3b8;
 
 }
+
+
+/* =====================================================
+   CONNECTION STATUS
+===================================================== */
 
 .connection-status {
 
@@ -422,6 +442,11 @@ h1 {
 
 }
 
+
+/* =====================================================
+   DASHBOARD GRID
+===================================================== */
+
 #dashboard {
 
     display: grid;
@@ -432,6 +457,11 @@ h1 {
     gap: 12px;
 
 }
+
+
+/* =====================================================
+   CARD
+===================================================== */
 
 .card {
 
@@ -503,6 +533,11 @@ h1 {
 
 }
 
+
+/* =====================================================
+   ACTION BADGE
+===================================================== */
+
 .action-badge {
 
     padding:
@@ -544,6 +579,11 @@ h1 {
         rgba(245,158,11,.20);
 
 }
+
+
+/* =====================================================
+   MAIN PRICE
+===================================================== */
 
 .main-price {
 
@@ -662,6 +702,11 @@ h1 {
 
 }
 
+
+/* =====================================================
+   P/L
+===================================================== */
+
 .pl-container {
 
     display: grid;
@@ -739,6 +784,11 @@ h1 {
 
 }
 
+
+/* =====================================================
+   RESULT
+===================================================== */
+
 .result {
 
     margin-top: 7px;
@@ -748,6 +798,11 @@ h1 {
     font-weight: 750;
 
 }
+
+
+/* =====================================================
+   COMPARISON
+===================================================== */
 
 .comparison {
 
@@ -797,6 +852,11 @@ h1 {
         nowrap;
 
 }
+
+
+/* =====================================================
+   METRICS
+===================================================== */
 
 .metrics {
 
@@ -849,6 +909,11 @@ h1 {
         nowrap;
 
 }
+
+
+/* =====================================================
+   REALIZED
+===================================================== */
 
 .realized-combined {
 
@@ -908,6 +973,11 @@ h1 {
 
 }
 
+
+/* =====================================================
+   ERROR / LOADING
+===================================================== */
+
 .error {
 
     padding: 12px;
@@ -939,6 +1009,11 @@ h1 {
         #94a3b8;
 
 }
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
 
 @media (max-width:1100px) {
 
@@ -1009,13 +1084,13 @@ h1 {
 
     .live-price-values {
 
-        gap: 8px;
+        gap: 6px;
 
     }
 
     .live-price-item {
 
-        gap: 5px;
+        gap: 4px;
 
     }
 
@@ -1027,11 +1102,11 @@ h1 {
 
     .price-arrow {
 
-        width: 15px;
+        width: 13px;
 
-        height: 22px;
+        height: 20px;
 
-        font-size: 21px;
+        font-size: 19px;
 
     }
 
@@ -1069,6 +1144,11 @@ h1 {
     }
 
 }
+
+
+/* =====================================================
+   ULTRA COMPACT MODE
+===================================================== */
 
 @media (max-height: 199px) {
 
@@ -1113,18 +1193,18 @@ h1 {
     }
 
     .live-price-values {
-        display: flex !important;
+        display: grid !important;
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr)) !important;
         width: 100% !important;
-        gap: 5px !important;
+        gap: 6px !important;
         align-items: center !important;
-        justify-content: space-between !important;
     }
 
     .live-price-left,
     .live-price-center,
     .live-price-right {
         display: flex !important;
-        flex: 0 1 auto !important;
         min-width: 0 !important;
     }
 
@@ -1141,7 +1221,7 @@ h1 {
     }
 
     .live-number {
-        font-size: 13px !important;
+        font-size: 15px !important;
         line-height: 1 !important;
         font-weight: 700 !important;
     }
@@ -1206,6 +1286,8 @@ h1 {
 
     </div>
 
+
+    <!-- LIVE MARKET -->
 
     <div class="live-price">
 
@@ -1345,8 +1427,9 @@ h1 {
     id="dashboard"
     style="display:none;">
 
-
-    <!-- OVERALL -->
+    <!-- =================================================
+         OVERALL
+    ================================================= -->
 
     <div class="card">
 
@@ -1649,7 +1732,9 @@ h1 {
     </div>
 
 
-    <!-- LAST 6 PERIODS -->
+    <!-- =================================================
+         LAST 6 PERIODS
+    ================================================= -->
 
     <div class="card">
 
@@ -1952,7 +2037,9 @@ h1 {
     </div>
 
 
-    <!-- LAST PERIOD -->
+    <!-- =================================================
+         LAST PERIOD
+    ================================================= -->
 
     <div class="card">
 
@@ -2607,8 +2694,18 @@ function loadTabdealPrice() {
         const price =
             Number(saved);
 
-        return Number.isFinite(price)
+        return (
+
+            Number.isFinite(price)
+
+            &&
+
+            price > 0
+
+        )
+
             ? price
+
             : null;
 
     }
@@ -4140,6 +4237,8 @@ async function getCurrentPrice(
 
     if (
         !Number.isFinite(price)
+        ||
+        price <= 0
     ) {
 
         throw new Error(
@@ -4245,6 +4344,8 @@ async function getExirPrice(
 
     if (
         !Number.isFinite(price)
+        ||
+        price <= 0
     ) {
 
         throw new Error(
@@ -4281,14 +4382,11 @@ async function getTabdealPrice(
             apiUrl,
             {
                 method: "GET",
-
                 headers: {
                     "Accept":
                         "application/json"
                 },
-
-                cache:
-                    "no-store"
+                cache: "no-store"
             }
         );
 
@@ -4296,11 +4394,7 @@ async function getTabdealPrice(
     if (!response.ok) {
 
         throw new Error(
-
-            "Unable to get Tabdeal price: HTTP "
-            +
-            response.status
-
+            "Unable to get Tabdeal price"
         );
 
     }
@@ -4310,109 +4404,77 @@ async function getTabdealPrice(
         await response.json();
 
 
-    console.log(
-        "Tabdeal API response:",
-        data
-    );
-
-
     /*
-       REAL TABDEAL RESPONSE:
+       پاسخ API جدید تبدیل:
 
-       {
-           asks: [
-               [
-                   "185980.0000000000000000",
-                   "9121.11162200"
-               ]
-           ],
+       [
+           {
+               "price": "186000.0000000000000000"
+           }
+       ]
 
-           bids: [
-               [
-                   "185939.0000000000000000",
-                   "188.63059900"
-               ]
-           ]
-       }
+       جدیدترین معامله در data[0] قرار دارد.
     */
 
 
-    const bestAsk =
-        Number(
-            data?.asks?.[0]?.[0]
-        );
-
-
-    const bestBid =
-        Number(
-            data?.bids?.[0]?.[0]
-        );
-
-
-    console.log(
-        "Tabdeal Best Ask:",
-        bestAsk
-    );
-
-
-    console.log(
-        "Tabdeal Best Bid:",
-        bestBid
-    );
-
-
     if (
-
-        !Number.isFinite(bestAsk)
-
+        !Array.isArray(data)
         ||
-
-        !Number.isFinite(bestBid)
-
-        ||
-
-        bestAsk <= 0
-
-        ||
-
-        bestBid <= 0
-
+        data.length === 0
     ) {
 
         throw new Error(
-
-            "Invalid Tabdeal orderbook response"
-
+            "Invalid Tabdeal response"
         );
 
     }
 
 
+    let rawPrice =
+        data[0]?.price;
+
+
+    /*
+       اگر ساختار API تغییر کرد،
+       چند حالت احتمالی دیگر را هم بررسی می‌کنیم.
+    */
+
+    if (
+        rawPrice === undefined
+        ||
+        rawPrice === null
+        ||
+        rawPrice === ""
+    ) {
+
+        rawPrice =
+            data[0]?.last;
+
+    }
+
+
+    if (
+        rawPrice === undefined
+        ||
+        rawPrice === null
+        ||
+        rawPrice === ""
+    ) {
+
+        rawPrice =
+            data[0]?.lastPrice;
+
+    }
+
+
     const price =
-
-        (
-
-            bestAsk
-
-            +
-
-            bestBid
-
-        )
-
-        /
-
-        2;
-
-
-    console.log(
-        "Tabdeal Mid Price:",
-        price
-    );
+        Number(rawPrice);
 
 
     if (
         !Number.isFinite(price)
+        ||
+        price <= 0
     ) {
 
         throw new Error(
@@ -4429,6 +4491,7 @@ async function getTabdealPrice(
 
 /* =====================================================
    AVERAGE LIVE PRICE
+   NOBITEX + EXIR + TABDEAL
 ===================================================== */
 
 function calculateAverageLivePrice(
@@ -4475,8 +4538,8 @@ function calculateAverageLivePrice(
                 total,
                 price
             ) =>
-
-                total + price,
+                total +
+                price,
 
             0
 
@@ -4620,11 +4683,10 @@ async function loadDashboardData() {
 
     catch (error) {
 
-        console.error(
-            "Nobitex Error:",
+        console.warn(
+            "Nobitex API Error:",
             error
         );
-
 
         currentPrice =
             loadNobitexPrice();
@@ -4666,11 +4728,10 @@ async function loadDashboardData() {
 
     catch (error) {
 
-        console.error(
-            "Exir Error:",
+        console.warn(
+            "Exir API Error:",
             error
         );
-
 
         exirPrice =
             loadExirPrice();
@@ -4699,11 +4760,10 @@ async function loadDashboardData() {
 
     catch (error) {
 
-        console.error(
-            "Tabdeal Error:",
+        console.warn(
+            "Tabdeal API Error:",
             error
         );
-
 
         tabdealPrice =
             loadTabdealPrice();
@@ -4775,7 +4835,10 @@ async function loadDashboardData() {
     );
 
 
-    /* AVERAGE OF THREE EXCHANGES */
+    /* =================================================
+       AVERAGE LIVE PRICE
+       NOW USES THREE EXCHANGES
+    ================================================= */
 
     const averageLivePrice =
         calculateAverageLivePrice(
@@ -4798,27 +4861,6 @@ async function loadDashboardData() {
         );
 
     }
-
-
-    console.log(
-        "Nobitex:",
-        currentPrice
-    );
-
-    console.log(
-        "Exir:",
-        exirPrice
-    );
-
-    console.log(
-        "Tabdeal:",
-        tabdealPrice
-    );
-
-    console.log(
-        "Average of 3:",
-        averageLivePrice
-    );
 
 
     /* CONNECTION STATUS */
@@ -5073,6 +5115,8 @@ async function loadDashboardData() {
 
         if (
             Number.isFinite(parsed)
+            &&
+            parsed > 0
         ) {
 
             previousTabdeal =
@@ -5100,6 +5144,8 @@ async function loadDashboardData() {
 
         if (
             tabdealPrice !== null
+            &&
+            tabdealPrice > 0
         ) {
 
             sessionStorage.setItem(
@@ -5407,7 +5453,7 @@ function startAutoRefresh() {
                     catch (error) {
 
                         console.error(
-                            "Refresh Error:",
+                            "Auto Refresh Error:",
                             error
                         );
 
