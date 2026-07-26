@@ -4516,61 +4516,112 @@ function resolveCalculationPrice(
 
 async function refreshDashboardData() {
 
+    let data = null;
+
+    let nobitexPrice = null;
+
+    let exirPrice = null;
+
+    let usingCachedData = false;
+
+    let usingCachedPrice = false;
+
+    let usingCachedExir = false;
+
+
+    /* =================================================
+       LOAD DATA.JSON
+       ONLINE -> SAVE CACHE
+       OFFLINE -> USE LAST SAVED DATA
+    ================================================= */
+
     try {
 
-        const loaded =
-            await loadData();
-
-
-        const data =
-            loaded.data;
-
-
-        const annualBankRate =
-            Number(
-                data.annualBankRate || 40
+        const dataResponse =
+            await fetch(
+                "data.json?x=" +
+                Date.now(),
+                {
+                    cache:
+                        "no-store"
+                }
             );
 
+        if (
+            !dataResponse.ok
+        ) {
+            throw new Error(
+                "Cannot load data.json"
+            );
+        }
 
-        const divisor =
-            Number(
-                data.priceDivisor || 10
+        data =
+            await dataResponse.json();
+
+        saveLocalData(data);
+
+    }
+
+    catch (error) {
+
+        console.warn(
+            "Using cached dashboard data:",
+            error
+        );
+
+        data =
+            loadLocalData();
+
+        usingCachedData = true;
+
+        if (!data) {
+
+            throw new Error(
+                "Offline and no saved dashboard data is available."
             );
 
+        }
 
-        const defaultPrice =
-            Number(
-                data.defaultPrice
+    }
+
+
+    const annualBankRate =
+        Number(
+            data.annualBankRate || 40
+        );
+
+
+    const divisor =
+        Number(
+            data.priceDivisor || 10
+        );
+
+
+    const defaultPrice =
+        Number(
+            data.defaultPrice
+        );
+
+
+    /* =================================================
+       LOAD NOBITEX PRICE
+       ONLINE -> SAVE CACHE
+       OFFLINE -> USE LAST SAVED PRICE
+    ================================================= */
+
+    try {
+
+        nobitexPrice =
+            await getCurrentPrice(
+                data.priceApi,
+                divisor
             );
 
-
-        const cachedNobitexPrice =
-            loadLocalPrice();
-
-
-        const cachedExirPrice =
-            loadLocalExirPrice();
-
-
-        let nobitexPrice =
-            null;
-
-
-        let exirPrice =
-            null;
-
-
-        try {
-
-            nobitexPrice =
-                await getCurrentPrice(
-
-                    data.priceApi,
-
-                    divisor
-
-                );
-
+        if (
+            Number.isFinite(
+                nobitexPrice
+            )
+        ) {
 
             saveLocalPrice(
                 nobitexPrice
@@ -4578,23 +4629,41 @@ async function refreshDashboardData() {
 
         }
 
-        catch (error) {
+    }
 
-            console.warn(
-                "Nobitex unavailable:",
-                error.message
+    catch (error) {
+
+        console.warn(
+            "Nobitex unavailable. Using cached price:",
+            error
+        );
+
+        nobitexPrice =
+            loadLocalPrice();
+
+        usingCachedPrice = true;
+
+    }
+
+
+    /* =================================================
+       LOAD EXIR PRICE
+       ONLINE -> SAVE CACHE
+       OFFLINE -> USE LAST SAVED PRICE
+    ================================================= */
+
+    try {
+
+        exirPrice =
+            await getExirPrice(
+                data.exirApi
             );
 
-        }
-
-
-        try {
-
-            exirPrice =
-                await getExirPrice(
-                    data.exirApi
-                );
-
+        if (
+            Number.isFinite(
+                exirPrice
+            )
+        ) {
 
             saveLocalExirPrice(
                 exirPrice
@@ -4602,43 +4671,88 @@ async function refreshDashboardData() {
 
         }
 
-        catch (error) {
+    }
 
-            console.warn(
-                "Exir unavailable:",
-                error.message
-            );
+    catch (error) {
+
+        console.warn(
+            "Exir unavailable. Using cached price:",
+            error
+        );
+
+        exirPrice =
+            loadLocalExirPrice();
+
+        usingCachedExir = true;
+
+    }
+
+
+    /* =================================================
+       FINAL FALLBACK
+       NEVER ERASE A PREVIOUSLY SAVED VALUE
+    ================================================= */
+
+    if (
+        !Number.isFinite(
+            nobitexPrice
+        )
+    ) {
+
+        const cachedPrice =
+            loadLocalPrice();
+
+        if (
+            Number.isFinite(
+                cachedPrice
+            )
+        ) {
+
+            nobitexPrice =
+                cachedPrice;
+
+            usingCachedPrice = true;
 
         }
 
+    }
 
-        /*
-           IMPORTANT:
 
-           This is the price used in ALL
-           portfolio calculations.
+    if (
+        !Number.isFinite(
+            exirPrice
+        )
+    ) {
 
-           If both exchanges are available:
+        const cachedExir =
+            loadLocalExirPrice();
 
-           calculationPrice =
-           (Nobitex + Exir) / 2
-        */
+        if (
+            Number.isFinite(
+                cachedExir
+            )
+        ) {
 
-        const calculationPrice =
+            exirPrice =
+                cachedExir;
 
-            resolveCalculationPrice(
+            usingCachedExir = true;
 
-                nobitexPrice,
+        }
 
-                exirPrice,
+    }
 
-                cachedNobitexPrice,
 
-                cachedExirPrice,
+    /* =================================================
+       ORIGINAL CALCULATION PRICE LOGIC
+    ================================================= */
 
-                defaultPrice
-
-            );
+    const calculationPrice =
+        resolveCalculationPrice(
+            nobitexPrice,
+            exirPrice,
+            defaultPrice
+        );
 
 
         const today =
