@@ -4,7 +4,7 @@
    CONFIGURATION
 ===================================================== */
 
-const CACHE_NAME = "financial-dashboard-v4";
+const CACHE_NAME = "financial-dashboard-v5";
 
 const STATIC_CACHE = `${CACHE_NAME}-static`;
 const DATA_CACHE = `${CACHE_NAME}-data`;
@@ -75,17 +75,13 @@ self.addEventListener("activate", event => {
                             return (
 
                                 cacheName.startsWith(
-
                                     "financial-dashboard-"
-
                                 )
 
                                 &&
 
                                 !validCaches.includes(
-
                                     cacheName
-
                                 )
 
                             );
@@ -95,9 +91,7 @@ self.addEventListener("activate", event => {
                         .map(cacheName => {
 
                             return caches.delete(
-
                                 cacheName
-
                             );
 
                         })
@@ -130,42 +124,25 @@ self.addEventListener("fetch", event => {
        فقط GET
     */
 
-    if (
-
-        request.method !== "GET"
-
-    ) {
+    if (request.method !== "GET") {
 
         return;
 
     }
 
 
-    const url = new URL(
-
-        request.url
-
-    );
+    const url = new URL(request.url);
 
 
     /*
        Navigation
-       Offline fallback
     */
 
-    if (
-
-        request.mode === "navigate"
-
-    ) {
+    if (request.mode === "navigate") {
 
         event.respondWith(
 
-            networkFirstNavigation(
-
-                request
-
-            )
+            networkFirstNavigation(request)
 
         );
 
@@ -176,7 +153,6 @@ self.addEventListener("fetch", event => {
 
     /*
        data.json
-       Network First
     */
 
     if (
@@ -185,21 +161,13 @@ self.addEventListener("fetch", event => {
 
         &&
 
-        url.pathname.endsWith(
-
-            "/data.json"
-
-        )
+        url.pathname.endsWith("/data.json")
 
     ) {
 
         event.respondWith(
 
-            networkFirstData(
-
-                request
-
-            )
+            networkFirstData(request)
 
         );
 
@@ -209,24 +177,56 @@ self.addEventListener("fetch", event => {
 
 
     /*
-       External APIs
-       فقط Network
-       بدون Cache کردن پاسخ‌های لحظه‌ای
+       APIهای خارجی
+       
+       مهم:
+       پاسخ API را دستکاری نمی‌کنیم.
+       اگر API قطع باشد فقط همان API خطا می‌دهد
+       و باعث Offline شدن کل صفحه نمی‌شود.
     */
 
-    if (
-
-        url.origin !== self.location.origin
-
-    ) {
+    if (url.origin !== self.location.origin) {
 
         event.respondWith(
 
-            networkOnly(
+            fetch(request, {
 
-                request
+                cache: "no-store",
 
-            )
+                credentials: "omit"
+
+            })
+
+            .catch(() => {
+
+                return new Response(
+
+                    JSON.stringify({
+
+                        error:
+                            "External API unavailable"
+
+                    }),
+
+                    {
+
+                        status: 503,
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json",
+
+                            "Cache-Control":
+                                "no-store"
+
+                        }
+
+                    }
+
+                );
+
+            })
 
         );
 
@@ -236,17 +236,12 @@ self.addEventListener("fetch", event => {
 
 
     /*
-       Local Static Files
-       Stale While Revalidate
+       فایل‌های داخلی
     */
 
     event.respondWith(
 
-        staleWhileRevalidate(
-
-            request
-
-        )
+        staleWhileRevalidate(request)
 
     );
 
@@ -258,43 +253,26 @@ self.addEventListener("fetch", event => {
    NETWORK FIRST
 ===================================================== */
 
-async function networkFirstNavigation(
-
-    request
-
-) {
+async function networkFirstNavigation(request) {
 
     try {
 
-        const response = await fetch(
+        const response = await fetch(request, {
 
-            request
+            cache: "no-store"
 
-        );
+        });
 
 
-        if (
-
-            response
-
-            &&
-
-            response.ok
-
-        ) {
+        if (response && response.ok) {
 
             const cache = await caches.open(
-
                 STATIC_CACHE
-
             );
 
             await cache.put(
-
                 request,
-
                 response.clone()
-
             );
 
         }
@@ -306,36 +284,22 @@ async function networkFirstNavigation(
 
     catch (error) {
 
-        const cachedResponse = await caches.match(
-
-            request
-
-        );
+        const cachedResponse =
+            await caches.match(request);
 
 
-        if (
-
-            cachedResponse
-
-        ) {
+        if (cachedResponse) {
 
             return cachedResponse;
 
         }
 
 
-        const fallback = await caches.match(
-
-            "./index.html"
-
-        );
+        const fallback =
+            await caches.match("./index.html");
 
 
-        if (
-
-            fallback
-
-        ) {
+        if (fallback) {
 
             return fallback;
 
@@ -353,7 +317,6 @@ async function networkFirstNavigation(
                 headers: {
 
                     "Content-Type":
-
                         "text/plain; charset=utf-8"
 
                 }
@@ -372,11 +335,7 @@ async function networkFirstNavigation(
    NETWORK FIRST
 ===================================================== */
 
-async function networkFirstData(
-
-    request
-
-) {
+async function networkFirstData(request) {
 
     try {
 
@@ -393,20 +352,10 @@ async function networkFirstData(
         );
 
 
-        if (
-
-            response
-
-            &&
-
-            response.ok
-
-        ) {
+        if (response && response.ok) {
 
             const cache = await caches.open(
-
                 DATA_CACHE
-
             );
 
 
@@ -427,18 +376,11 @@ async function networkFirstData(
 
     catch (error) {
 
-        const cachedResponse = await caches.match(
-
-            request
-
-        );
+        const cachedResponse =
+            await caches.match(request);
 
 
-        if (
-
-            cachedResponse
-
-        ) {
+        if (cachedResponse) {
 
             return cachedResponse;
 
@@ -452,7 +394,6 @@ async function networkFirstData(
                 error: "Offline",
 
                 message:
-
                     "Cached data is not available."
 
             }),
@@ -464,59 +405,6 @@ async function networkFirstData(
                 headers: {
 
                     "Content-Type":
-
-                        "application/json"
-
-                }
-
-            }
-
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   EXTERNAL REQUESTS
-   NETWORK ONLY
-===================================================== */
-
-async function networkOnly(
-
-    request
-
-) {
-
-    try {
-
-        return await fetch(
-
-            request
-
-        );
-
-    }
-
-    catch (error) {
-
-        return new Response(
-
-            JSON.stringify({
-
-                error: "Network unavailable"
-
-            }),
-
-            {
-
-                status: 503,
-
-                headers: {
-
-                    "Content-Type":
-
                         "application/json"
 
                 }
@@ -535,22 +423,21 @@ async function networkOnly(
    STALE WHILE REVALIDATE
 ===================================================== */
 
-async function staleWhileRevalidate(
+async function staleWhileRevalidate(request) {
 
-    request
-
-) {
-
-    const cachedResponse = await caches.match(
-
-        request
-
-    );
+    const cachedResponse =
+        await caches.match(request);
 
 
     const networkResponse = fetch(
 
-        request
+        request,
+
+        {
+
+            cache: "no-store"
+
+        }
 
     )
 
@@ -567,11 +454,10 @@ async function staleWhileRevalidate(
 
             ) {
 
-                const cache = await caches.open(
-
-                    RUNTIME_CACHE
-
-                );
+                const cache =
+                    await caches.open(
+                        RUNTIME_CACHE
+                    );
 
 
                 await cache.put(
@@ -596,25 +482,18 @@ async function staleWhileRevalidate(
         });
 
 
-    if (
-
-        cachedResponse
-
-    ) {
+    if (cachedResponse) {
 
         return cachedResponse;
 
     }
 
 
-    const response = await networkResponse;
+    const response =
+        await networkResponse;
 
 
-    if (
-
-        response
-
-    ) {
+    if (response) {
 
         return response;
 
@@ -632,7 +511,6 @@ async function staleWhileRevalidate(
             headers: {
 
                 "Content-Type":
-
                     "text/plain; charset=utf-8"
 
             }
@@ -654,27 +532,21 @@ self.addEventListener(
 
     event => {
 
-
         let data = {
 
             title:
-
                 "Financial Dashboard",
 
             body:
-
                 "Price Alert",
 
             icon:
-
                 "./icon.png",
 
             badge:
-
                 "./icon.png",
 
             url:
-
                 "./index.html"
 
         };
@@ -682,16 +554,9 @@ self.addEventListener(
 
         try {
 
-
-            if (
-
-                event.data
-
-            ) {
-
+            if (event.data) {
 
                 const payload =
-
                     event.data.json();
 
 
@@ -709,7 +574,6 @@ self.addEventListener(
 
         catch (error) {
 
-
             console.error(
 
                 "Push data error:",
@@ -724,15 +588,12 @@ self.addEventListener(
         const options = {
 
             body:
-
                 data.body,
 
             icon:
-
                 data.icon,
 
             badge:
-
                 data.badge,
 
             vibrate: [
@@ -746,17 +607,14 @@ self.addEventListener(
             ],
 
             tag:
-
                 "financial-price-alert",
 
             renotify:
-
                 true,
 
             data: {
 
                 url:
-
                     data.url
 
             }
@@ -791,7 +649,6 @@ self.addEventListener(
 
     event => {
 
-
         event.notification.close();
 
 
@@ -814,67 +671,46 @@ self.addEventListener(
 
         event.waitUntil(
 
-
             clients.matchAll({
 
                 type:
-
                     "window",
 
                 includeUncontrolled:
-
                     true
 
             })
 
+            .then(clientList => {
 
-                .then(clientList => {
+                for (
 
+                    const client of clientList
 
-                    for (
+                ) {
 
-                        const client of clientList
+                    if ("focus" in client) {
 
-                    ) {
-
-
-                        if (
-
-                            "focus" in client
-
-                        ) {
-
-
-                            client.navigate(
-
-                                targetUrl
-
-                            );
-
-
-                            return client.focus();
-
-                        }
-
-                    }
-
-
-                    if (
-
-                        clients.openWindow
-
-                    ) {
-
-
-                        return clients.openWindow(
-
+                        client.navigate(
                             targetUrl
-
                         );
 
+                        return client.focus();
+
                     }
 
-                })
+                }
+
+
+                if (clients.openWindow) {
+
+                    return clients.openWindow(
+                        targetUrl
+                    );
+
+                }
+
+            })
 
         );
 
