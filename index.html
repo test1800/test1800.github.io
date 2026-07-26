@@ -1141,13 +1141,14 @@ h1 {
 
 }
 
-
 /* =====================================================
    ULTRA COMPACT MODE
+   فعال شدن وقتی ارتفاع صفحه کمتر از 200px باشد
 ===================================================== */
 
 @media (max-height: 199px) {
 
+    /* مخفی کردن کل محتوای صفحه */
     body > .container > header > *:not(.live-price) {
         display: none !important;
     }
@@ -1158,6 +1159,7 @@ h1 {
         display: none !important;
     }
 
+    /* حذف فاصله و ظاهر اضافه هدر */
     body > .container {
         padding: 0 !important;
         width: 100% !important;
@@ -1175,6 +1177,7 @@ h1 {
         backdrop-filter: none !important;
     }
 
+    /* فقط بخش قیمت زنده */
     .live-price {
         display: flex !important;
         margin: 0 !important;
@@ -1184,10 +1187,12 @@ h1 {
         gap: 0 !important;
     }
 
+    /* مخفی کردن عنوان Live Market و Bank Rate */
     .live-market-header {
         display: none !important;
     }
 
+    /* نمایش دو قیمت در دو طرف */
     .live-price-values {
         display: flex !important;
         width: 100% !important;
@@ -1211,12 +1216,14 @@ h1 {
         justify-content: flex-end !important;
     }
 
-    .live-number {
-        font-size: 16px !important;
-        line-height: 1 !important;
-        font-weight: 700 !important;
-    }
+    /*   عدد قیمت */
+.live-number {
+    font-size: 16px !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+}
 
+    /* فلش کنار قیمت */
     .price-arrow {
         font-size: clamp(16px, 5vh, 22px) !important;
         width: auto !important;
@@ -1389,7 +1396,6 @@ h1 {
 <div
     id="dashboard"
     style="display:none;">
-
 
     <!-- =================================================
          OVERALL
@@ -2006,7 +2012,7 @@ h1 {
                     class="metric-value"
                     id="sixBank">
 
-                        -
+                    -
 
                 </div>
 
@@ -2361,13 +2367,11 @@ function $(id) {
 
 function safeText(id, value) {
 
-    const element =
-        $(id);
+    const element = $(id);
 
     if (element) {
 
-        element.textContent =
-            value;
+        element.textContent = value;
 
     }
 
@@ -2376,12 +2380,9 @@ function safeText(id, value) {
 
 function formatNumber(value) {
 
-    const number =
-        Number(value);
+    const number = Number(value);
 
-    if (
-        !Number.isFinite(number)
-    ) {
+    if (!Number.isFinite(number)) {
 
         return "-";
 
@@ -2395,12 +2396,9 @@ function formatNumber(value) {
 
 function formatMoneySigned(value) {
 
-    const number =
-        Number(value);
+    const number = Number(value);
 
-    if (
-        !Number.isFinite(number)
-    ) {
+    if (!Number.isFinite(number)) {
 
         return "-";
 
@@ -2409,9 +2407,7 @@ function formatMoneySigned(value) {
     const rounded =
         Math.round(number);
 
-    if (
-        rounded > 0
-    ) {
+    if (rounded > 0) {
 
         return "+" +
             rounded.toLocaleString("en-US");
@@ -2425,12 +2421,9 @@ function formatMoneySigned(value) {
 
 function formatPercent(value) {
 
-    const number =
-        Number(value);
+    const number = Number(value);
 
-    if (
-        !Number.isFinite(number)
-    ) {
+    if (!Number.isFinite(number)) {
 
         return "-";
 
@@ -2455,17 +2448,11 @@ function formatPercent(value) {
 }
 
 
-function setProfitLossClass(
-    id,
-    value
-) {
+function setProfitLossClass(id, value) {
 
-    const element =
-        $(id);
+    const element = $(id);
 
-    if (
-        !element
-    ) {
+    if (!element) {
 
         return;
 
@@ -2479,9 +2466,7 @@ function setProfitLossClass(
     const number =
         Number(value);
 
-    if (
-        !Number.isFinite(number)
-    ) {
+    if (!Number.isFinite(number)) {
 
         return;
 
@@ -2519,9 +2504,7 @@ const CACHE_KEYS = {
 };
 
 
-function saveLocalData(
-    data
-) {
+function saveLocalData(data) {
 
     try {
 
@@ -2571,9 +2554,7 @@ function loadLocalData() {
 }
 
 
-function saveNobitexPrice(
-    price
-) {
+function saveNobitexPrice(price) {
 
     try {
 
@@ -2627,9 +2608,7 @@ function loadNobitexPrice() {
 }
 
 
-function saveExirPrice(
-    price
-) {
+function saveExirPrice(price) {
 
     try {
 
@@ -2684,9 +2663,7 @@ function getCachedPriceTime() {
                 CACHE_KEYS.NOBITEX_TIME
             );
 
-        if (
-            !saved
-        ) {
+        if (!saved) {
 
             return "";
 
@@ -2706,34 +2683,16 @@ function getCachedPriceTime() {
         }
 
         return date.toLocaleString(
-
             "en-US",
-
             {
-
-                year:
-                    "numeric",
-
-                month:
-                    "2-digit",
-
-                day:
-                    "2-digit",
-
-                hour:
-                    "2-digit",
-
-                minute:
-                    "2-digit",
-
-                second:
-                    "2-digit",
-
-                hour12:
-                    false
-
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: false
             }
-
         );
 
     }
@@ -2759,17 +2718,13 @@ function showConnectionStatus(
     const element =
         $("connectionStatus");
 
-    if (
-        !element
-    ) {
+    if (!element) {
 
         return;
 
     }
 
-    if (
-        offline
-    ) {
+    if (offline) {
 
         element.className =
             "connection-status offline";
@@ -2802,22 +2757,16 @@ function setPriceArrow(
     const element =
         $(id);
 
-    if (
-        !element
-    ) {
+    if (!element) {
 
         return;
 
     }
 
     element.classList.remove(
-
         "arrow-up",
-
         "arrow-down",
-
         "arrow-flat"
-
     );
 
     const current =
@@ -2847,9 +2796,7 @@ function setPriceArrow(
 
     }
 
-    if (
-        current > previous
-    ) {
+    if (current > previous) {
 
         element.textContent =
             "↑";
@@ -2860,9 +2807,7 @@ function setPriceArrow(
 
     }
 
-    else if (
-        current < previous
-    ) {
+    else if (current < previous) {
 
         element.textContent =
             "↓";
@@ -2941,9 +2886,7 @@ function jalaliToGregorian(
 
     days %= 146097;
 
-    if (
-        days > 36524
-    ) {
+    if (days > 36524) {
 
         gy +=
             100 *
@@ -2953,9 +2896,7 @@ function jalaliToGregorian(
 
         days %= 36524;
 
-        if (
-            days >= 365
-        ) {
+        if (days >= 365) {
 
             days++;
 
@@ -2971,9 +2912,7 @@ function jalaliToGregorian(
 
     days %= 1461;
 
-    if (
-        days > 365
-    ) {
+    if (days > 365) {
 
         gy +=
             Math.floor(
@@ -3007,31 +2946,17 @@ function jalaliToGregorian(
     const monthDays = [
 
         0,
-
         31,
-
-        leap
-            ? 29
-            : 28,
-
+        leap ? 29 : 28,
         31,
-
         30,
-
         31,
-
         30,
-
         31,
-
         31,
-
         30,
-
         31,
-
         30,
-
         31
 
     ];
@@ -3054,13 +2979,9 @@ function jalaliToGregorian(
     }
 
     return new Date(
-
         gy,
-
         month - 1,
-
         day
-
     );
 
 }
@@ -3097,48 +3018,31 @@ function daysBetweenInclusive(
 
     const startDate =
         jalaliToGregorian(
-
             startParts[0],
-
             startParts[1],
-
             startParts[2]
-
         );
 
     const endDate =
         jalaliToGregorian(
-
             endParts[0],
-
             endParts[1],
-
             endParts[2]
-
         );
 
     const difference =
         Math.floor(
-
             (
-
                 endDate -
                 startDate
-
             )
-
             /
-
             86400000
-
         );
 
     return Math.max(
-
         0,
-
         difference + 1
-
     );
 
 }
@@ -3161,27 +3065,16 @@ function getTodayJalali() {
     const gdm = [
 
         0,
-
         31,
-
         59,
-
         90,
-
         120,
-
         151,
-
         181,
-
         212,
-
         243,
-
         273,
-
         304,
-
         334
 
     ];
@@ -3248,9 +3141,7 @@ function getTodayJalali() {
     days %=
         1461;
 
-    if (
-        days > 365
-    ) {
+    if (days > 365) {
 
         jy +=
             Math.floor(
@@ -3266,9 +3157,7 @@ function getTodayJalali() {
 
     let jd;
 
-    if (
-        days < 186
-    ) {
+    if (days < 186) {
 
         jm =
             1 +
@@ -3315,9 +3204,7 @@ function getTodayJalali() {
 }
 
 
-function dateNumber(
-    date
-) {
+function dateNumber(date) {
 
     const parts =
         String(date)
@@ -3354,24 +3241,16 @@ function dateNumber(
 ===================================================== */
 
 function compoundValue(
-
     principal,
-
     startDate,
-
     endDate,
-
     annualRate
-
 ) {
 
     const days =
         daysBetweenInclusive(
-
             startDate,
-
             endDate
-
         );
 
     const dailyRate =
@@ -3382,11 +3261,8 @@ function compoundValue(
         principal *
 
         Math.pow(
-
             1 + dailyRate,
-
             days
-
         )
 
     );
@@ -3399,19 +3275,13 @@ function compoundValue(
 ===================================================== */
 
 function calculatePortfolio(
-
     transactions,
-
     currentPrice,
-
     today,
-
     annualRate
-
 ) {
 
-    const lots =
-        [];
+    const lots = [];
 
     let realizedPurchase =
         0;
@@ -3425,16 +3295,10 @@ function calculatePortfolio(
     let sellCount =
         0;
 
-    let oversellAmount =
-        0;
-
 
     for (
-
         const transaction
-
         of transactions
-
     ) {
 
         const amount =
@@ -3471,9 +3335,7 @@ function calculatePortfolio(
 
 
         if (
-
             transaction.type === "buy"
-
         ) {
 
             buyCount++;
@@ -3493,9 +3355,7 @@ function calculatePortfolio(
 
 
         else if (
-
             transaction.type === "sell"
-
         ) {
 
             sellCount++;
@@ -3519,11 +3379,8 @@ function calculatePortfolio(
 
                 const used =
                     Math.min(
-
                         remaining,
-
                         lot.amount
-
                     );
 
                 const purchaseCost =
@@ -3536,27 +3393,18 @@ function calculatePortfolio(
 
                 const bankCost =
                     compoundValue(
-
                         purchaseCost,
-
                         lot.date,
-
                         transaction.date,
-
                         annualRate
-
                     );
 
                 realizedPurchase +=
-
                     saleRevenue -
-
                     purchaseCost;
 
                 realizedBank +=
-
                     saleRevenue -
-
                     bankCost;
 
                 lot.amount -=
@@ -3566,27 +3414,12 @@ function calculatePortfolio(
                     used;
 
                 if (
-
-                    lot.amount <=
-                    0.0000001
-
+                    lot.amount <= 0.0000001
                 ) {
 
                     lots.shift();
 
                 }
-
-            }
-
-
-            if (
-
-                remaining > 0
-
-            ) {
-
-                oversellAmount +=
-                    remaining;
 
             }
 
@@ -3597,59 +3430,34 @@ function calculatePortfolio(
 
     const currentQuantity =
         lots.reduce(
-
             (
-
                 total,
-
                 lot
-
             ) =>
-
                 total +
-
                 lot.amount,
-
             0
-
         );
 
 
     const paidAmount =
         lots.reduce(
-
             (
-
                 total,
-
                 lot
-
             ) =>
-
                 total +
-
                 lot.amount *
-
                 lot.price,
-
             0
-
         );
 
 
     const averagePurchasePrice =
-
         currentQuantity > 0
-
-            ?
-
-            paidAmount /
-
-            currentQuantity
-
-            :
-
-            0;
+            ? paidAmount /
+              currentQuantity
+            : 0;
 
 
     let bankValue =
@@ -3657,116 +3465,78 @@ function calculatePortfolio(
 
 
     for (
-
         const lot
-
         of lots
-
     ) {
 
         bankValue +=
-
             compoundValue(
-
                 lot.amount *
-
                 lot.price,
-
                 lot.date,
-
                 today,
-
                 annualRate
-
             );
 
     }
 
 
     const currentValue =
-
         currentQuantity *
-
         currentPrice;
 
 
     const bankAdjustedPrice =
-
         currentQuantity > 0
-
-            ?
-
-            bankValue /
-
-            currentQuantity
-
-            :
-
-            0;
+            ? bankValue /
+              currentQuantity
+            : 0;
 
 
     const unrealizedPurchaseAmount =
-
         currentValue -
-
         paidAmount;
 
 
     const unrealizedBankAmount =
-
         currentValue -
-
         bankValue;
 
 
     const plPurchase =
-
         paidAmount > 0
-
             ?
 
             (
 
                 unrealizedPurchaseAmount
-
                 /
-
                 paidAmount
 
             )
 
             *
-
             100
 
-            :
-
-            0;
+            : 0;
 
 
     const plBank =
-
         bankValue > 0
-
             ?
 
             (
 
                 unrealizedBankAmount
-
                 /
-
                 bankValue
 
             )
 
             *
-
             100
 
-            :
-
-            0;
+            : 0;
 
 
     return {
@@ -3799,9 +3569,7 @@ function calculatePortfolio(
 
         buyCount,
 
-        sellCount,
-
-        oversellAmount
+        sellCount
 
     };
 
@@ -3816,25 +3584,19 @@ function buildPeriods(
     transactions
 ) {
 
-    const periods =
-        [];
+    const periods = [];
 
     let current =
         null;
 
 
     for (
-
         const transaction
-
         of transactions
-
     ) {
 
         if (
-
             transaction.type === "buy"
-
         ) {
 
             if (
@@ -3856,9 +3618,7 @@ function buildPeriods(
             current = {
 
                 transactions: [
-
                     transaction
-
                 ],
 
                 startDate:
@@ -3877,9 +3637,7 @@ function buildPeriods(
 
         ) {
 
-            if (
-                current
-            ) {
+            if (current) {
 
                 current.transactions.push(
                     transaction
@@ -3918,11 +3676,8 @@ function buildPeriods(
 
 
 function getLastPeriods(
-
     transactions,
-
     count
-
 ) {
 
     const periods =
@@ -3931,24 +3686,17 @@ function getLastPeriods(
         );
 
     return periods
-
         .slice(-count)
-
         .flatMap(
-
             period =>
-
                 period.transactions
-
         );
 
 }
 
 
 function getLastPeriod(
-
     transactions
-
 ) {
 
     const periods =
@@ -3957,9 +3705,7 @@ function getLastPeriod(
         );
 
     if (
-
         periods.length === 0
-
     ) {
 
         return [];
@@ -3967,9 +3713,7 @@ function getLastPeriod(
     }
 
     return periods[
-
         periods.length - 1
-
     ].transactions;
 
 }
@@ -3980,13 +3724,9 @@ function getLastPeriod(
 ===================================================== */
 
 function displaySection(
-
     result,
-
     prefix,
-
     previousLivePrice
-
 ) {
 
     safeText(
@@ -3995,9 +3735,7 @@ function displaySection(
         "Average",
 
         formatNumber(
-
             result.averagePurchasePrice
-
         )
 
     );
@@ -4009,9 +3747,7 @@ function displaySection(
         "Paid",
 
         formatNumber(
-
             result.paidAmount
-
         )
 
     );
@@ -4023,9 +3759,7 @@ function displaySection(
         "Adjusted",
 
         formatNumber(
-
             result.bankAdjustedPrice
-
         )
 
     );
@@ -4037,9 +3771,7 @@ function displaySection(
         "Live",
 
         formatNumber(
-
             result.currentPrice
-
         )
 
     );
@@ -4063,9 +3795,7 @@ function displaySection(
         "Quantity",
 
         formatNumber(
-
             result.currentQuantity
-
         )
 
     );
@@ -4077,9 +3807,7 @@ function displaySection(
         "Value",
 
         formatNumber(
-
             result.currentValue
-
         )
 
     );
@@ -4091,9 +3819,7 @@ function displaySection(
         "Bank",
 
         formatNumber(
-
             result.bankValue
-
         )
 
     );
@@ -4105,9 +3831,7 @@ function displaySection(
         "PLPurchase",
 
         formatPercent(
-
             result.plPurchase
-
         )
 
     );
@@ -4119,9 +3843,7 @@ function displaySection(
         "PLBank",
 
         formatPercent(
-
             result.plBank
-
         )
 
     );
@@ -4133,9 +3855,7 @@ function displaySection(
         "UnrealizedPurchase",
 
         formatMoneySigned(
-
             result.unrealizedPurchaseAmount
-
         )
 
     );
@@ -4147,9 +3867,7 @@ function displaySection(
         "UnrealizedBank",
 
         formatMoneySigned(
-
             result.unrealizedBankAmount
-
         )
 
     );
@@ -4161,9 +3879,7 @@ function displaySection(
         "RealizedPurchase",
 
         formatMoneySigned(
-
             result.realizedPurchase
-
         )
 
     );
@@ -4175,9 +3891,7 @@ function displaySection(
         "RealizedBank",
 
         formatMoneySigned(
-
             result.realizedBank
-
         )
 
     );
@@ -4245,18 +3959,12 @@ function displaySection(
 
     const mainPrice =
         $(
-
             prefix +
             "MainPrice"
-
         );
 
 
-    if (
-
-        mainPrice
-
-    ) {
+    if (mainPrice) {
 
         mainPrice.classList.remove(
 
@@ -4268,15 +3976,11 @@ function displaySection(
 
 
         if (
-
             result.plBank >= 0
-
         ) {
 
             mainPrice.classList.add(
-
                 "status-green"
-
             );
 
         }
@@ -4284,9 +3988,7 @@ function displaySection(
         else {
 
             mainPrice.classList.add(
-
                 "status-red"
-
             );
 
         }
@@ -4296,51 +3998,18 @@ function displaySection(
 
     const resultBox =
         $(
-
             prefix +
             "Result"
-
         );
 
 
-    if (
-
-        resultBox
-
-    ) {
+    if (resultBox) {
 
         if (
-
-            result.oversellAmount > 0
-
-        ) {
-
-            resultBox.textContent =
-
-                "WARNING: Sell exceeds available quantity by "
-
-                +
-
-                formatNumber(
-
-                    result.oversellAmount
-
-                );
-
-
-            resultBox.style.color =
-                "#fbbf24";
-
-        }
-
-        else if (
-
             result.plBank >= 0
-
         ) {
 
             resultBox.textContent =
-
                 "Investment return is better than bank";
 
             resultBox.style.color =
@@ -4351,7 +4020,6 @@ function displaySection(
         else {
 
             resultBox.textContent =
-
                 "Bank return is better than investment";
 
             resultBox.style.color =
@@ -4364,18 +4032,12 @@ function displaySection(
 
     const tradeCount =
         $(
-
             prefix +
             "Trades"
-
         );
 
 
-    if (
-
-        tradeCount
-
-    ) {
+    if (tradeCount) {
 
         tradeCount.textContent =
 
@@ -4403,9 +4065,7 @@ function displaySection(
 ===================================================== */
 
 function displayLastAction(
-
     transactions
-
 ) {
 
     const badge =
@@ -4427,16 +4087,12 @@ function displayLastAction(
 
     const last =
         transactions[
-
             transactions.length - 1
-
         ];
 
 
     if (
-
         last.type === "buy"
-
     ) {
 
         badge.textContent =
@@ -4465,62 +4121,36 @@ function displayLastAction(
 ===================================================== */
 
 async function getCurrentPrice(
-
     apiUrl,
-
     divisor
-
 ) {
 
-    if (
-
-        !apiUrl
-
-    ) {
+    if (!apiUrl) {
 
         throw new Error(
-
             "Nobitex API URL is missing"
-
         );
 
     }
 
     const response =
         await fetch(
-
             apiUrl,
-
             {
-
-                method:
-                    "GET",
-
+                method: "GET",
                 headers: {
-
                     "Accept":
                         "application/json"
-
                 },
-
-                cache:
-                    "no-store"
-
+                cache: "no-store"
             }
-
         );
 
 
-    if (
-
-        !response.ok
-
-    ) {
+    if (!response.ok) {
 
         throw new Error(
-
             "Unable to get Nobitex price"
-
         );
 
     }
@@ -4535,28 +4165,17 @@ async function getCurrentPrice(
 
 
     const price =
-
         Number(rawPrice)
-
         /
-
         divisor;
 
 
     if (
-
-        !Number.isFinite(
-
-            price
-
-        )
-
+        !Number.isFinite(price)
     ) {
 
         throw new Error(
-
             "Invalid Nobitex price"
-
         );
 
     }
@@ -4572,21 +4191,13 @@ async function getCurrentPrice(
 ===================================================== */
 
 async function getExirPrice(
-
     apiUrl
-
 ) {
 
-    if (
-
-        !apiUrl
-
-    ) {
+    if (!apiUrl) {
 
         throw new Error(
-
             "Exir API URL is missing"
-
         );
 
     }
@@ -4594,39 +4205,22 @@ async function getExirPrice(
 
     const response =
         await fetch(
-
             apiUrl,
-
             {
-
-                method:
-                    "GET",
-
+                method: "GET",
                 headers: {
-
                     "Accept":
                         "application/json"
-
                 },
-
-                cache:
-                    "no-store"
-
+                cache: "no-store"
             }
-
         );
 
 
-    if (
-
-        !response.ok
-
-    ) {
+    if (!response.ok) {
 
         throw new Error(
-
             "Unable to get Exir price"
-
         );
 
     }
@@ -4682,19 +4276,11 @@ async function getExirPrice(
 
 
     if (
-
-        !Number.isFinite(
-
-            price
-
-        )
-
+        !Number.isFinite(price)
     ) {
 
         throw new Error(
-
             "Invalid Exir price"
-
         );
 
     }
@@ -4710,11 +4296,8 @@ async function getExirPrice(
 ===================================================== */
 
 function calculateAverageLivePrice(
-
     nobitexPrice,
-
     exirPrice
-
 ) {
 
     const prices = [
@@ -4724,16 +4307,12 @@ function calculateAverageLivePrice(
         Number(exirPrice)
 
     ].filter(
-
         Number.isFinite
-
     );
 
 
     if (
-
         prices.length === 0
-
     ) {
 
         return null;
@@ -4744,177 +4323,18 @@ function calculateAverageLivePrice(
     return (
 
         prices.reduce(
-
             (
-
                 total,
-
                 price
-
             ) =>
-
                 total +
-
                 price,
-
             0
-
         )
 
         /
 
         prices.length
-
-    );
-
-}
-
-
-/* =====================================================
-   PRICE FALLBACK ENGINE
-===================================================== */
-
-async function loadPriceWithFallback(
-
-    apiFunction,
-
-    apiUrl,
-
-    fallbackPrice,
-
-    saveFunction,
-
-    loadFunction
-
-) {
-
-    try {
-
-        const livePrice =
-            await apiFunction(
-
-                apiUrl
-
-            );
-
-
-        if (
-
-            Number.isFinite(
-
-                livePrice
-
-            )
-
-        ) {
-
-            saveFunction(
-
-                livePrice
-
-            );
-
-
-            return {
-
-                price:
-                    livePrice,
-
-                source:
-                    "live"
-
-            };
-
-        }
-
-    }
-
-    catch (error) {
-
-        console.warn(
-
-            "Live price unavailable:",
-
-            error
-
-        );
-
-    }
-
-
-    /* =================================================
-       FIRST FALLBACK: LOCAL CACHE
-    ================================================= */
-
-    const cachedPrice =
-        loadFunction();
-
-
-    if (
-
-        cachedPrice !== null
-
-        &&
-
-        Number.isFinite(
-
-            cachedPrice
-
-        )
-
-    ) {
-
-        return {
-
-            price:
-                cachedPrice,
-
-            source:
-                "cache"
-
-        };
-
-    }
-
-
-    /* =================================================
-       SECOND FALLBACK: DEFAULT PRICE
-    ================================================= */
-
-    const defaultPrice =
-        Number(
-
-            fallbackPrice
-
-        );
-
-
-    if (
-
-        Number.isFinite(
-
-            defaultPrice
-
-        )
-
-    ) {
-
-        return {
-
-            price:
-                defaultPrice,
-
-            source:
-                "default"
-
-        };
-
-    }
-
-
-    throw new Error(
-
-        "No live price, cache, or default price is available."
 
     );
 
@@ -4951,39 +4371,25 @@ async function loadDashboardData() {
         false;
 
 
-    /* =================================================
-       DATA.JSON
-    ================================================= */
+    /* DATA.JSON */
 
     try {
 
         const response =
             await fetch(
-
                 "data.json?x=" +
-
                 Date.now(),
-
                 {
-
                     cache:
                         "no-store"
-
                 }
-
             );
 
 
-        if (
-
-            !response.ok
-
-        ) {
+        if (!response.ok) {
 
             throw new Error(
-
                 "Cannot load data.json"
-
             );
 
         }
@@ -4994,32 +4400,21 @@ async function loadDashboardData() {
 
 
         saveLocalData(
-
             data
-
         );
 
     }
 
-    catch (
-
-        error
-
-    ) {
+    catch (error) {
 
         data =
             loadLocalData();
-
 
         usingCachedData =
             true;
 
 
-        if (
-
-            !data
-
-        ) {
+        if (!data) {
 
             throw new Error(
 
@@ -5034,121 +4429,108 @@ async function loadDashboardData() {
 
     const annualBankRate =
         Number(
-
             data.annualBankRate
-
         )
-
         ||
-
         40;
 
 
     const divisor =
         Number(
-
             data.priceDivisor
-
         )
-
         ||
-
         10;
 
 
-    const defaultPrice =
-        Number(
+    /* NOBITEX */
 
-            data.defaultPrice
+    try {
 
+        currentPrice =
+            await getCurrentPrice(
+                data.priceApi,
+                divisor
+            );
+
+
+        saveNobitexPrice(
+            currentPrice
         );
 
+    }
 
-    /* =================================================
-       NOBITEX
-    ================================================= */
+    catch (error) {
 
-    const nobitexResult =
-        await loadPriceWithFallback(
+        currentPrice =
+            loadNobitexPrice();
 
-            getCurrentPrice,
+        usingCachedNobitex =
+            true;
 
-            data.priceApi,
 
-            defaultPrice,
+        if (
+            currentPrice === null
+        ) {
 
-            saveNobitexPrice,
+            throw new Error(
 
-            loadNobitexPrice
+                "Nobitex price is unavailable and no cached price exists."
 
+            );
+
+        }
+
+    }
+
+
+    /* EXIR */
+
+    try {
+
+        exirPrice =
+            await getExirPrice(
+                data.exirApi
+            );
+
+
+        saveExirPrice(
+            exirPrice
         );
 
+    }
 
-    currentPrice =
-        nobitexResult.price;
+    catch (error) {
 
+        exirPrice =
+            loadExirPrice();
 
-    usingCachedNobitex =
-        nobitexResult.source !== "live";
+        usingCachedExir =
+            true;
 
-
-    /* =================================================
-       EXIR
-    ================================================= */
-
-    const exirResult =
-        await loadPriceWithFallback(
-
-            getExirPrice,
-
-            data.exirApi,
-
-            defaultPrice,
-
-            saveExirPrice,
-
-            loadExirPrice
-
-        );
+    }
 
 
-    exirPrice =
-        exirResult.price;
-
-
-    usingCachedExir =
-        exirResult.source !== "live";
-
-
-    /* =================================================
-       TODAY
-    ================================================= */
+    /* TODAY */
 
     const today =
         getTodayJalali();
 
 
     safeText(
-
         "today",
-
         today
-
     );
 
 
-    /* =================================================
-       MARKET PRICES
-    ================================================= */
+    /* MARKET PRICES */
 
     safeText(
 
         "currentPrice",
 
         formatNumber(
-
             currentPrice
-
         )
 
     );
@@ -5158,11 +4540,11 @@ async function loadDashboardData() {
 
         "exirPrice",
 
-        formatNumber(
-
-            exirPrice
-
-        )
+        exirPrice === null
+            ? "-"
+            : formatNumber(
+                exirPrice
+            )
 
     );
 
@@ -5172,44 +4554,32 @@ async function loadDashboardData() {
         "bankRate",
 
         annualBankRate +
-
         "%"
 
     );
 
 
-    /* =================================================
-       AVERAGE LIVE PRICE
-    ================================================= */
+    /* AVERAGE LIVE PRICE */
 
     const averageLivePrice =
         calculateAverageLivePrice(
-
             currentPrice,
-
             exirPrice
-
         );
 
 
     if (
-
         averageLivePrice === null
-
     ) {
 
         throw new Error(
-
             "No valid live market price is available."
-
         );
 
     }
 
 
-    /* =================================================
-       CONNECTION STATUS
-    ================================================= */
+    /* CONNECTION STATUS */
 
     const isOffline =
 
@@ -5228,44 +4598,28 @@ async function loadDashboardData() {
         usingCachedExir;
 
 
-    if (
-
-        isOffline
-
-    ) {
+    if (isOffline) {
 
         const cachedTime =
             getCachedPriceTime();
 
 
         let message =
+            "Offline Mode • Showing Cached Data";
 
-            "Offline Mode • Showing Fallback Data";
 
-
-        if (
-
-            cachedTime
-
-        ) {
+        if (cachedTime) {
 
             message +=
-
-                " • Saved: "
-
-                +
-
+                " • Saved: " +
                 cachedTime;
 
         }
 
 
         showConnectionStatus(
-
             true,
-
             message
-
         );
 
     }
@@ -5273,61 +4627,41 @@ async function loadDashboardData() {
     else {
 
         showConnectionStatus(
-
             false,
-
             "Online • Live Data"
-
         );
 
     }
 
 
-    /* =================================================
-       UPDATE TIME
-    ================================================= */
+    /* UPDATE TIME */
 
     let updateTime =
         new Date()
-
             .toLocaleTimeString(
-
                 "en-US",
-
                 {
-
                     hour:
                         "2-digit",
-
                     minute:
                         "2-digit",
-
                     second:
                         "2-digit",
-
                     hour12:
                         false
-
                 }
-
             );
 
 
     if (
-
         usingCachedNobitex
-
     ) {
 
         const cachedTime =
             getCachedPriceTime();
 
 
-        if (
-
-            cachedTime
-
-        ) {
+        if (cachedTime) {
 
             updateTime =
                 cachedTime;
@@ -5342,15 +4676,12 @@ async function loadDashboardData() {
         "updateTime",
 
         "Last Update: " +
-
         updateTime
 
     );
 
 
-    /* =================================================
-       PREVIOUS NOBITEX
-    ================================================= */
+    /* PREVIOUS NOBITEX */
 
     let previousNobitex =
         null;
@@ -5360,28 +4691,16 @@ async function loadDashboardData() {
 
         const saved =
             sessionStorage.getItem(
-
                 "previousNobitexPrice"
-
             );
 
 
         const parsed =
-            Number(
-
-                saved
-
-            );
+            Number(saved);
 
 
         if (
-
-            Number.isFinite(
-
-                parsed
-
-            )
-
+            Number.isFinite(parsed)
         ) {
 
             previousNobitex =
@@ -5391,11 +4710,7 @@ async function loadDashboardData() {
 
     }
 
-    catch (
-
-        error
-
-    ) {}
+    catch (error) {}
 
 
     setPriceArrow(
@@ -5416,25 +4731,17 @@ async function loadDashboardData() {
             "previousNobitexPrice",
 
             String(
-
                 currentPrice
-
             )
 
         );
 
     }
 
-    catch (
-
-        error
-
-    ) {}
+    catch (error) {}
 
 
-    /* =================================================
-       PREVIOUS EXIR
-    ================================================= */
+    /* PREVIOUS EXIR */
 
     let previousExir =
         null;
@@ -5444,28 +4751,16 @@ async function loadDashboardData() {
 
         const saved =
             sessionStorage.getItem(
-
                 "previousExirPrice"
-
             );
 
 
         const parsed =
-            Number(
-
-                saved
-
-            );
+            Number(saved);
 
 
         if (
-
-            Number.isFinite(
-
-                parsed
-
-            )
-
+            Number.isFinite(parsed)
         ) {
 
             previousExir =
@@ -5475,11 +4770,7 @@ async function loadDashboardData() {
 
     }
 
-    catch (
-
-        error
-
-    ) {}
+    catch (error) {}
 
 
     setPriceArrow(
@@ -5495,37 +4786,33 @@ async function loadDashboardData() {
 
     try {
 
-        sessionStorage.setItem(
+        if (
+            exirPrice !== null
+        ) {
 
-            "previousExirPrice",
+            sessionStorage.setItem(
 
-            String(
+                "previousExirPrice",
 
-                exirPrice
+                String(
+                    exirPrice
+                )
 
-            )
+            );
 
-        );
+        }
 
     }
 
-    catch (
-
-        error
-
-    ) {}
+    catch (error) {}
 
 
-    /* =================================================
-       TRANSACTIONS
-    ================================================= */
+    /* TRANSACTIONS */
 
     const transactions =
 
         Array.isArray(
-
             data.transactions
-
         )
 
         ?
@@ -5543,13 +4830,11 @@ async function loadDashboardData() {
                     (
 
                         transaction.type ===
-
                         "buy"
 
                         ||
 
                         transaction.type ===
-
                         "sell"
 
                     )
@@ -5561,25 +4846,18 @@ async function loadDashboardData() {
             .sort(
 
                 (
-
                     a,
-
                     b
-
                 ) =>
 
                     dateNumber(
-
                         a.date
-
                     )
 
                     -
 
                     dateNumber(
-
                         b.date
-
                     )
 
             )
@@ -5589,9 +4867,7 @@ async function loadDashboardData() {
         [];
 
 
-    /* =================================================
-       OVERALL
-    ================================================= */
+    /* OVERALL */
 
     const overall =
         calculatePortfolio(
@@ -5618,9 +4894,7 @@ async function loadDashboardData() {
     );
 
 
-    /* =================================================
-       LAST 6 PERIODS
-    ================================================= */
+    /* LAST 6 PERIODS */
 
     const sixTransactions =
         getLastPeriods(
@@ -5657,9 +4931,7 @@ async function loadDashboardData() {
     );
 
 
-    /* =================================================
-       LAST PERIOD
-    ================================================= */
+    /* LAST PERIOD */
 
     const lastTransactions =
         getLastPeriod(
@@ -5722,9 +4994,7 @@ async function loadDashboardData() {
     );
 
 
-    /* =================================================
-       SAVE AVERAGE PRICE
-    ================================================= */
+    /* SAVE AVERAGE PRICE */
 
     try {
 
@@ -5733,35 +5003,23 @@ async function loadDashboardData() {
             "previousAverageLivePrice",
 
             String(
-
                 averageLivePrice
-
             )
 
         );
 
     }
 
-    catch (
-
-        error
-
-    ) {}
+    catch (error) {}
 
 
-    /* =================================================
-       SHOW DASHBOARD
-    ================================================= */
+    /* SHOW DASHBOARD */
 
     const loading =
         $("loading");
 
 
-    if (
-
-        loading
-
-    ) {
+    if (loading) {
 
         loading.style.display =
             "none";
@@ -5773,11 +5031,7 @@ async function loadDashboardData() {
         $("dashboard");
 
 
-    if (
-
-        dashboard
-
-    ) {
+    if (dashboard) {
 
         dashboard.style.display =
             "grid";
@@ -5798,9 +5052,7 @@ let countdownTimer =
 function startAutoRefresh() {
 
     clearInterval(
-
         countdownTimer
-
     );
 
 
@@ -5813,14 +5065,12 @@ function startAutoRefresh() {
         "updateCountdown",
 
         seconds +
-
         "s"
 
     );
 
 
     countdownTimer =
-
         setInterval(
 
             async () => {
@@ -5829,34 +5079,14 @@ function startAutoRefresh() {
 
 
                 if (
-
                     seconds <= 0
-
                 ) {
 
                     seconds =
                         30;
 
 
-                    try {
-
-                        await loadDashboardData();
-
-                    }
-
-                    catch (
-
-                        error
-
-                    ) {
-
-                        console.error(
-
-                            error
-
-                        );
-
-                    }
+                    await loadDashboardData();
 
                 }
 
@@ -5866,7 +5096,6 @@ function startAutoRefresh() {
                     "updateCountdown",
 
                     seconds +
-
                     "s"
 
                 );
@@ -5894,7 +5123,7 @@ window.addEventListener(
 
             true,
 
-            "Offline Mode • Showing Fallback Data"
+            "Offline Mode • Showing Cached Data"
 
         );
 
@@ -5924,16 +5153,10 @@ window.addEventListener(
 
         }
 
-        catch (
-
-            error
-
-        ) {
+        catch (error) {
 
             console.error(
-
                 error
-
             );
 
         }
@@ -5957,16 +5180,10 @@ async function init() {
 
     }
 
-    catch (
-
-        error
-
-    ) {
+    catch (error) {
 
         console.error(
-
             error
-
         );
 
 
@@ -5974,11 +5191,7 @@ async function init() {
             $("loading");
 
 
-        if (
-
-            loading
-
-        ) {
+        if (loading) {
 
             loading.style.display =
                 "none";
@@ -5990,11 +5203,7 @@ async function init() {
             $("errorBox");
 
 
-        if (
-
-            errorBox
-
-        ) {
+        if (errorBox) {
 
             errorBox.innerHTML =
 
@@ -6019,13 +5228,9 @@ init();
 ===================================================== */
 
 if (
-
     "serviceWorker"
-
     in
-
     navigator
-
 ) {
 
     window.addEventListener(
