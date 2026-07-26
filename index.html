@@ -1141,6 +1141,104 @@ h1 {
 
 }
 
+/* =====================================================
+   ULTRA COMPACT MODE
+   فعال شدن وقتی ارتفاع صفحه کمتر از 200px باشد
+===================================================== */
+
+@media (max-height: 199px) {
+
+    /* مخفی کردن کل محتوای صفحه */
+    body > .container > header > *:not(.live-price) {
+        display: none !important;
+    }
+
+    body > .container > #errorBox,
+    body > .container > #loading,
+    body > .container > #dashboard {
+        display: none !important;
+    }
+
+    /* حذف فاصله و ظاهر اضافه هدر */
+    body > .container {
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    header {
+        display: block !important;
+        margin: 0 !important;
+        padding: 8px 12px !important;
+        border-radius: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+    }
+
+    /* فقط بخش قیمت زنده */
+    .live-price {
+        display: flex !important;
+        margin: 0 !important;
+        padding: 4px 8px !important;
+        border: none !important;
+        background: transparent !important;
+        gap: 0 !important;
+    }
+
+    /* مخفی کردن عنوان Live Market و Bank Rate */
+    .live-market-header {
+        display: none !important;
+    }
+
+    /* نمایش دو قیمت در دو طرف */
+    .live-price-values {
+        display: flex !important;
+        width: 100% !important;
+        gap: 10px !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+    }
+
+    .live-price-left,
+    .live-price-right {
+        display: flex !important;
+        flex: 0 1 auto !important;
+        min-width: 0 !important;
+    }
+
+    .live-price-left {
+        justify-content: flex-start !important;
+    }
+
+    .live-price-right {
+        justify-content: flex-end !important;
+    }
+
+    /*   عدد قیمت */
+.live-number {
+    font-size: 16px !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+}
+
+    /* فلش کنار قیمت */
+    .price-arrow {
+        font-size: clamp(16px, 5vh, 22px) !important;
+        width: auto !important;
+        height: auto !important;
+    }
+
+    .live-price-item {
+        gap: 5px !important;
+    }
+
+}
+
+
+
+    
 </style>
 
 </head>
