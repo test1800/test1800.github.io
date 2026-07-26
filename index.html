@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -6,8 +7,9 @@
 <meta charset="UTF-8">
 
 <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
+name="viewport"
+content="width=device-width, initial-scale=1.0"
+
 >
 
 <title>Financial Dashboard</title>
@@ -18,8 +20,9 @@
 >
 
 <meta
-    name="theme-color"
-    content="#0b1220"
+name="theme-color"
+content="#0b1220"
+
 >
 
 <link
@@ -349,11 +352,9 @@ h1 {
 
     display: inline-flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
     width: 18px;
 
@@ -1094,13 +1095,13 @@ h1 {
 
     .live-price-item {
 
-        gap: 6px;
+        gap: 4px;
 
     }
 
     .live-number {
 
-        font-size: 20px;
+        font-size: 17px;
 
     }
 
@@ -1110,7 +1111,7 @@ h1 {
 
         height: 22px;
 
-        font-size: 21px;
+        font-size: 19px;
 
     }
 
@@ -1148,6 +1149,7 @@ h1 {
     }
 
 }
+
 
 /* =====================================================
    ULTRA COMPACT MODE
@@ -1207,7 +1209,7 @@ h1 {
     .live-price-center,
     .live-price-right {
         display: flex !important;
-        flex: 1 1 33.333% !important;
+        flex: 0 1 auto !important;
         min-width: 0 !important;
     }
 
@@ -1224,19 +1226,40 @@ h1 {
     }
 
     .live-number {
-        font-size: 16px !important;
+        font-size: 14px !important;
         line-height: 1 !important;
         font-weight: 700 !important;
     }
 
     .price-arrow {
-        font-size: clamp(16px, 5vh, 22px) !important;
+        font-size: 16px !important;
         width: auto !important;
         height: auto !important;
     }
 
     .live-price-item {
-        gap: 5px !important;
+        gap: 3px !important;
+    }
+
+}
+
+
+/* =====================================================
+   VERY SMALL WIDTH
+===================================================== */
+
+@media (max-width:420px) {
+
+    .live-number {
+        font-size: 14px;
+    }
+
+    .live-price-values {
+        gap: 4px;
+    }
+
+    .price-arrow {
+        font-size: 16px;
     }
 
 }
@@ -1245,43 +1268,400 @@ h1 {
 
 </head>
 
-
 <body>
 
 <div class="container">
 
-
 <header>
 
-    <div class="header-top">
+```
+<div class="header-top">
 
-        <div>
+    <div>
 
-            <h1>
-                Financial Dashboard
-            </h1>
+        <h1>
+            Financial Dashboard
+        </h1>
 
-            <div class="today">
+        <div class="today">
 
-                <span id="today">
+            <span id="today">
+                -
+            </span>
+
+            <span
+                class="update-time"
+                id="updateTime">
+
+                Last Update: -
+
+            </span>
+
+            <span
+                class="update-countdown"
+                id="updateCountdown">
+
+                30s
+
+            </span>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- LIVE MARKET -->
+
+<div class="live-price">
+
+    <div class="live-market-header">
+
+        <span class="live-market-title">
+            Live Market
+        </span>
+
+        <span class="live-market-separator">
+            •
+        </span>
+
+        <span class="live-market-bank">
+
+            Bank Rate:
+
+            <span id="bankRate">
+                -
+            </span>
+
+        </span>
+
+    </div>
+
+
+    <div class="live-price-values">
+
+        <!-- NOBITEX -->
+
+        <div class="live-price-left">
+
+            <div class="live-price-item">
+
+                <div
+                    class="live-number"
+                    id="currentPrice">
+
                     -
-                </span>
 
-                <span
-                    class="update-time"
-                    id="updateTime">
+                </div>
 
-                    Last Update: -
+                <div
+                    class="price-arrow arrow-flat"
+                    id="topPriceArrow">
 
-                </span>
+                    →
 
-                <span
-                    class="update-countdown"
-                    id="updateCountdown">
+                </div>
 
-                    30s
+            </div>
 
-                </span>
+        </div>
+
+
+        <!-- TABDEAL -->
+
+        <div class="live-price-center">
+
+            <div class="live-price-item">
+
+                <div
+                    class="live-number"
+                    id="tabdealPrice">
+
+                    -
+
+                </div>
+
+                <div
+                    class="price-arrow arrow-flat"
+                    id="tabdealPriceArrow">
+
+                    →
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- EXIR -->
+
+        <div class="live-price-right">
+
+            <div class="live-price-item">
+
+                <div
+                    class="live-number"
+                    id="exirPrice">
+
+                    -
+
+                </div>
+
+                <div
+                    class="price-arrow arrow-flat"
+                    id="exirPriceArrow">
+
+                    →
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div
+    id="connectionStatus"
+    class="connection-status">
+
+</div>
+```
+
+</header>
+
+<div id="errorBox"></div>
+
+<div
+    id="loading"
+    class="loading">
+
+```
+Loading...
+```
+
+</div>
+
+<div
+    id="dashboard"
+    style="display:none;">
+
+```
+<!-- =================================================
+     OVERALL
+================================================= -->
+
+<div class="card">
+
+    <div class="card-header">
+
+        <div class="card-title">
+            Overall Performance
+        </div>
+
+        <div
+            class="trade-count"
+            id="overallTrades">
+
+            -
+
+        </div>
+
+    </div>
+
+
+    <div
+        class="main-price"
+        id="overallMainPrice">
+
+        <div class="main-price-values">
+
+            <div class="main-price-side">
+
+                <div class="main-price-title">
+                    Bank-Adjusted
+                </div>
+
+                <div
+                    class="main-price-number"
+                    id="overallAdjusted">
+
+                    -
+
+                </div>
+
+            </div>
+
+
+            <div class="main-price-side">
+
+                <div class="main-price-title">
+                    Live Average
+                </div>
+
+                <div class="live-main-number-row">
+
+                    <div
+                        class="live-main-number"
+                        id="overallLive">
+
+                        -
+
+                    </div>
+
+                    <div
+                        class="price-arrow arrow-flat"
+                        id="overallPriceArrow">
+
+                        →
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="pl-container">
+
+            <div class="pl-box">
+
+                <div class="pl-label">
+
+                    Unrealized P/L
+                    <br>
+                    vs Purchase
+
+                </div>
+
+                <div
+                    class="pl-value"
+                    id="overallPLPurchase">
+
+                    -
+
+                </div>
+
+            </div>
+
+
+            <div class="pl-box">
+
+                <div class="pl-label">
+
+                    Unrealized P/L
+                    <br>
+                    vs Bank
+
+                </div>
+
+                <div
+                    class="pl-value"
+                    id="overallPLBank">
+
+                    -
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="pl-container">
+
+            <div class="pl-box">
+
+                <div class="pl-label">
+
+                    Unrealized Amount
+                    <br>
+                    vs Purchase
+
+                </div>
+
+                <div
+                    class="pl-value"
+                    id="overallUnrealizedPurchase">
+
+                    -
+
+                </div>
+
+            </div>
+
+
+            <div class="pl-box">
+
+                <div class="pl-label">
+
+                    Unrealized Amount
+                    <br>
+                    vs Bank
+
+                </div>
+
+                <div
+                    class="pl-value"
+                    id="overallUnrealizedBank">
+
+                    -
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="result"
+            id="overallResult">
+
+            -
+
+        </div>
+
+    </div>
+
+
+    <div class="comparison">
+
+        <div class="compare-box">
+
+            <div class="compare-label">
+                Average Purchase
+            </div>
+
+            <div
+                class="compare-value"
+                id="overallAverage">
+
+                -
+
+            </div>
+
+        </div>
+
+
+        <div class="compare-box">
+
+            <div class="compare-label">
+                Paid Amount
+            </div>
+
+            <div
+                class="compare-value"
+                id="overallPaid">
+
+                -
 
             </div>
 
@@ -1290,44 +1670,158 @@ h1 {
     </div>
 
 
-    <!-- LIVE MARKET -->
+    <div class="metrics">
 
-    <div class="live-price">
+        <div class="metric">
 
-        <div class="live-market-header">
+            <div class="metric-label">
+                Current Quantity
+            </div>
 
-            <span class="live-market-title">
-                Live Market
-            </span>
+            <div
+                class="metric-value"
+                id="overallQuantity">
 
-            <span class="live-market-separator">
-                •
-            </span>
+                -
 
-            <span class="live-market-bank">
-
-                Bank Rate:
-
-                <span id="bankRate">
-                    -
-                </span>
-
-            </span>
+            </div>
 
         </div>
 
 
-        <div class="live-price-values">
+        <div class="metric">
 
-            <!-- NOBITEX -->
+            <div class="metric-label">
+                Current Value
+            </div>
 
-            <div class="live-price-left">
+            <div
+                class="metric-value"
+                id="overallValue">
 
-                <div class="live-price-item">
+                -
+
+            </div>
+
+        </div>
+
+
+        <div class="metric realized-combined">
+
+            <div class="realized-row">
+
+                <div class="realized-label">
+                    Realized P/L vs Purchase
+                </div>
+
+                <div
+                    class="realized-value"
+                    id="overallRealizedPurchase">
+
+                    -
+
+                </div>
+
+            </div>
+
+
+            <div class="realized-row">
+
+                <div class="realized-label">
+                    Realized P/L vs Bank
+                </div>
+
+                <div
+                    class="realized-value"
+                    id="overallRealizedBank">
+
+                    -
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="metric">
+
+            <div class="metric-label">
+                Bank Value
+            </div>
+
+            <div
+                class="metric-value"
+                id="overallBank">
+
+                -
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =================================================
+     LAST 6 PERIODS
+================================================= -->
+
+<div class="card">
+
+    <div class="card-header">
+
+        <div class="card-title">
+            Last 6 Periods
+        </div>
+
+        <div
+            class="trade-count"
+            id="sixTrades">
+
+            -
+
+        </div>
+
+    </div>
+
+
+    <div
+        class="main-price"
+        id="sixMainPrice">
+
+        <div class="main-price-values">
+
+            <div class="main-price-side">
+
+                <div class="main-price-title">
+                    Bank-Adjusted
+                </div>
+
+                <div
+                    class="main-price-number"
+                    id="sixAdjusted">
+
+                    -
+
+                </div>
+
+            </div>
+
+
+            <div class="main-price-side">
+
+                <div class="main-price-title">
+                    Live Average
+                </div>
+
+                <div class="live-main-number-row">
 
                     <div
-                        class="live-number"
-                        id="currentPrice">
+                        class="live-main-number"
+                        id="sixLive">
 
                         -
 
@@ -1335,7 +1829,7 @@ h1 {
 
                     <div
                         class="price-arrow arrow-flat"
-                        id="topPriceArrow">
+                        id="sixPriceArrow">
 
                         →
 
@@ -1345,57 +1839,272 @@ h1 {
 
             </div>
 
+        </div>
 
-            <!-- TABDEAL -->
 
-            <div class="live-price-center">
+        <div class="pl-container">
 
-                <div class="live-price-item">
+            <div class="pl-box">
 
-                    <div
-                        class="live-number"
-                        id="tabdealPrice">
+                <div class="pl-label">
 
-                        -
+                    Unrealized P/L
+                    <br>
+                    vs Purchase
 
-                    </div>
+                </div>
 
-                    <div
-                        class="price-arrow arrow-flat"
-                        id="tabdealPriceArrow">
+                <div
+                    class="pl-value"
+                    id="sixPLPurchase">
 
-                        →
-
-                    </div>
+                    -
 
                 </div>
 
             </div>
 
 
-            <!-- EXIR -->
+            <div class="pl-box">
 
-            <div class="live-price-right">
+                <div class="pl-label">
 
-                <div class="live-price-item">
-
-                    <div
-                        class="live-number"
-                        id="exirPrice">
-
-                        -
-
-                    </div>
-
-                    <div
-                        class="price-arrow arrow-flat"
-                        id="exirPriceArrow">
-
-                        →
-
-                    </div>
+                    Unrealized P/L
+                    <br>
+                    vs Bank
 
                 </div>
+
+                <div
+                    class="pl-value"
+                    id="sixPLBank">
+
+                    -
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="pl-container">
+
+            <div class="pl-box">
+
+                <div class="pl-label">
+
+                    Unrealized Amount
+                    <br>
+                    vs Purchase
+
+                </div>
+
+                <div
+                    class="pl-value"
+                    id="sixUnrealizedPurchase">
+
+                    -
+
+                </div>
+
+            </div>
+
+
+            <div class="pl-box">
+
+                <div class="pl-label">
+
+                    Unrealized Amount
+                    <br>
+                    vs Bank
+
+                </div>
+
+                <div
+                    class="pl-value"
+                    id="sixUnrealizedBank">
+
+                    -
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="result"
+            id="sixResult">
+
+            -
+
+        </div>
+
+    </div>
+
+
+    <div class="comparison">
+
+        <div class="compare-box">
+
+            <div class="compare-label">
+                Average Purchase
+            </div>
+
+            <div
+                class="compare-value"
+                id="sixAverage">
+
+                -
+
+            </div>
+
+        </div>
+
+
+        <div class="compare-box">
+
+            <div class="compare-label">
+                Paid Amount
+            </div>
+
+            <div
+                class="compare-value"
+                id="sixPaid">
+
+                -
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="metrics">
+
+        <div class="metric">
+
+            <div class="metric-label">
+                Current Quantity
+            </div>
+
+            <div
+                class="metric-value"
+                id="sixQuantity">
+
+                -
+
+            </div>
+
+        </div>
+
+
+        <div class="metric">
+
+            <div class="metric-label">
+                Current Value
+            </div>
+
+            <div
+                class="metric-value"
+                id="sixValue">
+
+                -
+
+            </div>
+
+        </div>
+
+
+        <div class="metric realized-combined">
+
+            <div class="realized-row">
+
+                <div class="realized-label">
+                    Realized P/L vs Purchase
+                </div>
+
+                <div
+                    class="realized-value"
+                    id="sixRealizedPurchase">
+
+                    -
+
+                </div>
+
+            </div>
+
+
+            <div class="realized-row">
+
+                <div class="realized-label">
+                    Realized P/L vs Bank
+                </div>
+
+                <div
+                    class="realized-value"
+                    id="sixRealizedBank">
+
+                    -
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="metric">
+
+            <div class="metric-label">
+                Bank Value
+            </div>
+
+            <div
+                class="metric-value"
+                id="sixBank">
+
+                -
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =================================================
+     LAST PERIOD
+================================================= -->
+
+<div class="card">
+
+    <div class="card-header">
+
+        <div class="card-title">
+            Last Period
+        </div>
+
+        <div class="period-info">
+
+            <div
+                class="trade-count"
+                id="lastTrades">
+
+                -
+
+            </div>
+
+            <div
+                class="action-badge"
+                id="lastAction">
+
+                -
 
             </div>
 
@@ -1405,213 +2114,20 @@ h1 {
 
 
     <div
-        id="connectionStatus"
-        class="connection-status">
+        class="main-price"
+        id="lastMainPrice">
 
-    </div>
+        <div class="main-price-values">
 
-</header>
+            <div class="main-price-side">
 
-
-<div id="errorBox"></div>
-
-
-<div
-    id="loading"
-    class="loading">
-
-    Loading...
-
-</div>
-
-
-<div
-    id="dashboard"
-    style="display:none;">
-
-    <!-- =================================================
-         OVERALL
-    ================================================= -->
-
-    <div class="card">
-
-        <div class="card-header">
-
-            <div class="card-title">
-                Overall Performance
-            </div>
-
-            <div
-                class="trade-count"
-                id="overallTrades">
-
-                -
-
-            </div>
-
-        </div>
-
-
-        <div
-            class="main-price"
-            id="overallMainPrice">
-
-            <div class="main-price-values">
-
-                <div class="main-price-side">
-
-                    <div class="main-price-title">
-                        Bank-Adjusted
-                    </div>
-
-                    <div
-                        class="main-price-number"
-                        id="overallAdjusted">
-
-                        -
-
-                    </div>
-
-                </div>
-
-
-                <div class="main-price-side">
-
-                    <div class="main-price-title">
-                        Live Average
-                    </div>
-
-                    <div class="live-main-number-row">
-
-                        <div
-                            class="live-main-number"
-                            id="overallLive">
-
-                            -
-
-                        </div>
-
-                        <div
-                            class="price-arrow arrow-flat"
-                            id="overallPriceArrow">
-
-                            →
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="pl-container">
-
-                <div class="pl-box">
-
-                    <div class="pl-label">
-                        Unrealized P/L
-                        <br>
-                        vs Purchase
-                    </div>
-
-                    <div
-                        class="pl-value"
-                        id="overallPLPurchase">
-
-                        -
-
-                    </div>
-
-                </div>
-
-
-                <div class="pl-box">
-
-                    <div class="pl-label">
-                        Unrealized P/L
-                        <br>
-                        vs Bank
-                    </div>
-
-                    <div
-                        class="pl-value"
-                        id="overallPLBank">
-
-                        -
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="pl-container">
-
-                <div class="pl-box">
-
-                    <div class="pl-label">
-                        Unrealized Amount
-                        <br>
-                        vs Purchase
-                    </div>
-
-                    <div
-                        class="pl-value"
-                        id="overallUnrealizedPurchase">
-
-                        -
-
-                    </div>
-
-                </div>
-
-
-                <div class="pl-box">
-
-                    <div class="pl-label">
-                        Unrealized Amount
-                        <br>
-                        vs Bank
-                    </div>
-
-                    <div
-                        class="pl-value"
-                        id="overallUnrealizedBank">
-
-                        -
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div
-                class="result"
-                id="overallResult">
-
-                -
-
-            </div>
-
-        </div>
-
-
-        <div class="comparison">
-
-            <div class="compare-box">
-
-                <div class="compare-label">
-                    Average Purchase
+                <div class="main-price-title">
+                    Bank-Adjusted
                 </div>
 
                 <div
-                    class="compare-value"
-                    id="overallAverage">
+                    class="main-price-number"
+                    id="lastAdjusted">
 
                     -
 
@@ -1620,15 +2136,73 @@ h1 {
             </div>
 
 
-            <div class="compare-box">
+            <div class="main-price-side">
 
-                <div class="compare-label">
-                    Paid Amount
+                <div class="main-price-title">
+                    Live Average
+                </div>
+
+                <div class="live-main-number-row">
+
+                    <div
+                        class="live-main-number"
+                        id="lastLive">
+
+                        -
+
+                    </div>
+
+                    <div
+                        class="price-arrow arrow-flat"
+                        id="lastPriceArrow">
+
+                        →
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="pl-container">
+
+            <div class="pl-box">
+
+                <div class="pl-label">
+
+                    Unrealized P/L
+                    <br>
+                    vs Purchase
+
                 </div>
 
                 <div
-                    class="compare-value"
-                    id="overallPaid">
+                    class="pl-value"
+                    id="lastPLPurchase">
+
+                    -
+
+                </div>
+
+            </div>
+
+
+            <div class="pl-box">
+
+                <div class="pl-label">
+
+                    Unrealized P/L
+                    <br>
+                    vs Bank
+
+                </div>
+
+                <div
+                    class="pl-value"
+                    id="lastPLBank">
 
                     -
 
@@ -1639,17 +2213,21 @@ h1 {
         </div>
 
 
-        <div class="metrics">
+        <div class="pl-container">
 
-            <div class="metric">
+            <div class="pl-box">
 
-                <div class="metric-label">
-                    Current Quantity
+                <div class="pl-label">
+
+                    Unrealized Amount
+                    <br>
+                    vs Purchase
+
                 </div>
 
                 <div
-                    class="metric-value"
-                    id="overallQuantity">
+                    class="pl-value"
+                    id="lastUnrealizedPurchase">
 
                     -
 
@@ -1658,412 +2236,19 @@ h1 {
             </div>
 
 
-            <div class="metric">
+            <div class="pl-box">
 
-                <div class="metric-label">
-                    Current Value
-                </div>
+                <div class="pl-label">
 
-                <div
-                    class="metric-value"
-                    id="overallValue">
-
-                    -
-
-                </div>
-
-            </div>
-
-
-            <div class="metric realized-combined">
-
-                <div class="realized-row">
-
-                    <div class="realized-label">
-                        Realized P/L vs Purchase
-                    </div>
-
-                    <div
-                        class="realized-value"
-                        id="overallRealizedPurchase">
-
-                        -
-
-                    </div>
-
-                </div>
-
-
-                <div class="realized-row">
-
-                    <div class="realized-label">
-                        Realized P/L vs Bank
-                    </div>
-
-                    <div
-                        class="realized-value"
-                        id="overallRealizedBank">
-
-                        -
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="metric">
-
-                <div class="metric-label">
-                    Bank Value
-                </div>
-
-                <div
-                    class="metric-value"
-                    id="overallBank">
-
-                    -
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- =================================================
-         LAST 6 PERIODS
-    ================================================= -->
-
-    <div class="card">
-
-        <div class="card-header">
-
-            <div class="card-title">
-                Last 6 Periods
-            </div>
-
-            <div
-                class="trade-count"
-                id="sixTrades">
-
-                -
-
-            </div>
-
-        </div>
-
-
-        <div
-            class="main-price"
-            id="sixMainPrice">
-
-            <div class="main-price-values">
-
-                <div class="main-price-side">
-
-                    <div class="main-price-title">
-                        Bank-Adjusted
-                    </div>
-
-                    <div
-                        class="main-price-number"
-                        id="sixAdjusted">
-
-                        -
-
-                    </div>
-
-                </div>
-
-
-                <div class="main-price-side">
-
-                    <div class="main-price-title">
-                        Live Average
-                    </div>
-
-                    <div class="live-main-number-row">
-
-                        <div
-                            class="live-main-number"
-                            id="sixLive">
-
-                            -
-
-                        </div>
-
-                        <div
-                            class="price-arrow arrow-flat"
-                            id="sixPriceArrow">
-
-                            →
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="pl-container">
-
-                <div class="pl-box">
-
-                    <div class="pl-label">
-                        Unrealized P/L
-                        <br>
-                        vs Purchase
-                    </div>
-
-                    <div
-                        class="pl-value"
-                        id="sixPLPurchase">
-
-                        -
-
-                    </div>
-
-                </div>
-
-
-                <div class="pl-box">
-
-                    <div class="pl-label">
-                        Unrealized P/L
-                        <br>
-                        vs Bank
-                    </div>
-
-                    <div
-                        class="pl-value"
-                        id="sixPLBank">
-
-                        -
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="pl-container">
-
-                <div class="pl-box">
-
-                    <div class="pl-label">
-                        Unrealized Amount
-                        <br>
-                        vs Purchase
-                    </div>
-
-                    <div
-                        class="pl-value"
-                        id="sixUnrealizedPurchase">
-
-                        -
-
-                    </div>
-
-                </div>
-
-
-                <div class="pl-box">
-
-                    <div class="pl-label">
-                        Unrealized Amount
-                        <br>
-                        vs Bank
-                    </div>
-
-                    <div
-                        class="pl-value"
-                        id="sixUnrealizedBank">
-
-                        -
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div
-                class="result"
-                id="sixResult">
-
-                -
-
-            </div>
-
-        </div>
-
-
-        <div class="comparison">
-
-            <div class="compare-box">
-
-                <div class="compare-label">
-                    Average Purchase
-                </div>
-
-                <div
-                    class="compare-value"
-                    id="sixAverage">
-
-                    -
-
-                </div>
-
-            </div>
-
-
-            <div class="compare-box">
-
-                <div class="compare-label">
-                    Paid Amount
-                </div>
-
-                <div
-                    class="compare-value"
-                    id="sixPaid">
-
-                    -
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <div class="metrics">
-
-            <div class="metric">
-
-                <div class="metric-label">
-                    Current Quantity
-                </div>
-
-                <div
-                    class="metric-value"
-                    id="sixQuantity">
-
-                    -
-
-                </div>
-
-            </div>
-
-
-            <div class="metric">
-
-                <div class="metric-label">
-                    Current Value
-                </div>
-
-                <div
-                    class="metric-value"
-                    id="sixValue">
-
-                    -
-
-                </div>
-
-            </div>
-
-
-            <div class="metric realized-combined">
-
-                <div class="realized-row">
-
-                    <div class="realized-label">
-                        Realized P/L vs Purchase
-                    </div>
-
-                    <div
-                        class="realized-value"
-                        id="sixRealizedPurchase">
-
-                        -
-
-                    </div>
-
-                </div>
-
-
-                <div class="realized-row">
-
-                    <div class="realized-label">
-                        Realized P/L vs Bank
-                    </div>
-
-                    <div
-                        class="realized-value"
-                        id="sixRealizedBank">
-
-                        -
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="metric">
-
-                <div class="metric-label">
-                    Bank Value
-                </div>
-
-                <div
-                    class="metric-value"
-                    id="sixBank">
-
-                    -
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- =================================================
-         LAST PERIOD
-    ================================================= -->
-
-    <div class="card">
-
-        <div class="card-header">
-
-            <div class="card-title">
-                Last Period
-            </div>
-
-            <div class="period-info">
-
-                <div
-                    class="trade-count"
-                    id="lastTrades">
-
-                    -
+                    Unrealized Amount
+                    <br>
+                    vs Bank
 
                 </div>
 
                 <div
-                    class="action-badge"
-                    id="lastAction">
+                    class="pl-value"
+                    id="lastUnrealizedBank">
 
                     -
 
@@ -2075,146 +2260,27 @@ h1 {
 
 
         <div
-            class="main-price"
-            id="lastMainPrice">
+            class="result"
+            id="lastResult">
 
-            <div class="main-price-values">
+            -
 
-                <div class="main-price-side">
+        </div>
 
-                    <div class="main-price-title">
-                        Bank-Adjusted
-                    </div>
-
-                    <div
-                        class="main-price-number"
-                        id="lastAdjusted">
-
-                        -
-
-                    </div>
-
-                </div>
+    </div>
 
 
-                <div class="main-price-side">
+    <div class="comparison">
 
-                    <div class="main-price-title">
-                        Live Average
-                    </div>
+        <div class="compare-box">
 
-                    <div class="live-main-number-row">
-
-                        <div
-                            class="live-main-number"
-                            id="lastLive">
-
-                            -
-
-                        </div>
-
-                        <div
-                            class="price-arrow arrow-flat"
-                            id="lastPriceArrow">
-
-                            →
-
-                        </div>
-
-                    </div>
-
-                </div>
-
+            <div class="compare-label">
+                Average Purchase
             </div>
-
-
-            <div class="pl-container">
-
-                <div class="pl-box">
-
-                    <div class="pl-label">
-                        Unrealized P/L
-                        <br>
-                        vs Purchase
-                    </div>
-
-                    <div
-                        class="pl-value"
-                        id="lastPLPurchase">
-
-                        -
-
-                    </div>
-
-                </div>
-
-
-                <div class="pl-box">
-
-                    <div class="pl-label">
-                        Unrealized P/L
-                        <br>
-                        vs Bank
-                    </div>
-
-                    <div
-                        class="pl-value"
-                        id="lastPLBank">
-
-                        -
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="pl-container">
-
-                <div class="pl-box">
-
-                    <div class="pl-label">
-                        Unrealized Amount
-                        <br>
-                        vs Purchase
-                    </div>
-
-                    <div
-                        class="pl-value"
-                        id="lastUnrealizedPurchase">
-
-                        -
-
-                    </div>
-
-                </div>
-
-
-                <div class="pl-box">
-
-                    <div class="pl-label">
-                        Unrealized Amount
-                        <br>
-                        vs Bank
-                    </div>
-
-                    <div
-                        class="pl-value"
-                        id="lastUnrealizedBank">
-
-                        -
-
-                    </div>
-
-                </div>
-
-            </div>
-
 
             <div
-                class="result"
-                id="lastResult">
+                class="compare-value"
+                id="lastAverage">
 
                 -
 
@@ -2223,17 +2289,72 @@ h1 {
         </div>
 
 
-        <div class="comparison">
+        <div class="compare-box">
 
-            <div class="compare-box">
+            <div class="compare-label">
+                Paid Amount
+            </div>
 
-                <div class="compare-label">
-                    Average Purchase
+            <div
+                class="compare-value"
+                id="lastPaid">
+
+                -
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="metrics">
+
+        <div class="metric">
+
+            <div class="metric-label">
+                Current Quantity
+            </div>
+
+            <div
+                class="metric-value"
+                id="lastQuantity">
+
+                -
+
+            </div>
+
+        </div>
+
+
+        <div class="metric">
+
+            <div class="metric-label">
+                Current Value
+            </div>
+
+            <div
+                class="metric-value"
+                id="lastValue">
+
+                -
+
+            </div>
+
+        </div>
+
+
+        <div class="metric realized-combined">
+
+            <div class="realized-row">
+
+                <div class="realized-label">
+                    Realized P/L vs Purchase
                 </div>
 
                 <div
-                    class="compare-value"
-                    id="lastAverage">
+                    class="realized-value"
+                    id="lastRealizedPurchase">
 
                     -
 
@@ -2242,15 +2363,15 @@ h1 {
             </div>
 
 
-            <div class="compare-box">
+            <div class="realized-row">
 
-                <div class="compare-label">
-                    Paid Amount
+                <div class="realized-label">
+                    Realized P/L vs Bank
                 </div>
 
                 <div
-                    class="compare-value"
-                    id="lastPaid">
+                    class="realized-value"
+                    id="lastRealizedBank">
 
                     -
 
@@ -2261,93 +2382,17 @@ h1 {
         </div>
 
 
-        <div class="metrics">
+        <div class="metric">
 
-            <div class="metric">
-
-                <div class="metric-label">
-                    Current Quantity
-                </div>
-
-                <div
-                    class="metric-value"
-                    id="lastQuantity">
-
-                    -
-
-                </div>
-
+            <div class="metric-label">
+                Bank Value
             </div>
 
+            <div
+                class="metric-value"
+                id="lastBank">
 
-            <div class="metric">
-
-                <div class="metric-label">
-                    Current Value
-                </div>
-
-                <div
-                    class="metric-value"
-                    id="lastValue">
-
-                    -
-
-                </div>
-
-            </div>
-
-
-            <div class="metric realized-combined">
-
-                <div class="realized-row">
-
-                    <div class="realized-label">
-                        Realized P/L vs Purchase
-                    </div>
-
-                    <div
-                        class="realized-value"
-                        id="lastRealizedPurchase">
-
-                        -
-
-                    </div>
-
-                </div>
-
-
-                <div class="realized-row">
-
-                    <div class="realized-label">
-                        Realized P/L vs Bank
-                    </div>
-
-                    <div
-                        class="realized-value"
-                        id="lastRealizedBank">
-
-                        -
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="metric">
-
-                <div class="metric-label">
-                    Bank Value
-                </div>
-
-                <div
-                    class="metric-value"
-                    id="lastBank">
-
-                    -
-
-                </div>
+                -
 
             </div>
 
@@ -2356,9 +2401,11 @@ h1 {
     </div>
 
 </div>
+```
 
 </div>
 
+</div>
 
 <script>
 
@@ -2367,9 +2414,7 @@ h1 {
 ===================================================== */
 
 function $(id) {
-
     return document.getElementById(id);
-
 }
 
 
@@ -2378,9 +2423,7 @@ function safeText(id, value) {
     const element = $(id);
 
     if (element) {
-
         element.textContent = value;
-
     }
 
 }
@@ -2391,9 +2434,7 @@ function formatNumber(value) {
     const number = Number(value);
 
     if (!Number.isFinite(number)) {
-
         return "-";
-
     }
 
     return Math.round(number)
@@ -2407,9 +2448,7 @@ function formatMoneySigned(value) {
     const number = Number(value);
 
     if (!Number.isFinite(number)) {
-
         return "-";
-
     }
 
     const rounded =
@@ -2432,25 +2471,15 @@ function formatPercent(value) {
     const number = Number(value);
 
     if (!Number.isFinite(number)) {
-
         return "-";
-
     }
 
     return (
-
-        number >= 0
-            ? "+"
-            : ""
-
+        number >= 0 ? "+" : ""
     )
-
     +
-
     number.toFixed(2)
-
     +
-
     "%";
 
 }
@@ -2461,9 +2490,7 @@ function setProfitLossClass(id, value) {
     const element = $(id);
 
     if (!element) {
-
         return;
-
     }
 
     element.classList.remove(
@@ -2471,21 +2498,16 @@ function setProfitLossClass(id, value) {
         "loss"
     );
 
-    const number =
-        Number(value);
+    const number = Number(value);
 
     if (!Number.isFinite(number)) {
-
         return;
-
     }
 
     element.classList.add(
-
         number >= 0
             ? "profit"
             : "loss"
-
     );
 
 }
@@ -2520,11 +2542,8 @@ function saveLocalData(data) {
     try {
 
         localStorage.setItem(
-
             CACHE_KEYS.DATA,
-
             JSON.stringify(data)
-
         );
 
     }
@@ -2570,19 +2589,13 @@ function saveNobitexPrice(price) {
     try {
 
         localStorage.setItem(
-
             CACHE_KEYS.NOBITEX_PRICE,
-
             String(price)
-
         );
 
         localStorage.setItem(
-
             CACHE_KEYS.NOBITEX_TIME,
-
             new Date().toISOString()
-
         );
 
     }
@@ -2624,11 +2637,8 @@ function saveExirPrice(price) {
     try {
 
         localStorage.setItem(
-
             CACHE_KEYS.EXIR_PRICE,
-
             String(price)
-
         );
 
     }
@@ -2670,11 +2680,8 @@ function saveTabdealPrice(price) {
     try {
 
         localStorage.setItem(
-
             CACHE_KEYS.TABDEAL_PRICE,
-
             String(price)
-
         );
 
     }
@@ -2721,9 +2728,7 @@ function getCachedPriceTime() {
             );
 
         if (!saved) {
-
             return "";
-
         }
 
         const date =
@@ -2734,9 +2739,7 @@ function getCachedPriceTime() {
                 date.getTime()
             )
         ) {
-
             return "";
-
         }
 
         return date.toLocaleString(
@@ -2776,9 +2779,7 @@ function showConnectionStatus(
         $("connectionStatus");
 
     if (!element) {
-
         return;
-
     }
 
     if (offline) {
@@ -2815,9 +2816,7 @@ function setPriceArrow(
         $(id);
 
     if (!element) {
-
         return;
-
     }
 
     element.classList.remove(
@@ -2833,13 +2832,9 @@ function setPriceArrow(
         Number(previousPrice);
 
     if (
-
         !Number.isFinite(current)
-
         ||
-
         !Number.isFinite(previous)
-
     ) {
 
         element.textContent =
@@ -2954,9 +2949,7 @@ function jalaliToGregorian(
         days %= 36524;
 
         if (days >= 365) {
-
             days++;
-
         }
 
     }
@@ -2987,13 +2980,9 @@ function jalaliToGregorian(
     const leap =
 
         (
-
             gy % 4 === 0
-
             &&
-
             gy % 100 !== 0
-
         )
 
         ||
@@ -3060,13 +3049,9 @@ function daysBetweenInclusive(
             .map(Number);
 
     if (
-
         startParts.length !== 3
-
         ||
-
         endParts.length !== 3
-
     ) {
 
         return 0;
@@ -3565,13 +3550,10 @@ function calculatePortfolio(
             ?
 
             (
-
                 unrealizedPurchaseAmount
                 /
                 paidAmount
-
             )
-
             *
             100
 
@@ -3583,13 +3565,10 @@ function calculatePortfolio(
             ?
 
             (
-
                 unrealizedBankAmount
                 /
                 bankValue
-
             )
-
             *
             100
 
@@ -3787,230 +3766,149 @@ function displaySection(
 ) {
 
     safeText(
-
-        prefix +
-        "Average",
-
+        prefix + "Average",
         formatNumber(
             result.averagePurchasePrice
         )
-
     );
 
 
     safeText(
-
-        prefix +
-        "Paid",
-
+        prefix + "Paid",
         formatNumber(
             result.paidAmount
         )
-
     );
 
 
     safeText(
-
-        prefix +
-        "Adjusted",
-
+        prefix + "Adjusted",
         formatNumber(
             result.bankAdjustedPrice
         )
-
     );
 
 
     safeText(
-
-        prefix +
-        "Live",
-
+        prefix + "Live",
         formatNumber(
             result.currentPrice
         )
-
     );
 
 
     setPriceArrow(
-
-        prefix +
-        "PriceArrow",
-
+        prefix + "PriceArrow",
         result.currentPrice,
-
         previousLivePrice
-
     );
 
 
     safeText(
-
-        prefix +
-        "Quantity",
-
+        prefix + "Quantity",
         formatNumber(
             result.currentQuantity
         )
-
     );
 
 
     safeText(
-
-        prefix +
-        "Value",
-
+        prefix + "Value",
         formatNumber(
             result.currentValue
         )
-
     );
 
 
     safeText(
-
-        prefix +
-        "Bank",
-
+        prefix + "Bank",
         formatNumber(
             result.bankValue
         )
-
     );
 
 
     safeText(
-
-        prefix +
-        "PLPurchase",
-
+        prefix + "PLPurchase",
         formatPercent(
             result.plPurchase
         )
-
     );
 
 
     safeText(
-
-        prefix +
-        "PLBank",
-
+        prefix + "PLBank",
         formatPercent(
             result.plBank
         )
-
     );
 
 
     safeText(
-
-        prefix +
-        "UnrealizedPurchase",
-
+        prefix + "UnrealizedPurchase",
         formatMoneySigned(
             result.unrealizedPurchaseAmount
         )
-
     );
 
 
     safeText(
-
-        prefix +
-        "UnrealizedBank",
-
+        prefix + "UnrealizedBank",
         formatMoneySigned(
             result.unrealizedBankAmount
         )
-
     );
 
 
     safeText(
-
-        prefix +
-        "RealizedPurchase",
-
+        prefix + "RealizedPurchase",
         formatMoneySigned(
             result.realizedPurchase
         )
-
     );
 
 
     safeText(
-
-        prefix +
-        "RealizedBank",
-
+        prefix + "RealizedBank",
         formatMoneySigned(
             result.realizedBank
         )
-
     );
 
 
     setProfitLossClass(
-
-        prefix +
-        "PLPurchase",
-
+        prefix + "PLPurchase",
         result.plPurchase
-
     );
 
 
     setProfitLossClass(
-
-        prefix +
-        "PLBank",
-
+        prefix + "PLBank",
         result.plBank
-
     );
 
 
     setProfitLossClass(
-
-        prefix +
-        "UnrealizedPurchase",
-
+        prefix + "UnrealizedPurchase",
         result.unrealizedPurchaseAmount
-
     );
 
 
     setProfitLossClass(
-
-        prefix +
-        "UnrealizedBank",
-
+        prefix + "UnrealizedBank",
         result.unrealizedBankAmount
-
     );
 
 
     setProfitLossClass(
-
-        prefix +
-        "RealizedPurchase",
-
+        prefix + "RealizedPurchase",
         result.realizedPurchase
-
     );
 
 
     setProfitLossClass(
-
-        prefix +
-        "RealizedBank",
-
+        prefix + "RealizedBank",
         result.realizedBank
-
     );
 
 
@@ -4024,11 +3922,8 @@ function displaySection(
     if (mainPrice) {
 
         mainPrice.classList.remove(
-
             "status-green",
-
             "status-red"
-
         );
 
 
@@ -4189,6 +4084,7 @@ async function getCurrentPrice(
         );
 
     }
+
 
     const response =
         await fetch(
@@ -4392,15 +4288,22 @@ async function getTabdealPrice(
         await response.json();
 
 
-    const bestBid =
-        Number(
-            data?.bids?.[0]?.[0]
-        );
+    /*
+       Tabdeal Depth API
 
+       asks[0][0] = Best Ask
+       bids[0][0] = Best Bid
+    */
 
     const bestAsk =
         Number(
             data?.asks?.[0]?.[0]
+        );
+
+
+    const bestBid =
+        Number(
+            data?.bids?.[0]?.[0]
         );
 
 
@@ -4421,19 +4324,13 @@ async function getTabdealPrice(
         price =
 
             (
-
                 bestBid +
-
                 bestAsk
-
             )
-
             /
-
             2;
 
     }
-
 
     else if (
         Number.isFinite(bestAsk)
@@ -4443,7 +4340,6 @@ async function getTabdealPrice(
             bestAsk;
 
     }
-
 
     else if (
         Number.isFinite(bestBid)
@@ -4473,7 +4369,6 @@ async function getTabdealPrice(
 
 /* =====================================================
    AVERAGE LIVE PRICE
-   NOBITEX + EXIR + TABDEAL
 ===================================================== */
 
 function calculateAverageLivePrice(
@@ -4745,50 +4640,230 @@ async function loadDashboardData() {
     /* MARKET PRICES */
 
     safeText(
-
         "currentPrice",
-
         formatNumber(
             currentPrice
         )
-
     );
 
 
     safeText(
-
-        "exirPrice",
-
-        exirPrice === null
-            ? "-"
-            : formatNumber(
-                exirPrice
-            )
-
-    );
-
-
-    safeText(
-
         "tabdealPrice",
-
         tabdealPrice === null
             ? "-"
             : formatNumber(
                 tabdealPrice
             )
-
     );
 
 
     safeText(
+        "exirPrice",
+        exirPrice === null
+            ? "-"
+            : formatNumber(
+                exirPrice
+            )
+    );
 
+
+    safeText(
         "bankRate",
-
         annualBankRate +
         "%"
+    );
+
+
+    /* PREVIOUS NOBITEX */
+
+    let previousNobitex =
+        null;
+
+
+    try {
+
+        const saved =
+            sessionStorage.getItem(
+                "previousNobitexPrice"
+            );
+
+
+        const parsed =
+            Number(saved);
+
+
+        if (
+            Number.isFinite(parsed)
+        ) {
+
+            previousNobitex =
+                parsed;
+
+        }
+
+    }
+
+    catch (error) {}
+
+
+    setPriceArrow(
+
+        "topPriceArrow",
+
+        currentPrice,
+
+        previousNobitex
 
     );
+
+
+    try {
+
+        sessionStorage.setItem(
+
+            "previousNobitexPrice",
+
+            String(
+                currentPrice
+            )
+
+        );
+
+    }
+
+    catch (error) {}
+
+
+    /* PREVIOUS TABDEAL */
+
+    let previousTabdeal =
+        null;
+
+
+    try {
+
+        const saved =
+            sessionStorage.getItem(
+                "previousTabdealPrice"
+            );
+
+
+        const parsed =
+            Number(saved);
+
+
+        if (
+            Number.isFinite(parsed)
+        ) {
+
+            previousTabdeal =
+                parsed;
+
+        }
+
+    }
+
+    catch (error) {}
+
+
+    setPriceArrow(
+
+        "tabdealPriceArrow",
+
+        tabdealPrice,
+
+        previousTabdeal
+
+    );
+
+
+    try {
+
+        if (
+            tabdealPrice !== null
+        ) {
+
+            sessionStorage.setItem(
+
+                "previousTabdealPrice",
+
+                String(
+                    tabdealPrice
+                )
+
+            );
+
+        }
+
+    }
+
+    catch (error) {}
+
+
+    /* PREVIOUS EXIR */
+
+    let previousExir =
+        null;
+
+
+    try {
+
+        const saved =
+            sessionStorage.getItem(
+                "previousExirPrice"
+            );
+
+
+        const parsed =
+            Number(saved);
+
+
+        if (
+            Number.isFinite(parsed)
+        ) {
+
+            previousExir =
+                parsed;
+
+        }
+
+    }
+
+    catch (error) {}
+
+
+    setPriceArrow(
+
+        "exirPriceArrow",
+
+        exirPrice,
+
+        previousExir
+
+    );
+
+
+    try {
+
+        if (
+            exirPrice !== null
+        ) {
+
+            sessionStorage.setItem(
+
+                "previousExirPrice",
+
+                String(
+                    exirPrice
+                )
+
+            );
+
+        }
+
+    }
+
+    catch (error) {}
 
 
     /* AVERAGE LIVE PRICE */
@@ -4920,198 +4995,6 @@ async function loadDashboardData() {
         updateTime
 
     );
-
-
-    /* PREVIOUS NOBITEX */
-
-    let previousNobitex =
-        null;
-
-
-    try {
-
-        const saved =
-            sessionStorage.getItem(
-                "previousNobitexPrice"
-            );
-
-
-        const parsed =
-            Number(saved);
-
-
-        if (
-            Number.isFinite(parsed)
-        ) {
-
-            previousNobitex =
-                parsed;
-
-        }
-
-    }
-
-    catch (error) {}
-
-
-    setPriceArrow(
-
-        "topPriceArrow",
-
-        currentPrice,
-
-        previousNobitex
-
-    );
-
-
-    try {
-
-        sessionStorage.setItem(
-
-            "previousNobitexPrice",
-
-            String(
-                currentPrice
-            )
-
-        );
-
-    }
-
-    catch (error) {}
-
-
-    /* PREVIOUS EXIR */
-
-    let previousExir =
-        null;
-
-
-    try {
-
-        const saved =
-            sessionStorage.getItem(
-                "previousExirPrice"
-            );
-
-
-        const parsed =
-            Number(saved);
-
-
-        if (
-            Number.isFinite(parsed)
-        ) {
-
-            previousExir =
-                parsed;
-
-        }
-
-    }
-
-    catch (error) {}
-
-
-    setPriceArrow(
-
-        "exirPriceArrow",
-
-        exirPrice,
-
-        previousExir
-
-    );
-
-
-    try {
-
-        if (
-            exirPrice !== null
-        ) {
-
-            sessionStorage.setItem(
-
-                "previousExirPrice",
-
-                String(
-                    exirPrice
-                )
-
-            );
-
-        }
-
-    }
-
-    catch (error) {}
-
-
-    /* PREVIOUS TABDEAL */
-
-    let previousTabdeal =
-        null;
-
-
-    try {
-
-        const saved =
-            sessionStorage.getItem(
-                "previousTabdealPrice"
-            );
-
-
-        const parsed =
-            Number(saved);
-
-
-        if (
-            Number.isFinite(parsed)
-        ) {
-
-            previousTabdeal =
-                parsed;
-
-        }
-
-    }
-
-    catch (error) {}
-
-
-    setPriceArrow(
-
-        "tabdealPriceArrow",
-
-        tabdealPrice,
-
-        previousTabdeal
-
-    );
-
-
-    try {
-
-        if (
-            tabdealPrice !== null
-        ) {
-
-            sessionStorage.setItem(
-
-                "previousTabdealPrice",
-
-                String(
-                    tabdealPrice
-                )
-
-            );
-
-        }
-
-    }
-
-    catch (error) {}
 
 
     /* TRANSACTIONS */
@@ -5402,6 +5285,7 @@ function startAutoRefresh() {
                     catch (error) {
 
                         console.error(
+                            "Auto refresh error:",
                             error
                         );
 
