@@ -4371,12 +4371,13 @@ async function getExirPrice(
 
 }
 
-
 /* =====================================================
    TABDEAL API
 ===================================================== */
 
-async function getTabdealPrice(apiUrl) {
+async function getTabdealPrice(
+    apiUrl
+) {
 
     if (!apiUrl) {
 
@@ -4386,15 +4387,20 @@ async function getTabdealPrice(apiUrl) {
 
     }
 
+
     const response =
         await fetch(
             apiUrl,
             {
                 method: "GET",
+
                 headers: {
-                    "Accept": "application/json"
+                    "Accept":
+                        "application/json"
                 },
-                cache: "no-store"
+
+                cache:
+                    "no-store"
             }
         );
 
@@ -4412,188 +4418,102 @@ async function getTabdealPrice(apiUrl) {
         await response.json();
 
 
-    console.log(
-        "Tabdeal API Response:",
-        data
-    );
-
-
     /*
-       Tabdeal ممکن است قیمت‌ها را
-       به صورت آرایه یا آبجکت برگرداند.
-       این تابع چند ساختار متداول را بررسی می‌کند.
+       Tabdeal API structure:
+
+       asks:
+       [
+           [
+               "185980.0000000000000000",
+               "9121.11162200"
+           ]
+       ]
+
+       bids:
+       [
+           [
+               "185939.0000000000000000",
+               "188.63059900"
+           ]
+       ]
+
+       [0] = Price
+       [1] = Quantity
     */
-
-    let bids =
-        data?.bids
-        ||
-        data?.data?.bids
-        ||
-        data?.result?.bids
-        ||
-        [];
-
-
-    let asks =
-        data?.asks
-        ||
-        data?.data?.asks
-        ||
-        data?.result?.asks
-        ||
-        [];
-
-
-    /*
-       تبدیل آرایه قیمت‌ها به عدد
-    */
-
-    function extractPrice(item) {
-
-        if (
-            Array.isArray(item)
-        ) {
-
-            return Number(
-                item[0]
-            );
-
-        }
-
-
-        if (
-            typeof item === "object"
-            &&
-            item !== null
-        ) {
-
-            return Number(
-
-                item.price
-                ??
-                item.rate
-                ??
-                item[0]
-
-            );
-
-        }
-
-
-        return Number(item);
-
-    }
-
-
-    const bidPrices =
-        Array.isArray(bids)
-            ? bids
-                .map(extractPrice)
-                .filter(
-                    Number.isFinite
-                )
-            : [];
-
-
-    const askPrices =
-        Array.isArray(asks)
-            ? asks
-                .map(extractPrice)
-                .filter(
-                    Number.isFinite
-                )
-            : [];
-
-
-    /*
-       بهترین خرید و بهترین فروش
-    */
-
-    const bestBid =
-        bidPrices.length > 0
-            ? bidPrices[0]
-            : null;
 
 
     const bestAsk =
-        askPrices.length > 0
-            ? askPrices[0]
-            : null;
+        Number(
+            data?.asks?.[0]?.[0]
+        );
 
 
-    /*
-       قیمت میانی
-       Mid Price = (Best Bid + Best Ask) / 2
-    */
-
-    let price = null;
+    const bestBid =
+        Number(
+            data?.bids?.[0]?.[0]
+        );
 
 
     if (
-        Number.isFinite(bestBid)
-        &&
-        Number.isFinite(bestAsk)
+
+        !Number.isFinite(
+            bestAsk
+        )
+
+        ||
+
+        !Number.isFinite(
+            bestBid
+        )
+
+        ||
+
+        bestAsk <= 0
+
+        ||
+
+        bestBid <= 0
+
     ) {
 
-        price =
-            (
-                bestBid +
-                bestAsk
-            ) / 2;
-
-    }
-
-    else if (
-        Number.isFinite(bestBid)
-    ) {
-
-        price =
-            bestBid;
-
-    }
-
-    else if (
-        Number.isFinite(bestAsk)
-    ) {
-
-        price =
-            bestAsk;
+        throw new Error(
+            "Invalid Tabdeal bid/ask price"
+        );
 
     }
 
 
     /*
-       اگر قیمت به ریال با ضریب متفاوت برگشته باشد،
-       این قسمت مقدار نهایی را بررسی می‌کند.
+       Mid Price
+
+       (Best Ask + Best Bid) / 2
     */
 
+    const price =
+
+        (
+            bestAsk
+            +
+            bestBid
+        )
+        /
+        2;
+
+
     if (
-        Number.isFinite(price)
-        &&
-        price > 0
+        !Number.isFinite(price)
     ) {
 
-        /*
-           اگر API قیمت را به ریال داده باشد
-           نیازی به تقسیم نیست.
-
-           اگر API قیمت را به تومان داده باشد
-           نیز برای داشبورد باید همان تومان استفاده شود.
-
-           بنابراین مقدار خام را مستقیماً برمی‌گردانیم.
-        */
-
-        return price;
+        throw new Error(
+            "Invalid Tabdeal price"
+        );
 
     }
 
 
-    throw new Error(
-        "Invalid Tabdeal price. API response does not contain valid bids/asks."
-    );
+    return price;
 
 }
-
 /* =====================================================
    AVERAGE LIVE PRICE
 ===================================================== */
