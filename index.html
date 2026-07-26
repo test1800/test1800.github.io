@@ -284,6 +284,11 @@ h1 {
 
 }
 
+
+/* =====================================================
+   LIVE PRICE COLUMNS
+===================================================== */
+
 .live-price-left,
 .live-price-center,
 .live-price-right {
@@ -349,9 +354,11 @@ h1 {
 
     display: inline-flex;
 
-    align-items: center;
+    align-items:
+        center;
 
-    justify-content: center;
+    justify-content:
+        center;
 
     width: 18px;
 
@@ -1092,23 +1099,23 @@ h1 {
 
     .live-price-item {
 
-        gap: 4px;
+        gap: 5px;
 
     }
 
     .live-number {
 
-        font-size: 17px;
+        font-size: 16px;
 
     }
 
     .price-arrow {
 
-        width: 13px;
+        width: 15px;
 
-        height: 20px;
+        height: 22px;
 
-        font-size: 19px;
+        font-size: 18px;
 
     }
 
@@ -1197,7 +1204,7 @@ h1 {
     .live-price-values {
         display: flex !important;
         width: 100% !important;
-        gap: 6px !important;
+        gap: 5px !important;
         align-items: center !important;
         justify-content: space-between !important;
     }
@@ -1206,7 +1213,7 @@ h1 {
     .live-price-center,
     .live-price-right {
         display: flex !important;
-        flex: 1 1 33.333% !important;
+        flex: 0 1 auto !important;
         min-width: 0 !important;
     }
 
@@ -1223,13 +1230,13 @@ h1 {
     }
 
     .live-number {
-        font-size: 14px !important;
+        font-size: 13px !important;
         line-height: 1 !important;
         font-weight: 700 !important;
     }
 
     .price-arrow {
-        font-size: clamp(14px, 5vh, 20px) !important;
+        font-size: 15px !important;
         width: auto !important;
         height: auto !important;
     }
@@ -1428,7 +1435,6 @@ h1 {
     id="dashboard"
     style="display:none;">
 
-
     <!-- =================================================
          OVERALL
     ================================================= -->
@@ -1511,11 +1517,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized P/L
                         <br>
                         vs Purchase
-
                     </div>
 
                     <div
@@ -1532,11 +1536,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized P/L
                         <br>
                         vs Bank
-
                     </div>
 
                     <div
@@ -1557,11 +1559,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized Amount
                         <br>
                         vs Purchase
-
                     </div>
 
                     <div
@@ -1578,11 +1578,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized Amount
                         <br>
                         vs Bank
-
                     </div>
 
                     <div
@@ -1824,11 +1822,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized P/L
                         <br>
                         vs Purchase
-
                     </div>
 
                     <div
@@ -1845,11 +1841,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized P/L
                         <br>
                         vs Bank
-
                     </div>
 
                     <div
@@ -1870,11 +1864,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized Amount
                         <br>
                         vs Purchase
-
                     </div>
 
                     <div
@@ -1891,11 +1883,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized Amount
                         <br>
                         vs Bank
-
                     </div>
 
                     <div
@@ -2149,11 +2139,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized P/L
                         <br>
                         vs Purchase
-
                     </div>
 
                     <div
@@ -2170,11 +2158,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized P/L
                         <br>
                         vs Bank
-
                     </div>
 
                     <div
@@ -2195,11 +2181,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized Amount
                         <br>
                         vs Purchase
-
                     </div>
 
                     <div
@@ -2216,11 +2200,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized Amount
                         <br>
                         vs Bank
-
                     </div>
 
                     <div
@@ -4371,6 +4353,7 @@ async function getExirPrice(
 
 }
 
+
 /* =====================================================
    TABDEAL API
 ===================================================== */
@@ -4393,14 +4376,11 @@ async function getTabdealPrice(
             apiUrl,
             {
                 method: "GET",
-
                 headers: {
                     "Accept":
                         "application/json"
                 },
-
-                cache:
-                    "no-store"
+                cache: "no-store"
             }
         );
 
@@ -4419,28 +4399,11 @@ async function getTabdealPrice(
 
 
     /*
-       Tabdeal API structure:
+       Tabdeal Order Book
 
-       asks:
-       [
-           [
-               "185980.0000000000000000",
-               "9121.11162200"
-           ]
-       ]
-
-       bids:
-       [
-           [
-               "185939.0000000000000000",
-               "188.63059900"
-           ]
-       ]
-
-       [0] = Price
-       [1] = Quantity
+       asks[0][0] = Best Ask
+       bids[0][0] = Best Bid
     */
-
 
     const bestAsk =
         Number(
@@ -4456,15 +4419,11 @@ async function getTabdealPrice(
 
     if (
 
-        !Number.isFinite(
-            bestAsk
-        )
+        !Number.isFinite(bestAsk)
 
         ||
 
-        !Number.isFinite(
-            bestBid
-        )
+        !Number.isFinite(bestBid)
 
         ||
 
@@ -4477,26 +4436,26 @@ async function getTabdealPrice(
     ) {
 
         throw new Error(
-            "Invalid Tabdeal bid/ask price"
+            "Invalid Tabdeal order book price"
         );
 
     }
 
 
-    /*
-       Mid Price
-
-       (Best Ask + Best Bid) / 2
-    */
-
     const price =
 
         (
+
             bestAsk
+
             +
+
             bestBid
+
         )
+
         /
+
         2;
 
 
@@ -4514,6 +4473,8 @@ async function getTabdealPrice(
     return price;
 
 }
+
+
 /* =====================================================
    AVERAGE LIVE PRICE
 ===================================================== */
@@ -4533,7 +4494,15 @@ function calculateAverageLivePrice(
         Number(tabdealPrice)
 
     ].filter(
-        Number.isFinite
+
+        price =>
+
+            Number.isFinite(price)
+
+            &&
+
+            price > 0
+
     );
 
 
@@ -4549,13 +4518,17 @@ function calculateAverageLivePrice(
     return (
 
         prices.reduce(
+
             (
                 total,
                 price
             ) =>
+
                 total +
                 price,
+
             0
+
         )
 
         /
@@ -4696,6 +4669,11 @@ async function loadDashboardData() {
 
     catch (error) {
 
+        console.error(
+            "Nobitex API Error:",
+            error
+        );
+
         currentPrice =
             loadNobitexPrice();
 
@@ -4736,6 +4714,11 @@ async function loadDashboardData() {
 
     catch (error) {
 
+        console.error(
+            "Exir API Error:",
+            error
+        );
+
         exirPrice =
             loadExirPrice();
 
@@ -4763,11 +4746,10 @@ async function loadDashboardData() {
 
     catch (error) {
 
-        console.warn(
-            "Tabdeal API unavailable:",
+        console.error(
+            "Tabdeal API Error:",
             error
         );
-
 
         tabdealPrice =
             loadTabdealPrice();
@@ -4839,9 +4821,7 @@ async function loadDashboardData() {
     );
 
 
-    /* AVERAGE LIVE PRICE
-       NOBITEX + TABDEAL + EXIR
-    */
+    /* AVERAGE LIVE PRICE */
 
     const averageLivePrice =
         calculateAverageLivePrice(
@@ -5452,7 +5432,7 @@ function startAutoRefresh() {
                     catch (error) {
 
                         console.error(
-                            "Auto refresh error:",
+                            "Auto Refresh Error:",
                             error
                         );
 
