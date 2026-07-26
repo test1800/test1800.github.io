@@ -440,6 +440,47 @@ h1 {
 
 
 /* =====================================================
+   SELL WARNING
+===================================================== */
+
+.sell-warning {
+
+    display: none;
+
+    margin-top: 8px;
+
+    padding:
+        9px
+        11px;
+
+    border-radius: 9px;
+
+    color:
+        #fca5a5;
+
+    background:
+        rgba(239,68,68,.12);
+
+    border:
+        1px solid
+        rgba(239,68,68,.30);
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    line-height: 1.5;
+
+}
+
+.sell-warning.show {
+
+    display: block;
+
+}
+
+
+/* =====================================================
    DASHBOARD GRID
 ===================================================== */
 
@@ -1141,14 +1182,13 @@ h1 {
 
 }
 
+
 /* =====================================================
    ULTRA COMPACT MODE
-   فعال شدن وقتی ارتفاع صفحه کمتر از 200px باشد
 ===================================================== */
 
 @media (max-height: 199px) {
 
-    /* مخفی کردن کل محتوای صفحه */
     body > .container > header > *:not(.live-price) {
         display: none !important;
     }
@@ -1159,7 +1199,6 @@ h1 {
         display: none !important;
     }
 
-    /* حذف فاصله و ظاهر اضافه هدر */
     body > .container {
         padding: 0 !important;
         width: 100% !important;
@@ -1177,7 +1216,6 @@ h1 {
         backdrop-filter: none !important;
     }
 
-    /* فقط بخش قیمت زنده */
     .live-price {
         display: flex !important;
         margin: 0 !important;
@@ -1187,12 +1225,10 @@ h1 {
         gap: 0 !important;
     }
 
-    /* مخفی کردن عنوان Live Market و Bank Rate */
     .live-market-header {
         display: none !important;
     }
 
-    /* نمایش دو قیمت در دو طرف */
     .live-price-values {
         display: flex !important;
         width: 100% !important;
@@ -1216,14 +1252,12 @@ h1 {
         justify-content: flex-end !important;
     }
 
-    /*   عدد قیمت */
-.live-number {
-    font-size: 16px !important;
-    line-height: 1 !important;
-    font-weight: 700 !important;
-}
+    .live-number {
+        font-size: 16px !important;
+        line-height: 1 !important;
+        font-weight: 700 !important;
+    }
 
-    /* فلش کنار قیمت */
     .price-arrow {
         font-size: clamp(16px, 5vh, 22px) !important;
         width: auto !important;
@@ -1378,6 +1412,15 @@ h1 {
 
     </div>
 
+
+    <!-- SELL WARNING -->
+
+    <div
+        id="sellWarning"
+        class="sell-warning">
+
+    </div>
+
 </header>
 
 
@@ -1396,6 +1439,7 @@ h1 {
 <div
     id="dashboard"
     style="display:none;">
+
 
     <!-- =================================================
          OVERALL
@@ -2683,16 +2727,34 @@ function getCachedPriceTime() {
         }
 
         return date.toLocaleString(
+
             "en-US",
+
             {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-                hour12: false
+
+                year:
+                    "numeric",
+
+                month:
+                    "2-digit",
+
+                day:
+                    "2-digit",
+
+                hour:
+                    "2-digit",
+
+                minute:
+                    "2-digit",
+
+                second:
+                    "2-digit",
+
+                hour12:
+                    false
+
             }
+
         );
 
     }
@@ -2740,6 +2802,51 @@ function showConnectionStatus(
 
     element.textContent =
         message;
+
+}
+
+
+/* =====================================================
+   SELL WARNING
+===================================================== */
+
+function showSellWarning(
+    warnings
+) {
+
+    const element =
+        $("sellWarning");
+
+    if (!element) {
+
+        return;
+
+    }
+
+    if (
+        !warnings
+        ||
+        warnings.length === 0
+    ) {
+
+        element.textContent =
+            "";
+
+        element.classList.remove(
+            "show"
+        );
+
+        return;
+
+    }
+
+    element.textContent =
+        "⚠️ WARNING: Sell amount is greater than available balance. " +
+        warnings.join(" | ");
+
+    element.classList.add(
+        "show"
+    );
 
 }
 
@@ -3032,12 +3139,18 @@ function daysBetweenInclusive(
 
     const difference =
         Math.floor(
+
             (
+
                 endDate -
                 startDate
+
             )
+
             /
+
             86400000
+
         );
 
     return Math.max(
@@ -3295,6 +3408,11 @@ function calculatePortfolio(
     let sellCount =
         0;
 
+    let oversoldAmount =
+        0;
+
+    const warnings = [];
+
 
     for (
         const transaction
@@ -3363,6 +3481,20 @@ function calculatePortfolio(
             let remaining =
                 amount;
 
+            let availableBeforeSell =
+                lots.reduce(
+
+                    (
+                        total,
+                        lot
+                    ) =>
+                        total +
+                        lot.amount,
+
+                    0
+
+                );
+
 
             while (
 
@@ -3393,10 +3525,15 @@ function calculatePortfolio(
 
                 const bankCost =
                     compoundValue(
+
                         purchaseCost,
+
                         lot.date,
+
                         transaction.date,
+
                         annualRate
+
                     );
 
                 realizedPurchase +=
@@ -3423,6 +3560,38 @@ function calculatePortfolio(
 
             }
 
+
+            if (
+                remaining > 0.0000001
+            ) {
+
+                oversoldAmount +=
+                    remaining;
+
+                warnings.push(
+
+                    transaction.date
+                    +
+                    ": attempted "
+                    +
+                    formatNumber(amount)
+                    +
+                    ", available "
+                    +
+                    formatNumber(
+                        availableBeforeSell
+                    )
+                    +
+                    ", excess "
+                    +
+                    formatNumber(
+                        remaining
+                    )
+
+                );
+
+            }
+
         }
 
     }
@@ -3430,18 +3599,22 @@ function calculatePortfolio(
 
     const currentQuantity =
         lots.reduce(
+
             (
                 total,
                 lot
             ) =>
                 total +
                 lot.amount,
+
             0
+
         );
 
 
     const paidAmount =
         lots.reduce(
+
             (
                 total,
                 lot
@@ -3449,15 +3622,23 @@ function calculatePortfolio(
                 total +
                 lot.amount *
                 lot.price,
+
             0
+
         );
 
 
     const averagePurchasePrice =
         currentQuantity > 0
-            ? paidAmount /
-              currentQuantity
-            : 0;
+
+            ?
+
+            paidAmount /
+            currentQuantity
+
+            :
+
+            0;
 
 
     let bankValue =
@@ -3470,12 +3651,18 @@ function calculatePortfolio(
     ) {
 
         bankValue +=
+
             compoundValue(
+
                 lot.amount *
                 lot.price,
+
                 lot.date,
+
                 today,
+
                 annualRate
+
             );
 
     }
@@ -3488,9 +3675,15 @@ function calculatePortfolio(
 
     const bankAdjustedPrice =
         currentQuantity > 0
-            ? bankValue /
-              currentQuantity
-            : 0;
+
+            ?
+
+            bankValue /
+            currentQuantity
+
+            :
+
+            0;
 
 
     const unrealizedPurchaseAmount =
@@ -3505,6 +3698,7 @@ function calculatePortfolio(
 
     const plPurchase =
         paidAmount > 0
+
             ?
 
             (
@@ -3516,13 +3710,17 @@ function calculatePortfolio(
             )
 
             *
+
             100
 
-            : 0;
+            :
+
+            0;
 
 
     const plBank =
         bankValue > 0
+
             ?
 
             (
@@ -3534,9 +3732,12 @@ function calculatePortfolio(
             )
 
             *
+
             100
 
-            : 0;
+            :
+
+            0;
 
 
     return {
@@ -3569,7 +3770,11 @@ function calculatePortfolio(
 
         buyCount,
 
-        sellCount
+        sellCount,
+
+        oversoldAmount,
+
+        warnings
 
     };
 
@@ -3631,6 +3836,7 @@ function buildPeriods(
 
         }
 
+
         else if (
 
             transaction.type === "sell"
@@ -3686,10 +3892,14 @@ function getLastPeriods(
         );
 
     return periods
+
         .slice(-count)
+
         .flatMap(
+
             period =>
                 period.transactions
+
         );
 
 }
@@ -3713,7 +3923,9 @@ function getLastPeriod(
     }
 
     return periods[
+
         periods.length - 1
+
     ].transactions;
 
 }
@@ -4087,7 +4299,9 @@ function displayLastAction(
 
     const last =
         transactions[
+
             transactions.length - 1
+
         ];
 
 
@@ -4135,15 +4349,26 @@ async function getCurrentPrice(
 
     const response =
         await fetch(
+
             apiUrl,
+
             {
-                method: "GET",
+
+                method:
+                    "GET",
+
                 headers: {
+
                     "Accept":
                         "application/json"
+
                 },
-                cache: "no-store"
+
+                cache:
+                    "no-store"
+
             }
+
         );
 
 
@@ -4205,15 +4430,26 @@ async function getExirPrice(
 
     const response =
         await fetch(
+
             apiUrl,
+
             {
-                method: "GET",
+
+                method:
+                    "GET",
+
                 headers: {
+
                     "Accept":
                         "application/json"
+
                 },
-                cache: "no-store"
+
+                cache:
+                    "no-store"
+
             }
+
         );
 
 
@@ -4323,13 +4559,16 @@ function calculateAverageLivePrice(
     return (
 
         prices.reduce(
+
             (
                 total,
                 price
             ) =>
                 total +
                 price,
+
             0
+
         )
 
         /
@@ -4371,18 +4610,27 @@ async function loadDashboardData() {
         false;
 
 
+    let usingDefaultPrice =
+        false;
+
+
     /* DATA.JSON */
 
     try {
 
         const response =
             await fetch(
+
                 "data.json?x=" +
                 Date.now(),
+
                 {
+
                     cache:
                         "no-store"
+
                 }
+
             );
 
 
@@ -4443,14 +4691,38 @@ async function loadDashboardData() {
         10;
 
 
+    const defaultPrice =
+        Number(
+            data.defaultPrice
+        );
+
+
+    if (
+        !Number.isFinite(defaultPrice)
+        ||
+        defaultPrice <= 0
+    ) {
+
+        throw new Error(
+
+            "defaultPrice is missing or invalid in data.json."
+
+        );
+
+    }
+
+
     /* NOBITEX */
 
     try {
 
         currentPrice =
             await getCurrentPrice(
+
                 data.priceApi,
+
                 divisor
+
             );
 
 
@@ -4465,6 +4737,7 @@ async function loadDashboardData() {
         currentPrice =
             loadNobitexPrice();
 
+
         usingCachedNobitex =
             true;
 
@@ -4473,11 +4746,11 @@ async function loadDashboardData() {
             currentPrice === null
         ) {
 
-            throw new Error(
+            currentPrice =
+                defaultPrice;
 
-                "Nobitex price is unavailable and no cached price exists."
-
-            );
+            usingDefaultPrice =
+                true;
 
         }
 
@@ -4490,7 +4763,9 @@ async function loadDashboardData() {
 
         exirPrice =
             await getExirPrice(
+
                 data.exirApi
+
             );
 
 
@@ -4505,8 +4780,22 @@ async function loadDashboardData() {
         exirPrice =
             loadExirPrice();
 
+
         usingCachedExir =
             true;
+
+
+        if (
+            exirPrice === null
+        ) {
+
+            exirPrice =
+                defaultPrice;
+
+            usingDefaultPrice =
+                true;
+
+        }
 
     }
 
@@ -4518,8 +4807,11 @@ async function loadDashboardData() {
 
 
     safeText(
+
         "today",
+
         today
+
     );
 
 
@@ -4540,11 +4832,9 @@ async function loadDashboardData() {
 
         "exirPrice",
 
-        exirPrice === null
-            ? "-"
-            : formatNumber(
-                exirPrice
-            )
+        formatNumber(
+            exirPrice
+        )
 
     );
 
@@ -4563,8 +4853,11 @@ async function loadDashboardData() {
 
     const averageLivePrice =
         calculateAverageLivePrice(
+
             currentPrice,
+
             exirPrice
+
         );
 
 
@@ -4573,7 +4866,9 @@ async function loadDashboardData() {
     ) {
 
         throw new Error(
+
             "No valid live market price is available."
+
         );
 
     }
@@ -4598,7 +4893,23 @@ async function loadDashboardData() {
         usingCachedExir;
 
 
-    if (isOffline) {
+    if (usingDefaultPrice) {
+
+        showConnectionStatus(
+
+            true,
+
+            "Offline Mode • Using Default Price: "
+            +
+            formatNumber(
+                defaultPrice
+            )
+
+        );
+
+    }
+
+    else if (isOffline) {
 
         const cachedTime =
             getCachedPriceTime();
@@ -4618,8 +4929,11 @@ async function loadDashboardData() {
 
 
         showConnectionStatus(
+
             true,
+
             message
+
         );
 
     }
@@ -4627,8 +4941,11 @@ async function loadDashboardData() {
     else {
 
         showConnectionStatus(
+
             false,
+
             "Online • Live Data"
+
         );
 
     }
@@ -4639,22 +4956,32 @@ async function loadDashboardData() {
     let updateTime =
         new Date()
             .toLocaleTimeString(
+
                 "en-US",
+
                 {
+
                     hour:
                         "2-digit",
+
                     minute:
                         "2-digit",
+
                     second:
                         "2-digit",
+
                     hour12:
                         false
+
                 }
+
             );
 
 
     if (
         usingCachedNobitex
+        &&
+        !usingDefaultPrice
     ) {
 
         const cachedTime =
@@ -4691,7 +5018,9 @@ async function loadDashboardData() {
 
         const saved =
             sessionStorage.getItem(
+
                 "previousNobitexPrice"
+
             );
 
 
@@ -4751,7 +5080,9 @@ async function loadDashboardData() {
 
         const saved =
             sessionStorage.getItem(
+
                 "previousExirPrice"
+
             );
 
 
@@ -4786,21 +5117,15 @@ async function loadDashboardData() {
 
     try {
 
-        if (
-            exirPrice !== null
-        ) {
+        sessionStorage.setItem(
 
-            sessionStorage.setItem(
+            "previousExirPrice",
 
-                "previousExirPrice",
+            String(
+                exirPrice
+            )
 
-                String(
-                    exirPrice
-                )
-
-            );
-
-        }
+        );
 
     }
 
@@ -4846,8 +5171,11 @@ async function loadDashboardData() {
             .sort(
 
                 (
+
                     a,
+
                     b
+
                 ) =>
 
                     dateNumber(
@@ -4994,6 +5322,35 @@ async function loadDashboardData() {
     );
 
 
+    /* SELL WARNING */
+
+    const allWarnings = [
+
+        ...overall.warnings,
+
+        ...six.warnings,
+
+        ...last.warnings
+
+    ];
+
+
+    const uniqueWarnings = [
+
+        ...new Set(
+            allWarnings
+        )
+
+    ];
+
+
+    showSellWarning(
+
+        uniqueWarnings
+
+    );
+
+
     /* SAVE AVERAGE PRICE */
 
     try {
@@ -5052,7 +5409,9 @@ let countdownTimer =
 function startAutoRefresh() {
 
     clearInterval(
+
         countdownTimer
+
     );
 
 
@@ -5086,7 +5445,19 @@ function startAutoRefresh() {
                         30;
 
 
-                    await loadDashboardData();
+                    try {
+
+                        await loadDashboardData();
+
+                    }
+
+                    catch (error) {
+
+                        console.error(
+                            error
+                        );
+
+                    }
 
                 }
 
@@ -5123,7 +5494,7 @@ window.addEventListener(
 
             true,
 
-            "Offline Mode • Showing Cached Data"
+            "Offline Mode • Checking Cache..."
 
         );
 
@@ -5228,9 +5599,13 @@ init();
 ===================================================== */
 
 if (
+
     "serviceWorker"
+
     in
+
     navigator
+
 ) {
 
     window.addEventListener(
