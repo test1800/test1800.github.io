@@ -280,11 +280,12 @@ h1 {
 
     width: 100%;
 
-    gap: 28px;
+    gap: 20px;
 
 }
 
 .live-price-left,
+.live-price-center,
 .live-price-right {
 
     display: flex;
@@ -295,7 +296,7 @@ h1 {
     min-width: 0;
 
     flex:
-        1 1 50%;
+        1 1 33.333%;
 
 }
 
@@ -303,6 +304,13 @@ h1 {
 
     justify-content:
         flex-start;
+
+}
+
+.live-price-center {
+
+    justify-content:
+        center;
 
 }
 
@@ -1080,7 +1088,7 @@ h1 {
 
     .live-price-values {
 
-        gap: 14px;
+        gap: 8px;
 
     }
 
@@ -1143,12 +1151,10 @@ h1 {
 
 /* =====================================================
    ULTRA COMPACT MODE
-   فعال شدن وقتی ارتفاع صفحه کمتر از 200px باشد
 ===================================================== */
 
 @media (max-height: 199px) {
 
-    /* مخفی کردن کل محتوای صفحه */
     body > .container > header > *:not(.live-price) {
         display: none !important;
     }
@@ -1159,7 +1165,6 @@ h1 {
         display: none !important;
     }
 
-    /* حذف فاصله و ظاهر اضافه هدر */
     body > .container {
         padding: 0 !important;
         width: 100% !important;
@@ -1177,7 +1182,6 @@ h1 {
         backdrop-filter: none !important;
     }
 
-    /* فقط بخش قیمت زنده */
     .live-price {
         display: flex !important;
         margin: 0 !important;
@@ -1187,24 +1191,23 @@ h1 {
         gap: 0 !important;
     }
 
-    /* مخفی کردن عنوان Live Market و Bank Rate */
     .live-market-header {
         display: none !important;
     }
 
-    /* نمایش دو قیمت در دو طرف */
     .live-price-values {
         display: flex !important;
         width: 100% !important;
-        gap: 10px !important;
+        gap: 6px !important;
         align-items: center !important;
         justify-content: space-between !important;
     }
 
     .live-price-left,
+    .live-price-center,
     .live-price-right {
         display: flex !important;
-        flex: 0 1 auto !important;
+        flex: 1 1 33.333% !important;
         min-width: 0 !important;
     }
 
@@ -1212,18 +1215,20 @@ h1 {
         justify-content: flex-start !important;
     }
 
+    .live-price-center {
+        justify-content: center !important;
+    }
+
     .live-price-right {
         justify-content: flex-end !important;
     }
 
-    /*   عدد قیمت */
-.live-number {
-    font-size: 16px !important;
-    line-height: 1 !important;
-    font-weight: 700 !important;
-}
+    .live-number {
+        font-size: 16px !important;
+        line-height: 1 !important;
+        font-weight: 700 !important;
+    }
 
-    /* فلش کنار قیمت */
     .price-arrow {
         font-size: clamp(16px, 5vh, 22px) !important;
         width: auto !important;
@@ -1236,9 +1241,6 @@ h1 {
 
 }
 
-
-
-    
 </style>
 
 </head>
@@ -1334,6 +1336,33 @@ h1 {
                     <div
                         class="price-arrow arrow-flat"
                         id="topPriceArrow">
+
+                        →
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- TABDEAL -->
+
+            <div class="live-price-center">
+
+                <div class="live-price-item">
+
+                    <div
+                        class="live-number"
+                        id="tabdealPrice">
+
+                        -
+
+                    </div>
+
+                    <div
+                        class="price-arrow arrow-flat"
+                        id="tabdealPriceArrow">
 
                         →
 
@@ -1482,11 +1511,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized P/L
                         <br>
                         vs Purchase
-
                     </div>
 
                     <div
@@ -1503,11 +1530,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized P/L
                         <br>
                         vs Bank
-
                     </div>
 
                     <div
@@ -1528,11 +1553,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized Amount
                         <br>
                         vs Purchase
-
                     </div>
 
                     <div
@@ -1549,11 +1572,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized Amount
                         <br>
                         vs Bank
-
                     </div>
 
                     <div
@@ -1795,11 +1816,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized P/L
                         <br>
                         vs Purchase
-
                     </div>
 
                     <div
@@ -1816,11 +1835,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized P/L
                         <br>
                         vs Bank
-
                     </div>
 
                     <div
@@ -1841,11 +1858,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized Amount
                         <br>
                         vs Purchase
-
                     </div>
 
                     <div
@@ -1862,11 +1877,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized Amount
                         <br>
                         vs Bank
-
                     </div>
 
                     <div
@@ -2120,11 +2133,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized P/L
                         <br>
                         vs Purchase
-
                     </div>
 
                     <div
@@ -2141,11 +2152,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized P/L
                         <br>
                         vs Bank
-
                     </div>
 
                     <div
@@ -2166,11 +2175,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized Amount
                         <br>
                         vs Purchase
-
                     </div>
 
                     <div
@@ -2187,11 +2194,9 @@ h1 {
                 <div class="pl-box">
 
                     <div class="pl-label">
-
                         Unrealized Amount
                         <br>
                         vs Bank
-
                     </div>
 
                     <div
@@ -2502,7 +2507,10 @@ const CACHE_KEYS = {
         "financialDashboardPriceTime",
 
     EXIR_PRICE:
-        "financialDashboardExirPrice"
+        "financialDashboardExirPrice",
+
+    TABDEAL_PRICE:
+        "financialDashboardTabdealPrice"
 
 };
 
@@ -2637,6 +2645,52 @@ function loadExirPrice() {
         const saved =
             localStorage.getItem(
                 CACHE_KEYS.EXIR_PRICE
+            );
+
+        const price =
+            Number(saved);
+
+        return Number.isFinite(price)
+            ? price
+            : null;
+
+    }
+
+    catch (error) {
+
+        return null;
+
+    }
+
+}
+
+
+function saveTabdealPrice(price) {
+
+    try {
+
+        localStorage.setItem(
+
+            CACHE_KEYS.TABDEAL_PRICE,
+
+            String(price)
+
+        );
+
+    }
+
+    catch (error) {}
+
+}
+
+
+function loadTabdealPrice() {
+
+    try {
+
+        const saved =
+            localStorage.getItem(
+                CACHE_KEYS.TABDEAL_PRICE
             );
 
         const price =
@@ -4295,19 +4349,146 @@ async function getExirPrice(
 
 
 /* =====================================================
+   TABDEAL API
+===================================================== */
+
+async function getTabdealPrice(
+    apiUrl
+) {
+
+    if (!apiUrl) {
+
+        throw new Error(
+            "Tabdeal API URL is missing"
+        );
+
+    }
+
+
+    const response =
+        await fetch(
+            apiUrl,
+            {
+                method: "GET",
+                headers: {
+                    "Accept":
+                        "application/json"
+                },
+                cache: "no-store"
+            }
+        );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            "Unable to get Tabdeal price"
+        );
+
+    }
+
+
+    const data =
+        await response.json();
+
+
+    const bestBid =
+        Number(
+            data?.bids?.[0]?.[0]
+        );
+
+
+    const bestAsk =
+        Number(
+            data?.asks?.[0]?.[0]
+        );
+
+
+    let price =
+        null;
+
+
+    if (
+
+        Number.isFinite(bestBid)
+
+        &&
+
+        Number.isFinite(bestAsk)
+
+    ) {
+
+        price =
+
+            (
+
+                bestBid +
+
+                bestAsk
+
+            )
+
+            /
+
+            2;
+
+    }
+
+
+    else if (
+        Number.isFinite(bestAsk)
+    ) {
+
+        price =
+            bestAsk;
+
+    }
+
+
+    else if (
+        Number.isFinite(bestBid)
+    ) {
+
+        price =
+            bestBid;
+
+    }
+
+
+    if (
+        !Number.isFinite(price)
+    ) {
+
+        throw new Error(
+            "Invalid Tabdeal price"
+        );
+
+    }
+
+
+    return price;
+
+}
+
+
+/* =====================================================
    AVERAGE LIVE PRICE
+   NOBITEX + EXIR + TABDEAL
 ===================================================== */
 
 function calculateAverageLivePrice(
     nobitexPrice,
-    exirPrice
+    exirPrice,
+    tabdealPrice
 ) {
 
     const prices = [
 
         Number(nobitexPrice),
 
-        Number(exirPrice)
+        Number(exirPrice),
+
+        Number(tabdealPrice)
 
     ].filter(
         Number.isFinite
@@ -4362,6 +4543,10 @@ async function loadDashboardData() {
         null;
 
 
+    let tabdealPrice =
+        null;
+
+
     let usingCachedData =
         false;
 
@@ -4371,6 +4556,10 @@ async function loadDashboardData() {
 
 
     let usingCachedExir =
+        false;
+
+
+    let usingCachedTabdeal =
         false;
 
 
@@ -4514,6 +4703,33 @@ async function loadDashboardData() {
     }
 
 
+    /* TABDEAL */
+
+    try {
+
+        tabdealPrice =
+            await getTabdealPrice(
+                data.tabdealApi
+            );
+
+
+        saveTabdealPrice(
+            tabdealPrice
+        );
+
+    }
+
+    catch (error) {
+
+        tabdealPrice =
+            loadTabdealPrice();
+
+        usingCachedTabdeal =
+            true;
+
+    }
+
+
     /* TODAY */
 
     const today =
@@ -4554,6 +4770,19 @@ async function loadDashboardData() {
 
     safeText(
 
+        "tabdealPrice",
+
+        tabdealPrice === null
+            ? "-"
+            : formatNumber(
+                tabdealPrice
+            )
+
+    );
+
+
+    safeText(
+
         "bankRate",
 
         annualBankRate +
@@ -4566,8 +4795,13 @@ async function loadDashboardData() {
 
     const averageLivePrice =
         calculateAverageLivePrice(
+
             currentPrice,
-            exirPrice
+
+            exirPrice,
+
+            tabdealPrice
+
         );
 
 
@@ -4598,7 +4832,11 @@ async function loadDashboardData() {
 
         ||
 
-        usingCachedExir;
+        usingCachedExir
+
+        ||
+
+        usingCachedTabdeal;
 
 
     if (isOffline) {
@@ -4810,6 +5048,72 @@ async function loadDashboardData() {
     catch (error) {}
 
 
+    /* PREVIOUS TABDEAL */
+
+    let previousTabdeal =
+        null;
+
+
+    try {
+
+        const saved =
+            sessionStorage.getItem(
+                "previousTabdealPrice"
+            );
+
+
+        const parsed =
+            Number(saved);
+
+
+        if (
+            Number.isFinite(parsed)
+        ) {
+
+            previousTabdeal =
+                parsed;
+
+        }
+
+    }
+
+    catch (error) {}
+
+
+    setPriceArrow(
+
+        "tabdealPriceArrow",
+
+        tabdealPrice,
+
+        previousTabdeal
+
+    );
+
+
+    try {
+
+        if (
+            tabdealPrice !== null
+        ) {
+
+            sessionStorage.setItem(
+
+                "previousTabdealPrice",
+
+                String(
+                    tabdealPrice
+                )
+
+            );
+
+        }
+
+    }
+
+    catch (error) {}
+
+
     /* TRANSACTIONS */
 
     const transactions =
@@ -4892,7 +5196,7 @@ async function loadDashboardData() {
 
         "overall",
 
-        previousNobitex
+        averageLivePrice
 
     );
 
@@ -4929,7 +5233,7 @@ async function loadDashboardData() {
 
         "six",
 
-        previousNobitex
+        averageLivePrice
 
     );
 
@@ -4964,7 +5268,7 @@ async function loadDashboardData() {
 
         "last",
 
-        previousNobitex
+        averageLivePrice
 
     );
 
@@ -5089,7 +5393,19 @@ function startAutoRefresh() {
                         30;
 
 
-                    await loadDashboardData();
+                    try {
+
+                        await loadDashboardData();
+
+                    }
+
+                    catch (error) {
+
+                        console.error(
+                            error
+                        );
+
+                    }
 
                 }
 
