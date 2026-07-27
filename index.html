@@ -2577,6 +2577,52 @@ const CACHE_KEYS = {
 };
 
 
+const DATA_CACHE_MAX_AGE =
+    5 * 60 * 1000;
+
+const PRICE_REQUEST_TIMEOUT =
+    5000;
+
+let dashboardLoadInProgress =
+    null;
+
+
+function fetchWithTimeout(
+    url,
+    options = {},
+    timeout = PRICE_REQUEST_TIMEOUT
+) {
+
+    const controller =
+        new AbortController();
+
+    const timer =
+        setTimeout(
+            () => controller.abort(),
+            timeout
+        );
+
+    return fetch(
+        url,
+        {
+            ...options,
+            signal:
+                controller.signal
+        }
+    ).finally(
+        () => clearTimeout(timer)
+    );
+
+}
+
+
+function loadCachedDashboardData() {
+
+    return loadLocalData();
+
+}
+
+
 function saveLocalData(data) {
 
     try {
@@ -4650,7 +4696,7 @@ async function getCurrentPrice(
 
     const response =
 
-        await fetch(
+        await fetchWithTimeout(
 
             apiUrl,
 
@@ -4746,7 +4792,7 @@ async function getExirPrice(
 
     const response =
 
-        await fetch(
+        await fetchWithTimeout(
 
             apiUrl,
 
@@ -4875,7 +4921,7 @@ async function getBitpinPrice(
 
     const response =
 
-        await fetch(
+        await fetchWithTimeout(
 
             apiUrl,
 
@@ -5178,1128 +5224,729 @@ function calculateAverageLivePrice(
 
 async function loadDashboardData() {
 
-    let data =
-        null;
+    if (
+        dashboardLoadInProgress
+    ) {
+
+        return dashboardLoadInProgress;
+
+    }
 
 
-    let currentPrice =
-        null;
+    dashboardLoadInProgress =
+        (async () => {
+
+            let data =
+                loadCachedDashboardData();
 
 
-    let exirPrice =
-        null;
+            let usingCachedData =
+                Boolean(data);
 
 
-    let bitpinPrice =
-        null;
+            /* =================================================
+               DATA.JSON
+            ================================================= */
+
+            const dataRequest =
+                fetchWithTimeout(
+                    "data.json",
+                    {
+                        cache:
+                            "default"
+                    },
+                    5000
+                )
+                    .then(
+                        response => {
+
+                            if (!response.ok) {
+
+                                throw new Error(
+                                    "Cannot load data.json"
+                                );
+
+                            }
+
+                            return response.json();
+
+                        }
+                    )
+                    .then(
+                        freshData => {
+
+                            saveLocalData(
+                                freshData
+                            );
+
+                            return freshData;
+
+                        }
+                    );
 
 
-    let usingCachedData =
-        false;
+            if (!data) {
 
+                try {
 
-    let usingCachedNobitex =
-        false;
+                    data =
+                        await dataRequest;
 
-
-    let usingCachedExir =
-        false;
-
-
-    let usingCachedBitpin =
-        false;
-
-
-    let nobitexOnline =
-        false;
-
-
-    let exirOnline =
-        false;
-
-
-    let bitpinOnline =
-        false;
-
-
-    let priceErrors = [];
-
-
-    /* DATA.JSON */
-
-    try {
-
-        const response =
-
-            await fetch(
-
-                "data.json?x=" +
-
-                Date.now(),
-
-                {
-
-                    cache:
-
-                        "no-store"
+                    usingCachedData =
+                        false;
 
                 }
 
-            );
-
-
-        if (!response.ok) {
-
-            throw new Error(
-
-                "Cannot load data.json"
-
-            );
-
-        }
-
-
-        data =
-
-            await response.json();
-
-
-        saveLocalData(
-
-            data
-
-        );
-
-    }
-
-    catch (error) {
-
-        data =
-
-            loadLocalData();
-
-
-        usingCachedData =
-
-            true;
-
-
-        if (!data) {
-
-            throw new Error(
-
-                "Offline and no saved dashboard data is available."
-
-            );
-
-        }
-
-    }
-
-
-    const annualBankRate =
-
-        Number(
-
-            data.annualBankRate
-
-        )
-
-        ||
-
-        40;
-
-
-    const divisor =
-
-        Number(
-
-            data.priceDivisor
-
-        )
-
-        ||
-
-        10;
-
-
-    const defaultPrice =
-
-        Number(
-
-            data.defaultPrice
-
-        )
-
-        ||
-
-        190000;
-
-
-    const bitpinApi =
-
-        data.bitpinApi
-
-        ||
-
-        "https://bitpinusdttom.mimabdibcc.workers.dev/";
-
-
-    /* =================================================
-       NOBITEX
-    ================================================= */
-
-    try {
-
-        currentPrice =
-
-            await getCurrentPrice(
-
-                data.priceApi,
-
-                divisor
-
-            );
-
-
-        nobitexOnline =
-
-            true;
-
-
-        saveNobitexPrice(
-
-            currentPrice
-
-        );
-
-    }
-
-    catch (error) {
-
-        currentPrice =
-
-            loadNobitexPrice();
-
-
-        usingCachedNobitex =
-
-            true;
-
-
-        if (
-
-            currentPrice === null
-
-        ) {
-
-            currentPrice =
-
-                defaultPrice;
-
-        }
-
-
-        priceErrors.push(
-
-            "Nobitex"
-
-        );
-
-    }
-
-
-    /* =================================================
-       EXIR
-    ================================================= */
-
-    try {
-
-        exirPrice =
-
-            await getExirPrice(
-
-                data.exirApi
-
-            );
-
-
-        exirOnline =
-
-            true;
-
-
-        saveExirPrice(
-
-            exirPrice
-
-        );
-
-    }
-
-    catch (error) {
-
-        exirPrice =
-
-            loadExirPrice();
-
-
-        usingCachedExir =
-
-            true;
-
-
-        if (
-
-            exirPrice === null
-
-        ) {
-
-            exirPrice =
-
-                defaultPrice;
-
-        }
-
-
-        priceErrors.push(
-
-            "Exir"
-
-        );
-
-    }
-
-
-    /* =================================================
-       BITPIN
-    ================================================= */
-
-    try {
-
-        bitpinPrice =
-
-            await getBitpinPrice(
-
-                bitpinApi
-
-            );
-
-
-        bitpinOnline =
-
-            true;
-
-
-        saveBitpinPrice(
-
-            bitpinPrice
-
-        );
-
-    }
-
-    catch (error) {
-
-        bitpinPrice =
-
-            loadBitpinPrice();
-
-
-        usingCachedBitpin =
-
-            true;
-
-
-        if (
-
-            bitpinPrice === null
-
-        ) {
-
-            bitpinPrice =
-
-                defaultPrice;
-
-        }
-
-
-        priceErrors.push(
-
-            "Bitpin"
-
-        );
-
-    }
-
-
-    /* =================================================
-       TODAY
-    ================================================= */
-
-    const today =
-
-        getTodayJalali();
-
-
-    safeText(
-
-        "today",
-
-        today
-
-    );
-
-
-    /* =================================================
-       MARKET PRICES
-    ================================================= */
-
-    safeText(
-
-        "currentPrice",
-
-        formatNumber(
-
-            currentPrice
-
-        )
-
-    );
-
-
-    safeText(
-
-        "exirPrice",
-
-        formatNumber(
-
-            exirPrice
-
-        )
-
-    );
-
-
-    safeText(
-
-        "bitpinPrice",
-
-        formatNumber(
-
-            bitpinPrice
-
-        )
-
-    );
-
-
-    safeText(
-
-        "bankRate",
-
-        annualBankRate +
-
-        "%"
-
-    );
-
-
-    /* =================================================
-       AVERAGE LIVE PRICE
-    ================================================= */
-
-    const averageLivePrice =
-
-        calculateAverageLivePrice(
-
-            currentPrice,
-
-            exirPrice,
-
-            bitpinPrice
-
-        );
-
-
-    if (
-
-        averageLivePrice === null
-
-    ) {
-
-        throw new Error(
-
-            "No valid live market price is available."
-
-        );
-
-    }
-
-
-    /* =================================================
-       PRICE ERROR MESSAGE
-    ================================================= */
-
-    if (
-
-        priceErrors.length > 0
-
-    ) {
-
-        showLivePriceErrors(
-
-            priceErrors
-
-        );
-
-    }
-
-    else {
-
-        showLivePriceErrors(
-
-            []
-
-        );
-
-    }
-
-
-    /* =================================================
-       CONNECTION STATUS
-    ================================================= */
-
-    const isOffline =
-
-        !navigator.onLine
-
-        ||
-
-        usingCachedData;
-
-
-    if (isOffline) {
-
-        const cachedTime =
-
-            getCachedPriceTime();
-
-
-        let message =
-
-            "Offline Mode • Showing Cached Data";
-
-
-        if (
-
-            cachedTime
-
-        ) {
-
-            message +=
-
-                " • Saved: " +
-
-                cachedTime;
-
-        }
-
-
-        showConnectionStatus(
-
-            true,
-
-            message
-
-        );
-
-    }
-
-    else {
-
-        showConnectionStatus(
-
-            false,
-
-            "Online • Live Data"
-
-        );
-
-    }
-
-
-    /* =================================================
-       UPDATE TIME
-    ================================================= */
-
-    let updateTime =
-
-        new Date()
-
-            .toLocaleTimeString(
-
-                "en-US",
-
-                {
-
-                    hour:
-
-                        "2-digit",
-
-                    minute:
-
-                        "2-digit",
-
-                    second:
-
-                        "2-digit",
-
-                    hour12:
-
-                        false
+                catch (error) {
+
+                    throw new Error(
+                        "Offline and no saved dashboard data is available."
+                    );
 
                 }
 
-            );
+            }
 
+            else {
 
-    if (
+                usingCachedData =
+                    false;
 
-        usingCachedNobitex
+                dataRequest
+                    .catch(
+                        () => {}
+                    );
 
-        &&
+            }
 
-        !nobitexOnline
 
-    ) {
+            const annualBankRate =
+                Number(
+                    data.annualBankRate
+                )
+                ||
+                40;
 
-        const cachedTime =
 
-            getCachedPriceTime();
+            const divisor =
+                Number(
+                    data.priceDivisor
+                )
+                ||
+                10;
 
 
-        if (
+            const defaultPrice =
+                Number(
+                    data.defaultPrice
+                )
+                ||
+                190000;
 
-            cachedTime
 
-        ) {
+            const bitpinApi =
+                data.bitpinApi
+                ||
+                "https://bitpinusdttom.mimabdibcc.workers.dev/";
 
-            updateTime =
 
-                cachedTime;
+            /* =================================================
+               USE CACHE FIRST
+            ================================================= */
 
-        }
+            let currentPrice =
+                loadNobitexPrice();
 
-    }
 
+            let exirPrice =
+                loadExirPrice();
 
-    safeText(
 
-        "updateTime",
+            let bitpinPrice =
+                loadBitpinPrice();
 
-        "Last Update: " +
 
-        updateTime
+            let usingCachedNobitex =
+                currentPrice !== null;
 
-    );
 
+            let usingCachedExir =
+                exirPrice !== null;
 
-    /* =================================================
-       PREVIOUS NOBITEX
-    ================================================= */
 
-    let previousNobitex =
+            let usingCachedBitpin =
+                bitpinPrice !== null;
 
-        null;
 
+            let nobitexOnline =
+                false;
 
-    try {
 
-        const saved =
+            let exirOnline =
+                false;
 
-            sessionStorage.getItem(
 
-                "previousNobitexPrice"
+            let bitpinOnline =
+                false;
 
-            );
 
+            const priceErrors = [];
 
-        const parsed =
 
-            Number(saved);
+            if (
+                currentPrice === null
+            ) {
 
+                currentPrice =
+                    defaultPrice;
 
-        if (
+            }
 
-            Number.isFinite(
 
-                parsed
+            if (
+                exirPrice === null
+            ) {
 
-            )
+                exirPrice =
+                    defaultPrice;
 
-        ) {
+            }
 
-            previousNobitex =
 
-                parsed;
+            if (
+                bitpinPrice === null
+            ) {
 
-        }
+                bitpinPrice =
+                    defaultPrice;
 
-    }
+            }
 
-    catch (error) {}
 
+            /* =================================================
+               ALL MARKET REQUESTS IN PARALLEL
+            ================================================= */
 
-    setPriceArrow(
+            const results =
+                await Promise.allSettled([
 
-        "topPriceArrow",
+                    getCurrentPrice(
+                        data.priceApi,
+                        divisor
+                    ),
 
-        currentPrice,
+                    getExirPrice(
+                        data.exirApi
+                    ),
 
-        previousNobitex
-
-    );
-
-
-    try {
-
-        sessionStorage.setItem(
-
-            "previousNobitexPrice",
-
-            String(
-
-                currentPrice
-
-            )
-
-        );
-
-    }
-
-    catch (error) {}
-
-
-    /* =================================================
-       PREVIOUS EXIR
-    ================================================= */
-
-    let previousExir =
-
-        null;
-
-
-    try {
-
-        const saved =
-
-            sessionStorage.getItem(
-
-                "previousExirPrice"
-
-            );
-
-
-        const parsed =
-
-            Number(saved);
-
-
-        if (
-
-            Number.isFinite(
-
-                parsed
-
-            )
-
-        ) {
-
-            previousExir =
-
-                parsed;
-
-        }
-
-    }
-
-    catch (error) {}
-
-
-    setPriceArrow(
-
-        "exirPriceArrow",
-
-        exirPrice,
-
-        previousExir
-
-    );
-
-
-    try {
-
-        sessionStorage.setItem(
-
-            "previousExirPrice",
-
-            String(
-
-                exirPrice
-
-            )
-
-        );
-
-    }
-
-    catch (error) {}
-
-
-    /* =================================================
-       PREVIOUS BITPIN
-    ================================================= */
-
-    let previousBitpin =
-
-        null;
-
-
-    try {
-
-        const saved =
-
-            sessionStorage.getItem(
-
-                "previousBitpinPrice"
-
-            );
-
-
-        const parsed =
-
-            Number(saved);
-
-
-        if (
-
-            Number.isFinite(
-
-                parsed
-
-            )
-
-        ) {
-
-            previousBitpin =
-
-                parsed;
-
-        }
-
-    }
-
-    catch (error) {}
-
-
-    setPriceArrow(
-
-        "bitpinPriceArrow",
-
-        bitpinPrice,
-
-        previousBitpin
-
-    );
-
-
-    try {
-
-        sessionStorage.setItem(
-
-            "previousBitpinPrice",
-
-            String(
-
-                bitpinPrice
-
-            )
-
-        );
-
-    }
-
-    catch (error) {}
-
-
-    /* =================================================
-       TRANSACTIONS
-    ================================================= */
-
-    const transactions =
-
-        Array.isArray(
-
-            data.transactions
-
-        )
-
-        ?
-
-        data.transactions
-
-            .filter(
-
-                transaction =>
-
-                    transaction
-
-                    &&
-
-                    (
-
-                        transaction.type ===
-
-                        "buy"
-
-                        ||
-
-                        transaction.type ===
-
-                        "sell"
-
+                    getBitpinPrice(
+                        bitpinApi
                     )
 
-            )
+                ]);
 
-            .slice()
 
-            .sort(
+            const nobitexResult =
+                results[0];
 
-                (
 
-                    a,
+            const exirResult =
+                results[1];
 
-                    b
 
-                ) =>
+            const bitpinResult =
+                results[2];
 
-                    dateNumber(
 
-                        a.date
+            if (
+                nobitexResult.status ===
+                "fulfilled"
+            ) {
 
+                currentPrice =
+                    nobitexResult.value;
+
+                nobitexOnline =
+                    true;
+
+                usingCachedNobitex =
+                    false;
+
+                saveNobitexPrice(
+                    currentPrice
+                );
+
+            }
+
+            else {
+
+                priceErrors.push(
+                    "Nobitex"
+                );
+
+            }
+
+
+            if (
+                exirResult.status ===
+                "fulfilled"
+            ) {
+
+                exirPrice =
+                    exirResult.value;
+
+                exirOnline =
+                    true;
+
+                usingCachedExir =
+                    false;
+
+                saveExirPrice(
+                    exirPrice
+                );
+
+            }
+
+            else {
+
+                priceErrors.push(
+                    "Exir"
+                );
+
+            }
+
+
+            if (
+                bitpinResult.status ===
+                "fulfilled"
+            ) {
+
+                bitpinPrice =
+                    bitpinResult.value;
+
+                bitpinOnline =
+                    true;
+
+                usingCachedBitpin =
+                    false;
+
+                saveBitpinPrice(
+                    bitpinPrice
+                );
+
+            }
+
+            else {
+
+                priceErrors.push(
+                    "Bitpin"
+                );
+
+            }
+
+
+            /* =================================================
+               TODAY
+            ================================================= */
+
+            const today =
+                getTodayJalali();
+
+
+            safeText(
+                "today",
+                today
+            );
+
+
+            /* =================================================
+               MARKET PRICES
+            ================================================= */
+
+            safeText(
+                "currentPrice",
+                formatNumber(
+                    currentPrice
+                )
+            );
+
+
+            safeText(
+                "exirPrice",
+                formatNumber(
+                    exirPrice
+                )
+            );
+
+
+            safeText(
+                "bitpinPrice",
+                formatNumber(
+                    bitpinPrice
+                )
+            );
+
+
+            safeText(
+                "bankRate",
+                annualBankRate +
+                "%"
+            );
+
+
+            const averageLivePrice =
+                calculateAverageLivePrice(
+                    currentPrice,
+                    exirPrice,
+                    bitpinPrice
+                );
+
+
+            if (
+                averageLivePrice === null
+            ) {
+
+                throw new Error(
+                    "No valid live market price is available."
+                );
+
+            }
+
+
+            showLivePriceErrors(
+                priceErrors
+            );
+
+
+            const isOffline =
+                !navigator.onLine
+                ||
+                usingCachedData;
+
+
+            if (isOffline) {
+
+                const cachedTime =
+                    getCachedPriceTime();
+
+
+                let message =
+                    "Offline Mode • Showing Cached Data";
+
+
+                if (
+                    cachedTime
+                ) {
+
+                    message +=
+                        " • Saved: " +
+                        cachedTime;
+
+                }
+
+
+                showConnectionStatus(
+                    true,
+                    message
+                );
+
+            }
+
+            else {
+
+                showConnectionStatus(
+                    false,
+                    "Online • Live Data"
+                );
+
+            }
+
+
+            const updateTime =
+                new Date()
+                    .toLocaleTimeString(
+                        "en-US",
+                        {
+                            hour:
+                                "2-digit",
+                            minute:
+                                "2-digit",
+                            second:
+                                "2-digit",
+                            hour12:
+                                false
+                        }
+                    );
+
+
+            safeText(
+                "updateTime",
+                "Last Update: " +
+                updateTime
+            );
+
+
+            /* =================================================
+               PREVIOUS PRICES
+            ================================================= */
+
+            const previousNobitex =
+                Number(
+                    sessionStorage.getItem(
+                        "previousNobitexPrice"
                     )
+                );
 
-                    -
 
-                    dateNumber(
-
-                        b.date
-
+            const previousExir =
+                Number(
+                    sessionStorage.getItem(
+                        "previousExirPrice"
                     )
-
-            )
-
-        :
-
-        [];
-
-
-    /* =================================================
-       OVERALL
-    ================================================= */
-
-    const overall =
-
-        calculatePortfolio(
-
-            transactions,
-
-            averageLivePrice,
-
-            today,
-
-            annualBankRate
-
-        );
-
-
-    displaySection(
-
-        overall,
-
-        "overall",
-
-        averageLivePrice
-
-    );
-
-
-    /* =================================================
-       LAST 6 PERIODS
-    ================================================= */
-
-    const sixTransactions =
-
-        getLastPeriods(
-
-            transactions,
-
-            6
-
-        );
-
-
-    const six =
-
-        calculatePortfolio(
-
-            sixTransactions,
-
-            averageLivePrice,
-
-            today,
-
-            annualBankRate
-
-        );
-
-
-    displaySection(
-
-        six,
-
-        "six",
-
-        averageLivePrice
-
-    );
-
-
-    /* =================================================
-       LAST PERIOD
-    ================================================= */
-
-    const lastTransactions =
-
-        getLastPeriod(
-
-            transactions
-
-        );
-
-
-    const last =
-
-        calculatePortfolio(
-
-            lastTransactions,
-
-            averageLivePrice,
-
-            today,
-
-            annualBankRate
-
-        );
-
-
-    displaySection(
-
-        last,
-
-        "last",
-
-        averageLivePrice
-
-    );
-
-
-    displayLastAction(
-
-        lastTransactions
-
-    );
-
-
-    safeText(
-
-        "lastTrades",
-
-        last.buyCount
-
-        +
-
-        " IN  •  "
-
-        +
-
-        last.sellCount
-
-        +
-
-        " OUT"
-
-    );
-
-
-    /* =================================================
-       SAVE AVERAGE PRICE
-    ================================================= */
-
-    try {
-
-        sessionStorage.setItem(
-
-            "previousAverageLivePrice",
-
-            String(
-
+                );
+
+
+            const previousBitpin =
+                Number(
+                    sessionStorage.getItem(
+                        "previousBitpinPrice"
+                    )
+                );
+
+
+            setPriceArrow(
+                "topPriceArrow",
+                currentPrice,
+                Number.isFinite(
+                    previousNobitex
+                )
+                    ? previousNobitex
+                    : null
+            );
+
+
+            setPriceArrow(
+                "exirPriceArrow",
+                exirPrice,
+                Number.isFinite(
+                    previousExir
+                )
+                    ? previousExir
+                    : null
+            );
+
+
+            setPriceArrow(
+                "bitpinPriceArrow",
+                bitpinPrice,
+                Number.isFinite(
+                    previousBitpin
+                )
+                    ? previousBitpin
+                    : null
+            );
+
+
+            try {
+
+                sessionStorage.setItem(
+                    "previousNobitexPrice",
+                    String(
+                        currentPrice
+                    )
+                );
+
+                sessionStorage.setItem(
+                    "previousExirPrice",
+                    String(
+                        exirPrice
+                    )
+                );
+
+                sessionStorage.setItem(
+                    "previousBitpinPrice",
+                    String(
+                        bitpinPrice
+                    )
+                );
+
+            }
+
+            catch (error) {}
+
+
+            /* =================================================
+               TRANSACTIONS
+            ================================================= */
+
+            const transactions =
+                Array.isArray(
+                    data.transactions
+                )
+                    ?
+                    data.transactions
+                        .filter(
+                            transaction =>
+                                transaction
+                                &&
+                                (
+                                    transaction.type ===
+                                    "buy"
+                                    ||
+                                    transaction.type ===
+                                    "sell"
+                                )
+                        )
+                        .slice()
+                        .sort(
+                            (
+                                a,
+                                b
+                            ) =>
+                                dateNumber(
+                                    a.date
+                                )
+                                -
+                                dateNumber(
+                                    b.date
+                                )
+                        )
+                    :
+                    [];
+
+
+            const overall =
+                calculatePortfolio(
+                    transactions,
+                    averageLivePrice,
+                    today,
+                    annualBankRate
+                );
+
+
+            displaySection(
+                overall,
+                "overall",
                 averageLivePrice
+            );
 
-            )
 
-        );
+            const sixTransactions =
+                getLastPeriods(
+                    transactions,
+                    6
+                );
+
+
+            const six =
+                calculatePortfolio(
+                    sixTransactions,
+                    averageLivePrice,
+                    today,
+                    annualBankRate
+                );
+
+
+            displaySection(
+                six,
+                "six",
+                averageLivePrice
+            );
+
+
+            const lastTransactions =
+                getLastPeriod(
+                    transactions
+                );
+
+
+            const last =
+                calculatePortfolio(
+                    lastTransactions,
+                    averageLivePrice,
+                    today,
+                    annualBankRate
+                );
+
+
+            displaySection(
+                last,
+                "last",
+                averageLivePrice
+            );
+
+
+            displayLastAction(
+                lastTransactions
+            );
+
+
+            safeText(
+                "lastTrades",
+                last.buyCount
+                +
+                " IN  •  "
+                +
+                last.sellCount
+                +
+                " OUT"
+            );
+
+
+            try {
+
+                sessionStorage.setItem(
+                    "previousAverageLivePrice",
+                    String(
+                        averageLivePrice
+                    )
+                );
+
+            }
+
+            catch (error) {}
+
+
+            const loading =
+                $("loading");
+
+
+            if (loading) {
+
+                loading.style.display =
+                    "none";
+
+            }
+
+
+            const dashboard =
+                $("dashboard");
+
+
+            if (dashboard) {
+
+                dashboard.style.display =
+                    "grid";
+
+            }
+
+        })();
+
+
+    try {
+
+        return await dashboardLoadInProgress;
 
     }
 
-    catch (error) {}
+    finally {
 
-
-    /* =================================================
-       SHOW DASHBOARD
-    ================================================= */
-
-    const loading =
-
-        $("loading");
-
-
-    if (loading) {
-
-        loading.style.display =
-
-            "none";
-
-    }
-
-
-    const dashboard =
-
-        $("dashboard");
-
-
-    if (dashboard) {
-
-        dashboard.style.display =
-
-            "grid";
+        dashboardLoadInProgress =
+            null;
 
     }
 
 }
-
 
 /* =====================================================
    AUTO REFRESH
