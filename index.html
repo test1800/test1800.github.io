@@ -280,12 +280,11 @@ h1 {
 
     width: 100%;
 
-    gap: 18px;
+    gap: 28px;
 
 }
 
 .live-price-left,
-.live-price-center,
 .live-price-right {
 
     display: flex;
@@ -296,7 +295,7 @@ h1 {
     min-width: 0;
 
     flex:
-        1 1 33.333%;
+        1 1 50%;
 
 }
 
@@ -304,13 +303,6 @@ h1 {
 
     justify-content:
         flex-start;
-
-}
-
-.live-price-center {
-
-    justify-content:
-        center;
 
 }
 
@@ -1088,19 +1080,19 @@ h1 {
 
     .live-price-values {
 
-        gap: 8px;
+        gap: 14px;
 
     }
 
     .live-price-item {
 
-        gap: 5px;
+        gap: 6px;
 
     }
 
     .live-number {
 
-        font-size: 17px;
+        font-size: 20px;
 
     }
 
@@ -1149,13 +1141,14 @@ h1 {
 
 }
 
-
 /* =====================================================
    ULTRA COMPACT MODE
+   فعال شدن وقتی ارتفاع صفحه کمتر از 200px باشد
 ===================================================== */
 
 @media (max-height: 199px) {
 
+    /* مخفی کردن کل محتوای صفحه */
     body > .container > header > *:not(.live-price) {
         display: none !important;
     }
@@ -1166,6 +1159,7 @@ h1 {
         display: none !important;
     }
 
+    /* حذف فاصله و ظاهر اضافه هدر */
     body > .container {
         padding: 0 !important;
         width: 100% !important;
@@ -1183,6 +1177,7 @@ h1 {
         backdrop-filter: none !important;
     }
 
+    /* فقط بخش قیمت زنده */
     .live-price {
         display: flex !important;
         margin: 0 !important;
@@ -1192,20 +1187,21 @@ h1 {
         gap: 0 !important;
     }
 
+    /* مخفی کردن عنوان Live Market و Bank Rate */
     .live-market-header {
         display: none !important;
     }
 
+    /* نمایش دو قیمت در دو طرف */
     .live-price-values {
         display: flex !important;
         width: 100% !important;
-        gap: 5px !important;
+        gap: 10px !important;
         align-items: center !important;
         justify-content: space-between !important;
     }
 
     .live-price-left,
-    .live-price-center,
     .live-price-right {
         display: flex !important;
         flex: 0 1 auto !important;
@@ -1216,32 +1212,33 @@ h1 {
         justify-content: flex-start !important;
     }
 
-    .live-price-center {
-        justify-content: center !important;
-    }
-
     .live-price-right {
         justify-content: flex-end !important;
     }
 
-    .live-number {
-        font-size: 14px !important;
-        line-height: 1 !important;
-        font-weight: 700 !important;
-    }
+    /*   عدد قیمت */
+.live-number {
+    font-size: 16px !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+}
 
+    /* فلش کنار قیمت */
     .price-arrow {
-        font-size: clamp(14px, 5vh, 20px) !important;
+        font-size: clamp(16px, 5vh, 22px) !important;
         width: auto !important;
         height: auto !important;
     }
 
     .live-price-item {
-        gap: 3px !important;
+        gap: 5px !important;
     }
 
 }
 
+
+
+    
 </style>
 
 </head>
@@ -1320,7 +1317,6 @@ h1 {
 
         <div class="live-price-values">
 
-
             <!-- NOBITEX -->
 
             <div class="live-price-left">
@@ -1350,7 +1346,7 @@ h1 {
 
             <!-- EXIR -->
 
-            <div class="live-price-center">
+            <div class="live-price-right">
 
                 <div class="live-price-item">
 
@@ -1365,33 +1361,6 @@ h1 {
                     <div
                         class="price-arrow arrow-flat"
                         id="exirPriceArrow">
-
-                        →
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- TABDEAL -->
-
-            <div class="live-price-right">
-
-                <div class="live-price-item">
-
-                    <div
-                        class="live-number"
-                        id="tabdealPrice">
-
-                        -
-
-                    </div>
-
-                    <div
-                        class="price-arrow arrow-flat"
-                        id="tabdealPriceArrow">
 
                         →
 
@@ -1430,7 +1399,6 @@ h1 {
 <div
     id="dashboard"
     style="display:none;">
-
 
     <!-- =================================================
          OVERALL
@@ -2372,7 +2340,7 @@ h1 {
                     class="metric-value"
                     id="lastBank">
 
-                        -
+                    -
 
                 </div>
 
@@ -2534,10 +2502,7 @@ const CACHE_KEYS = {
         "financialDashboardPriceTime",
 
     EXIR_PRICE:
-        "financialDashboardExirPrice",
-
-    TABDEAL_PRICE:
-        "financialDashboardTabdealPrice"
+        "financialDashboardExirPrice"
 
 };
 
@@ -2631,8 +2596,7 @@ function loadNobitexPrice() {
         const price =
             Number(saved);
 
-        return Number.isFinite(price) &&
-            price > 0
+        return Number.isFinite(price)
             ? price
             : null;
 
@@ -2678,55 +2642,7 @@ function loadExirPrice() {
         const price =
             Number(saved);
 
-        return Number.isFinite(price) &&
-            price > 0
-            ? price
-            : null;
-
-    }
-
-    catch (error) {
-
-        return null;
-
-    }
-
-}
-
-
-function saveTabdealPrice(price) {
-
-    try {
-
-        localStorage.setItem(
-
-            CACHE_KEYS.TABDEAL_PRICE,
-
-            String(price)
-
-        );
-
-    }
-
-    catch (error) {}
-
-}
-
-
-function loadTabdealPrice() {
-
-    try {
-
-        const saved =
-            localStorage.getItem(
-                CACHE_KEYS.TABDEAL_PRICE
-            );
-
-        const price =
-            Number(saved);
-
-        return Number.isFinite(price) &&
-            price > 0
+        return Number.isFinite(price)
             ? price
             : null;
 
@@ -2868,15 +2784,7 @@ function setPriceArrow(
 
         ||
 
-        current <= 0
-
-        ||
-
         !Number.isFinite(previous)
-
-        ||
-
-        previous <= 0
 
     ) {
 
@@ -4266,13 +4174,7 @@ async function getCurrentPrice(
 
 
     if (
-
         !Number.isFinite(price)
-
-        ||
-
-        price <= 0
-
     ) {
 
         throw new Error(
@@ -4377,177 +4279,11 @@ async function getExirPrice(
 
 
     if (
-
         !Number.isFinite(price)
-
-        ||
-
-        price <= 0
-
     ) {
 
         throw new Error(
             "Invalid Exir price"
-        );
-
-    }
-
-
-    return price;
-
-}
-
-
-/* =====================================================
-   TABDEAL API
-===================================================== */
-
-async function getTabdealPrice(
-    apiUrl
-) {
-
-    if (!apiUrl) {
-
-        throw new Error(
-            "Tabdeal API URL is missing"
-        );
-
-    }
-
-
-    const response =
-        await fetch(
-            apiUrl,
-            {
-                method: "GET",
-                headers: {
-                    "Accept":
-                        "application/json"
-                },
-                cache: "no-store"
-            }
-        );
-
-
-    if (!response.ok) {
-
-        throw new Error(
-            "Unable to get Tabdeal price"
-        );
-
-    }
-
-
-    const data =
-        await response.json();
-
-
-    let rawPrice =
-        null;
-
-
-    if (Array.isArray(data)) {
-
-        const first =
-            data[0];
-
-        if (typeof first === "object") {
-
-            rawPrice =
-
-                first?.price
-
-                ??
-
-                first?.tradePrice
-
-                ??
-
-                first?.last
-
-                ??
-
-                first?.lastPrice
-
-                ??
-
-                first?.p;
-
-        }
-
-        else {
-
-            rawPrice =
-                first;
-
-        }
-
-    }
-
-    else if (
-        data &&
-        typeof data === "object"
-    ) {
-
-        rawPrice =
-
-            data?.price
-
-            ??
-
-            data?.tradePrice
-
-            ??
-
-            data?.last
-
-            ??
-
-            data?.lastPrice
-
-            ??
-
-            data?.p
-
-            ??
-
-            data?.data?.price
-
-            ??
-
-            data?.data?.last
-
-            ??
-
-            data?.data?.lastPrice
-
-            ??
-
-            data?.result?.price
-
-            ??
-
-            data?.result?.last;
-
-    }
-
-
-    const price =
-        Number(rawPrice);
-
-
-    if (
-
-        !Number.isFinite(price)
-
-        ||
-
-        price <= 0
-
-    ) {
-
-        throw new Error(
-            "Invalid Tabdeal price"
         );
 
     }
@@ -4564,28 +4300,17 @@ async function getTabdealPrice(
 
 function calculateAverageLivePrice(
     nobitexPrice,
-    exirPrice,
-    tabdealPrice
+    exirPrice
 ) {
 
     const prices = [
 
         Number(nobitexPrice),
 
-        Number(exirPrice),
-
-        Number(tabdealPrice)
+        Number(exirPrice)
 
     ].filter(
-
-        price =>
-
-            Number.isFinite(price)
-
-            &&
-
-            price > 0
-
+        Number.isFinite
     );
 
 
@@ -4637,10 +4362,6 @@ async function loadDashboardData() {
         null;
 
 
-    let tabdealPrice =
-        null;
-
-
     let usingCachedData =
         false;
 
@@ -4650,10 +4371,6 @@ async function loadDashboardData() {
 
 
     let usingCachedExir =
-        false;
-
-
-    let usingCachedTabdeal =
         false;
 
 
@@ -4729,23 +4446,6 @@ async function loadDashboardData() {
         10;
 
 
-    const defaultPrice =
-        Number(
-            data.defaultPrice
-        )
-        > 0
-
-        ?
-
-        Number(
-            data.defaultPrice
-        )
-
-        :
-
-        190000;
-
-
     /* NOBITEX */
 
     try {
@@ -4776,8 +4476,11 @@ async function loadDashboardData() {
             currentPrice === null
         ) {
 
-            currentPrice =
-                defaultPrice;
+            throw new Error(
+
+                "Nobitex price is unavailable and no cached price exists."
+
+            );
 
         }
 
@@ -4811,33 +4514,6 @@ async function loadDashboardData() {
     }
 
 
-    /* TABDEAL */
-
-    try {
-
-        tabdealPrice =
-            await getTabdealPrice(
-                data.tabdealApi
-            );
-
-
-        saveTabdealPrice(
-            tabdealPrice
-        );
-
-    }
-
-    catch (error) {
-
-        tabdealPrice =
-            loadTabdealPrice();
-
-        usingCachedTabdeal =
-            true;
-
-    }
-
-
     /* TODAY */
 
     const today =
@@ -4856,11 +4532,9 @@ async function loadDashboardData() {
 
         "currentPrice",
 
-        currentPrice === null
-            ? "-"
-            : formatNumber(
-                currentPrice
-            )
+        formatNumber(
+            currentPrice
+        )
 
     );
 
@@ -4880,19 +4554,6 @@ async function loadDashboardData() {
 
     safeText(
 
-        "tabdealPrice",
-
-        tabdealPrice === null
-            ? "-"
-            : formatNumber(
-                tabdealPrice
-            )
-
-    );
-
-
-    safeText(
-
         "bankRate",
 
         annualBankRate +
@@ -4905,13 +4566,8 @@ async function loadDashboardData() {
 
     const averageLivePrice =
         calculateAverageLivePrice(
-
             currentPrice,
-
-            exirPrice,
-
-            tabdealPrice
-
+            exirPrice
         );
 
 
@@ -4942,11 +4598,7 @@ async function loadDashboardData() {
 
         ||
 
-        usingCachedExir
-
-        ||
-
-        usingCachedTabdeal;
+        usingCachedExir;
 
 
     if (isOffline) {
@@ -4978,11 +4630,8 @@ async function loadDashboardData() {
     else {
 
         showConnectionStatus(
-
             false,
-
             "Online • Live Data"
-
         );
 
     }
@@ -5054,13 +4703,7 @@ async function loadDashboardData() {
 
 
         if (
-
             Number.isFinite(parsed)
-
-            &&
-
-            parsed > 0
-
         ) {
 
             previousNobitex =
@@ -5120,13 +4763,7 @@ async function loadDashboardData() {
 
 
         if (
-
             Number.isFinite(parsed)
-
-            &&
-
-            parsed > 0
-
         ) {
 
             previousExir =
@@ -5153,13 +4790,7 @@ async function loadDashboardData() {
     try {
 
         if (
-
             exirPrice !== null
-
-            &&
-
-            exirPrice > 0
-
         ) {
 
             sessionStorage.setItem(
@@ -5168,84 +4799,6 @@ async function loadDashboardData() {
 
                 String(
                     exirPrice
-                )
-
-            );
-
-        }
-
-    }
-
-    catch (error) {}
-
-
-    /* PREVIOUS TABDEAL */
-
-    let previousTabdeal =
-        null;
-
-
-    try {
-
-        const saved =
-            sessionStorage.getItem(
-                "previousTabdealPrice"
-            );
-
-
-        const parsed =
-            Number(saved);
-
-
-        if (
-
-            Number.isFinite(parsed)
-
-            &&
-
-            parsed > 0
-
-        ) {
-
-            previousTabdeal =
-                parsed;
-
-        }
-
-    }
-
-    catch (error) {}
-
-
-    setPriceArrow(
-
-        "tabdealPriceArrow",
-
-        tabdealPrice,
-
-        previousTabdeal
-
-    );
-
-
-    try {
-
-        if (
-
-            tabdealPrice !== null
-
-            &&
-
-            tabdealPrice > 0
-
-        ) {
-
-            sessionStorage.setItem(
-
-                "previousTabdealPrice",
-
-                String(
-                    tabdealPrice
                 )
 
             );
@@ -5339,7 +4892,7 @@ async function loadDashboardData() {
 
         "overall",
 
-        averageLivePrice
+        previousNobitex
 
     );
 
@@ -5376,7 +4929,7 @@ async function loadDashboardData() {
 
         "six",
 
-        averageLivePrice
+        previousNobitex
 
     );
 
@@ -5411,7 +4964,7 @@ async function loadDashboardData() {
 
         "last",
 
-        averageLivePrice
+        previousNobitex
 
     );
 
@@ -5536,19 +5089,7 @@ function startAutoRefresh() {
                         30;
 
 
-                    try {
-
-                        await loadDashboardData();
-
-                    }
-
-                    catch (error) {
-
-                        console.error(
-                            error
-                        );
-
-                    }
+                    await loadDashboardData();
 
                 }
 
@@ -5671,7 +5212,7 @@ async function init() {
 
                 `<div class="error">
 
-                    ${String(error.message)}
+                    ${error.message}
 
                 </div>`;
 
