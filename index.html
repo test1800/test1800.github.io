@@ -4814,161 +4814,100 @@ async function getExirPrice(
    TABDEAL API
 ===================================================== */
 
-async function getTabdealPrice(
-
-    apiUrl
-
-) {
+async function getTabdealPrice(apiUrl) {
 
     if (!apiUrl) {
-
         throw new Error(
-
             "Tabdeal API URL is missing"
-
         );
-
     }
-
 
     const response =
         await fetch(
-
             apiUrl,
-
             {
-
-                method:
-                    "GET",
-
+                method: "GET",
                 headers: {
-
                     "Accept":
                         "application/json"
-
                 },
-
-                cache:
-                    "no-store"
-
+                cache: "no-store"
             }
-
         );
-
 
     if (!response.ok) {
-
         throw new Error(
-
             "Unable to get Tabdeal price"
-
         );
-
     }
-
 
     const data =
         await response.json();
 
+    let rawPrice = null;
 
-    let rawPrice =
-        null;
+    /*
+       TABDEAL API RETURNS AN ARRAY
 
+       The newest trade is data[0]
+       Example:
+       data[0].price = 188101
+    */
 
     if (
-
         Array.isArray(data)
-
         &&
-
         data.length > 0
-
     ) {
 
         const lastTrade =
-            data[
-
-                data.length - 1
-
-            ];
-
+            data[0];
 
         rawPrice =
-
             lastTrade?.price
-
             ??
-
             lastTrade?.last
-
             ??
-
             lastTrade?.lastPrice;
-
     }
 
+    /*
+       Support object response as fallback
+    */
 
     else if (
-
         data
-
         &&
-
         typeof data === "object"
-
     ) {
 
         rawPrice =
-
             data?.price
-
             ??
-
             data?.last
-
             ??
-
             data?.lastPrice
-
             ??
-
             data?.data?.price
-
             ??
-
             data?.data?.last;
-
     }
-
 
     const price =
         Number(rawPrice);
 
-
     if (
-
         !Number.isFinite(price)
-
         ||
-
         price <= 0
-
     ) {
-
         throw new Error(
-
             "Invalid Tabdeal price"
-
         );
-
     }
 
-
     return price;
-
 }
-
-
 /* =====================================================
    AVERAGE LIVE PRICE
 ===================================================== */
