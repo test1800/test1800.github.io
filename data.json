@@ -2,6 +2,7 @@
   "priceApi": "https://apiv2.nobitex.ir/v3/orderbook/USDTIRT",
   "exirApi": "https://api.exir.io/v2/ticker?symbol=usdt-irt",
   "tabdealApi": "https://api1.tabdeal.org/r/api/v1/trades?symbol=USDTIRT",
+  "wallexApi": "https://api.wallex.ir/v1/trades?symbol=USDTTMN",
   "defaultPrice": 190000,
   "annualBankRate": 40,
   "priceDivisor": 10,
