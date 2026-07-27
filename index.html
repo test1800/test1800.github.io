@@ -280,11 +280,12 @@ h1 {
 
     width: 100%;
 
-    gap: 20px;
+    gap: 18px;
 
 }
 
 .live-price-left,
+.live-price-center,
 .live-price-right {
 
     display: flex;
@@ -306,14 +307,14 @@ h1 {
 
 }
 
-.live-price-right {
+.live-price-center {
 
     justify-content:
         center;
 
 }
 
-.live-price-right:last-child {
+.live-price-right {
 
     justify-content:
         flex-end;
@@ -348,9 +349,11 @@ h1 {
 
     display: inline-flex;
 
-    align-items: center;
+    align-items:
+        center;
 
-    justify-content: center;
+    justify-content:
+        center;
 
     width: 18px;
 
@@ -1085,15 +1088,7 @@ h1 {
 
     .live-price-values {
 
-        gap: 7px;
-
-    }
-
-    .live-price-left,
-    .live-price-right {
-
-        flex:
-            1 1 33.333%;
+        gap: 8px;
 
     }
 
@@ -1154,7 +1149,6 @@ h1 {
 
 }
 
-
 /* =====================================================
    ULTRA COMPACT MODE
 ===================================================== */
@@ -1162,142 +1156,87 @@ h1 {
 @media (max-height: 199px) {
 
     body > .container > header > *:not(.live-price) {
-
         display: none !important;
-
     }
 
     body > .container > #errorBox,
     body > .container > #loading,
     body > .container > #dashboard {
-
         display: none !important;
-
     }
 
     body > .container {
-
         padding: 0 !important;
-
         width: 100% !important;
-
         max-width: none !important;
-
     }
 
     header {
-
         display: block !important;
-
         margin: 0 !important;
-
         padding: 8px 12px !important;
-
         border-radius: 0 !important;
-
         border: none !important;
-
         box-shadow: none !important;
-
         background: transparent !important;
-
         backdrop-filter: none !important;
-
     }
 
     .live-price {
-
         display: flex !important;
-
         margin: 0 !important;
-
         padding: 4px 8px !important;
-
         border: none !important;
-
         background: transparent !important;
-
         gap: 0 !important;
-
     }
 
     .live-market-header {
-
         display: none !important;
-
     }
 
     .live-price-values {
-
         display: flex !important;
-
         width: 100% !important;
-
-        gap: 10px !important;
-
+        gap: 6px !important;
         align-items: center !important;
-
         justify-content: space-between !important;
-
     }
 
     .live-price-left,
+    .live-price-center,
     .live-price-right {
-
         display: flex !important;
-
-        flex:
-            0 1 auto !important;
-
+        flex: 0 1 auto !important;
         min-width: 0 !important;
-
     }
 
     .live-price-left {
+        justify-content: flex-start !important;
+    }
 
-        justify-content:
-            flex-start !important;
-
+    .live-price-center {
+        justify-content: center !important;
     }
 
     .live-price-right {
-
-        justify-content:
-            flex-end !important;
-
+        justify-content: flex-end !important;
     }
 
     .live-number {
-
-        font-size:
-            16px !important;
-
-        line-height:
-            1 !important;
-
-        font-weight:
-            700 !important;
-
+        font-size: 14px !important;
+        line-height: 1 !important;
+        font-weight: 700 !important;
     }
 
     .price-arrow {
-
-        font-size:
-            clamp(16px, 5vh, 22px) !important;
-
-        width:
-            auto !important;
-
-        height:
-            auto !important;
-
+        font-size: clamp(14px, 5vh, 20px) !important;
+        width: auto !important;
+        height: auto !important;
     }
 
     .live-price-item {
-
-        gap:
-            5px !important;
-
+        gap: 3px !important;
     }
 
 }
@@ -1380,7 +1319,6 @@ h1 {
 
         <div class="live-price-values">
 
-
             <!-- NOBITEX -->
 
             <div class="live-price-left">
@@ -1398,6 +1336,33 @@ h1 {
                     <div
                         class="price-arrow arrow-flat"
                         id="topPriceArrow">
+
+                        →
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- TABDEAL -->
+
+            <div class="live-price-center">
+
+                <div class="live-price-item">
+
+                    <div
+                        class="live-number"
+                        id="tabdealPrice">
+
+                        -
+
+                    </div>
+
+                    <div
+                        class="price-arrow arrow-flat"
+                        id="tabdealPriceArrow">
 
                         →
 
@@ -1434,34 +1399,6 @@ h1 {
 
             </div>
 
-
-            <!-- WALLEX -->
-
-            <div class="live-price-right">
-
-                <div class="live-price-item">
-
-                    <div
-                        class="live-number"
-                        id="wallexPrice">
-
-                        -
-
-                    </div>
-
-                    <div
-                        class="price-arrow arrow-flat"
-                        id="wallexPriceArrow">
-
-                        →
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
         </div>
 
     </div>
@@ -1491,7 +1428,6 @@ h1 {
 <div
     id="dashboard"
     style="display:none;">
-
 
     <!-- =================================================
          OVERALL
@@ -2450,7 +2386,6 @@ h1 {
 
 <script>
 
-
 /* =====================================================
    HELPERS
 ===================================================== */
@@ -2598,8 +2533,11 @@ const CACHE_KEYS = {
     EXIR_PRICE:
         "financialDashboardExirPrice",
 
-    WALLEX_PRICE:
-        "financialDashboardWallexPrice"
+    TABDEAL_PRICE:
+        "financialDashboardTabdealPrice",
+
+    TABDEAL_TIME:
+        "financialDashboardTabdealPriceTime"
 
 };
 
@@ -2694,7 +2632,6 @@ function loadNobitexPrice() {
             Number(saved);
 
         return Number.isFinite(price)
-            && price > 0
             ? price
             : null;
 
@@ -2741,7 +2678,6 @@ function loadExirPrice() {
             Number(saved);
 
         return Number.isFinite(price)
-            && price > 0
             ? price
             : null;
 
@@ -2756,15 +2692,23 @@ function loadExirPrice() {
 }
 
 
-function saveWallexPrice(price) {
+function saveTabdealPrice(price) {
 
     try {
 
         localStorage.setItem(
 
-            CACHE_KEYS.WALLEX_PRICE,
+            CACHE_KEYS.TABDEAL_PRICE,
 
             String(price)
+
+        );
+
+        localStorage.setItem(
+
+            CACHE_KEYS.TABDEAL_TIME,
+
+            new Date().toISOString()
 
         );
 
@@ -2775,20 +2719,19 @@ function saveWallexPrice(price) {
 }
 
 
-function loadWallexPrice() {
+function loadTabdealPrice() {
 
     try {
 
         const saved =
             localStorage.getItem(
-                CACHE_KEYS.WALLEX_PRICE
+                CACHE_KEYS.TABDEAL_PRICE
             );
 
         const price =
             Number(saved);
 
         return Number.isFinite(price)
-            && price > 0
             ? price
             : null;
 
@@ -2880,11 +2823,8 @@ function getCachedPriceTime() {
 ===================================================== */
 
 function showConnectionStatus(
-
     offline,
-
     message
-
 ) {
 
     const element =
@@ -2921,13 +2861,9 @@ function showConnectionStatus(
 ===================================================== */
 
 function setPriceArrow(
-
     id,
-
     currentPrice,
-
     previousPrice
-
 ) {
 
     const element =
@@ -2961,15 +2897,7 @@ function setPriceArrow(
 
         ||
 
-        current <= 0
-
-        ||
-
         !Number.isFinite(previous)
-
-        ||
-
-        previous <= 0
 
     ) {
 
@@ -3025,13 +2953,9 @@ function setPriceArrow(
 ===================================================== */
 
 function jalaliToGregorian(
-
     jy,
-
     jm,
-
     jd
-
 ) {
 
     jy -= 979;
@@ -3053,17 +2977,12 @@ function jalaliToGregorian(
         );
 
     for (
-
         let i = 1;
-
         i < jm;
-
         i++
-
     ) {
 
         days +=
-
             i <= 6
                 ? 31
                 : 30;
@@ -3143,29 +3062,17 @@ function jalaliToGregorian(
     const monthDays = [
 
         0,
-
         31,
-
         leap ? 29 : 28,
-
         31,
-
         30,
-
         31,
-
         30,
-
         31,
-
         31,
-
         30,
-
         31,
-
         30,
-
         31
 
     ];
@@ -3177,10 +3084,7 @@ function jalaliToGregorian(
         1;
 
     while (
-
-        day >
-        monthDays[month]
-
+        day > monthDays[month]
     ) {
 
         day -=
@@ -3191,24 +3095,17 @@ function jalaliToGregorian(
     }
 
     return new Date(
-
         gy,
-
         month - 1,
-
         day
-
     );
 
 }
 
 
 function daysBetweenInclusive(
-
     start,
-
     end
-
 ) {
 
     const startParts =
@@ -3263,7 +3160,6 @@ function daysBetweenInclusive(
             (
 
                 endDate -
-
                 startDate
 
             )
@@ -3302,27 +3198,16 @@ function getTodayJalali() {
     const gdm = [
 
         0,
-
         31,
-
         59,
-
         90,
-
         120,
-
         151,
-
         181,
-
         212,
-
         243,
-
         273,
-
         304,
-
         334
 
     ];
@@ -3436,22 +3321,14 @@ function getTodayJalali() {
     return (
 
         jy
-
         +
-
         "/"
-
         +
-
         String(jm)
             .padStart(2, "0")
-
         +
-
         "/"
-
         +
-
         String(jd)
             .padStart(2, "0")
 
@@ -3468,9 +3345,7 @@ function dateNumber(date) {
             .map(Number);
 
     if (
-
         parts.length !== 3
-
     ) {
 
         return 0;
@@ -3499,24 +3374,16 @@ function dateNumber(date) {
 ===================================================== */
 
 function compoundValue(
-
     principal,
-
     startDate,
-
     endDate,
-
     annualRate
-
 ) {
 
     const days =
         daysBetweenInclusive(
-
             startDate,
-
             endDate
-
         );
 
     const dailyRate =
@@ -3544,15 +3411,10 @@ function compoundValue(
 ===================================================== */
 
 function calculatePortfolio(
-
     transactions,
-
     currentPrice,
-
     today,
-
     annualRate
-
 ) {
 
     const lots = [];
@@ -3571,10 +3433,8 @@ function calculatePortfolio(
 
 
     for (
-
         const transaction
         of transactions
-
     ) {
 
         const amount =
@@ -3611,9 +3471,7 @@ function calculatePortfolio(
 
 
         if (
-
             transaction.type === "buy"
-
         ) {
 
             buyCount++;
@@ -3633,9 +3491,7 @@ function calculatePortfolio(
 
 
         else if (
-
             transaction.type === "sell"
-
         ) {
 
             sellCount++;
@@ -3690,13 +3546,11 @@ function calculatePortfolio(
                 realizedPurchase +=
 
                     saleRevenue -
-
                     purchaseCost;
 
                 realizedBank +=
 
                     saleRevenue -
-
                     bankCost;
 
                 lot.amount -=
@@ -3735,7 +3589,6 @@ function calculatePortfolio(
             ) =>
 
                 total +
-
                 lot.amount,
 
             0
@@ -3755,9 +3608,7 @@ function calculatePortfolio(
             ) =>
 
                 total +
-
                 lot.amount *
-
                 lot.price,
 
             0
@@ -3772,7 +3623,6 @@ function calculatePortfolio(
             ?
 
             paidAmount /
-
             currentQuantity
 
             :
@@ -3785,10 +3635,8 @@ function calculatePortfolio(
 
 
     for (
-
         const lot
         of lots
-
     ) {
 
         bankValue +=
@@ -3796,7 +3644,6 @@ function calculatePortfolio(
             compoundValue(
 
                 lot.amount *
-
                 lot.price,
 
                 lot.date,
@@ -3832,14 +3679,12 @@ function calculatePortfolio(
     const unrealizedPurchaseAmount =
 
         currentValue -
-
         paidAmount;
 
 
     const unrealizedBankAmount =
 
         currentValue -
-
         bankValue;
 
 
@@ -3852,9 +3697,7 @@ function calculatePortfolio(
             (
 
                 unrealizedPurchaseAmount
-
                 /
-
                 paidAmount
 
             )
@@ -3877,9 +3720,7 @@ function calculatePortfolio(
             (
 
                 unrealizedBankAmount
-
                 /
-
                 bankValue
 
             )
@@ -3935,9 +3776,7 @@ function calculatePortfolio(
 ===================================================== */
 
 function buildPeriods(
-
     transactions
-
 ) {
 
     const periods = [];
@@ -3947,16 +3786,12 @@ function buildPeriods(
 
 
     for (
-
         const transaction
         of transactions
-
     ) {
 
         if (
-
             transaction.type === "buy"
-
         ) {
 
             if (
@@ -4040,18 +3875,13 @@ function buildPeriods(
 
 
 function getLastPeriods(
-
     transactions,
-
     count
-
 ) {
 
     const periods =
         buildPeriods(
-
             transactions
-
         );
 
     return periods
@@ -4061,7 +3891,6 @@ function getLastPeriods(
         .flatMap(
 
             period =>
-
                 period.transactions
 
         );
@@ -4070,22 +3899,16 @@ function getLastPeriods(
 
 
 function getLastPeriod(
-
     transactions
-
 ) {
 
     const periods =
         buildPeriods(
-
             transactions
-
         );
 
     if (
-
         periods.length === 0
-
     ) {
 
         return [];
@@ -4106,19 +3929,14 @@ function getLastPeriod(
 ===================================================== */
 
 function displaySection(
-
     result,
-
     prefix,
-
     previousLivePrice
-
 ) {
 
     safeText(
 
         prefix +
-
         "Average",
 
         formatNumber(
@@ -4133,7 +3951,6 @@ function displaySection(
     safeText(
 
         prefix +
-
         "Paid",
 
         formatNumber(
@@ -4148,7 +3965,6 @@ function displaySection(
     safeText(
 
         prefix +
-
         "Adjusted",
 
         formatNumber(
@@ -4163,7 +3979,6 @@ function displaySection(
     safeText(
 
         prefix +
-
         "Live",
 
         formatNumber(
@@ -4178,7 +3993,6 @@ function displaySection(
     setPriceArrow(
 
         prefix +
-
         "PriceArrow",
 
         result.currentPrice,
@@ -4191,7 +4005,6 @@ function displaySection(
     safeText(
 
         prefix +
-
         "Quantity",
 
         formatNumber(
@@ -4206,7 +4019,6 @@ function displaySection(
     safeText(
 
         prefix +
-
         "Value",
 
         formatNumber(
@@ -4221,7 +4033,6 @@ function displaySection(
     safeText(
 
         prefix +
-
         "Bank",
 
         formatNumber(
@@ -4236,7 +4047,6 @@ function displaySection(
     safeText(
 
         prefix +
-
         "PLPurchase",
 
         formatPercent(
@@ -4251,7 +4061,6 @@ function displaySection(
     safeText(
 
         prefix +
-
         "PLBank",
 
         formatPercent(
@@ -4266,7 +4075,6 @@ function displaySection(
     safeText(
 
         prefix +
-
         "UnrealizedPurchase",
 
         formatMoneySigned(
@@ -4281,7 +4089,6 @@ function displaySection(
     safeText(
 
         prefix +
-
         "UnrealizedBank",
 
         formatMoneySigned(
@@ -4296,7 +4103,6 @@ function displaySection(
     safeText(
 
         prefix +
-
         "RealizedPurchase",
 
         formatMoneySigned(
@@ -4311,7 +4117,6 @@ function displaySection(
     safeText(
 
         prefix +
-
         "RealizedBank",
 
         formatMoneySigned(
@@ -4326,7 +4131,6 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
-
         "PLPurchase",
 
         result.plPurchase
@@ -4337,7 +4141,6 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
-
         "PLBank",
 
         result.plBank
@@ -4348,7 +4151,6 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
-
         "UnrealizedPurchase",
 
         result.unrealizedPurchaseAmount
@@ -4359,7 +4161,6 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
-
         "UnrealizedBank",
 
         result.unrealizedBankAmount
@@ -4370,7 +4171,6 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
-
         "RealizedPurchase",
 
         result.realizedPurchase
@@ -4381,7 +4181,6 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
-
         "RealizedBank",
 
         result.realizedBank
@@ -4393,7 +4192,6 @@ function displaySection(
         $(
 
             prefix +
-
             "MainPrice"
 
         );
@@ -4441,7 +4239,6 @@ function displaySection(
         $(
 
             prefix +
-
             "Result"
 
         );
@@ -4484,7 +4281,6 @@ function displaySection(
         $(
 
             prefix +
-
             "Trades"
 
         );
@@ -4518,9 +4314,7 @@ function displaySection(
 ===================================================== */
 
 function displayLastAction(
-
     transactions
-
 ) {
 
     const badge =
@@ -4582,11 +4376,8 @@ function displayLastAction(
 ===================================================== */
 
 async function getCurrentPrice(
-
     apiUrl,
-
     divisor
-
 ) {
 
     if (!apiUrl) {
@@ -4639,16 +4430,54 @@ async function getCurrentPrice(
         await response.json();
 
 
-    const rawPrice =
+    let rawPrice =
         data.lastTradePrice;
+
+
+    if (
+
+        !rawPrice
+
+        &&
+
+        data.asks
+
+        &&
+
+        data.asks.length
+
+    ) {
+
+        rawPrice =
+            data.asks[0][0];
+
+    }
+
+
+    if (
+
+        !rawPrice
+
+        &&
+
+        data.bids
+
+        &&
+
+        data.bids.length
+
+    ) {
+
+        rawPrice =
+            data.bids[0][0];
+
+    }
 
 
     const price =
 
         Number(rawPrice)
-
         /
-
         divisor;
 
 
@@ -4681,9 +4510,7 @@ async function getCurrentPrice(
 ===================================================== */
 
 async function getExirPrice(
-
     apiUrl
-
 ) {
 
     if (!apiUrl) {
@@ -4807,20 +4634,18 @@ async function getExirPrice(
 
 
 /* =====================================================
-   WALLEX API
+   TABDEAL API
 ===================================================== */
 
-async function getWallexPrice(
-
+async function getTabdealPrice(
     apiUrl
-
 ) {
 
     if (!apiUrl) {
 
         throw new Error(
 
-            "Wallex API URL is missing"
+            "Tabdeal API URL is missing"
 
         );
 
@@ -4856,7 +4681,7 @@ async function getWallexPrice(
 
         throw new Error(
 
-            "Unable to get Wallex price"
+            "Unable to get Tabdeal price"
 
         );
 
@@ -4867,173 +4692,41 @@ async function getWallexPrice(
         await response.json();
 
 
-    /*
-       WALLEX TRADES API
-
-       Endpoint:
-
-       https://api.wallex.ir/v1/trades?symbol=USDTTMN
-
-       The latest trade is expected
-       to be the first item.
-
-       Supported response structures:
-
-       data.result[0].price
-
-       data.result.price
-
-       data.data[0].price
-
-       data.data.price
-    */
+    let rawPrice =
+        null;
 
 
-    let rawPrice = null;
+    if (Array.isArray(data)) {
+
+        const firstTrade =
+            data.find(
+
+                item =>
+
+                    item
+
+                    &&
+
+                    item.price !== undefined
+
+                    &&
+
+                    item.price !== null
+
+            );
 
 
-    if (
+        if (firstTrade) {
 
-        Array.isArray(
+            rawPrice =
+                firstTrade.price;
 
-            data?.result
-
-        )
-
-        &&
-
-        data.result.length > 0
-
-    ) {
-
-        rawPrice =
-
-            data.result[0]?.price
-
-            ??
-
-            data.result[0]?.last
-
-            ??
-
-            data.result[0]?.lastPrice;
+        }
 
     }
 
 
-    else if (
-
-        data?.result
-
-        &&
-
-        typeof data.result === "object"
-
-    ) {
-
-        rawPrice =
-
-            data.result?.price
-
-            ??
-
-            data.result?.last
-
-            ??
-
-            data.result?.lastPrice;
-
-    }
-
-
-    else if (
-
-        Array.isArray(
-
-            data?.data
-
-        )
-
-        &&
-
-        data.data.length > 0
-
-    ) {
-
-        rawPrice =
-
-            data.data[0]?.price
-
-            ??
-
-            data.data[0]?.last
-
-            ??
-
-            data.data[0]?.lastPrice;
-
-    }
-
-
-    else if (
-
-        data?.data
-
-        &&
-
-        typeof data.data === "object"
-
-    ) {
-
-        rawPrice =
-
-            data.data?.price
-
-            ??
-
-            data.data?.last
-
-            ??
-
-            data.data?.lastPrice;
-
-    }
-
-
-    else if (
-
-        Array.isArray(data)
-
-        &&
-
-        data.length > 0
-
-    ) {
-
-        rawPrice =
-
-            data[0]?.price
-
-            ??
-
-            data[0]?.last
-
-            ??
-
-            data[0]?.lastPrice;
-
-    }
-
-
-    else if (
-
-        data
-
-        &&
-
-        typeof data === "object"
-
-    ) {
+    else {
 
         rawPrice =
 
@@ -5045,18 +4738,21 @@ async function getWallexPrice(
 
             ??
 
-            data?.lastPrice;
+            data?.lastPrice
+
+            ??
+
+            data?.lastTradePrice
+
+            ??
+
+            data?.data?.price;
 
     }
 
 
     const price =
-
-        Number(rawPrice)
-
-        /
-
-        10;
+        Number(rawPrice);
 
 
     if (
@@ -5071,7 +4767,7 @@ async function getWallexPrice(
 
         throw new Error(
 
-            "Invalid Wallex price"
+            "Invalid Tabdeal price"
 
         );
 
@@ -5093,7 +4789,7 @@ function calculateAverageLivePrice(
 
     exirPrice,
 
-    wallexPrice
+    tabdealPrice
 
 ) {
 
@@ -5103,7 +4799,7 @@ function calculateAverageLivePrice(
 
         Number(exirPrice),
 
-        Number(wallexPrice)
+        Number(tabdealPrice)
 
     ].filter(
 
@@ -5142,7 +4838,6 @@ function calculateAverageLivePrice(
             ) =>
 
                 total +
-
                 price,
 
             0
@@ -5176,7 +4871,7 @@ async function loadDashboardData() {
         null;
 
 
-    let wallexPrice =
+    let tabdealPrice =
         null;
 
 
@@ -5192,7 +4887,7 @@ async function loadDashboardData() {
         false;
 
 
-    let usingCachedWallex =
+    let usingCachedTabdeal =
         false;
 
 
@@ -5322,11 +5017,17 @@ async function loadDashboardData() {
 
         ) {
 
-            throw new Error(
+            currentPrice =
 
-                "Nobitex price is unavailable and no cached price exists."
+                Number(
 
-            );
+                    data.defaultPrice
+
+                )
+
+                ||
+
+                null;
 
         }
 
@@ -5364,21 +5065,21 @@ async function loadDashboardData() {
     }
 
 
-    /* WALLEX */
+    /* TABDEAL */
 
     try {
 
-        wallexPrice =
-            await getWallexPrice(
+        tabdealPrice =
+            await getTabdealPrice(
 
-                data.wallexApi
+                data.tabdealApi
 
             );
 
 
-        saveWallexPrice(
+        saveTabdealPrice(
 
-            wallexPrice
+            tabdealPrice
 
         );
 
@@ -5386,19 +5087,10 @@ async function loadDashboardData() {
 
     catch (error) {
 
-        console.error(
+        tabdealPrice =
+            loadTabdealPrice();
 
-            "Wallex API Error:",
-
-            error
-
-        );
-
-
-        wallexPrice =
-            loadWallexPrice();
-
-        usingCachedWallex =
+        usingCachedTabdeal =
             true;
 
     }
@@ -5425,11 +5117,19 @@ async function loadDashboardData() {
 
         "currentPrice",
 
-        formatNumber(
+        currentPrice === null
 
-            currentPrice
+            ?
 
-        )
+            "-"
+
+            :
+
+            formatNumber(
+
+                currentPrice
+
+            )
 
     );
 
@@ -5457,9 +5157,9 @@ async function loadDashboardData() {
 
     safeText(
 
-        "wallexPrice",
+        "tabdealPrice",
 
-        wallexPrice === null
+        tabdealPrice === null
 
             ?
 
@@ -5469,7 +5169,7 @@ async function loadDashboardData() {
 
             formatNumber(
 
-                wallexPrice
+                tabdealPrice
 
             )
 
@@ -5481,7 +5181,6 @@ async function loadDashboardData() {
         "bankRate",
 
         annualBankRate +
-
         "%"
 
     );
@@ -5490,13 +5189,14 @@ async function loadDashboardData() {
     /* AVERAGE LIVE PRICE */
 
     const averageLivePrice =
+
         calculateAverageLivePrice(
 
             currentPrice,
 
             exirPrice,
 
-            wallexPrice
+            tabdealPrice
 
         );
 
@@ -5536,7 +5236,7 @@ async function loadDashboardData() {
 
         ||
 
-        usingCachedWallex;
+        usingCachedTabdeal;
 
 
     if (isOffline) {
@@ -5587,6 +5287,7 @@ async function loadDashboardData() {
     /* UPDATE TIME */
 
     let updateTime =
+
         new Date()
 
             .toLocaleTimeString(
@@ -5637,7 +5338,6 @@ async function loadDashboardData() {
         "updateTime",
 
         "Last Update: " +
-
         updateTime
 
     );
@@ -5666,10 +5366,6 @@ async function loadDashboardData() {
         if (
 
             Number.isFinite(parsed)
-
-            &&
-
-            parsed > 0
 
         ) {
 
@@ -5737,10 +5433,6 @@ async function loadDashboardData() {
 
             Number.isFinite(parsed)
 
-            &&
-
-            parsed > 0
-
         ) {
 
             previousExir =
@@ -5770,10 +5462,6 @@ async function loadDashboardData() {
 
             exirPrice !== null
 
-            &&
-
-            exirPrice > 0
-
         ) {
 
             sessionStorage.setItem(
@@ -5795,9 +5483,9 @@ async function loadDashboardData() {
     catch (error) {}
 
 
-    /* PREVIOUS WALLEX */
+    /* PREVIOUS TABDEAL */
 
-    let previousWallex =
+    let previousTabdeal =
         null;
 
 
@@ -5806,7 +5494,7 @@ async function loadDashboardData() {
         const saved =
             sessionStorage.getItem(
 
-                "previousWallexPrice"
+                "previousTabdealPrice"
 
             );
 
@@ -5819,13 +5507,9 @@ async function loadDashboardData() {
 
             Number.isFinite(parsed)
 
-            &&
-
-            parsed > 0
-
         ) {
 
-            previousWallex =
+            previousTabdeal =
                 parsed;
 
         }
@@ -5837,11 +5521,11 @@ async function loadDashboardData() {
 
     setPriceArrow(
 
-        "wallexPriceArrow",
+        "tabdealPriceArrow",
 
-        wallexPrice,
+        tabdealPrice,
 
-        previousWallex
+        previousTabdeal
 
     );
 
@@ -5850,21 +5534,17 @@ async function loadDashboardData() {
 
         if (
 
-            wallexPrice !== null
-
-            &&
-
-            wallexPrice > 0
+            tabdealPrice !== null
 
         ) {
 
             sessionStorage.setItem(
 
-                "previousWallexPrice",
+                "previousTabdealPrice",
 
                 String(
 
-                    wallexPrice
+                    tabdealPrice
 
                 )
 
@@ -5951,6 +5631,7 @@ async function loadDashboardData() {
     /* OVERALL */
 
     const overall =
+
         calculatePortfolio(
 
             transactions,
@@ -5978,6 +5659,7 @@ async function loadDashboardData() {
     /* LAST 6 PERIODS */
 
     const sixTransactions =
+
         getLastPeriods(
 
             transactions,
@@ -5988,6 +5670,7 @@ async function loadDashboardData() {
 
 
     const six =
+
         calculatePortfolio(
 
             sixTransactions,
@@ -6015,6 +5698,7 @@ async function loadDashboardData() {
     /* LAST PERIOD */
 
     const lastTransactions =
+
         getLastPeriod(
 
             transactions
@@ -6023,6 +5707,7 @@ async function loadDashboardData() {
 
 
     const last =
+
         calculatePortfolio(
 
             lastTransactions,
@@ -6150,13 +5835,13 @@ function startAutoRefresh() {
         "updateCountdown",
 
         seconds +
-
         "s"
 
     );
 
 
     countdownTimer =
+
         setInterval(
 
             async () => {
@@ -6184,8 +5869,6 @@ function startAutoRefresh() {
 
                         console.error(
 
-                            "Auto refresh error:",
-
                             error
 
                         );
@@ -6200,7 +5883,6 @@ function startAutoRefresh() {
                     "updateCountdown",
 
                     seconds +
-
                     "s"
 
                 );
@@ -6361,7 +6043,6 @@ if (
                     {
 
                         updateViaCache:
-
                             "none"
 
                     }
