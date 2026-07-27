@@ -348,11 +348,9 @@ h1 {
 
     display: inline-flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
     width: 18px;
 
@@ -1159,7 +1157,6 @@ h1 {
 
 /* =====================================================
    ULTRA COMPACT MODE
-   فعال شدن وقتی ارتفاع صفحه کمتر از 200px باشد
 ===================================================== */
 
 @media (max-height: 199px) {
@@ -1305,7 +1302,6 @@ h1 {
 
 }
 
-
 </style>
 
 </head>
@@ -1439,7 +1435,7 @@ h1 {
             </div>
 
 
-            <!-- TABDEAL -->
+            <!-- WALLEX -->
 
             <div class="live-price-right">
 
@@ -1447,7 +1443,7 @@ h1 {
 
                     <div
                         class="live-number"
-                        id="tabdealPrice">
+                        id="wallexPrice">
 
                         -
 
@@ -1455,7 +1451,7 @@ h1 {
 
                     <div
                         class="price-arrow arrow-flat"
-                        id="tabdealPriceArrow">
+                        id="wallexPriceArrow">
 
                         →
 
@@ -2602,8 +2598,8 @@ const CACHE_KEYS = {
     EXIR_PRICE:
         "financialDashboardExirPrice",
 
-    TABDEAL_PRICE:
-        "financialDashboardTabdealPrice"
+    WALLEX_PRICE:
+        "financialDashboardWallexPrice"
 
 };
 
@@ -2760,13 +2756,13 @@ function loadExirPrice() {
 }
 
 
-function saveTabdealPrice(price) {
+function saveWallexPrice(price) {
 
     try {
 
         localStorage.setItem(
 
-            CACHE_KEYS.TABDEAL_PRICE,
+            CACHE_KEYS.WALLEX_PRICE,
 
             String(price)
 
@@ -2779,13 +2775,13 @@ function saveTabdealPrice(price) {
 }
 
 
-function loadTabdealPrice() {
+function loadWallexPrice() {
 
     try {
 
         const saved =
             localStorage.getItem(
-                CACHE_KEYS.TABDEAL_PRICE
+                CACHE_KEYS.WALLEX_PRICE
             );
 
         const price =
@@ -4811,103 +4807,282 @@ async function getExirPrice(
 
 
 /* =====================================================
-   TABDEAL API
+   WALLEX API
 ===================================================== */
 
-async function getTabdealPrice(apiUrl) {
+async function getWallexPrice(
+
+    apiUrl
+
+) {
 
     if (!apiUrl) {
+
         throw new Error(
-            "Tabdeal API URL is missing"
+
+            "Wallex API URL is missing"
+
         );
+
     }
+
 
     const response =
         await fetch(
+
             apiUrl,
+
             {
-                method: "GET",
+
+                method:
+                    "GET",
+
                 headers: {
+
                     "Accept":
                         "application/json"
+
                 },
-                cache: "no-store"
+
+                cache:
+                    "no-store"
+
             }
+
         );
 
+
     if (!response.ok) {
+
         throw new Error(
-            "Unable to get Tabdeal price"
+
+            "Unable to get Wallex price"
+
         );
+
     }
+
 
     const data =
         await response.json();
 
+
+    /*
+       WALLEX TRADES API
+
+       Endpoint:
+
+       https://api.wallex.ir/v1/trades?symbol=USDTTMN
+
+       The latest trade is expected
+       to be the first item.
+
+       Supported response structures:
+
+       data.result[0].price
+
+       data.result.price
+
+       data.data[0].price
+
+       data.data.price
+    */
+
+
     let rawPrice = null;
 
-    /*
-       TABDEAL API RETURNS AN ARRAY
-
-       The newest trade is data[0]
-       Example:
-       data[0].price = 188101
-    */
 
     if (
-        Array.isArray(data)
+
+        Array.isArray(
+
+            data?.result
+
+        )
+
         &&
-        data.length > 0
+
+        data.result.length > 0
+
     ) {
 
-        const lastTrade =
-            data[0];
-
         rawPrice =
-            lastTrade?.price
+
+            data.result[0]?.price
+
             ??
-            lastTrade?.last
+
+            data.result[0]?.last
+
             ??
-            lastTrade?.lastPrice;
+
+            data.result[0]?.lastPrice;
+
     }
 
-    /*
-       Support object response as fallback
-    */
 
     else if (
-        data
+
+        data?.result
+
         &&
-        typeof data === "object"
+
+        typeof data.result === "object"
+
     ) {
 
         rawPrice =
-            data?.price
+
+            data.result?.price
+
             ??
-            data?.last
+
+            data.result?.last
+
             ??
-            data?.lastPrice
-            ??
-            data?.data?.price
-            ??
-            data?.data?.last;
+
+            data.result?.lastPrice;
+
     }
+
+
+    else if (
+
+        Array.isArray(
+
+            data?.data
+
+        )
+
+        &&
+
+        data.data.length > 0
+
+    ) {
+
+        rawPrice =
+
+            data.data[0]?.price
+
+            ??
+
+            data.data[0]?.last
+
+            ??
+
+            data.data[0]?.lastPrice;
+
+    }
+
+
+    else if (
+
+        data?.data
+
+        &&
+
+        typeof data.data === "object"
+
+    ) {
+
+        rawPrice =
+
+            data.data?.price
+
+            ??
+
+            data.data?.last
+
+            ??
+
+            data.data?.lastPrice;
+
+    }
+
+
+    else if (
+
+        Array.isArray(data)
+
+        &&
+
+        data.length > 0
+
+    ) {
+
+        rawPrice =
+
+            data[0]?.price
+
+            ??
+
+            data[0]?.last
+
+            ??
+
+            data[0]?.lastPrice;
+
+    }
+
+
+    else if (
+
+        data
+
+        &&
+
+        typeof data === "object"
+
+    ) {
+
+        rawPrice =
+
+            data?.price
+
+            ??
+
+            data?.last
+
+            ??
+
+            data?.lastPrice;
+
+    }
+
 
     const price =
-        Number(rawPrice);
+
+        Number(rawPrice)
+
+        /
+
+        10;
+
 
     if (
+
         !Number.isFinite(price)
+
         ||
+
         price <= 0
+
     ) {
+
         throw new Error(
-            "Invalid Tabdeal price"
+
+            "Invalid Wallex price"
+
         );
+
     }
 
+
     return price;
+
 }
+
+
 /* =====================================================
    AVERAGE LIVE PRICE
 ===================================================== */
@@ -4918,7 +5093,7 @@ function calculateAverageLivePrice(
 
     exirPrice,
 
-    tabdealPrice
+    wallexPrice
 
 ) {
 
@@ -4928,7 +5103,7 @@ function calculateAverageLivePrice(
 
         Number(exirPrice),
 
-        Number(tabdealPrice)
+        Number(wallexPrice)
 
     ].filter(
 
@@ -5001,7 +5176,7 @@ async function loadDashboardData() {
         null;
 
 
-    let tabdealPrice =
+    let wallexPrice =
         null;
 
 
@@ -5017,7 +5192,7 @@ async function loadDashboardData() {
         false;
 
 
-    let usingCachedTabdeal =
+    let usingCachedWallex =
         false;
 
 
@@ -5189,21 +5364,21 @@ async function loadDashboardData() {
     }
 
 
-    /* TABDEAL */
+    /* WALLEX */
 
     try {
 
-        tabdealPrice =
-            await getTabdealPrice(
+        wallexPrice =
+            await getWallexPrice(
 
-                data.tabdealApi
+                data.wallexApi
 
             );
 
 
-        saveTabdealPrice(
+        saveWallexPrice(
 
-            tabdealPrice
+            wallexPrice
 
         );
 
@@ -5211,10 +5386,19 @@ async function loadDashboardData() {
 
     catch (error) {
 
-        tabdealPrice =
-            loadTabdealPrice();
+        console.error(
 
-        usingCachedTabdeal =
+            "Wallex API Error:",
+
+            error
+
+        );
+
+
+        wallexPrice =
+            loadWallexPrice();
+
+        usingCachedWallex =
             true;
 
     }
@@ -5273,9 +5457,9 @@ async function loadDashboardData() {
 
     safeText(
 
-        "tabdealPrice",
+        "wallexPrice",
 
-        tabdealPrice === null
+        wallexPrice === null
 
             ?
 
@@ -5285,7 +5469,7 @@ async function loadDashboardData() {
 
             formatNumber(
 
-                tabdealPrice
+                wallexPrice
 
             )
 
@@ -5312,7 +5496,7 @@ async function loadDashboardData() {
 
             exirPrice,
 
-            tabdealPrice
+            wallexPrice
 
         );
 
@@ -5352,7 +5536,7 @@ async function loadDashboardData() {
 
         ||
 
-        usingCachedTabdeal;
+        usingCachedWallex;
 
 
     if (isOffline) {
@@ -5611,9 +5795,9 @@ async function loadDashboardData() {
     catch (error) {}
 
 
-    /* PREVIOUS TABDEAL */
+    /* PREVIOUS WALLEX */
 
-    let previousTabdeal =
+    let previousWallex =
         null;
 
 
@@ -5622,7 +5806,7 @@ async function loadDashboardData() {
         const saved =
             sessionStorage.getItem(
 
-                "previousTabdealPrice"
+                "previousWallexPrice"
 
             );
 
@@ -5641,7 +5825,7 @@ async function loadDashboardData() {
 
         ) {
 
-            previousTabdeal =
+            previousWallex =
                 parsed;
 
         }
@@ -5653,11 +5837,11 @@ async function loadDashboardData() {
 
     setPriceArrow(
 
-        "tabdealPriceArrow",
+        "wallexPriceArrow",
 
-        tabdealPrice,
+        wallexPrice,
 
-        previousTabdeal
+        previousWallex
 
     );
 
@@ -5666,21 +5850,21 @@ async function loadDashboardData() {
 
         if (
 
-            tabdealPrice !== null
+            wallexPrice !== null
 
             &&
 
-            tabdealPrice > 0
+            wallexPrice > 0
 
         ) {
 
             sessionStorage.setItem(
 
-                "previousTabdealPrice",
+                "previousWallexPrice",
 
                 String(
 
-                    tabdealPrice
+                    wallexPrice
 
                 )
 
@@ -5990,7 +6174,23 @@ function startAutoRefresh() {
                         30;
 
 
-                    await loadDashboardData();
+                    try {
+
+                        await loadDashboardData();
+
+                    }
+
+                    catch (error) {
+
+                        console.error(
+
+                            "Auto refresh error:",
+
+                            error
+
+                        );
+
+                    }
 
                 }
 
