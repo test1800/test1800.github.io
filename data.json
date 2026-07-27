@@ -1,7 +1,6 @@
 {
   "priceApi": "https://apiv2.nobitex.ir/v3/orderbook/USDTIRT",
   "exirApi": "https://api.exir.io/v2/ticker?symbol=usdt-irt",
-  "tabdealApi": "https://wandering-boat-ed1f.mimabdibcc.workers.dev/"
   "defaultPrice": 190000,
   "annualBankRate": 40,
   "priceDivisor": 10,
