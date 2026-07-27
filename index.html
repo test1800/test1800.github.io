@@ -280,7 +280,7 @@ h1 {
 
     width: 100%;
 
-    gap: 28px;
+    gap: 20px;
 
 }
 
@@ -295,7 +295,7 @@ h1 {
     min-width: 0;
 
     flex:
-        1 1 50%;
+        1 1 33.333%;
 
 }
 
@@ -307,6 +307,13 @@ h1 {
 }
 
 .live-price-right {
+
+    justify-content:
+        center;
+
+}
+
+.live-price-right:last-child {
 
     justify-content:
         flex-end;
@@ -341,11 +348,9 @@ h1 {
 
     display: inline-flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
     width: 18px;
 
@@ -1080,19 +1085,19 @@ h1 {
 
     .live-price-values {
 
-        gap: 14px;
+        gap: 8px;
 
     }
 
     .live-price-item {
 
-        gap: 6px;
+        gap: 4px;
 
     }
 
     .live-number {
 
-        font-size: 20px;
+        font-size: 16px;
 
     }
 
@@ -1102,7 +1107,7 @@ h1 {
 
         height: 22px;
 
-        font-size: 21px;
+        font-size: 18px;
 
     }
 
@@ -1141,14 +1146,13 @@ h1 {
 
 }
 
+
 /* =====================================================
    ULTRA COMPACT MODE
-   فعال شدن وقتی ارتفاع صفحه کمتر از 200px باشد
 ===================================================== */
 
 @media (max-height: 199px) {
 
-    /* مخفی کردن کل محتوای صفحه */
     body > .container > header > *:not(.live-price) {
         display: none !important;
     }
@@ -1159,7 +1163,6 @@ h1 {
         display: none !important;
     }
 
-    /* حذف فاصله و ظاهر اضافه هدر */
     body > .container {
         padding: 0 !important;
         width: 100% !important;
@@ -1177,7 +1180,6 @@ h1 {
         backdrop-filter: none !important;
     }
 
-    /* فقط بخش قیمت زنده */
     .live-price {
         display: flex !important;
         margin: 0 !important;
@@ -1187,16 +1189,14 @@ h1 {
         gap: 0 !important;
     }
 
-    /* مخفی کردن عنوان Live Market و Bank Rate */
     .live-market-header {
         display: none !important;
     }
 
-    /* نمایش دو قیمت در دو طرف */
     .live-price-values {
         display: flex !important;
         width: 100% !important;
-        gap: 10px !important;
+        gap: 6px !important;
         align-items: center !important;
         justify-content: space-between !important;
     }
@@ -1216,29 +1216,24 @@ h1 {
         justify-content: flex-end !important;
     }
 
-    /*   عدد قیمت */
-.live-number {
-    font-size: 16px !important;
-    line-height: 1 !important;
-    font-weight: 700 !important;
-}
+    .live-number {
+        font-size: 14px !important;
+        line-height: 1 !important;
+        font-weight: 700 !important;
+    }
 
-    /* فلش کنار قیمت */
     .price-arrow {
-        font-size: clamp(16px, 5vh, 22px) !important;
+        font-size: clamp(14px, 5vh, 20px) !important;
         width: auto !important;
         height: auto !important;
     }
 
     .live-price-item {
-        gap: 5px !important;
+        gap: 3px !important;
     }
 
 }
 
-
-
-    
 </style>
 
 </head>
@@ -1317,6 +1312,7 @@ h1 {
 
         <div class="live-price-values">
 
+
             <!-- NOBITEX -->
 
             <div class="live-price-left">
@@ -1370,6 +1366,34 @@ h1 {
 
             </div>
 
+
+            <!-- BITPIN -->
+
+            <div class="live-price-right">
+
+                <div class="live-price-item">
+
+                    <div
+                        class="live-number"
+                        id="bitpinPrice">
+
+                        -
+
+                    </div>
+
+                    <div
+                        class="price-arrow arrow-flat"
+                        id="bitpinPriceArrow">
+
+                        →
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
         </div>
 
     </div>
@@ -1399,6 +1423,7 @@ h1 {
 <div
     id="dashboard"
     style="display:none;">
+
 
     <!-- =================================================
          OVERALL
@@ -2502,7 +2527,10 @@ const CACHE_KEYS = {
         "financialDashboardPriceTime",
 
     EXIR_PRICE:
-        "financialDashboardExirPrice"
+        "financialDashboardExirPrice",
+
+    BITPIN_PRICE:
+        "financialDashboardBitpinPrice"
 
 };
 
@@ -2657,6 +2685,53 @@ function loadExirPrice() {
 }
 
 
+function saveBitpinPrice(price) {
+
+    try {
+
+        localStorage.setItem(
+
+            CACHE_KEYS.BITPIN_PRICE,
+
+            String(price)
+
+        );
+
+    }
+
+    catch (error) {}
+
+}
+
+
+function loadBitpinPrice() {
+
+    try {
+
+        const saved =
+            localStorage.getItem(
+                CACHE_KEYS.BITPIN_PRICE
+            );
+
+        const price =
+            Number(saved);
+
+        return Number.isFinite(price)
+            && price > 0
+            ? price
+            : null;
+
+    }
+
+    catch (error) {
+
+        return null;
+
+    }
+
+}
+
+
 function getCachedPriceTime() {
 
     try {
@@ -2686,16 +2761,34 @@ function getCachedPriceTime() {
         }
 
         return date.toLocaleString(
+
             "en-US",
+
             {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-                hour12: false
+
+                year:
+                    "numeric",
+
+                month:
+                    "2-digit",
+
+                day:
+                    "2-digit",
+
+                hour:
+                    "2-digit",
+
+                minute:
+                    "2-digit",
+
+                second:
+                    "2-digit",
+
+                hour12:
+                    false
+
             }
+
         );
 
     }
@@ -2767,9 +2860,13 @@ function setPriceArrow(
     }
 
     element.classList.remove(
+
         "arrow-up",
+
         "arrow-down",
+
         "arrow-flat"
+
     );
 
     const current =
@@ -3021,31 +3118,49 @@ function daysBetweenInclusive(
 
     const startDate =
         jalaliToGregorian(
+
             startParts[0],
+
             startParts[1],
+
             startParts[2]
+
         );
 
     const endDate =
         jalaliToGregorian(
+
             endParts[0],
+
             endParts[1],
+
             endParts[2]
+
         );
 
     const difference =
         Math.floor(
+
             (
+
                 endDate -
+
                 startDate
+
             )
+
             /
+
             86400000
+
         );
 
     return Math.max(
+
         0,
+
         difference + 1
+
     );
 
 }
@@ -3244,16 +3359,24 @@ function dateNumber(date) {
 ===================================================== */
 
 function compoundValue(
+
     principal,
+
     startDate,
+
     endDate,
+
     annualRate
+
 ) {
 
     const days =
         daysBetweenInclusive(
+
             startDate,
+
             endDate
+
         );
 
     const dailyRate =
@@ -3264,8 +3387,11 @@ function compoundValue(
         principal *
 
         Math.pow(
+
             1 + dailyRate,
+
             days
+
         )
 
     );
@@ -3278,10 +3404,15 @@ function compoundValue(
 ===================================================== */
 
 function calculatePortfolio(
+
     transactions,
+
     currentPrice,
+
     today,
+
     annualRate
+
 ) {
 
     const lots = [];
@@ -3300,19 +3431,27 @@ function calculatePortfolio(
 
 
     for (
+
         const transaction
+
         of transactions
+
     ) {
 
         const amount =
             Number(
+
                 transaction.amount
+
             );
 
         const price =
             Number(
+
                 transaction.price
+
             );
+
 
         if (
 
@@ -3338,7 +3477,9 @@ function calculatePortfolio(
 
 
         if (
+
             transaction.type === "buy"
+
         ) {
 
             buyCount++;
@@ -3358,13 +3499,67 @@ function calculatePortfolio(
 
 
         else if (
+
             transaction.type === "sell"
+
         ) {
 
             sellCount++;
 
             let remaining =
                 amount;
+
+
+            const availableQuantity =
+                lots.reduce(
+
+                    (
+
+                        total,
+
+                        lot
+
+                    ) =>
+
+                        total +
+
+                        lot.amount,
+
+                    0
+
+                );
+
+
+            if (
+
+                remaining >
+
+                availableQuantity
+
+            ) {
+
+                console.warn(
+
+                    "Sell amount exceeds available inventory.",
+
+                    {
+
+                        requested:
+                            remaining,
+
+                        available:
+                            availableQuantity,
+
+                        transaction
+
+                    }
+
+                );
+
+                remaining =
+                    availableQuantity;
+
+            }
 
 
             while (
@@ -3382,32 +3577,46 @@ function calculatePortfolio(
 
                 const used =
                     Math.min(
+
                         remaining,
+
                         lot.amount
+
                     );
 
                 const purchaseCost =
                     used *
+
                     lot.price;
 
                 const saleRevenue =
                     used *
+
                     price;
 
                 const bankCost =
                     compoundValue(
+
                         purchaseCost,
+
                         lot.date,
+
                         transaction.date,
+
                         annualRate
+
                     );
 
                 realizedPurchase +=
+
                     saleRevenue -
+
                     purchaseCost;
 
                 realizedBank +=
+
                     saleRevenue -
+
                     bankCost;
 
                 lot.amount -=
@@ -3417,7 +3626,11 @@ function calculatePortfolio(
                     used;
 
                 if (
-                    lot.amount <= 0.0000001
+
+                    lot.amount <=
+
+                    0.0000001
+
                 ) {
 
                     lots.shift();
@@ -3433,34 +3646,59 @@ function calculatePortfolio(
 
     const currentQuantity =
         lots.reduce(
+
             (
+
                 total,
+
                 lot
+
             ) =>
+
                 total +
+
                 lot.amount,
+
             0
+
         );
 
 
     const paidAmount =
         lots.reduce(
+
             (
+
                 total,
+
                 lot
+
             ) =>
+
                 total +
+
                 lot.amount *
+
                 lot.price,
+
             0
+
         );
 
 
     const averagePurchasePrice =
+
         currentQuantity > 0
-            ? paidAmount /
-              currentQuantity
-            : 0;
+
+            ?
+
+            paidAmount /
+
+            currentQuantity
+
+            :
+
+            0;
 
 
     let bankValue =
@@ -3468,78 +3706,116 @@ function calculatePortfolio(
 
 
     for (
+
         const lot
+
         of lots
+
     ) {
 
         bankValue +=
+
             compoundValue(
+
                 lot.amount *
+
                 lot.price,
+
                 lot.date,
+
                 today,
+
                 annualRate
+
             );
 
     }
 
 
     const currentValue =
+
         currentQuantity *
+
         currentPrice;
 
 
     const bankAdjustedPrice =
+
         currentQuantity > 0
-            ? bankValue /
-              currentQuantity
-            : 0;
+
+            ?
+
+            bankValue /
+
+            currentQuantity
+
+            :
+
+            0;
 
 
     const unrealizedPurchaseAmount =
+
         currentValue -
+
         paidAmount;
 
 
     const unrealizedBankAmount =
+
         currentValue -
+
         bankValue;
 
 
     const plPurchase =
+
         paidAmount > 0
+
             ?
 
             (
 
                 unrealizedPurchaseAmount
+
                 /
+
                 paidAmount
 
             )
 
             *
+
             100
 
-            : 0;
+            :
+
+            0;
 
 
     const plBank =
+
         bankValue > 0
+
             ?
 
             (
 
                 unrealizedBankAmount
+
                 /
+
                 bankValue
 
             )
 
             *
+
             100
 
-            : 0;
+            :
+
+            0;
 
 
     return {
@@ -3584,7 +3860,9 @@ function calculatePortfolio(
 ===================================================== */
 
 function buildPeriods(
+
     transactions
+
 ) {
 
     const periods = [];
@@ -3594,12 +3872,17 @@ function buildPeriods(
 
 
     for (
+
         const transaction
+
         of transactions
+
     ) {
 
         if (
+
             transaction.type === "buy"
+
         ) {
 
             if (
@@ -3613,7 +3896,9 @@ function buildPeriods(
             ) {
 
                 periods.push(
+
                     current
+
                 );
 
             }
@@ -3621,18 +3906,23 @@ function buildPeriods(
             current = {
 
                 transactions: [
+
                     transaction
+
                 ],
 
                 startDate:
+
                     transaction.date,
 
                 endDate:
+
                     transaction.date
 
             };
 
         }
+
 
         else if (
 
@@ -3643,10 +3933,13 @@ function buildPeriods(
             if (current) {
 
                 current.transactions.push(
+
                     transaction
+
                 );
 
                 current.endDate =
+
                     transaction.date;
 
             }
@@ -3667,7 +3960,9 @@ function buildPeriods(
     ) {
 
         periods.push(
+
             current
+
         );
 
     }
@@ -3679,36 +3974,54 @@ function buildPeriods(
 
 
 function getLastPeriods(
+
     transactions,
+
     count
+
 ) {
 
     const periods =
+
         buildPeriods(
+
             transactions
+
         );
 
     return periods
+
         .slice(-count)
+
         .flatMap(
+
             period =>
+
                 period.transactions
+
         );
 
 }
 
 
 function getLastPeriod(
+
     transactions
+
 ) {
 
     const periods =
+
         buildPeriods(
+
             transactions
+
         );
 
     if (
+
         periods.length === 0
+
     ) {
 
         return [];
@@ -3716,7 +4029,9 @@ function getLastPeriod(
     }
 
     return periods[
+
         periods.length - 1
+
     ].transactions;
 
 }
@@ -3727,18 +4042,25 @@ function getLastPeriod(
 ===================================================== */
 
 function displaySection(
+
     result,
+
     prefix,
+
     previousLivePrice
+
 ) {
 
     safeText(
 
         prefix +
+
         "Average",
 
         formatNumber(
+
             result.averagePurchasePrice
+
         )
 
     );
@@ -3747,10 +4069,13 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Paid",
 
         formatNumber(
+
             result.paidAmount
+
         )
 
     );
@@ -3759,10 +4084,13 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Adjusted",
 
         formatNumber(
+
             result.bankAdjustedPrice
+
         )
 
     );
@@ -3771,10 +4099,13 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Live",
 
         formatNumber(
+
             result.currentPrice
+
         )
 
     );
@@ -3783,6 +4114,7 @@ function displaySection(
     setPriceArrow(
 
         prefix +
+
         "PriceArrow",
 
         result.currentPrice,
@@ -3795,10 +4127,13 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Quantity",
 
         formatNumber(
+
             result.currentQuantity
+
         )
 
     );
@@ -3807,10 +4142,13 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Value",
 
         formatNumber(
+
             result.currentValue
+
         )
 
     );
@@ -3819,10 +4157,13 @@ function displaySection(
     safeText(
 
         prefix +
+
         "Bank",
 
         formatNumber(
+
             result.bankValue
+
         )
 
     );
@@ -3831,10 +4172,13 @@ function displaySection(
     safeText(
 
         prefix +
+
         "PLPurchase",
 
         formatPercent(
+
             result.plPurchase
+
         )
 
     );
@@ -3843,10 +4187,13 @@ function displaySection(
     safeText(
 
         prefix +
+
         "PLBank",
 
         formatPercent(
+
             result.plBank
+
         )
 
     );
@@ -3855,10 +4202,13 @@ function displaySection(
     safeText(
 
         prefix +
+
         "UnrealizedPurchase",
 
         formatMoneySigned(
+
             result.unrealizedPurchaseAmount
+
         )
 
     );
@@ -3867,10 +4217,13 @@ function displaySection(
     safeText(
 
         prefix +
+
         "UnrealizedBank",
 
         formatMoneySigned(
+
             result.unrealizedBankAmount
+
         )
 
     );
@@ -3879,10 +4232,13 @@ function displaySection(
     safeText(
 
         prefix +
+
         "RealizedPurchase",
 
         formatMoneySigned(
+
             result.realizedPurchase
+
         )
 
     );
@@ -3891,10 +4247,13 @@ function displaySection(
     safeText(
 
         prefix +
+
         "RealizedBank",
 
         formatMoneySigned(
+
             result.realizedBank
+
         )
 
     );
@@ -3903,6 +4262,7 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
+
         "PLPurchase",
 
         result.plPurchase
@@ -3913,6 +4273,7 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
+
         "PLBank",
 
         result.plBank
@@ -3923,6 +4284,7 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
+
         "UnrealizedPurchase",
 
         result.unrealizedPurchaseAmount
@@ -3933,6 +4295,7 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
+
         "UnrealizedBank",
 
         result.unrealizedBankAmount
@@ -3943,6 +4306,7 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
+
         "RealizedPurchase",
 
         result.realizedPurchase
@@ -3953,6 +4317,7 @@ function displaySection(
     setProfitLossClass(
 
         prefix +
+
         "RealizedBank",
 
         result.realizedBank
@@ -3961,9 +4326,13 @@ function displaySection(
 
 
     const mainPrice =
+
         $(
+
             prefix +
+
             "MainPrice"
+
         );
 
 
@@ -3979,11 +4348,15 @@ function displaySection(
 
 
         if (
+
             result.plBank >= 0
+
         ) {
 
             mainPrice.classList.add(
+
                 "status-green"
+
             );
 
         }
@@ -3991,7 +4364,9 @@ function displaySection(
         else {
 
             mainPrice.classList.add(
+
                 "status-red"
+
             );
 
         }
@@ -4000,22 +4375,30 @@ function displaySection(
 
 
     const resultBox =
+
         $(
+
             prefix +
+
             "Result"
+
         );
 
 
     if (resultBox) {
 
         if (
+
             result.plBank >= 0
+
         ) {
 
             resultBox.textContent =
+
                 "Investment return is better than bank";
 
             resultBox.style.color =
+
                 "#34d399";
 
         }
@@ -4023,9 +4406,11 @@ function displaySection(
         else {
 
             resultBox.textContent =
+
                 "Bank return is better than investment";
 
             resultBox.style.color =
+
                 "#f87171";
 
         }
@@ -4034,9 +4419,13 @@ function displaySection(
 
 
     const tradeCount =
+
         $(
+
             prefix +
+
             "Trades"
+
         );
 
 
@@ -4068,10 +4457,13 @@ function displaySection(
 ===================================================== */
 
 function displayLastAction(
+
     transactions
+
 ) {
 
     const badge =
+
         $("lastAction");
 
     if (
@@ -4089,13 +4481,18 @@ function displayLastAction(
     }
 
     const last =
+
         transactions[
+
             transactions.length - 1
+
         ];
 
 
     if (
+
         last.type === "buy"
+
     ) {
 
         badge.textContent =
@@ -4124,61 +4521,94 @@ function displayLastAction(
 ===================================================== */
 
 async function getCurrentPrice(
+
     apiUrl,
+
     divisor
+
 ) {
 
     if (!apiUrl) {
 
         throw new Error(
+
             "Nobitex API URL is missing"
+
         );
 
     }
 
+
     const response =
+
         await fetch(
+
             apiUrl,
+
             {
-                method: "GET",
+
+                method:
+                    "GET",
+
                 headers: {
+
                     "Accept":
                         "application/json"
+
                 },
-                cache: "no-store"
+
+                cache:
+                    "no-store"
+
             }
+
         );
 
 
     if (!response.ok) {
 
         throw new Error(
+
             "Unable to get Nobitex price"
+
         );
 
     }
 
 
     const data =
+
         await response.json();
 
 
     const rawPrice =
+
         data.lastTradePrice;
 
 
     const price =
+
         Number(rawPrice)
+
         /
+
         divisor;
 
 
     if (
+
         !Number.isFinite(price)
+
+        ||
+
+        price <= 0
+
     ) {
 
         throw new Error(
+
             "Invalid Nobitex price"
+
         );
 
     }
@@ -4194,42 +4624,61 @@ async function getCurrentPrice(
 ===================================================== */
 
 async function getExirPrice(
+
     apiUrl
+
 ) {
 
     if (!apiUrl) {
 
         throw new Error(
+
             "Exir API URL is missing"
+
         );
 
     }
 
 
     const response =
+
         await fetch(
+
             apiUrl,
+
             {
-                method: "GET",
+
+                method:
+                    "GET",
+
                 headers: {
+
                     "Accept":
                         "application/json"
+
                 },
-                cache: "no-store"
+
+                cache:
+                    "no-store"
+
             }
+
         );
 
 
     if (!response.ok) {
 
         throw new Error(
+
             "Unable to get Exir price"
+
         );
 
     }
 
 
     const data =
+
         await response.json();
 
 
@@ -4257,6 +4706,7 @@ async function getExirPrice(
 
 
     const rawPrice =
+
         candidates.find(
 
             value =>
@@ -4275,15 +4725,215 @@ async function getExirPrice(
 
 
     const price =
+
         Number(rawPrice);
 
 
     if (
+
         !Number.isFinite(price)
+
+        ||
+
+        price <= 0
+
     ) {
 
         throw new Error(
+
             "Invalid Exir price"
+
+        );
+
+    }
+
+
+    return price;
+
+}
+
+
+/* =====================================================
+   BITPIN WORKER API
+===================================================== */
+
+async function getBitpinPrice(
+
+    apiUrl
+
+) {
+
+    if (!apiUrl) {
+
+        throw new Error(
+
+            "Bitpin API URL is missing"
+
+        );
+
+    }
+
+
+    const separator =
+
+        apiUrl.includes("?")
+
+            ? "&"
+
+            : "?";
+
+
+    const response =
+
+        await fetch(
+
+            apiUrl +
+
+            separator +
+
+            "x=" +
+
+            Date.now(),
+
+            {
+
+                method:
+                    "GET",
+
+                headers: {
+
+                    "Accept":
+                        "application/json"
+
+                },
+
+                cache:
+                    "no-store"
+
+            }
+
+        );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+
+            "Unable to get Bitpin price"
+
+        );
+
+    }
+
+
+    const data =
+
+        await response.json();
+
+
+    let rawPrice =
+
+        null;
+
+
+    if (
+
+        typeof data ===
+
+        "number"
+
+    ) {
+
+        rawPrice =
+            data;
+
+    }
+
+
+    else if (
+
+        typeof data ===
+
+        "string"
+
+    ) {
+
+        rawPrice =
+            data;
+
+    }
+
+
+    else if (
+
+        data
+
+        &&
+
+        typeof data ===
+
+        "object"
+
+    ) {
+
+        rawPrice =
+
+            data.price
+
+            ??
+
+            data.last
+
+            ??
+
+            data.lastPrice
+
+            ??
+
+            data.value
+
+            ??
+
+            data.usdt
+
+            ??
+
+            data.data?.price
+
+            ??
+
+            data.data?.last
+
+            ??
+
+            data.data?.lastPrice
+
+            ??
+
+            data.data?.value;
+
+    }
+
+
+    const price =
+
+        Number(rawPrice);
+
+
+    if (
+
+        !Number.isFinite(price)
+
+        ||
+
+        price <= 0
+
+    ) {
+
+        throw new Error(
+
+            "Invalid Bitpin price"
+
         );
 
     }
@@ -4299,23 +4949,40 @@ async function getExirPrice(
 ===================================================== */
 
 function calculateAverageLivePrice(
+
     nobitexPrice,
-    exirPrice
+
+    exirPrice,
+
+    bitpinPrice
+
 ) {
 
     const prices = [
 
         Number(nobitexPrice),
 
-        Number(exirPrice)
+        Number(exirPrice),
+
+        Number(bitpinPrice)
 
     ].filter(
-        Number.isFinite
+
+        price =>
+
+            Number.isFinite(price)
+
+            &&
+
+            price > 0
+
     );
 
 
     if (
+
         prices.length === 0
+
     ) {
 
         return null;
@@ -4326,13 +4993,21 @@ function calculateAverageLivePrice(
     return (
 
         prices.reduce(
+
             (
+
                 total,
+
                 price
+
             ) =>
+
                 total +
+
                 price,
+
             0
+
         )
 
         /
@@ -4362,6 +5037,10 @@ async function loadDashboardData() {
         null;
 
 
+    let bitpinPrice =
+        null;
+
+
     let usingCachedData =
         false;
 
@@ -4374,36 +5053,52 @@ async function loadDashboardData() {
         false;
 
 
+    let usingCachedBitpin =
+        false;
+
+
     /* DATA.JSON */
 
     try {
 
         const response =
+
             await fetch(
+
                 "data.json?x=" +
+
                 Date.now(),
+
                 {
+
                     cache:
                         "no-store"
+
                 }
+
             );
 
 
         if (!response.ok) {
 
             throw new Error(
+
                 "Cannot load data.json"
+
             );
 
         }
 
 
         data =
+
             await response.json();
 
 
         saveLocalData(
+
             data
+
         );
 
     }
@@ -4411,7 +5106,9 @@ async function loadDashboardData() {
     catch (error) {
 
         data =
+
             loadLocalData();
+
 
         usingCachedData =
             true;
@@ -4431,19 +5128,42 @@ async function loadDashboardData() {
 
 
     const annualBankRate =
+
         Number(
+
             data.annualBankRate
+
         )
+
         ||
+
         40;
 
 
     const divisor =
+
         Number(
+
             data.priceDivisor
+
         )
+
         ||
+
         10;
+
+
+    const defaultPrice =
+
+        Number(
+
+            data.defaultPrice
+
+        )
+
+        ||
+
+        190000;
 
 
     /* NOBITEX */
@@ -4451,14 +5171,20 @@ async function loadDashboardData() {
     try {
 
         currentPrice =
+
             await getCurrentPrice(
+
                 data.priceApi,
+
                 divisor
+
             );
 
 
         saveNobitexPrice(
+
             currentPrice
+
         );
 
     }
@@ -4466,21 +5192,23 @@ async function loadDashboardData() {
     catch (error) {
 
         currentPrice =
+
             loadNobitexPrice();
+
 
         usingCachedNobitex =
             true;
 
 
         if (
+
             currentPrice === null
+
         ) {
 
-            throw new Error(
+            currentPrice =
 
-                "Nobitex price is unavailable and no cached price exists."
-
-            );
+                defaultPrice;
 
         }
 
@@ -4492,13 +5220,18 @@ async function loadDashboardData() {
     try {
 
         exirPrice =
+
             await getExirPrice(
+
                 data.exirApi
+
             );
 
 
         saveExirPrice(
+
             exirPrice
+
         );
 
     }
@@ -4506,10 +5239,72 @@ async function loadDashboardData() {
     catch (error) {
 
         exirPrice =
+
             loadExirPrice();
+
 
         usingCachedExir =
             true;
+
+
+        if (
+
+            exirPrice === null
+
+        ) {
+
+            exirPrice =
+
+                defaultPrice;
+
+        }
+
+    }
+
+
+    /* BITPIN */
+
+    try {
+
+        bitpinPrice =
+
+            await getBitpinPrice(
+
+                data.bitpinApi
+
+            );
+
+
+        saveBitpinPrice(
+
+            bitpinPrice
+
+        );
+
+    }
+
+    catch (error) {
+
+        bitpinPrice =
+
+            loadBitpinPrice();
+
+
+        usingCachedBitpin =
+            true;
+
+
+        if (
+
+            bitpinPrice === null
+
+        ) {
+
+            bitpinPrice =
+
+                defaultPrice;
+
+        }
 
     }
 
@@ -4517,12 +5312,16 @@ async function loadDashboardData() {
     /* TODAY */
 
     const today =
+
         getTodayJalali();
 
 
     safeText(
+
         "today",
+
         today
+
     );
 
 
@@ -4533,7 +5332,9 @@ async function loadDashboardData() {
         "currentPrice",
 
         formatNumber(
+
             currentPrice
+
         )
 
     );
@@ -4543,11 +5344,24 @@ async function loadDashboardData() {
 
         "exirPrice",
 
-        exirPrice === null
-            ? "-"
-            : formatNumber(
-                exirPrice
-            )
+        formatNumber(
+
+            exirPrice
+
+        )
+
+    );
+
+
+    safeText(
+
+        "bitpinPrice",
+
+        formatNumber(
+
+            bitpinPrice
+
+        )
 
     );
 
@@ -4557,6 +5371,7 @@ async function loadDashboardData() {
         "bankRate",
 
         annualBankRate +
+
         "%"
 
     );
@@ -4565,18 +5380,28 @@ async function loadDashboardData() {
     /* AVERAGE LIVE PRICE */
 
     const averageLivePrice =
+
         calculateAverageLivePrice(
+
             currentPrice,
-            exirPrice
+
+            exirPrice,
+
+            bitpinPrice
+
         );
 
 
     if (
+
         averageLivePrice === null
+
     ) {
 
         throw new Error(
+
             "No valid live market price is available."
+
         );
 
     }
@@ -4598,31 +5423,42 @@ async function loadDashboardData() {
 
         ||
 
-        usingCachedExir;
+        usingCachedExir
+
+        ||
+
+        usingCachedBitpin;
 
 
     if (isOffline) {
 
         const cachedTime =
+
             getCachedPriceTime();
 
 
         let message =
-            "Offline Mode • Showing Cached Data";
+
+            "Offline Mode • Showing Cached / Default Data";
 
 
         if (cachedTime) {
 
             message +=
+
                 " • Saved: " +
+
                 cachedTime;
 
         }
 
 
         showConnectionStatus(
+
             true,
+
             message
+
         );
 
     }
@@ -4630,8 +5466,11 @@ async function loadDashboardData() {
     else {
 
         showConnectionStatus(
+
             false,
+
             "Online • Live Data"
+
         );
 
     }
@@ -4640,33 +5479,47 @@ async function loadDashboardData() {
     /* UPDATE TIME */
 
     let updateTime =
+
         new Date()
+
             .toLocaleTimeString(
+
                 "en-US",
+
                 {
+
                     hour:
                         "2-digit",
+
                     minute:
                         "2-digit",
+
                     second:
                         "2-digit",
+
                     hour12:
                         false
+
                 }
+
             );
 
 
     if (
+
         usingCachedNobitex
+
     ) {
 
         const cachedTime =
+
             getCachedPriceTime();
 
 
         if (cachedTime) {
 
             updateTime =
+
                 cachedTime;
 
         }
@@ -4679,6 +5532,7 @@ async function loadDashboardData() {
         "updateTime",
 
         "Last Update: " +
+
         updateTime
 
     );
@@ -4693,20 +5547,27 @@ async function loadDashboardData() {
     try {
 
         const saved =
+
             sessionStorage.getItem(
+
                 "previousNobitexPrice"
+
             );
 
 
         const parsed =
+
             Number(saved);
 
 
         if (
+
             Number.isFinite(parsed)
+
         ) {
 
             previousNobitex =
+
                 parsed;
 
         }
@@ -4734,7 +5595,9 @@ async function loadDashboardData() {
             "previousNobitexPrice",
 
             String(
+
                 currentPrice
+
             )
 
         );
@@ -4753,20 +5616,27 @@ async function loadDashboardData() {
     try {
 
         const saved =
+
             sessionStorage.getItem(
+
                 "previousExirPrice"
+
             );
 
 
         const parsed =
+
             Number(saved);
 
 
         if (
+
             Number.isFinite(parsed)
+
         ) {
 
             previousExir =
+
                 parsed;
 
         }
@@ -4789,21 +5659,86 @@ async function loadDashboardData() {
 
     try {
 
-        if (
-            exirPrice !== null
-        ) {
+        sessionStorage.setItem(
 
-            sessionStorage.setItem(
+            "previousExirPrice",
 
-                "previousExirPrice",
+            String(
 
-                String(
-                    exirPrice
-                )
+                exirPrice
+
+            )
+
+        );
+
+    }
+
+    catch (error) {}
+
+
+    /* PREVIOUS BITPIN */
+
+    let previousBitpin =
+        null;
+
+
+    try {
+
+        const saved =
+
+            sessionStorage.getItem(
+
+                "previousBitpinPrice"
 
             );
 
+
+        const parsed =
+
+            Number(saved);
+
+
+        if (
+
+            Number.isFinite(parsed)
+
+        ) {
+
+            previousBitpin =
+
+                parsed;
+
         }
+
+    }
+
+    catch (error) {}
+
+
+    setPriceArrow(
+
+        "bitpinPriceArrow",
+
+        bitpinPrice,
+
+        previousBitpin
+
+    );
+
+
+    try {
+
+        sessionStorage.setItem(
+
+            "previousBitpinPrice",
+
+            String(
+
+                bitpinPrice
+
+            )
+
+        );
 
     }
 
@@ -4815,7 +5750,9 @@ async function loadDashboardData() {
     const transactions =
 
         Array.isArray(
+
             data.transactions
+
         )
 
         ?
@@ -4833,11 +5770,13 @@ async function loadDashboardData() {
                     (
 
                         transaction.type ===
+
                         "buy"
 
                         ||
 
                         transaction.type ===
+
                         "sell"
 
                     )
@@ -4849,18 +5788,25 @@ async function loadDashboardData() {
             .sort(
 
                 (
+
                     a,
+
                     b
+
                 ) =>
 
                     dateNumber(
+
                         a.date
+
                     )
 
                     -
 
                     dateNumber(
+
                         b.date
+
                     )
 
             )
@@ -4873,6 +5819,7 @@ async function loadDashboardData() {
     /* OVERALL */
 
     const overall =
+
         calculatePortfolio(
 
             transactions,
@@ -4892,7 +5839,7 @@ async function loadDashboardData() {
 
         "overall",
 
-        previousNobitex
+        averageLivePrice
 
     );
 
@@ -4900,6 +5847,7 @@ async function loadDashboardData() {
     /* LAST 6 PERIODS */
 
     const sixTransactions =
+
         getLastPeriods(
 
             transactions,
@@ -4910,6 +5858,7 @@ async function loadDashboardData() {
 
 
     const six =
+
         calculatePortfolio(
 
             sixTransactions,
@@ -4929,7 +5878,7 @@ async function loadDashboardData() {
 
         "six",
 
-        previousNobitex
+        averageLivePrice
 
     );
 
@@ -4937,6 +5886,7 @@ async function loadDashboardData() {
     /* LAST PERIOD */
 
     const lastTransactions =
+
         getLastPeriod(
 
             transactions
@@ -4945,6 +5895,7 @@ async function loadDashboardData() {
 
 
     const last =
+
         calculatePortfolio(
 
             lastTransactions,
@@ -4964,7 +5915,7 @@ async function loadDashboardData() {
 
         "last",
 
-        previousNobitex
+        averageLivePrice
 
     );
 
@@ -5006,7 +5957,9 @@ async function loadDashboardData() {
             "previousAverageLivePrice",
 
             String(
+
                 averageLivePrice
+
             )
 
         );
@@ -5019,6 +5972,7 @@ async function loadDashboardData() {
     /* SHOW DASHBOARD */
 
     const loading =
+
         $("loading");
 
 
@@ -5031,6 +5985,7 @@ async function loadDashboardData() {
 
 
     const dashboard =
+
         $("dashboard");
 
 
@@ -5055,7 +6010,9 @@ let countdownTimer =
 function startAutoRefresh() {
 
     clearInterval(
+
         countdownTimer
+
     );
 
 
@@ -5068,12 +6025,14 @@ function startAutoRefresh() {
         "updateCountdown",
 
         seconds +
+
         "s"
 
     );
 
 
     countdownTimer =
+
         setInterval(
 
             async () => {
@@ -5082,14 +6041,30 @@ function startAutoRefresh() {
 
 
                 if (
+
                     seconds <= 0
+
                 ) {
 
                     seconds =
                         30;
 
 
-                    await loadDashboardData();
+                    try {
+
+                        await loadDashboardData();
+
+                    }
+
+                    catch (error) {
+
+                        console.error(
+
+                            error
+
+                        );
+
+                    }
 
                 }
 
@@ -5099,6 +6074,7 @@ function startAutoRefresh() {
                     "updateCountdown",
 
                     seconds +
+
                     "s"
 
                 );
@@ -5126,7 +6102,7 @@ window.addEventListener(
 
             true,
 
-            "Offline Mode • Showing Cached Data"
+            "Offline Mode • Showing Cached / Default Data"
 
         );
 
@@ -5159,7 +6135,9 @@ window.addEventListener(
         catch (error) {
 
             console.error(
+
                 error
+
             );
 
         }
@@ -5186,11 +6164,14 @@ async function init() {
     catch (error) {
 
         console.error(
+
             error
+
         );
 
 
         const loading =
+
             $("loading");
 
 
@@ -5203,6 +6184,7 @@ async function init() {
 
 
         const errorBox =
+
             $("errorBox");
 
 
@@ -5231,9 +6213,13 @@ init();
 ===================================================== */
 
 if (
+
     "serviceWorker"
+
     in
+
     navigator
+
 ) {
 
     window.addEventListener(
@@ -5251,6 +6237,7 @@ if (
                     {
 
                         updateViaCache:
+
                             "none"
 
                     }
