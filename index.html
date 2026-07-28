@@ -2533,9 +2533,7 @@ async function loadUsdTxt() {
     }
 
 }
-setTimeout(() => {
-    loadUsdTxt();
-}, 2000);
+
 /* =====================================================
    MARKET PRICE CONNECTION COLORS
    NOBITEX + EXIR + BITPIN
@@ -2693,7 +2691,9 @@ function setProfitLossClass(id, value) {
 
 }
 
-
+setTimeout(() => {
+    loadUsdTxt();
+}, 2000);
 /* =====================================================
    CACHE
 ===================================================== */
