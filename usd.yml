@@ -4,20 +4,26 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/2 * * * *"
+
 
 permissions:
   contents: write
+
 
 jobs:
   update-usd:
 
     runs-on: ubuntu-latest
 
+
     steps:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
 
       - name: Get USD price from TGJU
         run: |
@@ -27,28 +33,30 @@ jobs:
           import urllib.request
           import re
 
+
           url = "https://www.tgju.org/%D9%82%DB%8C%D9%85%D8%AA-%D8%AF%D9%84%D8%A7%D8%B1"
+
 
           request = urllib.request.Request(
               url,
               headers={
                   "User-Agent":
-                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36"
               }
           )
 
+
           response = urllib.request.urlopen(
               request,
-              timeout=30
+              timeout=10
           )
+
 
           html = response.read().decode(
               "utf-8",
               errors="ignore"
           )
 
-
-          # Search numbers close to دلار
 
           patterns = [
 
@@ -72,51 +80,50 @@ jobs:
                   re.IGNORECASE
               )
 
-              if matches:
 
-                  for value in matches:
+              for value in matches:
 
-                      clean = value
+                  clean = value
 
-                      # Persian numbers
 
-                      persian = "۰۱۲۳۴۵۶۷۸۹"
+                  persian = "۰۱۲۳۴۵۶۷۸۹"
 
-                      for i, digit in enumerate(persian):
 
-                          clean = clean.replace(
-                              digit,
-                              str(i)
-                          )
-
+                  for i, digit in enumerate(persian):
 
                       clean = clean.replace(
-                          ",",
-                          ""
+                          digit,
+                          str(i)
                       )
 
 
-                      try:
-
-                          number = int(clean)
-
-                          # USD price should be
-                          # larger than 100,000 Rial
-
-                          if number > 100000:
-
-                              price = number
-
-                              break
-
-                      except:
-
-                          pass
+                  clean = clean.replace(
+                      ",",
+                      ""
+                  )
 
 
-                  if price:
+                  try:
 
-                      break
+                      number = int(clean)
+
+
+                      if number > 100000:
+
+                          price = number
+
+                          break
+
+
+                  except:
+
+                      pass
+
+
+              if price:
+
+                  break
+
 
 
           if not price:
@@ -125,10 +132,9 @@ jobs:
                   "Could not find USD price"
               )
 
-              raise SystemExit(1)
+              exit(1)
 
 
-          # Convert Rial to Toman
 
           toman = round(
               price / 10
@@ -147,8 +153,6 @@ jobs:
           )
 
 
-          # Write only the number
-          # to usd.txt
 
           with open(
               "usd.txt",
@@ -160,7 +164,9 @@ jobs:
                   str(toman)
               )
 
+
           PY
+
 
 
       - name: Commit USD price
@@ -170,20 +176,23 @@ jobs:
           git config user.name \
           "github-actions[bot]"
 
+
           git config user.email \
           "41898282+github-actions[bot]@users.noreply.github.com"
 
+
           git add usd.txt
+
 
           if git diff --cached --quiet; then
 
-            echo "USD price has not changed"
+              echo "USD price has not changed"
 
           else
 
-            git commit \
-            -m "Update USD price"
+              git commit \
+              -m "Update USD price"
 
-            git push
+              git push
 
           fi
