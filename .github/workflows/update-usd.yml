@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: "*/1 * * * *"
+    - cron: "*/5 * * * *"
 
 
 permissions:
@@ -40,7 +40,7 @@ jobs:
 
 
           # ==========================
-          # Get Nobitex USDT price
+          # Get Nobitex USDT price (Rial)
           # ==========================
 
           nobitex_url = (
@@ -48,20 +48,17 @@ jobs:
           )
 
 
-          req = urllib.request.Request(
-
+          request = urllib.request.Request(
               nobitex_url,
-
               headers={
                   "User-Agent":
                   "Mozilla/5.0"
               }
-
           )
 
 
           response = urllib.request.urlopen(
-              req,
+              request,
               timeout=10
           )
 
@@ -74,8 +71,6 @@ jobs:
           nobitex_price = None
 
 
-          # lastTradePrice if exists
-
           if "lastTradePrice" in data:
 
               nobitex_price = float(
@@ -83,25 +78,16 @@ jobs:
               )
 
 
-          # fallback orderbook
-
           if not nobitex_price:
-
-              asks = data.get(
-                  "asks",
-                  []
-              )
-
-              bids = data.get(
-                  "bids",
-                  []
-              )
-
 
               prices = []
 
 
-              for item in asks + bids:
+              for item in (
+                  data.get("asks", [])
+                  +
+                  data.get("bids", [])
+              ):
 
                   try:
 
@@ -116,8 +102,11 @@ jobs:
 
               if prices:
 
-                  nobitex_price = sum(prices) / len(prices)
-
+                  nobitex_price = (
+                      sum(prices)
+                      /
+                      len(prices)
+                  )
 
 
           if not nobitex_price:
@@ -128,15 +117,15 @@ jobs:
 
 
 
-          # Rial to Toman
+          # Keep Rial for comparison
 
           target_price = round(
-              nobitex_price / 10
+              nobitex_price
           )
 
 
           print(
-              "Nobitex Toman:",
+              "Nobitex Rial:",
               target_price
           )
 
@@ -152,30 +141,21 @@ jobs:
           )
 
 
-          req = urllib.request.Request(
-
+          request = urllib.request.Request(
               tgju_url,
-
               headers={
                   "User-Agent":
                   "Mozilla/5.0"
               }
-
           )
 
 
           html = urllib.request.urlopen(
-
-              req,
-
+              request,
               timeout=10
-
           ).read().decode(
-
               "utf-8",
-
               errors="ignore"
-
           )
 
 
@@ -186,11 +166,8 @@ jobs:
 
 
           numbers = re.findall(
-
               r'[0-9۰-۹,]{5,}',
-
               html
-
           )
 
 
@@ -202,27 +179,20 @@ jobs:
 
           for value in numbers:
 
-
               clean = value
 
 
               for i, digit in enumerate(persian):
 
                   clean = clean.replace(
-
                       digit,
-
                       str(i)
-
                   )
 
 
               clean = clean.replace(
-
                   ",",
-
                   ""
-
               )
 
 
@@ -231,7 +201,7 @@ jobs:
                   number = int(clean)
 
 
-                  # reasonable USD range
+                  # Rial USD range
 
                   if 100000 < number < 5000000:
 
@@ -255,7 +225,7 @@ jobs:
 
 
           # ==========================
-          # Find closest number
+          # Find closest Rial value
           # ==========================
 
 
@@ -264,27 +234,19 @@ jobs:
           best_percent = 999
 
 
-
           for number in candidates:
 
 
               diff = abs(
-
                   number -
-
                   target_price
-
               )
 
 
               percent = (
-
                   diff /
-
                   target_price
-
               ) * 100
-
 
 
               if percent < best_percent:
@@ -296,14 +258,14 @@ jobs:
 
 
           print(
-              "TGJU candidate:",
+              "TGJU Rial:",
               best
           )
 
 
           print(
               "Difference:",
-              round(best_percent,2),
+              round(best_percent, 3),
               "%"
           )
 
@@ -318,34 +280,40 @@ jobs:
 
 
           # ==========================
-          # Save file
+          # Rial to Toman
+          # ==========================
+
+
+          final_price = round(
+              best / 10
+          )
+
+
+          print(
+              "Saved Toman:",
+              final_price
+          )
+
+
+
+          # ==========================
+          # Save usd.txt
           # ==========================
 
 
           with open(
-
               "usd.txt",
-
               "w",
-
               encoding="utf-8"
-
           ) as file:
 
               file.write(
-
-                  str(best)
-
+                  str(final_price)
               )
 
 
-          print(
-              "Saved:",
-              best
-          )
-
-
           PY
+
 
 
 
