@@ -2492,7 +2492,7 @@ async function loadUsdTxt() {
         const response = await fetch(
             "usd.txt?nocache=" + Date.now(),
             {
-                cache: "default"
+                cache: "no-store"
             }
         );
 
@@ -2533,7 +2533,9 @@ async function loadUsdTxt() {
     }
 
 }
-
+setTimeout(() => {
+    loadUsdTxt();
+}, 2000);
 /* =====================================================
    MARKET PRICE CONNECTION COLORS
    NOBITEX + EXIR + BITPIN
