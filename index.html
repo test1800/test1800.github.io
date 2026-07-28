@@ -2485,6 +2485,24 @@ function safeText(id, value) {
    USD TXT PRICE
 ===================================================== */
 
+function saveUsdTxtPrice(value) {
+
+    localStorage.setItem(
+        CACHE_KEYS.USD_TXT_PRICE,
+        value
+    );
+
+}
+
+
+function loadCachedUsdTxtPrice() {
+
+    return localStorage.getItem(
+        CACHE_KEYS.USD_TXT_PRICE
+    );
+
+}
+
 async function loadUsdTxt() {
 
     try {
@@ -2512,25 +2530,30 @@ async function loadUsdTxt() {
         const value = text.trim();
 
 
-        if (value) {
+	if (value) {
 
-            safeText(
-                "usdTxtPrice",
-                value
-            );
+ 	   safeText(
+   	     "usdTxtPrice",
+   	     value
+  	  );
 
-        }
+ 	   saveUsdTxtPrice(value);
 
-    }
-
-    catch(error) {
-
-        safeText(
-            "usdTxtPrice",
-            "-"
-        );
+		  }
 
     }
+
+catch(error) {
+
+    const cached =
+        loadCachedUsdTxtPrice();
+
+    safeText(
+        "usdTxtPrice",
+        cached || "-"
+    );
+
+}
 
 }
 
@@ -2715,6 +2738,8 @@ const CACHE_KEYS = {
 
     BITPIN_TIME:
         "financialDashboardBitpinPriceTime"
+    USD_TXT_PRICE:
+        "financialDashboardUsdTxtPrice"
 
 };
 
