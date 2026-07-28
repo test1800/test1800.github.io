@@ -2492,7 +2492,7 @@ async function loadUsdTxt() {
         const response = await fetch(
             "usd.txt?nocache=" + Date.now(),
             {
-                cache: "no-store"
+                cache: "default"
             }
         );
 
