@@ -199,6 +199,20 @@ h1 {
    LIVE MARKET
 ===================================================== */
 
+
+.live-usd-value {
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    color: #94a3b8;
+
+    white-space: nowrap;
+	margin-right: 15px;
+
+}
+
 .live-price {
 
     margin-top: 12px;
@@ -1214,9 +1228,11 @@ h1 {
         gap: 0 !important;
     }
 
-    .live-market-header {
-        display: none !important;
-    }
+.live-market-title,
+.live-market-separator,
+.live-market-bank {
+    display: none !important;
+}
 
     .live-price-values {
         display: flex !important;
@@ -1268,6 +1284,18 @@ h1 {
 
 }
 
+/* =====================================================
+   ULTRA COMPACT MODE
+   OFFLINE MARKET PRICE COLOR
+===================================================== */
+
+@media (max-height: 199px) {
+
+    .live-number.market-price-offline {
+        color: #64748b !important;
+    }
+
+}
 </style>
 
 </head>
@@ -1322,6 +1350,14 @@ h1 {
     <div class="live-price">
 
         <div class="live-market-header">
+
+
+ 	    <span 
+  	    class="live-usd-value"
+    	    id="usdTxtPrice">
+   	     -
+ 	    </span>
+
 
             <span class="live-market-title">
                 Live Market
@@ -2439,6 +2475,112 @@ function safeText(id, value) {
     if (element) {
 
         element.textContent = value;
+
+    }
+
+}
+
+
+/* =====================================================
+   USD TXT PRICE
+===================================================== */
+
+async function loadUsdTxt() {
+
+    try {
+
+        const response = await fetch(
+            "usd.txt?nocache=" + Date.now(),
+            {
+                cache: "no-store"
+            }
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "usd.txt unavailable"
+            );
+
+        }
+
+
+        const text = await response.text();
+
+
+        const value = text.trim();
+
+
+        if (value) {
+
+            safeText(
+                "usdTxtPrice",
+                value
+            );
+
+        }
+
+    }
+
+    catch(error) {
+
+        safeText(
+            "usdTxtPrice",
+            "-"
+        );
+
+    }
+
+}
+
+/* =====================================================
+   MARKET PRICE CONNECTION COLORS
+   NOBITEX + EXIR + BITPIN
+===================================================== */
+
+function updateMarketPriceConnectionColors(
+    nobitexOnline,
+    exirOnline,
+    bitpinOnline
+) {
+
+    const currentPrice =
+        $("currentPrice");
+
+    const exirPrice =
+        $("exirPrice");
+
+    const bitpinPrice =
+        $("bitpinPrice");
+
+
+    if (currentPrice) {
+
+        currentPrice.classList.toggle(
+            "market-price-offline",
+            !nobitexOnline
+        );
+
+    }
+
+
+    if (exirPrice) {
+
+        exirPrice.classList.toggle(
+            "market-price-offline",
+            !exirOnline
+        );
+
+    }
+
+
+    if (bitpinPrice) {
+
+        bitpinPrice.classList.toggle(
+            "market-price-offline",
+            !bitpinOnline
+        );
 
     }
 
@@ -5242,6 +5384,9 @@ async function loadDashboardData() {
     dashboardLoadInProgress =
         (async () => {
 
+
+	    await loadUsdTxt();
+
             let data =
                 loadCachedDashboardData();
 
@@ -5550,6 +5695,16 @@ async function loadDashboardData() {
 
             }
 
+
+/* =================================================
+   UPDATE MARKET PRICE CONNECTION COLORS
+================================================= */
+
+updateMarketPriceConnectionColors(
+    nobitexOnline,
+    exirOnline,
+    bitpinOnline
+);
 
             /* =================================================
                TODAY
