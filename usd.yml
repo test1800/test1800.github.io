@@ -12,6 +12,7 @@ permissions:
 
 
 jobs:
+
   update-usd:
 
     runs-on: ubuntu-latest
@@ -19,159 +20,340 @@ jobs:
 
     steps:
 
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
 
-      - name: Get USD price from TGJU
+
+      - name: Get USD price
+
         run: |
 
           python - <<'PY'
 
           import urllib.request
+          import json
           import re
 
 
-          url = "https://www.tgju.org/%D9%82%DB%8C%D9%85%D8%AA-%D8%AF%D9%84%D8%A7%D8%B1"
+          # ==========================
+          # Get Nobitex USDT price
+          # ==========================
+
+          nobitex_url = (
+              "https://apiv2.nobitex.ir/v3/orderbook/USDTIRT"
+          )
 
 
-          request = urllib.request.Request(
-              url,
+          req = urllib.request.Request(
+
+              nobitex_url,
+
               headers={
                   "User-Agent":
-                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36"
+                  "Mozilla/5.0"
               }
+
           )
 
 
           response = urllib.request.urlopen(
-              request,
+              req,
               timeout=10
           )
 
 
-          html = response.read().decode(
-              "utf-8",
-              errors="ignore"
+          data = json.loads(
+              response.read()
           )
 
 
-          patterns = [
-
-              r'دلار.{0,100}?([0-9۰-۹,]{5,})',
-
-              r'USD.{0,100}?([0-9,]{5,})',
-
-              r'price.{0,100}?([0-9,]{5,})'
-
-          ]
+          nobitex_price = None
 
 
-          price = None
+          # lastTradePrice if exists
 
+          if "lastTradePrice" in data:
 
-          for pattern in patterns:
-
-              matches = re.findall(
-                  pattern,
-                  html,
-                  re.IGNORECASE
+              nobitex_price = float(
+                  data["lastTradePrice"]
               )
 
 
-              for value in matches:
+          # fallback orderbook
 
-                  clean = value
+          if not nobitex_price:
+
+              asks = data.get(
+                  "asks",
+                  []
+              )
+
+              bids = data.get(
+                  "bids",
+                  []
+              )
 
 
-                  persian = "۰۱۲۳۴۵۶۷۸۹"
+              prices = []
 
 
-                  for i, digit in enumerate(persian):
-
-                      clean = clean.replace(
-                          digit,
-                          str(i)
-                      )
-
-
-                  clean = clean.replace(
-                      ",",
-                      ""
-                  )
-
+              for item in asks + bids:
 
                   try:
 
-                      number = int(clean)
-
-
-                      if number > 100000:
-
-                          price = number
-
-                          break
-
+                      prices.append(
+                          float(item[0])
+                      )
 
                   except:
 
                       pass
 
 
-              if price:
+              if prices:
 
-                  break
+                  nobitex_price = sum(prices) / len(prices)
 
 
 
-          if not price:
+          if not nobitex_price:
 
-              print(
-                  "Could not find USD price"
+              raise Exception(
+                  "Nobitex price not found"
               )
 
-              exit(1)
 
 
+          # Rial to Toman
 
-          toman = round(
-              price / 10
+          target_price = round(
+              nobitex_price / 10
           )
 
 
           print(
-              "TGJU Rial:",
-              price
+              "Nobitex Toman:",
+              target_price
+          )
+
+
+
+          # ==========================
+          # Read TGJU page
+          # ==========================
+
+
+          tgju_url = (
+              "https://www.tgju.org/%D9%82%DB%8C%D9%85%D8%AA-%D8%AF%D9%84%D8%A7%D8%B1"
+          )
+
+
+          req = urllib.request.Request(
+
+              tgju_url,
+
+              headers={
+                  "User-Agent":
+                  "Mozilla/5.0"
+              }
+
+          )
+
+
+          html = urllib.request.urlopen(
+
+              req,
+
+              timeout=10
+
+          ).read().decode(
+
+              "utf-8",
+
+              errors="ignore"
+
+          )
+
+
+
+          # ==========================
+          # Extract numbers
+          # ==========================
+
+
+          numbers = re.findall(
+
+              r'[0-9۰-۹,]{5,}',
+
+              html
+
+          )
+
+
+          candidates = []
+
+
+          persian = "۰۱۲۳۴۵۶۷۸۹"
+
+
+          for value in numbers:
+
+
+              clean = value
+
+
+              for i, digit in enumerate(persian):
+
+                  clean = clean.replace(
+
+                      digit,
+
+                      str(i)
+
+                  )
+
+
+              clean = clean.replace(
+
+                  ",",
+
+                  ""
+
+              )
+
+
+              try:
+
+                  number = int(clean)
+
+
+                  # reasonable USD range
+
+                  if 100000 < number < 5000000:
+
+                      candidates.append(
+                          number
+                      )
+
+
+              except:
+
+                  pass
+
+
+
+          if not candidates:
+
+              raise Exception(
+                  "No TGJU numbers found"
+              )
+
+
+
+          # ==========================
+          # Find closest number
+          # ==========================
+
+
+          best = None
+
+          best_percent = 999
+
+
+
+          for number in candidates:
+
+
+              diff = abs(
+
+                  number -
+
+                  target_price
+
+              )
+
+
+              percent = (
+
+                  diff /
+
+                  target_price
+
+              ) * 100
+
+
+
+              if percent < best_percent:
+
+                  best_percent = percent
+
+                  best = number
+
+
+
+          print(
+              "TGJU candidate:",
+              best
           )
 
 
           print(
-              "Toman:",
-              toman
+              "Difference:",
+              round(best_percent,2),
+              "%"
           )
 
+
+
+          if best_percent > 1:
+
+              raise Exception(
+                  "No valid USD match within 1%"
+              )
+
+
+
+          # ==========================
+          # Save file
+          # ==========================
 
 
           with open(
+
               "usd.txt",
+
               "w",
+
               encoding="utf-8"
+
           ) as file:
 
               file.write(
-                  str(toman)
+
+                  str(best)
+
               )
+
+
+          print(
+              "Saved:",
+              best
+          )
 
 
           PY
 
 
 
+
       - name: Commit USD price
 
         run: |
+
 
           git config user.name \
           "github-actions[bot]"
