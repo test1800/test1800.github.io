@@ -1,214 +1,367 @@
 name: Update USD Price
 
 on:
+
   workflow_dispatch:
 
   schedule:
     - cron: "*/5 * * * *"
 
+
 permissions:
+
   contents: write
 
+
 jobs:
+
   update-usd:
 
     runs-on: ubuntu-latest
 
+
     steps:
 
+
       - name: Checkout repository
+
         uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          pip install requests beautifulsoup4
+
 
       - name: Get USD price from TGJU
+
         run: |
 
           python - <<'PY'
 
-          import requests
+
+          import urllib.request
           import re
-          from bs4 import BeautifulSoup
+          import time
+          import os
 
-          url = "https://www.tgju.org/%D9%82%DB%8C%D9%85%D8%AA-%D8%AF%D9%84%D8%A7%D8%B1"
 
-          headers = {
-              "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
-          }
 
-          print("Connecting to TGJU...")
+          url = "https://www.tgju.org/"
 
-          response = requests.get(
-              url,
-              headers=headers,
-              timeout=30
-          )
 
-          response.raise_for_status()
 
-          print(
-              "HTTP Status:",
-              response.status_code
-          )
+          html = None
 
-          soup = BeautifulSoup(
-              response.text,
-              "html.parser"
-          )
 
-          # Get all visible text
-          text = soup.get_text(
-              " ",
-              strip=True
-          )
 
-          # Convert Persian digits
-          persian_digits = "۰۱۲۳۴۵۶۷۸۹"
+          for attempt in range(3):
 
-          for i, digit in enumerate(
-              persian_digits
-          ):
+              try:
 
-              text = text.replace(
-                  digit,
-                  str(i)
-              )
+                  request = urllib.request.Request(
 
-          # Search numbers around USD / Dollar text
+                      url,
 
-          patterns = [
+                      headers={
 
-              r'دلار\s+([0-9,]{6,})',
+                          "User-Agent":
+                          "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
 
-              r'دلار\s*([0-9,]{6,})',
+                          "Cache-Control":
+                          "no-cache",
 
-              r'قیمت دلار\s*([0-9,]{6,})'
+                          "Pragma":
+                          "no-cache"
 
-          ]
+                      }
 
-          price = None
-
-          for pattern in patterns:
-
-              matches = re.findall(
-                  pattern,
-                  text,
-                  re.IGNORECASE
-              )
-
-              print(
-                  "Pattern:",
-                  pattern
-              )
-
-              print(
-                  "Matches:",
-                  matches[:10]
-              )
-
-              for value in matches:
-
-                  number = int(
-                      value.replace(
-                          ",",
-                          ""
-                      )
                   )
 
-                  # USD free market price
-                  # should be above 100,000 Rial
 
-                  if number > 100000:
+                  with urllib.request.urlopen(
 
-                      price = number
+                      request,
 
-                      break
+                      timeout=30
 
-              if price:
+                  ) as response:
+
+
+                      html = response.read().decode(
+
+                          "utf-8",
+
+                          errors="ignore"
+
+                      )
+
 
                   break
 
 
-          if not price:
 
-              print(
-                  "ERROR: USD price was not found."
+              except Exception as e:
+
+
+                  print(
+                      "Retry:",
+                      attempt + 1,
+                      e
+                  )
+
+
+                  time.sleep(5)
+
+
+
+
+          if not html:
+
+
+              raise Exception(
+                  "TGJU connection failed"
               )
 
-              print(
-                  "TGJU page text preview:"
+
+
+
+
+          # ---------------------------------
+          # Find Dollar row - live price
+          # ---------------------------------
+
+
+          patterns = [
+
+
+              # جدول ارز آزاد TGJU
+
+              r'دلار.*?قیمت\s*زنده.*?([0-9۰-۹,]{6,})',
+
+
+
+              # حالت جایگزین
+
+              r'دلار.*?([0-9۰-۹,]{6,})'
+
+
+          ]
+
+
+
+          rial_price = None
+
+
+
+          for pattern in patterns:
+
+
+              match = re.search(
+
+                  pattern,
+
+                  html,
+
+                  re.DOTALL
+
               )
 
-              print(
-                  text[:5000]
+
+              if match:
+
+
+                  value = match.group(1)
+
+
+                  persian = "۰۱۲۳۴۵۶۷۸۹"
+
+
+
+                  for i,d in enumerate(persian):
+
+
+                      value = value.replace(
+
+                          d,
+
+                          str(i)
+
+                      )
+
+
+
+                  value = value.replace(
+
+                      ",",
+
+                      ""
+
+                  )
+
+
+
+                  try:
+
+
+                      number = int(value)
+
+
+
+                      # قیمت دلار ریالی
+
+                      if 100000 < number < 10000000:
+
+
+                          rial_price = number
+
+                          break
+
+
+
+                  except:
+
+
+                      pass
+
+
+
+
+
+          if not rial_price:
+
+
+              raise Exception(
+
+                  "USD price not found"
+
               )
 
-              raise SystemExit(1)
+
+
+
+
+          toman_price = round(
+
+              rial_price / 10
+
+          )
+
+
 
 
           print(
-              "TGJU USD price in Rial:",
-              price
-          )
-
-
-          # Convert Rial to Toman
-
-          toman = round(
-              price / 10
+              "TGJU Rial:",
+              rial_price
           )
 
 
           print(
-              "USD price in Toman:",
-              toman
+              "TGJU Toman:",
+              toman_price
           )
 
 
-          # Write ONLY the price
-          # to usd.txt
 
-          with open(
-              "usd.txt",
-              "w",
-              encoding="utf-8"
-          ) as file:
 
-              file.write(
-                  str(toman)
+
+          # ---------------------------------
+          # Update only if changed
+          # ---------------------------------
+
+
+          old = ""
+
+
+
+          if os.path.exists(
+
+              "usd.txt"
+
+          ):
+
+
+              old = open(
+
+                  "usd.txt",
+
+                  encoding="utf-8"
+
+              ).read().strip()
+
+
+
+
+
+          if old != str(toman_price):
+
+
+              with open(
+
+                  "usd.txt",
+
+                  "w",
+
+                  encoding="utf-8"
+
+              ) as f:
+
+
+                  f.write(
+
+                      str(toman_price)
+
+                  )
+
+
+              print(
+                  "USD updated"
               )
 
 
-          print(
-              "usd.txt updated successfully."
-          )
+          else:
+
+
+              print(
+                  "No change"
+              )
+
 
           PY
 
 
-      - name: Commit and push USD price
+
+
+
+      - name: Commit USD price
+
+
         run: |
+
 
           git config user.name \
           "github-actions[bot]"
 
+
           git config user.email \
           "41898282+github-actions[bot]@users.noreply.github.com"
 
+
+
           git add usd.txt
+
+
 
           if git diff --cached --quiet; then
 
-            echo "USD price has not changed."
+
+            echo "No changes"
+
 
           else
+
 
             git commit \
             -m "Update USD price"
 
+
             git push
+
 
           fi
