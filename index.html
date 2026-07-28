@@ -199,6 +199,19 @@ h1 {
    LIVE MARKET
 ===================================================== */
 
+
+.live-usd-value {
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    color: #94a3b8;
+
+    white-space: nowrap;
+
+}
+
 .live-price {
 
     margin-top: 12px;
@@ -1335,6 +1348,14 @@ h1 {
 
         <div class="live-market-header">
 
+
+ 	    <span 
+  	    class="live-usd-value"
+    	    id="usdTxtPrice">
+   	     -
+ 	    </span>
+
+
             <span class="live-market-title">
                 Live Market
             </span>
@@ -2457,6 +2478,58 @@ function safeText(id, value) {
 }
 
 
+/* =====================================================
+   USD TXT PRICE
+===================================================== */
+
+async function loadUsdTxt() {
+
+    try {
+
+        const response = await fetch(
+            "usd.txt?nocache=" + Date.now(),
+            {
+                cache: "no-store"
+            }
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "usd.txt unavailable"
+            );
+
+        }
+
+
+        const text = await response.text();
+
+
+        const value = text.trim();
+
+
+        if (value) {
+
+            safeText(
+                "usdTxtPrice",
+                value
+            );
+
+        }
+
+    }
+
+    catch(error) {
+
+        safeText(
+            "usdTxtPrice",
+            "-"
+        );
+
+    }
+
+}
 
 /* =====================================================
    MARKET PRICE CONNECTION COLORS
@@ -5307,6 +5380,9 @@ async function loadDashboardData() {
 
     dashboardLoadInProgress =
         (async () => {
+
+
+	    await loadUsdTxt();
 
             let data =
                 loadCachedDashboardData();
