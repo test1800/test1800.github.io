@@ -2503,12 +2503,13 @@ function loadCachedUsdTxtPrice() {
 
 }
 
+
 async function loadUsdTxt() {
 
     try {
 
         const response = await fetch(
-            "usd.txt?nocache=" + Date.now(),
+            "https://usdd.mimabdibcc.workers.dev/",
             {
                 cache: "no-store"
             }
@@ -2518,42 +2519,49 @@ async function loadUsdTxt() {
         if (!response.ok) {
 
             throw new Error(
-                "usd.txt unavailable"
+                "USD worker unavailable"
             );
 
         }
 
 
-        const text = await response.text();
+        const text =
+            await response.text();
 
 
-        const value = text.trim();
+        const value =
+            text.trim();
 
 
-	if (value) {
+        if (value) {
 
- 	   safeText(
-   	     "usdTxtPrice",
-   	     value
-  	  );
+            safeText(
+                "usdTxtPrice",
+                value
+            );
 
- 	   saveUsdTxtPrice(value);
 
-		  }
+            saveUsdTxtPrice(
+                value
+            );
+
+        }
 
     }
 
-catch(error) {
 
-    const cached =
-        loadCachedUsdTxtPrice();
+    catch(error) {
 
-    safeText(
-        "usdTxtPrice",
-        cached || "-"
-    );
+        const cached =
+            loadCachedUsdTxtPrice();
 
-}
+
+        safeText(
+            "usdTxtPrice",
+            cached || "-"
+        );
+
+    }
 
 }
 
