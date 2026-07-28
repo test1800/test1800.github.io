@@ -1268,6 +1268,18 @@ h1 {
 
 }
 
+/* =====================================================
+   ULTRA COMPACT MODE
+   OFFLINE MARKET PRICE COLOR
+===================================================== */
+
+@media (max-height: 199px) {
+
+    .live-number.market-price-offline {
+        color: #64748b !important;
+    }
+
+}
 </style>
 
 </head>
@@ -2439,6 +2451,60 @@ function safeText(id, value) {
     if (element) {
 
         element.textContent = value;
+
+    }
+
+}
+
+
+
+/* =====================================================
+   MARKET PRICE CONNECTION COLORS
+   NOBITEX + EXIR + BITPIN
+===================================================== */
+
+function updateMarketPriceConnectionColors(
+    nobitexOnline,
+    exirOnline,
+    bitpinOnline
+) {
+
+    const currentPrice =
+        $("currentPrice");
+
+    const exirPrice =
+        $("exirPrice");
+
+    const bitpinPrice =
+        $("bitpinPrice");
+
+
+    if (currentPrice) {
+
+        currentPrice.classList.toggle(
+            "market-price-offline",
+            !nobitexOnline
+        );
+
+    }
+
+
+    if (exirPrice) {
+
+        exirPrice.classList.toggle(
+            "market-price-offline",
+            !exirOnline
+        );
+
+    }
+
+
+    if (bitpinPrice) {
+
+        bitpinPrice.classList.toggle(
+            "market-price-offline",
+            !bitpinOnline
+        );
 
     }
 
@@ -5550,6 +5616,16 @@ async function loadDashboardData() {
 
             }
 
+
+/* =================================================
+   UPDATE MARKET PRICE CONNECTION COLORS
+================================================= */
+
+updateMarketPriceConnectionColors(
+    nobitexOnline,
+    exirOnline,
+    bitpinOnline
+);
 
             /* =================================================
                TODAY
