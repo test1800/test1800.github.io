@@ -35,7 +35,6 @@ jobs:
 
           python - <<'PY'
 
-
           import urllib.request
           import re
           import time
@@ -51,9 +50,15 @@ jobs:
 
 
 
+          # -------------------------------
+          # Download TGJU
+          # -------------------------------
+
+
           for attempt in range(3):
 
               try:
+
 
                   request = urllib.request.Request(
 
@@ -123,21 +128,22 @@ jobs:
 
 
 
-          # ---------------------------------
-          # Find Dollar row - live price
-          # ---------------------------------
+          # -------------------------------
+          # Find Dollar Free Market Price
+          # -------------------------------
 
 
           patterns = [
 
 
-              # جدول ارز آزاد TGJU
-
-              r'دلار.*?قیمت\s*زنده.*?([0-9۰-۹,]{6,})',
+              r'price_dollar_rl.*?([0-9۰-۹,]{6,})',
 
 
+              r'"price_dollar_rl".*?([0-9۰-۹,]{6,})',
 
-              # حالت جایگزین
+
+              r'dollar_rl.*?([0-9۰-۹,]{6,})',
+
 
               r'دلار.*?([0-9۰-۹,]{6,})'
 
@@ -150,10 +156,14 @@ jobs:
 
 
 
+          persian = "۰۱۲۳۴۵۶۷۸۹"
+
+
+
           for pattern in patterns:
 
 
-              match = re.search(
+              matches = re.findall(
 
                   pattern,
 
@@ -164,14 +174,8 @@ jobs:
               )
 
 
-              if match:
 
-
-                  value = match.group(1)
-
-
-                  persian = "۰۱۲۳۴۵۶۷۸۹"
-
+              for value in matches:
 
 
                   for i,d in enumerate(persian):
@@ -204,9 +208,9 @@ jobs:
 
 
 
-                      # قیمت دلار ریالی
+                      # valid rial USD range
 
-                      if 100000 < number < 10000000:
+                      if 1000000 < number < 10000000:
 
 
                           rial_price = number
@@ -222,14 +226,37 @@ jobs:
 
 
 
+              if rial_price:
+
+
+                  break
+
+
+
 
 
           if not rial_price:
 
 
+              # Debug file if failed
+
+              with open(
+
+                  "tgju_debug.html",
+
+                  "w",
+
+                  encoding="utf-8"
+
+              ) as f:
+
+                  f.write(html)
+
+
+
               raise Exception(
 
-                  "USD price not found"
+                  "Dollar price not found"
 
               )
 
@@ -237,12 +264,16 @@ jobs:
 
 
 
+          # -------------------------------
+          # Rial to Toman
+          # -------------------------------
+
+
           toman_price = round(
 
               rial_price / 10
 
           )
-
 
 
 
@@ -261,9 +292,9 @@ jobs:
 
 
 
-          # ---------------------------------
-          # Update only if changed
-          # ---------------------------------
+          # -------------------------------
+          # Update file only if changed
+          # -------------------------------
 
 
           old = ""
@@ -277,13 +308,16 @@ jobs:
           ):
 
 
-              old = open(
+              with open(
 
                   "usd.txt",
 
                   encoding="utf-8"
 
-              ).read().strip()
+              ) as f:
+
+
+                  old = f.read().strip()
 
 
 
@@ -351,17 +385,17 @@ jobs:
           if git diff --cached --quiet; then
 
 
-            echo "No changes"
+              echo "No changes"
 
 
           else
 
 
-            git commit \
-            -m "Update USD price"
+              git commit \
+              -m "Update USD price"
 
 
-            git push
+              git push
 
 
           fi
