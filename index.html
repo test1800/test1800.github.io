@@ -1508,77 +1508,6 @@ h1 {
 </div>
 
 
-
-
-<div id="lockScreen" style="
-    position:fixed;
-    inset:0;
-    background:#070b14;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    z-index:99999;
-">
-
-    <div style="
-        background:#111827;
-        padding:25px;
-        border-radius:15px;
-        text-align:center;
-        border:1px solid rgba(255,255,255,.1);
-    ">
-
-        <div style="
-            color:white;
-            font-size:18px;
-            font-weight:700;
-            margin-bottom:15px;
-        ">
-            Dashboard Locked
-        </div>
-
-
-       <input
-    id="dashboardPassword"
-    type="password"
-    placeholder="Password"
-    onkeydown="if(event.key==='Enter') unlockDashboard()"
->
-
-
-        <br><br>
-
-
-        <button
-            onclick="unlockDashboard()"
-            style="
-                padding:10px 30px;
-                border-radius:8px;
-                border:none;
-                cursor:pointer;
-            "
-        >
-            Unlock
-        </button>
-
-
-        <div
-            id="passwordError"
-            style="
-                margin-top:10px;
-                color:#f87171;
-                font-size:12px;
-            ">
-        </div>
-
-    </div>
-
-</div>
-
-
-
-
-
 <div
     id="dashboard"
     style="display:none;">
@@ -2540,48 +2469,6 @@ h1 {
 
 
 <script>
-
-/* =====================================================
-   PASSWORD
-===================================================== */
-const DASHBOARD_PASSWORD = "1716";
-
-
-function unlockDashboard(){
-
-    const input =
-        $("dashboardPassword").value;
-
-
-    if(input === DASHBOARD_PASSWORD){
-
-        sessionStorage.setItem(
-            "dashboardUnlocked",
-            "true"
-        );
-
-
-        $("lockScreen").style.display =
-            "none";
-
-
-        $("dashboard").style.display =
-            "grid";
-
-    }
-
-    else {
-
-        $("passwordError").textContent =
-            "Wrong password";
-
-    }
-
-}
-
-
-
-
 
 /* =====================================================
    HELPERS
@@ -6340,7 +6227,7 @@ updateMarketPriceConnectionColors(
             if (dashboard) {
 
                 dashboard.style.display =
-                    "none";
+                    "grid";
 
             }
 
@@ -6513,7 +6400,6 @@ window.addEventListener(
 );
 
 
-
 /* =====================================================
    INIT
 ===================================================== */
@@ -6523,23 +6409,6 @@ async function init() {
     try {
 
         await loadDashboardData();
-
-
-        if (
-            sessionStorage.getItem(
-                "dashboardUnlocked"
-            ) === "true"
-        ) {
-
-            $("lockScreen").style.display =
-                "none";
-
-
-            $("dashboard").style.display =
-                "grid";
-
-        }
-
 
         startAutoRefresh();
 
