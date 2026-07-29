@@ -1311,26 +1311,6 @@ h1 {
 }
 </style>
 
-<script>
-
-if (
-    sessionStorage.getItem(
-        "dashboardUnlocked"
-    ) !== "true"
-) {
-
-    document.write(`
-        <style>
-            #lockScreen {
-                display:flex !important;
-            }
-        </style>
-    `);
-
-}
-
-</script>
-
 </head>
 
 
@@ -1533,7 +1513,6 @@ if (
 <div id="lockScreen" style="
     position:fixed;
     inset:0;
-      display:none;
     background:#070b14;
     display:flex;
     justify-content:center;
