@@ -2480,6 +2480,33 @@ function safeText(id, value) {
 
 }
 
+/* =====================================================
+   CACHE
+===================================================== */
+
+const CACHE_KEYS = {
+
+    DATA:
+        "financialDashboardData",
+
+    NOBITEX_PRICE:
+        "financialDashboardPrice",
+
+    NOBITEX_TIME:
+        "financialDashboardPriceTime",
+
+    EXIR_PRICE:
+        "financialDashboardExirPrice",
+
+    BITPIN_PRICE:
+        "financialDashboardBitpinPrice",
+
+    BITPIN_TIME:
+        "financialDashboardBitpinPriceTime",
+    USD_TXT_PRICE:
+        "financialDashboardUsdTxtPrice"
+
+};
 
 /* =====================================================
    USD TXT PRICE
@@ -2723,33 +2750,7 @@ function setProfitLossClass(id, value) {
 }
 
 
-/* =====================================================
-   CACHE
-===================================================== */
 
-const CACHE_KEYS = {
-
-    DATA:
-        "financialDashboardData",
-
-    NOBITEX_PRICE:
-        "financialDashboardPrice",
-
-    NOBITEX_TIME:
-        "financialDashboardPriceTime",
-
-    EXIR_PRICE:
-        "financialDashboardExirPrice",
-
-    BITPIN_PRICE:
-        "financialDashboardBitpinPrice",
-
-    BITPIN_TIME:
-        "financialDashboardBitpinPriceTime",
-    USD_TXT_PRICE:
-        "financialDashboardUsdTxtPrice"
-
-};
 
 
 const DATA_CACHE_MAX_AGE =
