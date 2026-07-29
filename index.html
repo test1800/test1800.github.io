@@ -2516,6 +2516,13 @@ const CACHE_KEYS = {
 
     BITPIN_TIME:
         "financialDashboardBitpinPriceTime",
+
+    AVERAGE_PRICE:
+        "financialDashboardAveragePrice",
+
+    AVERAGE_TIME:
+        "financialDashboardAveragePriceTime",
+
     USD_TXT_PRICE:
         "financialDashboardUsdTxtPrice"
 
@@ -3008,6 +3015,59 @@ function loadBitpinPrice() {
     }
 
     catch (error) {
+
+        return null;
+
+    }
+
+}
+
+
+
+function saveAveragePrice(price) {
+
+    try {
+
+        localStorage.setItem(
+            CACHE_KEYS.AVERAGE_PRICE,
+            String(price)
+        );
+
+
+        localStorage.setItem(
+            CACHE_KEYS.AVERAGE_TIME,
+            new Date().toISOString()
+        );
+
+    }
+
+    catch(error){}
+
+}
+
+
+
+function loadAveragePrice() {
+
+    try {
+
+        const saved =
+            localStorage.getItem(
+                CACHE_KEYS.AVERAGE_PRICE
+            );
+
+
+        const price =
+            Number(saved);
+
+
+        return Number.isFinite(price)
+            ? price
+            : null;
+
+    }
+
+    catch(error){
 
         return null;
 
@@ -5337,10 +5397,9 @@ async function getBitpinPrice(
 
 }
 
-
 /* =====================================================
    AVERAGE LIVE PRICE
-   ONLINE ONLY + OFFLINE CACHE FALLBACK
+   ONLINE ONLY + SAVED AVERAGE CACHE FALLBACK
 ===================================================== */
 
 function calculateAverageLivePrice(
@@ -5359,121 +5418,79 @@ function calculateAverageLivePrice(
     let prices = [];
 
 
-    /*
-       اگر آنلاین هستیم:
-       فقط قیمت های آنلاین
-    */
-
     if (nobitexOnline && Number(nobitexPrice) > 0) {
 
-        prices.push(
-            Number(nobitexPrice)
-        );
+        prices.push(Number(nobitexPrice));
 
     }
 
 
     if (exirOnline && Number(exirPrice) > 0) {
 
-        prices.push(
-            Number(exirPrice)
-        );
+        prices.push(Number(exirPrice));
 
     }
 
 
     if (bitpinOnline && Number(bitpinPrice) > 0) {
 
-        prices.push(
-            Number(bitpinPrice)
-        );
+        prices.push(Number(bitpinPrice));
 
     }
 
 
 
     /*
-       اگر هیچ API آنلاین نبود
-       از کش استفاده کن
+       ONLINE:
+       ذخیره میانگین جدید
     */
 
-    if (prices.length === 0) {
+    if (prices.length > 0) {
 
 
-        [
+        const average =
 
-            nobitexPrice,
-            exirPrice,
-            bitpinPrice
+            prices.reduce(
 
-        ]
+                (total, price) =>
+                    total + price,
 
-        .forEach(
+                0
 
-            price => {
+            )
 
+            /
 
-                const value =
-                    Number(price);
-
-
-                if (
-
-                    Number.isFinite(value)
-
-                    &&
-
-                    value > 0
-
-                ) {
-
-                    prices.push(
-                        value
-                    );
-
-                }
+            prices.length;
 
 
-            }
 
-        );
+saveAveragePrice(average);
 
+
+        return average;
 
     }
 
 
 
-    if (prices.length === 0) {
+    /*
+       OFFLINE:
+       استفاده از آخرین میانگین ذخیره شده
+    */
 
-        return null;
+const cachedAverage =
+    loadAveragePrice();
 
-    }
+if (cachedAverage !== null) {
+
+    return cachedAverage;
+
+}
 
 
 
-    return (
-
-        prices.reduce(
-
-            (
-
-                total,
-
-                price
-
-            ) =>
-
-                total + price,
-
-            0
-
-        )
-
-        /
-
-        prices.length
-
-    );
+    return null;
 
 
 }
