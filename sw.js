@@ -1,4 +1,5 @@
-const CACHE_NAME = "financial-dashboard-v3";
+const CACHE_NAME = "financial-dashboard-v4";
+
 
 const STATIC_FILES = [
 
@@ -10,9 +11,14 @@ const STATIC_FILES = [
 
     "./icon.png",
 
+    "./icon-192.png",
+
+    "./icon-512.png",
+
     "./data.json"
 
 ];
+
 
 
 self.addEventListener(
@@ -56,6 +62,7 @@ self.addEventListener(
 );
 
 
+
 self.addEventListener(
 
     "activate",
@@ -78,9 +85,7 @@ self.addEventListener(
 
                                     key =>
 
-                                        key !==
-
-                                        CACHE_NAME
+                                        key !== CACHE_NAME
 
                                 )
 
@@ -115,22 +120,20 @@ self.addEventListener(
 );
 
 
+
 self.addEventListener(
 
     "fetch",
 
     event => {
 
-        const request =
 
-            event.request;
+        const request = event.request;
 
 
         if (
 
-            request.method !==
-
-            "GET"
+            request.method !== "GET"
 
         ) {
 
@@ -139,30 +142,25 @@ self.addEventListener(
         }
 
 
-        const url =
 
-            new URL(
+        const url = new URL(
 
-                request.url
+            request.url
 
-            );
+        );
+
 
 
         /*
+            DATA.JSON
 
-           API PRICE:
-
-           Always try network first.
-
-           If offline, use cached API response.
-
+            Always network first
+            Offline => cache
         */
 
         if (
 
-            url.origin ===
-
-            self.location.origin
+            url.origin === self.location.origin
 
             &&
 
@@ -189,21 +187,17 @@ self.addEventListener(
         }
 
 
+
         /*
+            External APIs
 
-           External API:
-
-           Network first.
-
-           Offline => last cached response.
-
+            Network first
+            Offline => cached response
         */
 
         if (
 
-            url.origin !==
-
-            self.location.origin
+            url.origin !== self.location.origin
 
         ) {
 
@@ -222,14 +216,12 @@ self.addEventListener(
         }
 
 
+
         /*
+            Local files
 
-           HTML / CSS / JS / ICON:
-
-           Cache first.
-
-           If not available, try network.
-
+            Cache first
+            Network fallback
         */
 
         event.respondWith(
@@ -242,14 +234,18 @@ self.addEventListener(
 
         );
 
+
     }
 
 );
 
 
+
+
 /* =====================================================
    NETWORK FIRST
 ===================================================== */
+
 
 async function networkFirst(
 
@@ -257,15 +253,16 @@ async function networkFirst(
 
 ) {
 
+
     try {
 
-        const response =
 
-            await fetch(
+        const response = await fetch(
 
-                request
+            request
 
-            );
+        );
+
 
 
         if (
@@ -278,13 +275,12 @@ async function networkFirst(
 
         ) {
 
-            const cache =
 
-                await caches.open(
+            const cache = await caches.open(
 
-                    CACHE_NAME
+                CACHE_NAME
 
-                );
+            );
 
 
             await cache.put(
@@ -295,22 +291,25 @@ async function networkFirst(
 
             );
 
+
         }
+
 
 
         return response;
 
+
     }
+
 
     catch (error) {
 
-        const cachedResponse =
 
-            await caches.match(
+        const cachedResponse = await caches.match(
 
-                request
+            request
 
-            );
+        );
 
 
         if (
@@ -326,14 +325,20 @@ async function networkFirst(
 
         throw error;
 
+
     }
 
+
 }
+
+
+
 
 
 /* =====================================================
    CACHE FIRST
 ===================================================== */
+
 
 async function cacheFirst(
 
@@ -341,13 +346,12 @@ async function cacheFirst(
 
 ) {
 
-    const cachedResponse =
 
-        await caches.match(
+    const cachedResponse = await caches.match(
 
-            request
+        request
 
-        );
+    );
 
 
     if (
@@ -361,13 +365,13 @@ async function cacheFirst(
     }
 
 
-    const response =
 
-        await fetch(
+    const response = await fetch(
 
-            request
+        request
 
-        );
+    );
+
 
 
     if (
@@ -380,13 +384,12 @@ async function cacheFirst(
 
     ) {
 
-        const cache =
 
-            await caches.open(
+        const cache = await caches.open(
 
-                CACHE_NAME
+            CACHE_NAME
 
-            );
+        );
 
 
         await cache.put(
@@ -397,9 +400,12 @@ async function cacheFirst(
 
         );
 
+
     }
 
 
+
     return response;
+
 
 }
