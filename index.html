@@ -2555,6 +2555,12 @@ function unlockDashboard(){
 
     if(input === DASHBOARD_PASSWORD){
 
+        sessionStorage.setItem(
+            "dashboardUnlocked",
+            "true"
+        );
+
+
         $("lockScreen").style.display =
             "none";
 
@@ -6507,6 +6513,7 @@ window.addEventListener(
 );
 
 
+
 /* =====================================================
    INIT
 ===================================================== */
@@ -6516,6 +6523,23 @@ async function init() {
     try {
 
         await loadDashboardData();
+
+
+        if (
+            sessionStorage.getItem(
+                "dashboardUnlocked"
+            ) === "true"
+        ) {
+
+            $("lockScreen").style.display =
+                "none";
+
+
+            $("dashboard").style.display =
+                "grid";
+
+        }
+
 
         startAutoRefresh();
 
