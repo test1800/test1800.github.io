@@ -5340,48 +5340,115 @@ async function getBitpinPrice(
 
 /* =====================================================
    AVERAGE LIVE PRICE
+   ONLINE ONLY + OFFLINE CACHE FALLBACK
 ===================================================== */
 
 function calculateAverageLivePrice(
 
     nobitexPrice,
-
     exirPrice,
+    bitpinPrice,
 
-    bitpinPrice
+    nobitexOnline,
+    exirOnline,
+    bitpinOnline
 
 ) {
 
-    const prices = [
 
-        Number(nobitexPrice),
-
-        Number(exirPrice),
-
-        Number(bitpinPrice)
-
-    ].filter(
-
-        price =>
-
-            Number.isFinite(price)
-
-            &&
-
-            price > 0
-
-    );
+    let prices = [];
 
 
-    if (
+    /*
+       اگر آنلاین هستیم:
+       فقط قیمت های آنلاین
+    */
 
-        prices.length === 0
+    if (nobitexOnline && Number(nobitexPrice) > 0) {
 
-    ) {
+        prices.push(
+            Number(nobitexPrice)
+        );
+
+    }
+
+
+    if (exirOnline && Number(exirPrice) > 0) {
+
+        prices.push(
+            Number(exirPrice)
+        );
+
+    }
+
+
+    if (bitpinOnline && Number(bitpinPrice) > 0) {
+
+        prices.push(
+            Number(bitpinPrice)
+        );
+
+    }
+
+
+
+    /*
+       اگر هیچ API آنلاین نبود
+       از کش استفاده کن
+    */
+
+    if (prices.length === 0) {
+
+
+        [
+
+            nobitexPrice,
+            exirPrice,
+            bitpinPrice
+
+        ]
+
+        .forEach(
+
+            price => {
+
+
+                const value =
+                    Number(price);
+
+
+                if (
+
+                    Number.isFinite(value)
+
+                    &&
+
+                    value > 0
+
+                ) {
+
+                    prices.push(
+                        value
+                    );
+
+                }
+
+
+            }
+
+        );
+
+
+    }
+
+
+
+    if (prices.length === 0) {
 
         return null;
 
     }
+
 
 
     return (
@@ -5396,9 +5463,7 @@ function calculateAverageLivePrice(
 
             ) =>
 
-                total +
-
-                price,
+                total + price,
 
             0
 
@@ -5409,6 +5474,7 @@ function calculateAverageLivePrice(
         prices.length
 
     );
+
 
 }
 
@@ -5803,11 +5869,21 @@ updateMarketPriceConnectionColors(
 
 
             const averageLivePrice =
-                calculateAverageLivePrice(
-                    currentPrice,
-                    exirPrice,
-                    bitpinPrice
-                );
+    calculateAverageLivePrice(
+
+        currentPrice,
+
+        exirPrice,
+
+        bitpinPrice,
+
+        nobitexOnline,
+
+        exirOnline,
+
+        bitpinOnline
+
+    );
 
 
             if (
