@@ -1371,6 +1371,11 @@ h1 {
    	     -
  	    </span>
 
+<span 
+    class="live-usd-value"
+    id="yekusd">
+    -
+</span>
 
             <span class="live-market-title">
                 Live Market
@@ -2523,10 +2528,98 @@ const CACHE_KEYS = {
     AVERAGE_TIME:
         "financialDashboardAveragePriceTime",
 
-    USD_TXT_PRICE:
-        "financialDashboardUsdTxtPrice"
+USD_TXT_PRICE:
+    "financialDashboardUsdTxtPrice",
+
+YEKUSD_PRICE:
+    "financialDashboardYekusdPrice"
 
 };
+
+/* =====================================================
+   YEKUSD PRICE
+===================================================== */
+
+function saveYekusdPrice(value) {
+
+    localStorage.setItem(
+        CACHE_KEYS.YEKUSD_PRICE,
+        value
+    );
+
+}
+
+
+function loadCachedYekusdPrice() {
+
+    return localStorage.getItem(
+        CACHE_KEYS.YEKUSD_PRICE
+    );
+
+}
+
+
+async function loadYekusd() {
+
+    try {
+
+        const response = await fetch(
+            "https://yekusd-rateusd.mimabdibcc.workers.dev/",
+            {
+                cache: "no-store"
+            }
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "YEKUSD worker unavailable"
+            );
+
+        }
+
+
+        const text =
+            await response.text();
+
+
+        const value =
+            text.trim();
+
+
+        if (value) {
+
+            safeText(
+                "yekusd",
+                value
+            );
+
+
+            saveYekusdPrice(
+                value
+            );
+
+        }
+
+    }
+
+
+    catch(error) {
+
+        const cached =
+            loadCachedYekusdPrice();
+
+
+        safeText(
+            "yekusd",
+            cached || "-"
+        );
+
+    }
+
+}
+
 
 /* =====================================================
    USD TXT PRICE
@@ -5495,7 +5588,6 @@ if (cachedAverage !== null) {
 
 }
 
-
 /* =====================================================
    LOAD DATA
 ===================================================== */
@@ -5515,15 +5607,18 @@ async function loadDashboardData() {
         (async () => {
 
 
-	    await loadUsdTxt();
+        await Promise.all([
+            loadUsdTxt(),
+            loadYekusd()
+        ]);
 
-            let data =
-                loadCachedDashboardData();
+
+        let data =
+            loadCachedDashboardData();
 
 
-            let usingCachedData =
-                Boolean(data);
-
+        let usingCachedData =
+            Boolean(data);
 
             /* =================================================
                DATA.JSON
