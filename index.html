@@ -2538,8 +2538,16 @@ YEKUSD_PRICE:
 
 };
 
+ /* =====================================================
+    YEKUSD PRICE
+    ONLINE / OFFLINE STATUS
+ ===================================================== */
+
+let yekusdOnline = false;
+
+
 /* =====================================================
-   YEKUSD PRICE
+   SAVE YEKUSD PRICE
 ===================================================== */
 
 function saveYekusdPrice(value) {
@@ -2552,6 +2560,10 @@ function saveYekusdPrice(value) {
 }
 
 
+/* =====================================================
+   LOAD CACHED YEKUSD PRICE
+===================================================== */
+
 function loadCachedYekusdPrice() {
 
     return localStorage.getItem(
@@ -2561,17 +2573,49 @@ function loadCachedYekusdPrice() {
 }
 
 
+/* =====================================================
+   UPDATE YEKUSD CONNECTION COLOR
+===================================================== */
+
+function updateYekusdConnectionColor(
+    online
+) {
+
+    const element =
+        $("yekusd");
+
+    if (!element) {
+        return;
+    }
+
+    element.classList.toggle(
+        "market-price-offline",
+        !online
+    );
+
+}
+
+
+/* =====================================================
+   LOAD YEKUSD
+===================================================== */
+
 async function loadYekusd() {
 
     try {
 
-        const response = await fetch(
-            "https://yekusd-rateusd.mimabdibcc.workers.dev/",
-            {
-                cache: "no-store"
-            }
-        );
+        const response =
+            await fetch(
+                "https://yekusd-rateusd.mimabdibcc.workers.dev/",
+                {
+                    cache: "no-store"
+                }
+            );
 
+
+        /* =============================================
+           HTTP ERROR
+        ============================================= */
 
         if (!response.ok) {
 
@@ -2582,6 +2626,10 @@ async function loadYekusd() {
         }
 
 
+        /* =============================================
+           READ RESPONSE
+        ============================================= */
+
         const text =
             await response.text();
 
@@ -2590,24 +2638,55 @@ async function loadYekusd() {
             text.trim();
 
 
-        if (value) {
+        /* =============================================
+           INVALID RESPONSE
+        ============================================= */
 
-            safeText(
-                "yekusd",
-                value
-            );
+        if (!value) {
 
-
-            saveYekusdPrice(
-                value
+            throw new Error(
+                "YEKUSD empty response"
             );
 
         }
 
+
+        /* =============================================
+           ONLINE
+        ============================================= */
+
+        safeText(
+            "yekusd",
+            value
+        );
+
+
+        saveYekusdPrice(
+            value
+        );
+
+
+        yekusdOnline =
+            true;
+
+
+        updateYekusdConnectionColor(
+            true
+        );
+
+
     }
 
-
     catch(error) {
+
+
+        /* =============================================
+           OFFLINE
+        ============================================= */
+
+        yekusdOnline =
+            false;
+
 
         const cached =
             loadCachedYekusdPrice();
@@ -2618,13 +2697,31 @@ async function loadYekusd() {
             cached || "-"
         );
 
+
+        updateYekusdConnectionColor(
+            false
+        );
+
+
+        console.warn(
+            "YEKUSD Offline:",
+            error
+        );
+
     }
 
 }
 
+ /* =====================================================
+    USD TXT PRICE
+    ONLINE / OFFLINE STATUS
+ ===================================================== */
+
+let usdTxtOnline = false;
+
 
 /* =====================================================
-   USD TXT PRICE
+   SAVE USD TXT PRICE
 ===================================================== */
 
 function saveUsdTxtPrice(value) {
@@ -2637,6 +2734,10 @@ function saveUsdTxtPrice(value) {
 }
 
 
+/* =====================================================
+   LOAD CACHED USD TXT PRICE
+===================================================== */
+
 function loadCachedUsdTxtPrice() {
 
     return localStorage.getItem(
@@ -2646,17 +2747,49 @@ function loadCachedUsdTxtPrice() {
 }
 
 
+/* =====================================================
+   UPDATE USD TXT CONNECTION COLOR
+===================================================== */
+
+function updateUsdTxtConnectionColor(
+    online
+) {
+
+    const element =
+        $("usdTxtPrice");
+
+    if (!element) {
+        return;
+    }
+
+    element.classList.toggle(
+        "market-price-offline",
+        !online
+    );
+
+}
+
+
+/* =====================================================
+   LOAD USD TXT
+===================================================== */
+
 async function loadUsdTxt() {
 
     try {
 
-        const response = await fetch(
-            "https://usdd.mimabdibcc.workers.dev/",
-            {
-                cache: "no-store"
-            }
-        );
+        const response =
+            await fetch(
+                "https://usdd.mimabdibcc.workers.dev/",
+                {
+                    cache: "no-store"
+                }
+            );
 
+
+        /* =============================================
+           HTTP ERROR
+        ============================================= */
 
         if (!response.ok) {
 
@@ -2667,6 +2800,10 @@ async function loadUsdTxt() {
         }
 
 
+        /* =============================================
+           READ RESPONSE
+        ============================================= */
+
         const text =
             await response.text();
 
@@ -2675,24 +2812,55 @@ async function loadUsdTxt() {
             text.trim();
 
 
-        if (value) {
+        /* =============================================
+           INVALID RESPONSE
+        ============================================= */
 
-            safeText(
-                "usdTxtPrice",
-                value
-            );
+        if (!value) {
 
-
-            saveUsdTxtPrice(
-                value
+            throw new Error(
+                "USD empty response"
             );
 
         }
 
+
+        /* =============================================
+           ONLINE
+        ============================================= */
+
+        safeText(
+            "usdTxtPrice",
+            value
+        );
+
+
+        saveUsdTxtPrice(
+            value
+        );
+
+
+        usdTxtOnline =
+            true;
+
+
+        updateUsdTxtConnectionColor(
+            true
+        );
+
+
     }
 
-
     catch(error) {
+
+
+        /* =============================================
+           OFFLINE
+        ============================================= */
+
+        usdTxtOnline =
+            false;
+
 
         const cached =
             loadCachedUsdTxtPrice();
@@ -2703,10 +2871,20 @@ async function loadUsdTxt() {
             cached || "-"
         );
 
+
+        updateUsdTxtConnectionColor(
+            false
+        );
+
+
+        console.warn(
+            "USD TXT Offline:",
+            error
+        );
+
     }
 
 }
-
 /* =====================================================
    MARKET PRICE CONNECTION COLORS
    NOBITEX + EXIR + BITPIN
