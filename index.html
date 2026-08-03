@@ -1319,6 +1319,7 @@ h1 {
 }
 
 
+}
 </style>
 
 </head>
@@ -4686,31 +4687,6 @@ function getLastPeriods(
 }
 
 
-
-function getTop6HighestPricePurchases(
-    transactions
-) {
-    return transactions
-        .filter(
-            transaction =>
-                transaction &&
-                transaction.type === "buy"
-        )
-        .slice()
-        .sort(
-            (a, b) =>
-                Number(b.price) -
-                Number(a.price)
-        )
-        .slice(0, 6);
-}
-
-
-const sixTransactions =
-    getTop6HighestPricePurchases(
-        transactions
-    );
-
 function getLastPeriod(
 
     transactions
@@ -4743,11 +4719,39 @@ function getLastPeriod(
 
 }
 
+/* =====================================================
+   TOP 6 HIGHEST PRICE PURCHASES
+===================================================== */
 
+function getTop6HighestPricePurchases(
+    transactions
+) {
 
+    return transactions
 
+        .filter(
+            transaction =>
+                transaction.type === "buy"
+        )
 
+        .slice()
 
+        .sort(
+            (
+                a,
+                b
+            ) =>
+                Number(b.price)
+                -
+                Number(a.price)
+        )
+
+        .slice(
+            0,
+            6
+        );
+
+}
 /* =====================================================
    DISPLAY SECTION
 ===================================================== */
@@ -6138,6 +6142,431 @@ async function loadDashboardData() {
             }
 
 
+/* =================================================
+   UPDATE MARKET PRICE CONNECTION COLORS
+================================================= */
+
+updateMarketPriceConnectionColors(
+    nobitexOnline,
+    exirOnline,
+    bitpinOnline
+);
+
+            /* =================================================
+               TODAY
+            ================================================= */
+
+            const today =
+                getTodayJalali();
+
+
+            safeText(
+                "today",
+                today
+            );
+
+
+            /* =================================================
+               MARKET PRICES
+            ================================================= */
+
+            safeText(
+                "currentPrice",
+                formatNumber(
+                    currentPrice
+                )
+            );
+
+
+            safeText(
+                "exirPrice",
+                formatNumber(
+                    exirPrice
+                )
+            );
+
+
+            safeText(
+                "bitpinPrice",
+                formatNumber(
+                    bitpinPrice
+                )
+            );
+
+
+            safeText(
+                "bankRate",
+                annualBankRate +
+                "%"
+            );
+
+
+            const averageLivePrice =
+    calculateAverageLivePrice(
+
+        currentPrice,
+
+        exirPrice,
+
+        bitpinPrice,
+
+        nobitexOnline,
+
+        exirOnline,
+
+        bitpinOnline
+
+    );
+
+
+            if (
+                averageLivePrice === null
+            ) {
+
+                throw new Error(
+                    "No valid live market price is available."
+                );
+
+            }
+
+
+            showLivePriceErrors(
+                priceErrors
+            );
+
+
+            const isOffline =
+                !navigator.onLine
+                ||
+                usingCachedData;
+
+
+            if (isOffline) {
+
+                const cachedTime =
+                    getCachedPriceTime();
+
+
+                let message =
+                    "Offline Mode • Showing Cached Data";
+
+
+                if (
+                    cachedTime
+                ) {
+
+                    message +=
+                        " • Saved: " +
+                        cachedTime;
+
+                }
+
+
+                showConnectionStatus(
+                    true,
+                    message
+                );
+
+            }
+
+            else {
+
+                showConnectionStatus(
+                    false,
+                    "Online • Live Data"
+                );
+
+            }
+
+
+            const updateTime =
+                new Date()
+                    .toLocaleTimeString(
+                        "en-US",
+                        {
+                            hour:
+                                "2-digit",
+                            minute:
+                                "2-digit",
+                            second:
+                                "2-digit",
+                            hour12:
+                                false
+                        }
+                    );
+
+
+            safeText(
+                "updateTime",
+                "Last Update: " +
+                updateTime
+            );
+
+
+            /* =================================================
+               PREVIOUS PRICES
+            ================================================= */
+
+            const previousNobitex =
+                Number(
+                    sessionStorage.getItem(
+                        "previousNobitexPrice"
+                    )
+                );
+
+
+            const previousExir =
+                Number(
+                    sessionStorage.getItem(
+                        "previousExirPrice"
+                    )
+                );
+
+
+            const previousBitpin =
+                Number(
+                    sessionStorage.getItem(
+                        "previousBitpinPrice"
+                    )
+                );
+
+
+            setPriceArrow(
+                "topPriceArrow",
+                currentPrice,
+                Number.isFinite(
+                    previousNobitex
+                )
+                    ? previousNobitex
+                    : null
+            );
+
+
+            setPriceArrow(
+                "exirPriceArrow",
+                exirPrice,
+                Number.isFinite(
+                    previousExir
+                )
+                    ? previousExir
+                    : null
+            );
+
+
+            setPriceArrow(
+                "bitpinPriceArrow",
+                bitpinPrice,
+                Number.isFinite(
+                    previousBitpin
+                )
+                    ? previousBitpin
+                    : null
+            );
+
+
+            try {
+
+                sessionStorage.setItem(
+                    "previousNobitexPrice",
+                    String(
+                        currentPrice
+                    )
+                );
+
+                sessionStorage.setItem(
+                    "previousExirPrice",
+                    String(
+                        exirPrice
+                    )
+                );
+
+                sessionStorage.setItem(
+                    "previousBitpinPrice",
+                    String(
+                        bitpinPrice
+                    )
+                );
+
+            }
+
+            catch (error) {}
+
+
+            /* =================================================
+               TRANSACTIONS
+            ================================================= */
+
+            const transactions =
+                Array.isArray(
+                    data.transactions
+                )
+                    ?
+                    data.transactions
+                        .filter(
+                            transaction =>
+                                transaction
+                                &&
+                                (
+                                    transaction.type ===
+                                    "buy"
+                                    ||
+                                    transaction.type ===
+                                    "sell"
+                                )
+                        )
+                        .slice()
+                        .sort(
+                            (
+                                a,
+                                b
+                            ) =>
+                                dateNumber(
+                                    a.date
+                                )
+                                -
+                                dateNumber(
+                                    b.date
+                                )
+                        )
+                    :
+                    [];
+
+
+            const overall =
+                calculatePortfolio(
+                    transactions,
+                    averageLivePrice,
+                    today,
+                    annualBankRate
+                );
+
+
+            displaySection(
+                overall,
+                "overall",
+                averageLivePrice
+            );
+
+
+const sixTransactions =
+    getTop6HighestPricePurchases(
+        transactions
+    );
+
+
+            const six =
+                calculatePortfolio(
+                    sixTransactions,
+                    averageLivePrice,
+                    today,
+                    annualBankRate
+                );
+
+
+            displaySection(
+                six,
+                "six",
+                averageLivePrice
+            );
+
+
+            const lastTransactions =
+                getLastPeriod(
+                    transactions
+                );
+
+
+            const last =
+                calculatePortfolio(
+                    lastTransactions,
+                    averageLivePrice,
+                    today,
+                    annualBankRate
+                );
+
+
+            displaySection(
+                last,
+                "last",
+                averageLivePrice
+            );
+
+
+            displayLastAction(
+                lastTransactions
+            );
+
+
+            safeText(
+                "lastTrades",
+                last.buyCount
+                +
+                " IN  •  "
+                +
+                last.sellCount
+                +
+                " OUT"
+            );
+
+
+            try {
+
+                sessionStorage.setItem(
+                    "previousAverageLivePrice",
+                    String(
+                        averageLivePrice
+                    )
+                );
+
+            }
+
+            catch (error) {}
+
+
+            const loading =
+                $("loading");
+
+
+            if (loading) {
+
+                loading.style.display =
+                    "none";
+
+            }
+
+
+            const dashboard =
+                $("dashboard");
+
+
+            if (dashboard) {
+
+                dashboard.style.display =
+                    "grid";
+
+            }
+
+        })();
+
+
+    try {
+
+        return await dashboardLoadInProgress;
+
+    }
+
+    finally {
+
+        dashboardLoadInProgress =
+            null;
+
+    }
+
+}
+
+/* =====================================================
+   AUTO REFRESH
+===================================================== */
 
 let countdownTimer =
 
