@@ -1319,7 +1319,6 @@ h1 {
 }
 
 
-}
 </style>
 
 </head>
@@ -1843,7 +1842,7 @@ h1 {
 
 
     <!-- =================================================
-         LAST 6 PERIODS or Top Buy Prices
+         LAST 6 PERIODS
     ================================================= -->
 
     <div class="card">
@@ -1851,12 +1850,12 @@ h1 {
         <div class="card-header">
 
             <div class="card-title">
-                Top Buy Prices
+                Last 6 Periods
             </div>
 
             <div
                 class="trade-count"
-                id="topBuyTrades">
+                id="sixTrades">
 
                 -
 
@@ -1867,7 +1866,7 @@ h1 {
 
         <div
             class="main-price"
-            id="topBuyMainPrice">
+            id="sixMainPrice">
 
             <div class="main-price-values">
 
@@ -1879,7 +1878,7 @@ h1 {
 
                     <div
                         class="main-price-number"
-                        id="topBuyAdjusted">
+                        id="sixAdjusted">
 
                         -
 
@@ -1898,7 +1897,7 @@ h1 {
 
                         <div
                             class="live-main-number"
-                            id="topBuyLive">
+                            id="sixLive">
 
                             -
 
@@ -1906,7 +1905,7 @@ h1 {
 
                         <div
                             class="price-arrow arrow-flat"
-                            id="topBuyPriceArrow">
+                            id="sixPriceArrow">
 
                             →
 
@@ -1933,7 +1932,7 @@ h1 {
 
                     <div
                         class="pl-value"
-                        id="topBuyPLPurchase">
+                        id="sixPLPurchase">
 
                         -
 
@@ -1954,7 +1953,7 @@ h1 {
 
                     <div
                         class="pl-value"
-                        id="topBuyPLBank">
+                        id="sixPLBank">
 
                         -
 
@@ -1979,7 +1978,7 @@ h1 {
 
                     <div
                         class="pl-value"
-                        id="topBuyUnrealizedPurchase">
+                        id="sixUnrealizedPurchase">
 
                         -
 
@@ -2000,7 +1999,7 @@ h1 {
 
                     <div
                         class="pl-value"
-                        id="topBuyUnrealizedBank">
+                        id="sixUnrealizedBank">
 
                         -
 
@@ -2013,7 +2012,7 @@ h1 {
 
             <div
                 class="result"
-                id="topBuyResult">
+                id="sixResult">
 
                 -
 
@@ -2032,7 +2031,7 @@ h1 {
 
                 <div
                     class="compare-value"
-                    id="topBuyAverage">
+                    id="sixAverage">
 
                     -
 
@@ -2049,7 +2048,7 @@ h1 {
 
                 <div
                     class="compare-value"
-                    id="topBuyPaid">
+                    id="sixPaid">
 
                     -
 
@@ -2070,7 +2069,7 @@ h1 {
 
                 <div
                     class="metric-value"
-                    id="topBuyQuantity">
+                    id="sixQuantity">
 
                     -
 
@@ -2087,7 +2086,7 @@ h1 {
 
                 <div
                     class="metric-value"
-                    id="topBuyValue">
+                    id="sixValue">
 
                     -
 
@@ -2106,7 +2105,7 @@ h1 {
 
                     <div
                         class="realized-value"
-                        id="topBuyRealizedPurchase">
+                        id="sixRealizedPurchase">
 
                         -
 
@@ -2123,7 +2122,7 @@ h1 {
 
                     <div
                         class="realized-value"
-                        id="topBuyRealizedBank">
+                        id="sixRealizedBank">
 
                         -
 
@@ -2142,7 +2141,7 @@ h1 {
 
                 <div
                     class="metric-value"
-                    id="topBuyBank">
+                    id="sixBank">
 
                     -
 
@@ -2485,12 +2484,6 @@ h1 {
 
 
 <script>
-
-/* =====================================================
-   TOP BUY SETTINGS
-===================================================== */
-
-const TOP_BUY_COUNT = 4;
 
 /* =====================================================
    HELPERS
@@ -4693,6 +4686,31 @@ function getLastPeriods(
 }
 
 
+
+function getTop6HighestPricePurchases(
+    transactions
+) {
+    return transactions
+        .filter(
+            transaction =>
+                transaction &&
+                transaction.type === "buy"
+        )
+        .slice()
+        .sort(
+            (a, b) =>
+                Number(b.price) -
+                Number(a.price)
+        )
+        .slice(0, 6);
+}
+
+
+const sixTransactions =
+    getTop6HighestPricePurchases(
+        transactions
+    );
+
 function getLastPeriod(
 
     transactions
@@ -4724,6 +4742,10 @@ function getLastPeriod(
     ].transactions;
 
 }
+
+
+
+
 
 
 /* =====================================================
@@ -6116,496 +6138,6 @@ async function loadDashboardData() {
             }
 
 
-/* =================================================
-   UPDATE MARKET PRICE CONNECTION COLORS
-================================================= */
-
-updateMarketPriceConnectionColors(
-    nobitexOnline,
-    exirOnline,
-    bitpinOnline
-);
-
-            /* =================================================
-               TODAY
-            ================================================= */
-
-            const today =
-                getTodayJalali();
-
-
-            safeText(
-                "today",
-                today
-            );
-
-
-            /* =================================================
-               MARKET PRICES
-            ================================================= */
-
-            safeText(
-                "currentPrice",
-                formatNumber(
-                    currentPrice
-                )
-            );
-
-
-            safeText(
-                "exirPrice",
-                formatNumber(
-                    exirPrice
-                )
-            );
-
-
-            safeText(
-                "bitpinPrice",
-                formatNumber(
-                    bitpinPrice
-                )
-            );
-
-
-            safeText(
-                "bankRate",
-                annualBankRate +
-                "%"
-            );
-
-
-            const averageLivePrice =
-    calculateAverageLivePrice(
-
-        currentPrice,
-
-        exirPrice,
-
-        bitpinPrice,
-
-        nobitexOnline,
-
-        exirOnline,
-
-        bitpinOnline
-
-    );
-
-
-            if (
-                averageLivePrice === null
-            ) {
-
-                throw new Error(
-                    "No valid live market price is available."
-                );
-
-            }
-
-
-            showLivePriceErrors(
-                priceErrors
-            );
-
-
-            const isOffline =
-                !navigator.onLine
-                ||
-                usingCachedData;
-
-
-            if (isOffline) {
-
-                const cachedTime =
-                    getCachedPriceTime();
-
-
-                let message =
-                    "Offline Mode • Showing Cached Data";
-
-
-                if (
-                    cachedTime
-                ) {
-
-                    message +=
-                        " • Saved: " +
-                        cachedTime;
-
-                }
-
-
-                showConnectionStatus(
-                    true,
-                    message
-                );
-
-            }
-
-            else {
-
-                showConnectionStatus(
-                    false,
-                    "Online • Live Data"
-                );
-
-            }
-
-
-            const updateTime =
-                new Date()
-                    .toLocaleTimeString(
-                        "en-US",
-                        {
-                            hour:
-                                "2-digit",
-                            minute:
-                                "2-digit",
-                            second:
-                                "2-digit",
-                            hour12:
-                                false
-                        }
-                    );
-
-
-            safeText(
-                "updateTime",
-                "Last Update: " +
-                updateTime
-            );
-
-
-            /* =================================================
-               PREVIOUS PRICES
-            ================================================= */
-
-            const previousNobitex =
-                Number(
-                    sessionStorage.getItem(
-                        "previousNobitexPrice"
-                    )
-                );
-
-
-            const previousExir =
-                Number(
-                    sessionStorage.getItem(
-                        "previousExirPrice"
-                    )
-                );
-
-
-            const previousBitpin =
-                Number(
-                    sessionStorage.getItem(
-                        "previousBitpinPrice"
-                    )
-                );
-
-
-            setPriceArrow(
-                "topPriceArrow",
-                currentPrice,
-                Number.isFinite(
-                    previousNobitex
-                )
-                    ? previousNobitex
-                    : null
-            );
-
-
-            setPriceArrow(
-                "exirPriceArrow",
-                exirPrice,
-                Number.isFinite(
-                    previousExir
-                )
-                    ? previousExir
-                    : null
-            );
-
-
-            setPriceArrow(
-                "bitpinPriceArrow",
-                bitpinPrice,
-                Number.isFinite(
-                    previousBitpin
-                )
-                    ? previousBitpin
-                    : null
-            );
-
-
-            try {
-
-                sessionStorage.setItem(
-                    "previousNobitexPrice",
-                    String(
-                        currentPrice
-                    )
-                );
-
-                sessionStorage.setItem(
-                    "previousExirPrice",
-                    String(
-                        exirPrice
-                    )
-                );
-
-                sessionStorage.setItem(
-                    "previousBitpinPrice",
-                    String(
-                        bitpinPrice
-                    )
-                );
-
-            }
-
-            catch (error) {}
-
-
-            /* =================================================
-               TRANSACTIONS
-            ================================================= */
-
-            const transactions =
-                Array.isArray(
-                    data.transactions
-                )
-                    ?
-                    data.transactions
-                        .filter(
-                            transaction =>
-                                transaction
-                                &&
-                                (
-                                    transaction.type ===
-                                    "buy"
-                                    ||
-                                    transaction.type ===
-                                    "sell"
-                                )
-                        )
-                        .slice()
-                        .sort(
-                            (
-                                a,
-                                b
-                            ) =>
-                                dateNumber(
-                                    a.date
-                                )
-                                -
-                                dateNumber(
-                                    b.date
-                                )
-                        )
-                    :
-                    [];
-
-
-            const overall =
-                calculatePortfolio(
-                    transactions,
-                    averageLivePrice,
-                    today,
-                    annualBankRate
-                );
-
-
-            displaySection(
-                overall,
-                "overall",
-                averageLivePrice
-            );
-
-
-            const sixTransactions =
-                getLastPeriods(
-                    transactions,
-                    6
-                );
-
-
-            const six =
-                calculatePortfolio(
-                    sixTransactions,
-                    averageLivePrice,
-                    today,
-                    annualBankRate
-                );
-
-
-            displaySection(
-                six,
-                "six",
-                averageLivePrice
-            );
-
-/* =====================================================
-   TOP BUY PRICES
-===================================================== */
-
-const topBuyTransactions =
-    getTopBuyTrades(
-        transactions,
-        TOP_BUY_COUNT
-    );
-
-const topBuy =
-    calculatePortfolio(
-        topBuyTransactions,
-        averageLivePrice,
-        today,
-        annualBankRate
-    );
-
-displaySection(
-    topBuy,
-    "topBuy",
-    averageLivePrice
-);
-
-
-
-
-
-            const lastTransactions =
-                getLastPeriod(
-                    transactions
-                );
-
-
-            const last =
-                calculatePortfolio(
-                    lastTransactions,
-                    averageLivePrice,
-                    today,
-                    annualBankRate
-                );
-
-
-            displaySection(
-                last,
-                "last",
-                averageLivePrice
-            );
-
-
-            displayLastAction(
-                lastTransactions
-            );
-
-
-            safeText(
-                "lastTrades",
-                last.buyCount
-                +
-                " IN  •  "
-                +
-                last.sellCount
-                +
-                " OUT"
-            );
-
-
-            try {
-
-                sessionStorage.setItem(
-                    "previousAverageLivePrice",
-                    String(
-                        averageLivePrice
-                    )
-                );
-
-            }
-
-            catch (error) {}
-
-
-            const loading =
-                $("loading");
-
-
-            if (loading) {
-
-                loading.style.display =
-                    "none";
-
-            }
-
-
-            const dashboard =
-                $("dashboard");
-
-
-            if (dashboard) {
-
-                dashboard.style.display =
-                    "grid";
-
-            }
-
-        })();
-
-
-    try {
-
-        return await dashboardLoadInProgress;
-
-    }
-
-    finally {
-
-        dashboardLoadInProgress =
-            null;
-
-    }
-
-}
-
-
-/* =====================================================
-   SELECT TOP BUY TRADES
-===================================================== */
-
-function getTopBuyTrades(
-    transactions,
-    count = TOP_BUY_COUNT
-) {
-
-    const buyTransactions =
-        transactions.filter(
-            t =>
-                t.type === "BUY"
-        );
-
-    if (buyTransactions.length === 0)
-        return [];
-
-    const sorted =
-        [...buyTransactions].sort(
-            (a, b) =>
-                b.price - a.price
-        );
-
-    if (sorted.length <= count)
-        return sorted;
-
-    const borderPrice =
-        sorted[count - 1].price;
-
-    return sorted.filter(
-        t =>
-            t.price >= borderPrice
-    );
-
-}
-/* =====================================================
-   AUTO REFRESH
-===================================================== */
 
 let countdownTimer =
 
