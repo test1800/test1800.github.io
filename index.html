@@ -1851,7 +1851,7 @@ h1 {
         <div class="card-header">
 
             <div class="card-title">
-                Top 6 Purchases
+                 Top <span id="topPurchasesTitle">6</span> Purchases
             </div>
 
             <div
@@ -2485,6 +2485,13 @@ h1 {
 
 
 <script>
+
+
+/* =====================================================
+   TOP PURCHASES
+===================================================== */
+const TOP_PURCHASES_COUNT = 6;
+
 
 /* =====================================================
    HELPERS
@@ -4748,7 +4755,7 @@ function getTop6HighestPricePurchases(
 
         .slice(
             0,
-            6
+            TOP_PURCHASES_COUNT
         );
 
 }
@@ -6449,9 +6456,13 @@ updateMarketPriceConnectionColors(
 
 
 const sixTransactions =
-    getTop6HighestPricePurchases(
+    getTopHighestPricePurchases(
         transactions
-    );
+        );
+safeText(
+    "topPurchasesTitle",
+    TOP_PURCHASES_COUNT
+	);
 
 
             const six =
