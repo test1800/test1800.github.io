@@ -1323,20 +1323,6 @@ h1 {
    CRYPTO PRICE CARD
 ===================================================== */
 
-	.crypto-card {
-    background: rgba(255, 255, 255, 0.035);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-}
-
-.crypto-price {
-    text-shadow:
-        0 0 5px rgba(255, 255, 255, 0.35),
-        0 0 12px rgba(255, 255, 255, 0.18);
-}
-
-	
-
 .crypto-card {
 
     min-width: 125px;
@@ -1347,27 +1333,28 @@ h1 {
 
     border-radius: 12px;
 
-    text-align: right;
+    /* Center content */
+    text-align: center;
 
+    /* Subtle background - close to main background */
     background:
-
         linear-gradient(
             145deg,
-            rgba(255,255,255,.075),
-            rgba(255,255,255,.025)
+            rgba(255,255,255,.035),
+            rgba(255,255,255,.018)
         );
 
     border:
         1px solid
-        rgba(255,255,255,.10);
+        rgba(255,255,255,.08);
 
     box-shadow:
 
-        0 8px 22px
-        rgba(0,0,0,.28),
+        0 8px 24px
+        rgba(0,0,0,.18),
 
         inset 0 1px 0
-        rgba(255,255,255,.05);
+        rgba(255,255,255,.035);
 
     backdrop-filter:
         blur(12px);
@@ -1376,9 +1363,7 @@ h1 {
         blur(12px);
 
     transition:
-
         transform .2s ease,
-
         box-shadow .2s ease;
 
 }
@@ -1392,13 +1377,17 @@ h1 {
     box-shadow:
 
         0 12px 28px
-        rgba(0,0,0,.35),
+        rgba(0,0,0,.25),
 
         inset 0 1px 0
-        rgba(255,255,255,.07);
+        rgba(255,255,255,.05);
 
 }
 
+
+/* =====================================================
+   CRYPTO LABEL
+===================================================== */
 
 .crypto-label {
 
@@ -1417,8 +1406,15 @@ h1 {
     margin-bottom:
         2px;
 
+    text-align:
+        center;
+
 }
 
+
+/* =====================================================
+   CRYPTO VALUE
+===================================================== */
 
 .crypto-value {
 
@@ -1437,7 +1433,17 @@ h1 {
     white-space:
         nowrap;
 
+    text-align:
+        center;
+
+    /* Text Glow */
     text-shadow:
+
+        0 0 5px
+        rgba(255,255,255,.35),
+
+        0 0 12px
+        rgba(255,255,255,.18),
 
         0 2px 8px
         rgba(0,0,0,.35);
