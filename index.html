@@ -1843,7 +1843,7 @@ h1 {
 
 
     <!-- =================================================
-         LAST 6 PERIODS
+         LAST 6 PERIODS or Top Buy Prices
     ================================================= -->
 
     <div class="card">
@@ -1851,12 +1851,12 @@ h1 {
         <div class="card-header">
 
             <div class="card-title">
-                Last 6 Periods
+                Top Buy Prices
             </div>
 
             <div
                 class="trade-count"
-                id="sixTrades">
+                id="topBuyTrades">
 
                 -
 
@@ -1867,7 +1867,7 @@ h1 {
 
         <div
             class="main-price"
-            id="sixMainPrice">
+            id="topBuyMainPrice">
 
             <div class="main-price-values">
 
@@ -1879,7 +1879,7 @@ h1 {
 
                     <div
                         class="main-price-number"
-                        id="sixAdjusted">
+                        id="topBuyAdjusted">
 
                         -
 
@@ -1898,7 +1898,7 @@ h1 {
 
                         <div
                             class="live-main-number"
-                            id="sixLive">
+                            id="topBuyLive">
 
                             -
 
@@ -1906,7 +1906,7 @@ h1 {
 
                         <div
                             class="price-arrow arrow-flat"
-                            id="sixPriceArrow">
+                            id="topBuyPriceArrow">
 
                             →
 
@@ -1933,7 +1933,7 @@ h1 {
 
                     <div
                         class="pl-value"
-                        id="sixPLPurchase">
+                        id="topBuyPLPurchase">
 
                         -
 
@@ -1954,7 +1954,7 @@ h1 {
 
                     <div
                         class="pl-value"
-                        id="sixPLBank">
+                        id="topBuyPLBank">
 
                         -
 
@@ -1979,7 +1979,7 @@ h1 {
 
                     <div
                         class="pl-value"
-                        id="sixUnrealizedPurchase">
+                        id="topBuyUnrealizedPurchase">
 
                         -
 
@@ -2000,7 +2000,7 @@ h1 {
 
                     <div
                         class="pl-value"
-                        id="sixUnrealizedBank">
+                        id="topBuyUnrealizedBank">
 
                         -
 
@@ -2013,7 +2013,7 @@ h1 {
 
             <div
                 class="result"
-                id="sixResult">
+                id="topBuyResult">
 
                 -
 
@@ -2032,7 +2032,7 @@ h1 {
 
                 <div
                     class="compare-value"
-                    id="sixAverage">
+                    id="topBuyAverage">
 
                     -
 
@@ -2049,7 +2049,7 @@ h1 {
 
                 <div
                     class="compare-value"
-                    id="sixPaid">
+                    id="topBuyPaid">
 
                     -
 
@@ -2070,7 +2070,7 @@ h1 {
 
                 <div
                     class="metric-value"
-                    id="sixQuantity">
+                    id="topBuyQuantity">
 
                     -
 
@@ -2087,7 +2087,7 @@ h1 {
 
                 <div
                     class="metric-value"
-                    id="sixValue">
+                    id="topBuyValue">
 
                     -
 
@@ -2106,7 +2106,7 @@ h1 {
 
                     <div
                         class="realized-value"
-                        id="sixRealizedPurchase">
+                        id="topBuyRealizedPurchase">
 
                         -
 
@@ -2123,7 +2123,7 @@ h1 {
 
                     <div
                         class="realized-value"
-                        id="sixRealizedBank">
+                        id="topBuyRealizedBank">
 
                         -
 
@@ -2142,7 +2142,7 @@ h1 {
 
                 <div
                     class="metric-value"
-                    id="sixBank">
+                    id="topBuyBank">
 
                     -
 
@@ -2485,6 +2485,12 @@ h1 {
 
 
 <script>
+
+/* =====================================================
+   TOP BUY SETTINGS
+===================================================== */
+
+const TOP_BUY_COUNT = 4;
 
 /* =====================================================
    HELPERS
@@ -6438,6 +6444,33 @@ updateMarketPriceConnectionColors(
                 averageLivePrice
             );
 
+/* =====================================================
+   TOP BUY PRICES
+===================================================== */
+
+const topBuyTransactions =
+    getTopBuyTrades(
+        transactions,
+        TOP_BUY_COUNT
+    );
+
+const topBuy =
+    calculatePortfolio(
+        topBuyTransactions,
+        averageLivePrice,
+        today,
+        annualBankRate
+    );
+
+displaySection(
+    topBuy,
+    "topBuy",
+    averageLivePrice
+);
+
+
+
+
 
             const lastTransactions =
                 getLastPeriod(
@@ -6533,6 +6566,43 @@ updateMarketPriceConnectionColors(
 
 }
 
+
+/* =====================================================
+   SELECT TOP BUY TRADES
+===================================================== */
+
+function getTopBuyTrades(
+    transactions,
+    count = TOP_BUY_COUNT
+) {
+
+    const buyTransactions =
+        transactions.filter(
+            t =>
+                t.type === "BUY"
+        );
+
+    if (buyTransactions.length === 0)
+        return [];
+
+    const sorted =
+        [...buyTransactions].sort(
+            (a, b) =>
+                b.price - a.price
+        );
+
+    if (sorted.length <= count)
+        return sorted;
+
+    const borderPrice =
+        sorted[count - 1].price;
+
+    return sorted.filter(
+        t =>
+            t.price >= borderPrice
+    );
+
+}
 /* =====================================================
    AUTO REFRESH
 ===================================================== */
