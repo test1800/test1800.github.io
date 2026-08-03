@@ -1309,7 +1309,7 @@ h1 {
 				}
 
 
-	/* =====================================================
+/* =====================================================
    USD TXT + YEKUSD OFFLINE COLOR
 ===================================================== */
 
@@ -1318,6 +1318,164 @@ h1 {
     opacity: 0.85;
 }
 
+
+/* =====================================================
+   CRYPTO PRICE CARD
+===================================================== */
+
+.crypto-card {
+
+    min-width: 125px;
+
+    padding:
+        8px
+        13px;
+
+    border-radius: 12px;
+
+    text-align: right;
+
+    background:
+
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.075),
+            rgba(255,255,255,.025)
+        );
+
+    border:
+        1px solid
+        rgba(255,255,255,.10);
+
+    box-shadow:
+
+        0 8px 22px
+        rgba(0,0,0,.28),
+
+        inset 0 1px 0
+        rgba(255,255,255,.05);
+
+    backdrop-filter:
+        blur(12px);
+
+    -webkit-backdrop-filter:
+        blur(12px);
+
+    transition:
+
+        transform .2s ease,
+
+        box-shadow .2s ease;
+
+}
+
+
+.crypto-card:hover {
+
+    transform:
+        translateY(-1px);
+
+    box-shadow:
+
+        0 12px 28px
+        rgba(0,0,0,.35),
+
+        inset 0 1px 0
+        rgba(255,255,255,.07);
+
+}
+
+
+.crypto-label {
+
+    color:
+        #64748b;
+
+    font-size:
+        8px;
+
+    font-weight:
+        800;
+
+    letter-spacing:
+        1.2px;
+
+    margin-bottom:
+        2px;
+
+}
+
+
+.crypto-value {
+
+    color:
+        #e2e8f0;
+
+    font-size:
+        19px;
+
+    font-weight:
+        850;
+
+    line-height:
+        1.1;
+
+    white-space:
+        nowrap;
+
+    text-shadow:
+
+        0 2px 8px
+        rgba(0,0,0,.35);
+
+}
+
+
+/* =====================================================
+   CRYPTO OFFLINE
+===================================================== */
+
+.crypto-value.market-price-offline {
+
+    color:
+        #c76b55 !important;
+
+    opacity:
+        .85;
+
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width:650px) {
+
+    .header-top {
+
+        gap:
+            10px;
+
+    }
+
+    .crypto-card {
+
+        min-width:
+            105px;
+
+        padding:
+            7px
+            10px;
+
+    }
+
+    .crypto-value {
+
+        font-size:
+            16px;
+
+    }
 
 }
 </style>
@@ -1332,41 +1490,62 @@ h1 {
 
 <header>
 
-    <div class="header-top">
+<div class="header-top">
 
-        <div>
+    <div>
 
-            <h1>
-                Financial Dashboard
-            </h1>
+        <h1>
+            Financial Dashboard
+        </h1>
 
-            <div class="today">
+        <div class="today">
 
-                <span id="today">
-                    -
-                </span>
+            <span id="today">
+                -
+            </span>
 
-                <span
-                    class="update-time"
-                    id="updateTime">
+            <span
+                class="update-time"
+                id="updateTime">
 
-                    Last Update: -
+                Last Update: -
 
-                </span>
+            </span>
 
-                <span
-                    class="update-countdown"
-                    id="updateCountdown">
+            <span
+                class="update-countdown"
+                id="updateCountdown">
 
-                    10s
+                10s
 
-                </span>
-
-            </div>
+            </span>
 
         </div>
 
     </div>
+
+
+    <!-- CRYPTO PRICE -->
+
+    <div
+        class="crypto-card"
+        id="cryptoCard">
+
+        <div class="crypto-label">
+            CRYPTO
+        </div>
+
+        <div
+            class="crypto-value"
+            id="cryptoValue">
+
+            -
+
+        </div>
+
+    </div>
+
+</div>
 
 
     <!-- LIVE MARKET -->
@@ -5836,9 +6015,10 @@ async function loadDashboardData() {
 
 
         await Promise.all([
-            loadUsdTxt(),
-            loadYekusd()
-        ]);
+    loadUsdTxt(),
+    loadYekusd(),
+    loadCryptoValue()
+]);
 
 
         let data =
@@ -6666,7 +6846,114 @@ function startAutoRefresh() {
 
 }
 
+/* =====================================================
+   CRYPTO PRICE
+===================================================== */
 
+let cryptoOnline = false;
+
+
+async function loadCryptoValue() {
+
+    const element =
+        $("cryptoValue");
+
+
+    try {
+
+        const response =
+            await fetch(
+                "https://coin.rxw.workers.dev/",
+                {
+                    cache:
+                        "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Crypto worker unavailable"
+            );
+
+        }
+
+
+        const text =
+            await response.text();
+
+
+        const value =
+            Number(
+                text.trim()
+            );
+
+
+        if (
+            !Number.isFinite(value)
+        ) {
+
+            throw new Error(
+                "Invalid crypto value"
+            );
+
+        }
+
+
+        safeText(
+            "cryptoValue",
+            value.toLocaleString(
+                "en-US",
+                {
+                    minimumFractionDigits:
+                        2,
+
+                    maximumFractionDigits:
+                        2
+                }
+            )
+        );
+
+
+        cryptoOnline =
+            true;
+
+
+        if (element) {
+
+            element.classList.remove(
+                "market-price-offline"
+            );
+
+        }
+
+
+    }
+
+    catch (error) {
+
+        cryptoOnline =
+            false;
+
+
+        if (element) {
+
+            element.classList.add(
+                "market-price-offline"
+            );
+
+        }
+
+
+        console.warn(
+            "Crypto Price Offline:",
+            error
+        );
+
+    }
+
+}
 /* =====================================================
    ONLINE / OFFLINE
 ===================================================== */
