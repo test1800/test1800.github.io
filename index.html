@@ -1280,6 +1280,25 @@ h1 {
         display: none !important;
     }
 
+#cryptoCard{
+    display:block !important;
+    min-width:auto !important;
+    padding:0 !important;
+    margin:0 8px 0 0 !important;
+    background:transparent !important;
+    border:none !important;
+    box-shadow:none !important;
+    backdrop-filter:none !important;
+}
+
+#cryptoCard .crypto-label{
+    display:none !important;
+}
+
+#cryptoCard .crypto-value{
+    font-size:11px !important;
+}
+	
 }
 	/* =====================================================
    thin MODE
@@ -1541,25 +1560,8 @@ h1 {
 
     <!-- CRYPTO PRICE -->
 
-    <div
-        class="crypto-card"
-        id="cryptoCard">
 
-        <div class="crypto-label">
-            CRYPTO
-        </div>
 
-        <div
-            class="crypto-value"
-            id="cryptoValue">
-
-            -
-
-        </div>
-
-    </div>
-
-</div>
 
 
     <!-- LIVE MARKET -->
@@ -1581,6 +1583,13 @@ h1 {
     -
 </span>
 
+			<div class="crypto-card" id="cryptoCard">
+    <div class="crypto-label">CRYPTO</div>
+    <div class="crypto-value" id="cryptoValue">-</div>
+</div>
+
+
+			
             <span class="live-market-title">
                 Live Market
             </span>
