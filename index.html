@@ -6720,7 +6720,10 @@ updateMarketPriceConnectionColors(
                 averageLivePrice
             );
 
-
+  updateCardColor(
+    "overallMainPrice",
+    overall.plBank
+    );
 const sixTransactions =
     getTop6HighestPricePurchases(
         transactions
@@ -6746,6 +6749,10 @@ safeText(
                 averageLivePrice
             );
 
+updateCardColor(
+    "sixMainPrice",
+    six.plBank
+);
 
             const lastTransactions =
                 getLastPeriod(
@@ -6768,7 +6775,10 @@ safeText(
                 averageLivePrice
             );
 
-
+updateCardColor(
+    "lastMainPrice",
+    last.plBank
+);
             displayLastAction(
                 lastTransactions
             );
