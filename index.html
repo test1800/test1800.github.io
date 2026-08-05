@@ -1187,8 +1187,18 @@ h1 {
 /* =====================================================
    ULTRA COMPACT MODE
 ===================================================== */
-
+#cryptoMini{
+    display:none;
+}
 @media (max-height: 199px) {
+
+	    #cryptoMini{
+        display:inline;
+    }
+
+    #cryptoCard{
+        display:none !important;
+    }
 
     body > .container > header > *:not(.live-price) {
         display: none !important;
@@ -1580,7 +1590,12 @@ h1 {
     id="yekusd">
     -
 </span>
-
+<span
+    class="live-usd-value"
+    id="cryptoMini">
+    -
+</span>
+			
             <span class="live-market-title">
                 Live Market
             </span>
@@ -6928,7 +6943,8 @@ async function loadCryptoValue() {
                 }
             )
         );
-
+safeText("cryptoValue", cryptoText);
+safeText("cryptoMini", cryptoText);
 
         cryptoOnline =
             true;
