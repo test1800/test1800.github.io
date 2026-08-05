@@ -6943,8 +6943,17 @@ async function loadCryptoValue() {
                 }
             )
         );
+const cryptoText = value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+});
+
 safeText("cryptoValue", cryptoText);
-safeText("cryptoMini", cryptoText);
+
+const mini = document.getElementById("cryptoMini");
+if (mini) {
+    mini.textContent = cryptoText;
+}
 
         cryptoOnline =
             true;
