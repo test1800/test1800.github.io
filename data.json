@@ -3,7 +3,7 @@
   "exirApi": "https://api.exir.io/v2/ticker?symbol=usdt-irt",
   "bitpinApi": "https://bitpinusdttom.rxw.workers.dev/",
   "defaultPrice": 190000,
-  "annualBankRate": 40,
+  "annualBankRate": 38,
   "priceDivisor": 10,
   "transactions": [
     {
