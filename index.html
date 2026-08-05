@@ -1190,7 +1190,7 @@ h1 {
 
 @media (max-height: 199px) {
 
-    body > .container > header > *:not(.live-price) {
+    body > .container > header > *:not(.live-price):not(.header-top) {
         display: none !important;
     }
 
@@ -1217,6 +1217,64 @@ h1 {
         backdrop-filter: none !important;
     }
 
+
+    /* CRYPTO کنار قیمت‌ها */
+
+    .header-top {
+
+        display: flex !important;
+        position: absolute !important;
+        top: 0;
+        right: 0;
+        z-index: 10;
+
+    }
+
+
+    .header-top > div:first-child {
+
+        display: none !important;
+
+    }
+
+
+    .crypto-card {
+
+        display: flex !important;
+
+        min-width: auto !important;
+
+        padding: 0 !important;
+
+        margin-right: 8px;
+
+        background: transparent !important;
+
+        border: none !important;
+
+        box-shadow: none !important;
+
+        backdrop-filter: none !important;
+
+    }
+
+
+    .crypto-label {
+
+        display: none !important;
+
+    }
+
+
+    .crypto-value {
+
+        font-size: 13px !important;
+
+        font-weight: 700 !important;
+
+    }
+
+
     .live-price {
         display: flex !important;
         margin: 0 !important;
@@ -1226,11 +1284,13 @@ h1 {
         gap: 0 !important;
     }
 
-.live-market-title,
-.live-market-separator,
-.live-market-bank {
-    display: none !important;
-}
+
+    .live-market-title,
+    .live-market-separator,
+    .live-market-bank {
+        display: none !important;
+    }
+
 
     .live-price-values {
         display: flex !important;
@@ -1240,6 +1300,7 @@ h1 {
         justify-content: space-between !important;
     }
 
+
     .live-price-left,
     .live-price-center,
     .live-price-right {
@@ -1248,17 +1309,21 @@ h1 {
         min-width: 0 !important;
     }
 
+
     .live-price-left {
         justify-content: flex-start !important;
     }
+
 
     .live-price-center {
         justify-content: center !important;
     }
 
+
     .live-price-right {
         justify-content: flex-end !important;
     }
+
 
     .live-number {
         font-size: 13px !important;
@@ -1266,25 +1331,24 @@ h1 {
         font-weight: 700 !important;
     }
 
+
     .price-arrow {
         font-size: clamp(14px, 5vh, 20px) !important;
         width: auto !important;
         height: auto !important;
     }
 
+
     .live-price-item {
         gap: 3px !important;
     }
 
+
     .live-error-message {
         display: none !important;
     }
-	.crypto-inline{
-    display:none;
-}
 
 }
-
 	/* =====================================================
    thin MODE
 ===================================================== */
