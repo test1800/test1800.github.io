@@ -1502,62 +1502,6 @@ h1 {
     }
 
 }
-
-
-
-/* =====================================================
-   colour background 
-===================================================== */
-
-
-	
-.status-green{
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(16,185,129,var(--status-alpha,0.18)),
-            rgba(16,185,129,calc(var(--status-alpha,0.18) * .25))
-        );
-
-    border:
-        1px solid
-        rgba(16,185,129,calc(var(--status-alpha,0.18) + .15));
-
-    box-shadow:
-        0 0 22px
-        rgba(16,185,129,calc(var(--status-alpha,0.18) * .55));
-
-    transition:
-        background .35s ease,
-        border-color .35s ease,
-        box-shadow .35s ease;
-}
-
-.status-red{
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(239,68,68,var(--status-alpha,0.18)),
-            rgba(239,68,68,calc(var(--status-alpha,0.18) * .25))
-        );
-
-    border:
-        1px solid
-        rgba(239,68,68,calc(var(--status-alpha,0.18) + .15));
-
-    box-shadow:
-        0 0 22px
-        rgba(239,68,68,calc(var(--status-alpha,0.18) * .55));
-
-    transition:
-        background .35s ease,
-        border-color .35s ease,
-        box-shadow .35s ease;
-}
-
-	
 </style>
 
 </head>
@@ -5336,7 +5280,42 @@ function displaySection(
         );
 
 
-         if (mainPrice) {   
+    if (mainPrice) {
+
+        mainPrice.classList.remove(
+
+            "status-green",
+
+            "status-red"
+
+        );
+
+
+        if (
+
+            result.plBank >= 0
+
+        ) {
+
+            mainPrice.classList.add(
+
+                "status-green"
+
+            );
+
+        }
+
+        else {
+
+            mainPrice.classList.add(
+
+                "status-red"
+
+            );
+
+        }
+
+    }
 
 
     const resultBox =
@@ -5350,40 +5329,37 @@ function displaySection(
         );
 
 
-   if (mainPrice) {
+    if (resultBox) {
 
-    mainPrice.classList.remove(
-        "status-green",
-        "status-red"
-    );
+        if (
 
-    const alpha = Math.min(
-        0.18 + Math.abs(result.plBank) * 0.035,
-        0.60
-    );
+            result.plBank >= 0
 
-    if (result.plBank >= 0) {
+        ) {
 
-        mainPrice.classList.add("status-green");
+            resultBox.textContent =
 
-        mainPrice.style.setProperty(
-            "--status-alpha",
-            alpha
-        );
+                "Investment return is better than bank";
 
-    } else {
+            resultBox.style.color =
 
-        mainPrice.classList.add("status-red");
+                "#34d399";
 
-        mainPrice.style.setProperty(
-            "--status-alpha",
-            alpha
-        );
+        }
+
+        else {
+
+            resultBox.textContent =
+
+                "Bank return is better than investment";
+
+            resultBox.style.color =
+
+                "#f87171";
+
+        }
 
     }
-
-}
-
 
 
     const tradeCount =
