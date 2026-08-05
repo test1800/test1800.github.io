@@ -1190,7 +1190,7 @@ h1 {
 
 @media (max-height: 199px) {
 
-    body > .container > header > *:not(.live-price) {
+   body > .container > header > *:not(.live-price):not(.header-top) {
     display: none !important;
 }
 
@@ -1348,6 +1348,52 @@ h1 {
         display: none !important;
     }
 
+
+	.header-top {
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+}
+
+
+.header-top > div:first-child {
+    display: none !important;
+}
+
+
+.crypto-card {
+
+    display: flex !important;
+
+    min-width: auto !important;
+
+    padding: 0 !important;
+
+    margin: 0 8px 0 0 !important;
+
+    background: transparent !important;
+
+    border: none !important;
+
+    box-shadow: none !important;
+
+}
+
+
+.crypto-label {
+    display: none !important;
+}
+
+
+.crypto-value {
+
+    display: block !important;
+
+    font-size: 13px !important;
+
+    font-weight: 700 !important;
+
+}
 }
 	/* =====================================================
    thin MODE
