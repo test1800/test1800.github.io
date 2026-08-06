@@ -1338,7 +1338,36 @@ h1 {
 /* =====================================================
    CRYPTO PRICE CARD
 ===================================================== */
+#cryptoValue{
 
+    transition:
+        color .35s ease,
+        transform .25s ease,
+        text-shadow .35s ease;
+
+    font-variant-numeric: tabular-nums;
+    font-feature-settings:"tnum";
+}
+
+#cryptoValue.up{
+
+    color:#00e676;
+    transform:scale(1.04);
+
+    text-shadow:
+        0 0 8px rgba(0,230,118,.4),
+        0 0 20px rgba(0,230,118,.25);
+}
+
+#cryptoValue.down{
+
+    color:#ff5252;
+    transform:scale(.96);
+
+    text-shadow:
+        0 0 8px rgba(255,82,82,.4),
+        0 0 20px rgba(255,82,82,.25);
+}
 .crypto-card {
 
     min-width: 125px;
@@ -6947,7 +6976,7 @@ function startAutoRefresh() {
 ===================================================== */
 
 let cryptoOnline = false;
-
+let lastCryptoPrice = null;
 
 async function loadCryptoValue() {
 
@@ -7016,7 +7045,25 @@ const cryptoText = value.toLocaleString("en-US", {
 });
 
 safeText("cryptoValue", cryptoText);
+const cryptoElement = $("cryptoValue");
 
+if (lastCryptoPrice !== null) {
+
+    if (value > lastCryptoPrice) {
+        cryptoElement.classList.add("up");
+        cryptoElement.classList.remove("down");
+    }
+    else if (value < lastCryptoPrice) {
+        cryptoElement.classList.add("down");
+        cryptoElement.classList.remove("up");
+    }
+
+    setTimeout(() => {
+        cryptoElement.classList.remove("up", "down");
+    }, 350);
+}
+
+lastCryptoPrice = value;
 const mini = document.getElementById("cryptoMini");
 if (mini) {
     mini.textContent = cryptoText;
