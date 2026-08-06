@@ -1,5 +1,5 @@
 const CACHE_NAME = "financial-dashboard-v4";
-
+    
 
 const STATIC_FILES = [
 
