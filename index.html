@@ -6129,7 +6129,7 @@ async function loadDashboardData() {
         (async () => {
 
 
-        await Promise.all([
+await Promise.allSettled([
     loadUsdTxt(),
     loadYekusd(),
     loadCryptoValue()
