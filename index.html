@@ -2825,7 +2825,13 @@ function notifyColorChange(cardId, percent) {
              currentColor === "red")
         )
     ) {
-
+        console.log(
+        "NOTIFY TRIGGERED:",
+        previousColor,
+        "→",
+        currentColor
+    );
+		
         if (currentColor === "green") {
 
             sendDashboardNotification(
