@@ -2739,328 +2739,768 @@ h1 {
 <script>
 
 
-
-	
-
 /* =====================================================
    TOP PURCHASES
 ===================================================== */
-const TOP_PURCHASES_COUNT =  6;
+
+const TOP_PURCHASES_COUNT = 6;
 
 
 /* =====================================================
-DASHBOARD NOTIFICATION SYSTEM
+   DASHBOARD NOTIFICATION SYSTEM
+   ONLY NOTIFICATION LOGIC
+   Financial calculations remain untouched.
 ===================================================== */
 
 /*
-   Keep the existing dashboard calculations intact.
-   This block only manages browser notifications and the
-   visual border/shadow notification hook.
+   Thresholds are based on the absolute value of plBank.
+
+   Examples:
+   0.79  -> threshold 0
+   0.80  -> threshold 0.80
+   0.85  -> threshold 0.85
+   0.90  -> threshold 0.90
+   1.00  -> threshold 1
+   25    -> threshold 25
 */
 
 const notificationThresholds = [
-    0.80, 0.85, 0.90, 1, 25,
-    30, 35, 40, 45, 50,
-    60, 70, 80, 90, 100
+    0.80,
+    0.85,
+    0.90,
+    1,
+    1.5,
+    2,
+    2.5,
+    3,
+    3.5,
+    4,
+    4.5,
+    70,
+    80,
+    90,
+    100
 ];
 
+
 /*
-   Each card has its own independent state.
-   Color and percentage threshold are intentionally separated
-   so one notification type cannot interfere with the other.
+   Each dashboard card has completely independent state.
+
+   Example:
+
+   notificationStates = {
+       overallMainPrice: {
+           initialized: true,
+           color: "green",
+           threshold: 1
+       },
+
+       sixMainPrice: {
+           initialized: true,
+           color: "red",
+           threshold: 25
+       }
+   }
 */
-const notificationStates = {};
+
+const notificationStates = Object.create(null);
 
 
 /* =====================================================
-REQUEST NOTIFICATION PERMISSION
+   REQUEST NOTIFICATION PERMISSION
 ===================================================== */
 
 function requestDashboardNotificationPermission() {
 
-    if (!('Notification' in window)) {
-        console.warn('Browser notifications are not supported.');
-        return Promise.resolve('unsupported');
+    if (!("Notification" in window)) {
+
+        console.warn(
+            "Browser notifications are not supported."
+        );
+
+        return Promise.resolve("unsupported");
     }
 
-    if (Notification.permission === 'granted') {
-        return Promise.resolve('granted');
+
+    if (Notification.permission === "granted") {
+
+        return Promise.resolve("granted");
     }
 
-    if (Notification.permission === 'denied') {
-        console.warn('Browser notification permission is denied.');
-        return Promise.resolve('denied');
+
+    if (Notification.permission === "denied") {
+
+        console.warn(
+            "Browser notification permission is denied."
+        );
+
+        return Promise.resolve("denied");
     }
+
 
     try {
-        return Notification.requestPermission().then(permission => {
-            console.log('Notification permission:', permission);
-            return permission;
-        });
+
+        return Notification
+            .requestPermission()
+            .then(permission => {
+
+                console.log(
+                    "Notification permission:",
+                    permission
+                );
+
+                return permission;
+
+            })
+            .catch(error => {
+
+                console.warn(
+                    "Notification permission request failed:",
+                    error
+                );
+
+                return "error";
+
+            });
+
     }
+
     catch (error) {
-        console.warn('Notification permission request failed:', error);
-        return Promise.resolve('error');
+
+        console.warn(
+            "Notification permission request failed:",
+            error
+        );
+
+        return Promise.resolve("error");
     }
-}
-
-/*
-   Do not request permission immediately when the page loads.
-   Modern browsers generally require a user gesture.
-   The first click/touch/keydown gives the browser a valid gesture.
-*/
-if ('Notification' in window && Notification.permission === 'default') {
-
-    const requestPermissionOnUserGesture = () => {
-        requestDashboardNotificationPermission();
-        window.removeEventListener('click', requestPermissionOnUserGesture);
-        window.removeEventListener('touchstart', requestPermissionOnUserGesture);
-        window.removeEventListener('keydown', requestPermissionOnUserGesture);
-    };
-
-    window.addEventListener('click', requestPermissionOnUserGesture, { once: true });
-    window.addEventListener('touchstart', requestPermissionOnUserGesture, { once: true });
-    window.addEventListener('keydown', requestPermissionOnUserGesture, { once: true });
 }
 
 
 /* =====================================================
-CARD STATE HELPERS
+   REQUEST PERMISSION AFTER USER GESTURE
+===================================================== */
+
+/*
+   Do NOT request permission immediately on page load.
+
+   The first real user interaction is used as the
+   permission gesture.
+*/
+
+if (
+    "Notification" in window &&
+    Notification.permission === "default"
+) {
+
+    const requestPermissionOnUserGesture = () => {
+
+        requestDashboardNotificationPermission();
+
+    };
+
+
+    window.addEventListener(
+        "click",
+        requestPermissionOnUserGesture,
+        { once: true }
+    );
+
+
+    window.addEventListener(
+        "touchstart",
+        requestPermissionOnUserGesture,
+        { once: true }
+    );
+
+
+    window.addEventListener(
+        "keydown",
+        requestPermissionOnUserGesture,
+        { once: true }
+    );
+}
+
+
+/* =====================================================
+   CARD COLOR
 ===================================================== */
 
 function getCardColorFromPercent(percent) {
 
     const value = Number(percent);
 
-    if (!Number.isFinite(value) || value === 0) {
-        return 'neutral';
+
+    if (
+        !Number.isFinite(value) ||
+        value === 0
+    ) {
+
+        return "neutral";
     }
 
-    return value > 0 ? 'green' : 'red';
+
+    return value > 0
+        ? "green"
+        : "red";
 }
 
 
+/* =====================================================
+   THRESHOLD
+===================================================== */
+
 function getThresholdFromPercent(percent) {
 
-    const absolutePercent = Math.abs(Number(percent));
+    const value =
+        Math.abs(
+            Number(percent)
+        );
 
-    if (!Number.isFinite(absolutePercent)) {
+
+    if (!Number.isFinite(value)) {
+
         return 0;
     }
 
+
     let currentThreshold = 0;
 
-    for (const threshold of notificationThresholds) {
 
-        if (absolutePercent >= threshold) {
-            currentThreshold = threshold;
+    for (
+        const threshold
+        of notificationThresholds
+    ) {
+
+        if (value >= threshold) {
+
+            currentThreshold =
+                threshold;
+
         }
+
         else {
+
             break;
         }
     }
+
 
     return currentThreshold;
 }
 
 
-function ensureNotificationState(cardId, percent) {
+/* =====================================================
+   CARD STATE
+===================================================== */
 
-    if (!notificationStates[cardId]) {
+function createNotificationState(
+    cardId,
+    percent
+) {
 
-        notificationStates[cardId] = {
-            color: getCardColorFromPercent(percent),
-            threshold: getThresholdFromPercent(percent)
-        };
+    const state = {
 
-        return false;
-    }
+        initialized: true,
 
-    return true;
+        color:
+            getCardColorFromPercent(
+                percent
+            ),
+
+        threshold:
+            getThresholdFromPercent(
+                percent
+            )
+
+    };
+
+
+    notificationStates[cardId] =
+        state;
+
+
+    return state;
 }
 
 
 /* =====================================================
-CARD COLOR CHANGE NOTIFICATION
+   GET EXISTING STATE
 ===================================================== */
 
-function notifyColorChange(cardId, percent) {
-
-    const currentColor = getCardColorFromPercent(percent);
-
-    /* First reading establishes the baseline; no false notification. */
-    if (!ensureNotificationState(cardId, percent)) {
-        return;
-    }
-
-    const previousColor = notificationStates[cardId].color;
+function getNotificationState(
+    cardId,
+    percent
+) {
 
     if (
-        previousColor !== currentColor &&
-        (
-            (previousColor === 'red' && currentColor === 'green') ||
-            (previousColor === 'green' && currentColor === 'red')
-        )
+        !notificationStates[cardId]
     ) {
 
-        if (currentColor === 'green') {
-
-            sendDashboardNotification(
-                getCardNotificationTitle(cardId),
-                'Performance moved from negative to positive territory.'
-            );
-
-        }
-        else {
-
-            sendDashboardNotification(
-                getCardNotificationTitle(cardId),
-                'Performance moved from positive to negative territory.'
-            );
-
-        }
-    }
-
-    notificationStates[cardId].color = currentColor;
-}
-
-
-/* =====================================================
-PERCENTAGE THRESHOLD NOTIFICATION
-===================================================== */
-
-function notifyPercentThreshold(cardId, percent) {
-
-    const currentThreshold = getThresholdFromPercent(percent);
-
-    /* First reading establishes the baseline; no false notification. */
-    if (!ensureNotificationState(cardId, percent)) {
-        return;
-    }
-
-    const previousThreshold = notificationStates[cardId].threshold;
-
-    /*
-       Notify in BOTH directions.
-       Example:
-       0.79 -> 0.80  = notification
-       0.85 -> 0.84  = notification
-       15   -> 14    = notification
-       14   -> 15    = notification
-    */
-    if (currentThreshold !== previousThreshold) {
-
-        const direction =
-            currentThreshold > previousThreshold
-                ? 'increased'
-                : 'decreased';
-
-        const signText = Number(percent) >= 0 ? '+' : '-';
-
-        sendDashboardNotification(
-            getCardNotificationTitle(cardId),
-            `Live vs bank-adjusted divergence ${direction}: ${signText}${currentThreshold}% threshold.`
+        return createNotificationState(
+            cardId,
+            percent
         );
     }
 
-    notificationStates[cardId].threshold = currentThreshold;
+
+    return notificationStates[cardId];
 }
 
 
 /* =====================================================
-CARD TITLES
+   DETECT COLOR CHANGE
 ===================================================== */
 
-function getCardNotificationTitle(cardId) {
+function getColorChangeMessage(
+    previousColor,
+    currentColor
+) {
 
-    if (cardId === 'overallMainPrice') {
-        return 'Overall Performance';
+    /*
+       Neutral is intentionally ignored.
+
+       Example:
+
+       red -> neutral
+       neutral -> green
+
+       This does NOT generate a false
+       red/green notification.
+    */
+
+    if (
+        previousColor === currentColor
+    ) {
+
+        return null;
     }
 
-    if (cardId === 'sixMainPrice') {
-        return 'Top Purchases';
+
+    if (
+        previousColor === "red" &&
+        currentColor === "green"
+    ) {
+
+        return "Performance moved from negative to positive territory.";
     }
 
-    if (cardId === 'lastMainPrice') {
-        return 'Last Period';
+
+    if (
+        previousColor === "green" &&
+        currentColor === "red"
+    ) {
+
+        return "Performance moved from positive to negative territory.";
     }
 
-    return 'Financial Dashboard';
+
+    return null;
 }
 
 
 /* =====================================================
-SEND BROWSER / WINDOWS NOTIFICATION
+   DETECT THRESHOLD CHANGE
 ===================================================== */
 
-function sendDashboardNotification(title, message) {
+function getThresholdChangeMessage(
+    previousThreshold,
+    currentThreshold,
+    percent
+) {
 
-    if (!('Notification' in window)) {
+    if (
+        previousThreshold ===
+        currentThreshold
+    ) {
+
+        return null;
+    }
+
+
+    const direction =
+        currentThreshold >
+        previousThreshold
+            ? "increased"
+            : "decreased";
+
+
+    const signText =
+        Number(percent) >= 0
+            ? "+"
+            : "-";
+
+
+    return (
+        "Live vs bank-adjusted divergence " +
+        direction +
+        ": " +
+        signText +
+        currentThreshold +
+        "% threshold."
+    );
+}
+
+
+/* =====================================================
+   BUILD ONE NOTIFICATION
+===================================================== */
+
+/*
+   This function combines color + threshold changes.
+
+   Therefore:
+
+   - One update = maximum one notification.
+   - Color change cannot create a duplicate
+     threshold notification.
+   - Threshold change cannot interfere with
+     another card.
+*/
+
+function evaluateDashboardNotification(
+    cardId,
+    percent
+) {
+
+    const numericPercent =
+        Number(percent);
+
+
+    if (
+        !Number.isFinite(
+            numericPercent
+        )
+    ) {
+
+        return null;
+    }
+
+
+    const state =
+        getNotificationState(
+            cardId,
+            numericPercent
+        );
+
+
+    /*
+       First reading establishes baseline.
+
+       IMPORTANT:
+       No notification is sent on first reading.
+    */
+
+    if (!state.initialized) {
+
+        state.initialized = true;
+
+        state.color =
+            getCardColorFromPercent(
+                numericPercent
+            );
+
+        state.threshold =
+            getThresholdFromPercent(
+                numericPercent
+            );
+
+        return null;
+    }
+
+
+    const previousColor =
+        state.color;
+
+
+    const previousThreshold =
+        state.threshold;
+
+
+    const currentColor =
+        getCardColorFromPercent(
+            numericPercent
+        );
+
+
+    const currentThreshold =
+        getThresholdFromPercent(
+            numericPercent
+        );
+
+
+    const colorMessage =
+        getColorChangeMessage(
+            previousColor,
+            currentColor
+        );
+
+
+    const thresholdMessage =
+        getThresholdChangeMessage(
+            previousThreshold,
+            currentThreshold,
+            numericPercent
+        );
+
+
+    /*
+       Priority:
+
+       1. Red <-> Green color transition
+       2. Threshold transition
+
+       This prevents two notifications for
+       the exact same dashboard update.
+    */
+
+    let message = null;
+
+
+    if (colorMessage) {
+
+        message =
+            colorMessage;
+
+    }
+
+    else if (thresholdMessage) {
+
+        message =
+            thresholdMessage;
+
+    }
+
+
+    /*
+       Save the NEW state only after
+       evaluating the previous state.
+    */
+
+    state.color =
+        currentColor;
+
+
+    state.threshold =
+        currentThreshold;
+
+
+    return message;
+}
+
+
+/* =====================================================
+   CARD TITLES
+===================================================== */
+
+function getCardNotificationTitle(
+    cardId
+) {
+
+    if (
+        cardId ===
+        "overallMainPrice"
+    ) {
+
+        return "Overall Performance";
+    }
+
+
+    if (
+        cardId ===
+        "sixMainPrice"
+    ) {
+
+        return "Top Purchases";
+    }
+
+
+    if (
+        cardId ===
+        "lastMainPrice"
+    ) {
+
+        return "Last Period";
+    }
+
+
+    return "Financial Dashboard";
+}
+
+
+/* =====================================================
+   SEND BROWSER / WINDOWS NOTIFICATION
+===================================================== */
+
+function sendDashboardNotification(
+    title,
+    message
+) {
+
+    if (
+        !("Notification" in window)
+    ) {
+
         return false;
     }
 
-    if (Notification.permission !== 'granted') {
-        console.log('Notification skipped because permission is not granted:', title, message);
+
+    if (
+        Notification.permission !==
+        "granted"
+    ) {
+
+        console.log(
+            "Notification skipped because permission is not granted:",
+            title,
+            message
+        );
+
         return false;
     }
+
 
     try {
 
-        new Notification(title, {
-            body: message,
-            icon: 'icon.png'
-        });
+        const notification =
+            new Notification(
+                title,
+                {
+                    body: message,
+                    icon: "icon.png"
+                }
+            );
+
+
+        /*
+           Automatically close the notification
+           after a reasonable amount of time.
+        */
+
+        setTimeout(
+            () => {
+
+                try {
+
+                    notification.close();
+
+                }
+
+                catch (error) {}
+
+            },
+            8000
+        );
+
 
         return true;
 
     }
+
     catch (error) {
-        console.warn('Notification could not be displayed:', error);
+
+        console.warn(
+            "Notification could not be displayed:",
+            error
+        );
+
         return false;
     }
 }
 
 
 /* =====================================================
-COLOUR BACKGROUND + NOTIFICATION HOOK
+   CARD COLOR + NOTIFICATION HOOK
 ===================================================== */
 
-function updateCardColor(cardId, percent) {
+function updateCardColor(
+    cardId,
+    percent
+) {
 
-    const card = document.getElementById(cardId);
+    const card =
+        document.getElementById(
+            cardId
+        );
 
-    if (!card) return;
 
-    const numericPercent = Number(percent);
+    if (!card) {
 
-    if (!Number.isFinite(numericPercent)) {
         return;
     }
 
+
+    const numericPercent =
+        Number(percent);
+
+
+    if (
+        !Number.isFinite(
+            numericPercent
+        )
+    ) {
+
+        return;
+    }
+
+
+    /* =================================================
+       NOTIFICATION
+    ================================================= */
+
+    const notificationMessage =
+        evaluateDashboardNotification(
+            cardId,
+            numericPercent
+        );
+
+
     /*
-       Notification system is connected directly to the same
-       percentage used by the existing card colour calculation.
-       The caller already passes overall.plBank / six.plBank /
-       last.plBank, so the existing financial logic is unchanged.
+       Only send a notification when the
+       notification engine actually detected
+       a meaningful state transition.
     */
-    notifyColorChange(cardId, numericPercent);
-    notifyPercentThreshold(cardId, numericPercent);
+
+    if (
+        notificationMessage
+    ) {
+
+        sendDashboardNotification(
+
+            getCardNotificationTitle(
+                cardId
+            ),
+
+            notificationMessage
+
+        );
+    }
 
 
-    /* Existing color logic — unchanged in behavior. */
+    /* =================================================
+       EXISTING CARD COLOR LOGIC
+       KEPT UNCHANGED
+    ================================================= */
 
-    const p = Math.max(
-        -20,
-        Math.min(20, numericPercent)
-    );
+    const p =
+        Math.max(
+            -20,
+            Math.min(
+                20,
+                numericPercent
+            )
+        );
 
-    const t = Math.abs(p) / 20;
+
+    const t =
+        Math.abs(p) / 20;
 
 
     if (p >= 0) {
 
         card.style.borderColor =
             `rgba(34,197,94,${0.15 + t * 0.55})`;
+
 
         card.style.boxShadow =
             `0 8px 30px rgba(34,197,94,${0.05 + t * 0.20})`;
@@ -3072,12 +3512,11 @@ function updateCardColor(cardId, percent) {
         card.style.borderColor =
             `rgba(239,68,68,${0.15 + t * 0.55})`;
 
+
         card.style.boxShadow =
             `0 8px 30px rgba(239,68,68,${0.05 + t * 0.20})`;
-
     }
 }
-
 /* =====================================================
    HELPERS
 ===================================================== */
