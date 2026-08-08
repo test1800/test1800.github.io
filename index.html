@@ -2809,6 +2809,70 @@ function safeText(id, value) {
 
 }
 
+
+/* =====================================================
+   BUY AGE
+===================================================== */
+
+function daysFromBuyToToday(
+    buyTransaction,
+    today
+) {
+
+    if (
+        !buyTransaction ||
+        buyTransaction.type !== "buy" ||
+        !buyTransaction.date ||
+        !today
+    ) {
+        return "-";
+    }
+
+    const startParts =
+        String(buyTransaction.date)
+            .split("/")
+            .map(Number);
+
+    const endParts =
+        String(today)
+            .split("/")
+            .map(Number);
+
+    if (
+        startParts.length !== 3 ||
+        endParts.length !== 3
+    ) {
+        return "-";
+    }
+
+    const startDate =
+        jalaliToGregorian(
+            startParts[0],
+            startParts[1],
+            startParts[2]
+        );
+
+    const endDate =
+        jalaliToGregorian(
+            endParts[0],
+            endParts[1],
+            endParts[2]
+        );
+
+    const days =
+        Math.floor(
+            (
+                endDate -
+                startDate
+            ) /
+            86400000
+        );
+
+    return Math.max(
+        0,
+        days
+    ) + "d";
+}
 /* =====================================================
    CACHE
 ===================================================== */
@@ -5060,7 +5124,9 @@ function displaySection(
 
     prefix,
 
-    previousLivePrice
+    previousLivePrice,
+
+    age
 
 ) {
 
@@ -5431,36 +5497,25 @@ function displaySection(
     }
 
 
-    const tradeCount =
+const tradeCount =
+    $(
+        prefix +
+        "Trades"
+    );
 
-        $(
+if (tradeCount) {
 
-            prefix +
-
-            "Trades"
-
-        );
-
-
-    if (tradeCount) {
-
-        tradeCount.textContent =
-
-            result.buyCount
-
-            +
-
-            " IN  •  "
-
-            +
-
-            result.sellCount
-
-            +
-
-            " OUT";
-
-    }
+    tradeCount.textContent =
+        result.buyCount
+        +
+        " IN  •  "
+        +
+        result.sellCount
+        +
+        " OUT  •  "
+        +
+        age;
+}
 
 }
 
@@ -6737,6 +6792,82 @@ updateMarketPriceConnectionColors(
         )
     );
 
+
+/* =================================================
+   BUY AGE
+================================================= */
+
+/* OVERALL
+   Oldest BUY from all transactions
+*/
+const overallBuys =
+    transactions.filter(
+        transaction =>
+            transaction.type === "buy"
+    );
+
+const overallFirstBuy =
+    overallBuys.length > 0
+        ? overallBuys[0]
+        : null;
+
+
+/* TOP PURCHASES
+   Oldest BUY from the selected Top Purchases
+*/
+const sixTransactions =
+    getTop6HighestPricePurchases(
+        transactions
+    );
+
+const sixFirstBuy =
+    sixTransactions.length > 0
+        ? sixTransactions
+            .slice()
+            .sort(
+                (a, b) =>
+                    dateNumber(a.date) -
+                    dateNumber(b.date)
+            )[0]
+        : null;
+
+
+/* LAST PERIOD
+   First BUY inside Last Period
+*/
+const lastTransactions =
+    getLastPeriod(
+        transactions
+    );
+
+const lastFirstBuy =
+    lastTransactions.length > 0
+        ? lastTransactions.find(
+            transaction =>
+                transaction.type === "buy"
+        )
+        : null;
+
+
+const overallAge =
+    daysFromBuyToToday(
+        overallFirstBuy,
+        today
+    );
+
+const sixAge =
+    daysFromBuyToToday(
+        sixFirstBuy,
+        today
+    );
+
+const lastAge =
+    daysFromBuyToToday(
+        lastFirstBuy,
+        today
+    );
+
+/* ================================================== */
             const overall =
                 calculatePortfolio(
                     transactions,
@@ -6751,7 +6882,8 @@ updateMarketPriceConnectionColors(
     "overall",
     Number.isFinite(previousAverageLivePrice)
         ? previousAverageLivePrice
-        : null
+        : null,
+    overallAge
 );
 		
   updateCardColor(
@@ -6782,7 +6914,8 @@ safeText(
     "six",
     Number.isFinite(previousAverageLivePrice)
         ? previousAverageLivePrice
-        : null
+        : null,
+    sixAge
 );
 
 updateCardColor(
@@ -6810,7 +6943,8 @@ displaySection(
     "last",
     Number.isFinite(previousAverageLivePrice)
         ? previousAverageLivePrice
-        : null
+        : null,
+    lastAge
 );
 
 updateCardColor(
@@ -6821,17 +6955,6 @@ updateCardColor(
                 lastTransactions
             );
 
-
-            safeText(
-                "lastTrades",
-                last.buyCount
-                +
-                " IN  •  "
-                +
-                last.sellCount
-                +
-                " OUT"
-            );
 
 
             try {
