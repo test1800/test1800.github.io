@@ -2752,23 +2752,12 @@ const TOP_PURCHASES_COUNT =  6;
 DASHBOARD NOTIFICATION SYSTEM
 ===================================================== */
 
-/*
-   Keep the existing dashboard calculations intact.
-   This block only manages browser notifications and the
-   visual border/shadow notification hook.
-*/
-
 const notificationThresholds = [
-    0.80, 0.85, 0.90, 1, 4,
-    4.5, 35, 40, 45, 50,
+    0.80, 0.85, 4, 4.5, 25,
+    30, 35, 40, 45, 50,
     60, 70, 80, 90, 100
 ];
 
-/*
-   Each card has its own independent state.
-   Color and percentage threshold are intentionally separated
-   so one notification type cannot interfere with the other.
-*/
 const notificationStates = {};
 
 
@@ -2776,107 +2765,14 @@ const notificationStates = {};
 REQUEST NOTIFICATION PERMISSION
 ===================================================== */
 
-function requestDashboardNotificationPermission() {
+if ("Notification" in window) {
 
-    if (!('Notification' in window)) {
-        console.warn('Browser notifications are not supported.');
-        return Promise.resolve('unsupported');
+    if (Notification.permission === "default") {
+
+        Notification.requestPermission();
+
     }
 
-    if (Notification.permission === 'granted') {
-        return Promise.resolve('granted');
-    }
-
-    if (Notification.permission === 'denied') {
-        console.warn('Browser notification permission is denied.');
-        return Promise.resolve('denied');
-    }
-
-    try {
-        return Notification.requestPermission().then(permission => {
-            console.log('Notification permission:', permission);
-            return permission;
-        });
-    }
-    catch (error) {
-        console.warn('Notification permission request failed:', error);
-        return Promise.resolve('error');
-    }
-}
-
-/*
-   Do not request permission immediately when the page loads.
-   Modern browsers generally require a user gesture.
-   The first click/touch/keydown gives the browser a valid gesture.
-*/
-if ('Notification' in window && Notification.permission === 'default') {
-
-    const requestPermissionOnUserGesture = () => {
-        requestDashboardNotificationPermission();
-        window.removeEventListener('click', requestPermissionOnUserGesture);
-        window.removeEventListener('touchstart', requestPermissionOnUserGesture);
-        window.removeEventListener('keydown', requestPermissionOnUserGesture);
-    };
-
-    window.addEventListener('click', requestPermissionOnUserGesture, { once: true });
-    window.addEventListener('touchstart', requestPermissionOnUserGesture, { once: true });
-    window.addEventListener('keydown', requestPermissionOnUserGesture, { once: true });
-}
-
-
-/* =====================================================
-CARD STATE HELPERS
-===================================================== */
-
-function getCardColorFromPercent(percent) {
-
-    const value = Number(percent);
-
-    if (!Number.isFinite(value) || value === 0) {
-        return 'neutral';
-    }
-
-    return value > 0 ? 'green' : 'red';
-}
-
-
-function getThresholdFromPercent(percent) {
-
-    const absolutePercent = Math.abs(Number(percent));
-
-    if (!Number.isFinite(absolutePercent)) {
-        return 0;
-    }
-
-    let currentThreshold = 0;
-
-    for (const threshold of notificationThresholds) {
-
-        if (absolutePercent >= threshold) {
-            currentThreshold = threshold;
-        }
-        else {
-            break;
-        }
-    }
-
-    return currentThreshold;
-}
-
-
-function ensureNotificationState(cardId, percent) {
-
-    if (!notificationStates[cardId]) {
-
-        notificationStates[cardId] = {
-            color: getCardColorFromPercent(percent),
-            threshold: getThresholdFromPercent(percent)
-        };
-
-        return false;
-    }
-
-    return true;
 }
 
 
@@ -2886,42 +2782,75 @@ CARD COLOR CHANGE NOTIFICATION
 
 function notifyColorChange(cardId, percent) {
 
-    const currentColor = getCardColorFromPercent(percent);
+    let currentColor = "neutral";
 
-    /* First reading establishes the baseline; no false notification. */
-    if (!ensureNotificationState(cardId, percent)) {
+    if (percent > 0) {
+        currentColor = "green";
+    }
+
+    else if (percent < 0) {
+        currentColor = "red";
+    }
+
+
+    if (!(cardId in notificationStates)) {
+
+        notificationStates[cardId] = {
+            color: currentColor,
+            threshold: 0
+        };
+
         return;
     }
 
-    const previousColor = notificationStates[cardId].color;
+
+    const previousColor =
+        notificationStates[cardId].color;
+
 
     if (
         previousColor !== currentColor &&
         (
-            (previousColor === 'red' && currentColor === 'green') ||
-            (previousColor === 'green' && currentColor === 'red')
+            (previousColor === "red" &&
+             currentColor === "green") ||
+
+            (previousColor === "green" &&
+             currentColor === "red")
         )
     ) {
 
-        if (currentColor === 'green') {
+        console.log(
+            "NOTIFY TRIGGERED:",
+            previousColor,
+            "→",
+            currentColor
+        );
+
+
+        if (currentColor === "green") {
 
             sendDashboardNotification(
                 getCardNotificationTitle(cardId),
-                'Performance moved from negative to positive territory.'
+                "Performance moved into positive territory."
             );
 
         }
+
         else {
 
             sendDashboardNotification(
                 getCardNotificationTitle(cardId),
-                'Performance moved from positive to negative territory.'
+                "Performance moved into negative territory."
             );
 
         }
+
     }
 
-    notificationStates[cardId].color = currentColor;
+
+    notificationStates[cardId].color =
+        currentColor;
+
 }
 
 
@@ -2931,39 +2860,79 @@ PERCENTAGE THRESHOLD NOTIFICATION
 
 function notifyPercentThreshold(cardId, percent) {
 
-    const currentThreshold = getThresholdFromPercent(percent);
+    const absolutePercent =
+        Math.abs(percent);
 
-    /* First reading establishes the baseline; no false notification. */
-    if (!ensureNotificationState(cardId, percent)) {
+    let currentThreshold = 0;
+
+
+    for (
+        let i = 0;
+        i < notificationThresholds.length;
+        i++
+    ) {
+
+        if (
+            absolutePercent >=
+            notificationThresholds[i]
+        ) {
+
+            currentThreshold =
+                notificationThresholds[i];
+
+        }
+
+        else {
+
+            break;
+
+        }
+
+    }
+
+
+    if (!(cardId in notificationStates)) {
+
+        notificationStates[cardId] = {
+
+            color:
+                percent > 0
+                    ? "green"
+                    : percent < 0
+                        ? "red"
+                        : "neutral",
+
+            threshold: currentThreshold
+
+        };
+
         return;
     }
 
-    const previousThreshold = notificationStates[cardId].threshold;
 
-    /*
-       Notify in BOTH directions.
-       Example:
-       0.79 -> 0.80  = notification
-       0.85 -> 0.84  = notification
-       15   -> 14    = notification
-       14   -> 15    = notification
-    */
-    if (currentThreshold !== previousThreshold) {
+    const previousThreshold =
+        notificationStates[cardId].threshold;
+
+
+    if (currentThreshold > previousThreshold) {
 
         const direction =
-            currentThreshold > previousThreshold
-                ? 'increased'
-                : 'decreased';
+            percent >= 0
+                ? "above"
+                : "below";
 
-        const signText = Number(percent) >= 0 ? '+' : '-';
 
         sendDashboardNotification(
             getCardNotificationTitle(cardId),
-            `Live vs bank-adjusted divergence ${direction}: ${signText}${currentThreshold}% threshold.`
+            `Price divergence reached ${currentThreshold}% ${direction} the bank-adjusted level.`
         );
+
     }
 
-    notificationStates[cardId].threshold = currentThreshold;
+
+    notificationStates[cardId].threshold =
+        currentThreshold;
+
 }
 
 
@@ -2973,19 +2942,19 @@ CARD TITLES
 
 function getCardNotificationTitle(cardId) {
 
-    if (cardId === 'overallMainPrice') {
-        return 'Overall Performance';
+    if (cardId === "overallMainPrice") {
+        return "Overall Performance";
     }
 
-    if (cardId === 'sixMainPrice') {
-        return 'Top Purchases';
+    if (cardId === "sixMainPrice") {
+        return "Top Purchases";
     }
 
-    if (cardId === 'lastMainPrice') {
-        return 'Last Period';
+    if (cardId === "lastMainPrice") {
+        return "Last Period";
     }
 
-    return 'Financial Dashboard';
+    return "Financial Dashboard";
 }
 
 
@@ -2993,68 +2962,64 @@ function getCardNotificationTitle(cardId) {
 SEND BROWSER / WINDOWS NOTIFICATION
 ===================================================== */
 
-function sendDashboardNotification(title, message) {
+function sendDashboardNotification(
+    title,
+    message
+) {
 
-    if (!('Notification' in window)) {
-        return false;
-    }
+    if (
+        "Notification" in window &&
+        Notification.permission === "granted"
+    ) {
 
-    if (Notification.permission !== 'granted') {
-        console.log('Notification skipped because permission is not granted:', title, message);
-        return false;
-    }
-
-    try {
-
-        new Notification(title, {
-            body: message,
-            icon: 'icon.png'
-        });
-
-        return true;
+        new Notification(
+            title,
+            {
+                body: message,
+                icon: "icon.png"
+            }
+        );
 
     }
-    catch (error) {
-        console.warn('Notification could not be displayed:', error);
-        return false;
-    }
+
 }
 
 
 /* =====================================================
-COLOUR BACKGROUND + NOTIFICATION HOOK
+colour background
 ===================================================== */
 
 function updateCardColor(cardId, percent) {
 
-    const card = document.getElementById(cardId);
+    const card =
+        document.getElementById(cardId);
 
     if (!card) return;
 
-    const numericPercent = Number(percent);
 
-    if (!Number.isFinite(numericPercent)) {
-        return;
-    }
+    /* Notification system */
 
-    /*
-       Notification system is connected directly to the same
-       percentage used by the existing card colour calculation.
-       The caller already passes overall.plBank / six.plBank /
-       last.plBank, so the existing financial logic is unchanged.
-    */
-    notifyColorChange(cardId, numericPercent);
-    notifyPercentThreshold(cardId, numericPercent);
-
-
-    /* Existing color logic — unchanged in behavior. */
-
-    const p = Math.max(
-        -20,
-        Math.min(20, numericPercent)
+    notifyColorChange(
+        cardId,
+        percent
     );
 
-    const t = Math.abs(p) / 20;
+    notifyPercentThreshold(
+        cardId,
+        percent
+    );
+
+
+    /* Existing color logic */
+
+    const p =
+        Math.max(
+            -20,
+            Math.min(20, percent)
+        );
+
+    const t =
+        Math.abs(p) / 20;
 
 
     if (p >= 0) {
@@ -3076,6 +3041,7 @@ function updateCardColor(cardId, percent) {
             `0 8px 30px rgba(239,68,68,${0.05 + t * 0.20})`;
 
     }
+
 }
 
 /* =====================================================
