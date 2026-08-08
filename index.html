@@ -2738,7 +2738,6 @@ h1 {
 
 <script>
 
-
 /* =====================================================
    TOP PURCHASES
 ===================================================== */
@@ -2748,20 +2747,11 @@ const TOP_PURCHASES_COUNT = 6;
 
 /* =====================================================
    DASHBOARD NOTIFICATION SYSTEM
-   ONLY NOTIFICATION LOGIC
-   Financial calculations remain untouched.
 ===================================================== */
 
 /*
-   Thresholds are based on the absolute value of plBank.
-
-   Examples:
-   0.79  -> threshold 0
-   0.80  -> threshold 0.80
-   0.85  -> threshold 0.85
-   0.90  -> threshold 0.90
-   1.00  -> threshold 1
-   25    -> threshold 25
+   Notification thresholds.
+   These are based on ABSOLUTE plBank percentage.
 */
 
 const notificationThresholds = [
@@ -2784,19 +2774,17 @@ const notificationThresholds = [
 
 
 /*
-   Each dashboard card has completely independent state.
+   Each card has its own independent notification state.
 
    Example:
 
    notificationStates = {
        overallMainPrice: {
-           initialized: true,
            color: "green",
            threshold: 1
        },
 
        sixMainPrice: {
-           initialized: true,
            color: "red",
            threshold: 25
        }
@@ -2878,15 +2866,8 @@ function requestDashboardNotificationPermission() {
 
 
 /* =====================================================
-   REQUEST PERMISSION AFTER USER GESTURE
+   REQUEST PERMISSION ON USER GESTURE
 ===================================================== */
-
-/*
-   Do NOT request permission immediately on page load.
-
-   The first real user interaction is used as the
-   permission gesture.
-*/
 
 if (
     "Notification" in window &&
@@ -2928,7 +2909,8 @@ if (
 
 function getCardColorFromPercent(percent) {
 
-    const value = Number(percent);
+    const value =
+        Number(percent);
 
 
     if (
@@ -2952,13 +2934,17 @@ function getCardColorFromPercent(percent) {
 
 function getThresholdFromPercent(percent) {
 
-    const value =
+    const absolutePercent =
         Math.abs(
             Number(percent)
         );
 
 
-    if (!Number.isFinite(value)) {
+    if (
+        !Number.isFinite(
+            absolutePercent
+        )
+    ) {
 
         return 0;
     }
@@ -2972,7 +2958,10 @@ function getThresholdFromPercent(percent) {
         of notificationThresholds
     ) {
 
-        if (value >= threshold) {
+        if (
+            absolutePercent >=
+            threshold
+        ) {
 
             currentThreshold =
                 threshold;
@@ -2991,7 +2980,7 @@ function getThresholdFromPercent(percent) {
 
 
 /* =====================================================
-   CARD STATE
+   CREATE INITIAL STATE
 ===================================================== */
 
 function createNotificationState(
@@ -2999,9 +2988,7 @@ function createNotificationState(
     percent
 ) {
 
-    const state = {
-
-        initialized: true,
+    notificationStates[cardId] = {
 
         color:
             getCardColorFromPercent(
@@ -3016,16 +3003,12 @@ function createNotificationState(
     };
 
 
-    notificationStates[cardId] =
-        state;
-
-
-    return state;
+    return notificationStates[cardId];
 }
 
 
 /* =====================================================
-   GET EXISTING STATE
+   GET CARD STATE
 ===================================================== */
 
 function getNotificationState(
@@ -3049,7 +3032,7 @@ function getNotificationState(
 
 
 /* =====================================================
-   DETECT COLOR CHANGE
+   COLOR CHANGE MESSAGE
 ===================================================== */
 
 function getColorChangeMessage(
@@ -3057,32 +3040,31 @@ function getColorChangeMessage(
     currentColor
 ) {
 
-    /*
-       Neutral is intentionally ignored.
-
-       Example:
-
-       red -> neutral
-       neutral -> green
-
-       This does NOT generate a false
-       red/green notification.
-    */
-
     if (
-        previousColor === currentColor
+        previousColor ===
+        currentColor
     ) {
 
         return null;
     }
 
 
+    /*
+       Only red <-> green is a real
+       performance direction change.
+
+       neutral transitions are ignored.
+    */
+
     if (
         previousColor === "red" &&
         currentColor === "green"
     ) {
 
-        return "Performance moved from negative to positive territory.";
+        return (
+            "Performance moved from " +
+            "negative to positive territory."
+        );
     }
 
 
@@ -3091,7 +3073,10 @@ function getColorChangeMessage(
         currentColor === "red"
     ) {
 
-        return "Performance moved from positive to negative territory.";
+        return (
+            "Performance moved from " +
+            "positive to negative territory."
+        );
     }
 
 
@@ -3100,7 +3085,7 @@ function getColorChangeMessage(
 
 
 /* =====================================================
-   DETECT THRESHOLD CHANGE
+   THRESHOLD CHANGE MESSAGE
 ===================================================== */
 
 function getThresholdChangeMessage(
@@ -3143,20 +3128,8 @@ function getThresholdChangeMessage(
 
 
 /* =====================================================
-   BUILD ONE NOTIFICATION
+   EVALUATE NOTIFICATION
 ===================================================== */
-
-/*
-   This function combines color + threshold changes.
-
-   Therefore:
-
-   - One update = maximum one notification.
-   - Color change cannot create a duplicate
-     threshold notification.
-   - Threshold change cannot interfere with
-     another card.
-*/
 
 function evaluateDashboardNotification(
     cardId,
@@ -3177,36 +3150,28 @@ function evaluateDashboardNotification(
     }
 
 
-    const state =
-        getNotificationState(
+    /*
+       IMPORTANT:
+
+       First reading creates the baseline
+       and NEVER sends a notification.
+    */
+
+    if (
+        !notificationStates[cardId]
+    ) {
+
+        createNotificationState(
             cardId,
             numericPercent
         );
 
-
-    /*
-       First reading establishes baseline.
-
-       IMPORTANT:
-       No notification is sent on first reading.
-    */
-
-    if (!state.initialized) {
-
-        state.initialized = true;
-
-        state.color =
-            getCardColorFromPercent(
-                numericPercent
-            );
-
-        state.threshold =
-            getThresholdFromPercent(
-                numericPercent
-            );
-
         return null;
     }
+
+
+    const state =
+        notificationStates[cardId];
 
 
     const previousColor =
@@ -3244,37 +3209,34 @@ function evaluateDashboardNotification(
         );
 
 
+    let notificationMessage =
+        null;
+
+
     /*
-       Priority:
+       One dashboard update can generate
+       MAXIMUM ONE notification.
 
-       1. Red <-> Green color transition
-       2. Threshold transition
-
-       This prevents two notifications for
-       the exact same dashboard update.
+       Color change has priority over
+       threshold change.
     */
-
-    let message = null;
-
 
     if (colorMessage) {
 
-        message =
+        notificationMessage =
             colorMessage;
 
     }
 
     else if (thresholdMessage) {
 
-        message =
+        notificationMessage =
             thresholdMessage;
-
     }
 
 
     /*
-       Save the NEW state only after
-       evaluating the previous state.
+       Save latest state.
     */
 
     state.color =
@@ -3285,7 +3247,7 @@ function evaluateDashboardNotification(
         currentThreshold;
 
 
-    return message;
+    return notificationMessage;
 }
 
 
@@ -3329,7 +3291,7 @@ function getCardNotificationTitle(
 
 
 /* =====================================================
-   SEND BROWSER / WINDOWS NOTIFICATION
+   SEND BROWSER NOTIFICATION
 ===================================================== */
 
 function sendDashboardNotification(
@@ -3351,7 +3313,8 @@ function sendDashboardNotification(
     ) {
 
         console.log(
-            "Notification skipped because permission is not granted:",
+            "Notification skipped because permission " +
+            "is not granted:",
             title,
             message
         );
@@ -3373,8 +3336,7 @@ function sendDashboardNotification(
 
 
         /*
-           Automatically close the notification
-           after a reasonable amount of time.
+           Close after 8 seconds.
         */
 
         setTimeout(
@@ -3444,9 +3406,12 @@ function updateCardColor(
     }
 
 
-    /* =================================================
-       NOTIFICATION
-    ================================================= */
+    /*
+       Notification system uses the SAME
+       percentage that the card already uses.
+
+       No financial calculation is performed here.
+    */
 
     const notificationMessage =
         evaluateDashboardNotification(
@@ -3454,12 +3419,6 @@ function updateCardColor(
             numericPercent
         );
 
-
-    /*
-       Only send a notification when the
-       notification engine actually detected
-       a meaningful state transition.
-    */
 
     if (
         notificationMessage
@@ -3478,8 +3437,8 @@ function updateCardColor(
 
 
     /* =================================================
-       EXISTING CARD COLOR LOGIC
-       KEPT UNCHANGED
+       EXISTING COLOR LOGIC
+       UNCHANGED
     ================================================= */
 
     const p =
@@ -3517,31 +3476,32 @@ function updateCardColor(
             `0 8px 30px rgba(239,68,68,${0.05 + t * 0.20})`;
     }
 }
+
+
 /* =====================================================
    HELPERS
 ===================================================== */
 
-
-
-
-	
 function $(id) {
 
     return document.getElementById(id);
-
 }
 
 
-function safeText(id, value) {
+function safeText(
+    id,
+    value
+) {
 
-    const element = $(id);
+    const element =
+        $(id);
+
 
     if (element) {
 
-        element.textContent = value;
-
+        element.textContent =
+            value;
     }
-
 }
 
 
@@ -3560,25 +3520,31 @@ function daysFromBuyToToday(
         !buyTransaction.date ||
         !today
     ) {
+
         return "-";
     }
+
 
     const startParts =
         String(buyTransaction.date)
             .split("/")
             .map(Number);
 
+
     const endParts =
         String(today)
             .split("/")
             .map(Number);
 
+
     if (
         startParts.length !== 3 ||
         endParts.length !== 3
     ) {
+
         return "-";
     }
+
 
     const startDate =
         jalaliToGregorian(
@@ -3587,12 +3553,14 @@ function daysFromBuyToToday(
             startParts[2]
         );
 
+
     const endDate =
         jalaliToGregorian(
             endParts[0],
             endParts[1],
             endParts[2]
         );
+
 
     const days =
         Math.floor(
@@ -3603,11 +3571,17 @@ function daysFromBuyToToday(
             86400000
         );
 
-    return Math.max(
-        0,
-        days
-    ) + "d";
+
+    return (
+        Math.max(
+            0,
+            days
+        ) +
+        "d"
+    );
 }
+
+
 /* =====================================================
    CACHE
 ===================================================== */
@@ -3638,24 +3612,24 @@ const CACHE_KEYS = {
     AVERAGE_TIME:
         "financialDashboardAveragePriceTime",
 
-USD_TXT_PRICE:
-    "financialDashboardUsdTxtPrice",
+    USD_TXT_PRICE:
+        "financialDashboardUsdTxtPrice",
 
-YEKUSD_PRICE:
-    "financialDashboardYekusdPrice"
+    YEKUSD_PRICE:
+        "financialDashboardYekusdPrice"
 
 };
 
- /* =====================================================
-    YEKUSD PRICE
-    ONLINE / OFFLINE STATUS
- ===================================================== */
+
+/* =====================================================
+   YEKUSD ONLINE / OFFLINE
+===================================================== */
 
 let yekusdOnline = false;
 
 
 /* =====================================================
-   SAVE YEKUSD PRICE
+   SAVE YEKUSD
 ===================================================== */
 
 function saveYekusdPrice(value) {
@@ -3664,12 +3638,11 @@ function saveYekusdPrice(value) {
         CACHE_KEYS.YEKUSD_PRICE,
         value
     );
-
 }
 
 
 /* =====================================================
-   LOAD CACHED YEKUSD PRICE
+   LOAD YEKUSD CACHE
 ===================================================== */
 
 function loadCachedYekusdPrice() {
@@ -3677,12 +3650,11 @@ function loadCachedYekusdPrice() {
     return localStorage.getItem(
         CACHE_KEYS.YEKUSD_PRICE
     );
-
 }
 
 
 /* =====================================================
-   UPDATE YEKUSD CONNECTION COLOR
+   YEKUSD CONNECTION COLOR
 ===================================================== */
 
 function updateYekusdConnectionColor(
@@ -3692,15 +3664,17 @@ function updateYekusdConnectionColor(
     const element =
         $("yekusd");
 
+
     if (!element) {
+
         return;
     }
+
 
     element.classList.toggle(
         "market-price-offline",
         !online
     );
-
 }
 
 
@@ -3716,27 +3690,19 @@ async function loadYekusd() {
             await fetch(
                 "https://yekusd-rateusd.rxw.workers.dev/",
                 {
-                    cache: "no-store"
+                    cache:
+                        "no-store"
                 }
             );
 
-
-        /* =============================================
-           HTTP ERROR
-        ============================================= */
 
         if (!response.ok) {
 
             throw new Error(
                 "YEKUSD worker unavailable"
             );
-
         }
 
-
-        /* =============================================
-           READ RESPONSE
-        ============================================= */
 
         const text =
             await response.text();
@@ -3746,22 +3712,13 @@ async function loadYekusd() {
             text.trim();
 
 
-        /* =============================================
-           INVALID RESPONSE
-        ============================================= */
-
         if (!value) {
 
             throw new Error(
                 "YEKUSD empty response"
             );
-
         }
 
-
-        /* =============================================
-           ONLINE
-        ============================================= */
 
         safeText(
             "yekusd",
@@ -3782,15 +3739,9 @@ async function loadYekusd() {
             true
         );
 
-
     }
 
-    catch(error) {
-
-
-        /* =============================================
-           OFFLINE
-        ============================================= */
+    catch (error) {
 
         yekusdOnline =
             false;
@@ -3815,21 +3766,19 @@ async function loadYekusd() {
             "YEKUSD Offline:",
             error
         );
-
     }
-
 }
 
- /* =====================================================
-    USD TXT PRICE
-    ONLINE / OFFLINE STATUS
- ===================================================== */
+
+/* =====================================================
+   USD TXT ONLINE / OFFLINE
+===================================================== */
 
 let usdTxtOnline = false;
 
 
 /* =====================================================
-   SAVE USD TXT PRICE
+   SAVE USD TXT
 ===================================================== */
 
 function saveUsdTxtPrice(value) {
@@ -3838,12 +3787,11 @@ function saveUsdTxtPrice(value) {
         CACHE_KEYS.USD_TXT_PRICE,
         value
     );
-
 }
 
 
 /* =====================================================
-   LOAD CACHED USD TXT PRICE
+   LOAD USD TXT CACHE
 ===================================================== */
 
 function loadCachedUsdTxtPrice() {
@@ -3851,12 +3799,11 @@ function loadCachedUsdTxtPrice() {
     return localStorage.getItem(
         CACHE_KEYS.USD_TXT_PRICE
     );
-
 }
 
 
 /* =====================================================
-   UPDATE USD TXT CONNECTION COLOR
+   USD TXT CONNECTION COLOR
 ===================================================== */
 
 function updateUsdTxtConnectionColor(
@@ -3866,15 +3813,17 @@ function updateUsdTxtConnectionColor(
     const element =
         $("usdTxtPrice");
 
+
     if (!element) {
+
         return;
     }
+
 
     element.classList.toggle(
         "market-price-offline",
         !online
     );
-
 }
 
 
@@ -3890,27 +3839,19 @@ async function loadUsdTxt() {
             await fetch(
                 "https://usdd.rxw.workers.dev/",
                 {
-                    cache: "no-store"
+                    cache:
+                        "no-store"
                 }
             );
 
-
-        /* =============================================
-           HTTP ERROR
-        ============================================= */
 
         if (!response.ok) {
 
             throw new Error(
                 "USD worker unavailable"
             );
-
         }
 
-
-        /* =============================================
-           READ RESPONSE
-        ============================================= */
 
         const text =
             await response.text();
@@ -3920,22 +3861,13 @@ async function loadUsdTxt() {
             text.trim();
 
 
-        /* =============================================
-           INVALID RESPONSE
-        ============================================= */
-
         if (!value) {
 
             throw new Error(
                 "USD empty response"
             );
-
         }
 
-
-        /* =============================================
-           ONLINE
-        ============================================= */
 
         safeText(
             "usdTxtPrice",
@@ -3956,15 +3888,9 @@ async function loadUsdTxt() {
             true
         );
 
-
     }
 
-    catch(error) {
-
-
-        /* =============================================
-           OFFLINE
-        ============================================= */
+    catch (error) {
 
         usdTxtOnline =
             false;
@@ -3989,13 +3915,12 @@ async function loadUsdTxt() {
             "USD TXT Offline:",
             error
         );
-
     }
-
 }
+
+
 /* =====================================================
    MARKET PRICE CONNECTION COLORS
-   NOBITEX + EXIR + BITPIN
 ===================================================== */
 
 function updateMarketPriceConnectionColors(
@@ -4007,8 +3932,10 @@ function updateMarketPriceConnectionColors(
     const currentPrice =
         $("currentPrice");
 
+
     const exirPrice =
         $("exirPrice");
+
 
     const bitpinPrice =
         $("bitpinPrice");
@@ -4020,7 +3947,6 @@ function updateMarketPriceConnectionColors(
             "market-price-offline",
             !nobitexOnline
         );
-
     }
 
 
@@ -4030,7 +3956,6 @@ function updateMarketPriceConnectionColors(
             "market-price-offline",
             !exirOnline
         );
-
     }
 
 
@@ -4040,105 +3965,126 @@ function updateMarketPriceConnectionColors(
             "market-price-offline",
             !bitpinOnline
         );
-
     }
-
 }
 
 
+/* =====================================================
+   NUMBER FORMAT
+===================================================== */
+
 function formatNumber(value) {
 
-    const number = Number(value);
+    const number =
+        Number(value);
 
-    if (!Number.isFinite(number)) {
+
+    if (
+        !Number.isFinite(number)
+    ) {
 
         return "-";
-
     }
+
 
     return Math.round(number)
         .toLocaleString("en-US");
-
 }
 
 
 function formatMoneySigned(value) {
 
-    const number = Number(value);
+    const number =
+        Number(value);
 
-    if (!Number.isFinite(number)) {
+
+    if (
+        !Number.isFinite(number)
+    ) {
 
         return "-";
-
     }
+
 
     const rounded =
         Math.round(number);
 
+
     if (rounded > 0) {
 
-        return "+" +
-            rounded.toLocaleString("en-US");
-
+        return (
+            "+" +
+            rounded.toLocaleString(
+                "en-US"
+            )
+        );
     }
 
-    return rounded.toLocaleString("en-US");
 
+    return rounded.toLocaleString(
+        "en-US"
+    );
 }
 
 
 function formatPercent(value) {
 
-    const number = Number(value);
+    const number =
+        Number(value);
 
-    if (!Number.isFinite(number)) {
+
+    if (
+        !Number.isFinite(number)
+    ) {
 
         return "-";
-
     }
 
-    return (
 
+    return (
         number >= 0
             ? "+"
             : ""
-
     )
-
     +
-
     number.toFixed(2)
-
     +
-
     "%";
-
 }
 
 
-function setProfitLossClass(id, value) {
+function setProfitLossClass(
+    id,
+    value
+) {
 
-    const element = $(id);
+    const element =
+        $(id);
+
 
     if (!element) {
 
         return;
-
     }
+
 
     element.classList.remove(
         "profit",
         "loss"
     );
 
+
     const number =
         Number(value);
 
-    if (!Number.isFinite(number)) {
+
+    if (
+        !Number.isFinite(number)
+    ) {
 
         return;
-
     }
+
 
     element.classList.add(
 
@@ -4147,16 +4093,20 @@ function setProfitLossClass(id, value) {
             : "loss"
 
     );
-
 }
 
 
+/* =====================================================
+   DASHBOARD CACHE / REQUEST
+===================================================== */
 
 const DATA_CACHE_MAX_AGE =
     5 * 60 * 1000;
 
+
 const PRICE_REQUEST_TIMEOUT =
     10000;
+
 
 let dashboardLoadInProgress =
     null;
@@ -4171,11 +4121,14 @@ function fetchWithTimeout(
     const controller =
         new AbortController();
 
+
     const timer =
         setTimeout(
-            () => controller.abort(),
+            () =>
+                controller.abort(),
             timeout
         );
+
 
     return fetch(
         url,
@@ -4184,17 +4137,17 @@ function fetchWithTimeout(
             signal:
                 controller.signal
         }
-    ).finally(
-        () => clearTimeout(timer)
+    )
+    .finally(
+        () =>
+            clearTimeout(timer)
     );
-
 }
 
 
 function loadCachedDashboardData() {
 
     return loadLocalData();
-
 }
 
 
@@ -4218,9 +4171,7 @@ function saveLocalData(data) {
             "Could not save dashboard data",
             error
         );
-
     }
-
 }
 
 
@@ -4233,6 +4184,7 @@ function loadLocalData() {
                 CACHE_KEYS.DATA
             );
 
+
         return saved
             ? JSON.parse(saved)
             : null;
@@ -4242,9 +4194,7 @@ function loadLocalData() {
     catch (error) {
 
         return null;
-
     }
-
 }
 
 
@@ -4253,25 +4203,19 @@ function saveNobitexPrice(price) {
     try {
 
         localStorage.setItem(
-
             CACHE_KEYS.NOBITEX_PRICE,
-
             String(price)
-
         );
 
+
         localStorage.setItem(
-
             CACHE_KEYS.NOBITEX_TIME,
-
             new Date().toISOString()
-
         );
 
     }
 
     catch (error) {}
-
 }
 
 
@@ -4284,8 +4228,10 @@ function loadNobitexPrice() {
                 CACHE_KEYS.NOBITEX_PRICE
             );
 
+
         const price =
             Number(saved);
+
 
         return Number.isFinite(price)
             ? price
@@ -4296,9 +4242,7 @@ function loadNobitexPrice() {
     catch (error) {
 
         return null;
-
     }
-
 }
 
 
@@ -4307,17 +4251,13 @@ function saveExirPrice(price) {
     try {
 
         localStorage.setItem(
-
             CACHE_KEYS.EXIR_PRICE,
-
             String(price)
-
         );
 
     }
 
     catch (error) {}
-
 }
 
 
@@ -4330,8 +4270,10 @@ function loadExirPrice() {
                 CACHE_KEYS.EXIR_PRICE
             );
 
+
         const price =
             Number(saved);
+
 
         return Number.isFinite(price)
             ? price
@@ -4342,9 +4284,7 @@ function loadExirPrice() {
     catch (error) {
 
         return null;
-
     }
-
 }
 
 
@@ -4353,25 +4293,19 @@ function saveBitpinPrice(price) {
     try {
 
         localStorage.setItem(
-
             CACHE_KEYS.BITPIN_PRICE,
-
             String(price)
-
         );
 
+
         localStorage.setItem(
-
             CACHE_KEYS.BITPIN_TIME,
-
             new Date().toISOString()
-
         );
 
     }
 
     catch (error) {}
-
 }
 
 
@@ -4384,8 +4318,10 @@ function loadBitpinPrice() {
                 CACHE_KEYS.BITPIN_PRICE
             );
 
+
         const price =
             Number(saved);
+
 
         return Number.isFinite(price)
             ? price
@@ -4396,11 +4332,8 @@ function loadBitpinPrice() {
     catch (error) {
 
         return null;
-
     }
-
 }
-
 
 
 function saveAveragePrice(price) {
@@ -4420,10 +4353,8 @@ function saveAveragePrice(price) {
 
     }
 
-    catch(error){}
-
+    catch (error) {}
 }
-
 
 
 function loadAveragePrice() {
@@ -4446,12 +4377,10 @@ function loadAveragePrice() {
 
     }
 
-    catch(error){
+    catch (error) {
 
         return null;
-
     }
-
 }
 
 
@@ -4464,26 +4393,26 @@ function getCachedPriceTime() {
                 CACHE_KEYS.NOBITEX_TIME
             );
 
+
         if (!saved) {
 
             return "";
-
         }
+
 
         const date =
             new Date(saved);
 
-        if (
 
+        if (
             Number.isNaN(
                 date.getTime()
             )
-
         ) {
 
             return "";
-
         }
+
 
         return date.toLocaleString(
 
@@ -4491,20 +4420,26 @@ function getCachedPriceTime() {
 
             {
 
-                year: "numeric",
+                year:
+                    "numeric",
 
-                month: "2-digit",
+                month:
+                    "2-digit",
 
-                day: "2-digit",
+                day:
+                    "2-digit",
 
-                hour: "2-digit",
+                hour:
+                    "2-digit",
 
-                minute: "2-digit",
+                minute:
+                    "2-digit",
 
-                second: "2-digit",
+                second:
+                    "2-digit",
 
-                hour12: false
-
+                hour12:
+                    false
             }
 
         );
@@ -4514,9 +4449,7 @@ function getCachedPriceTime() {
     catch (error) {
 
         return "";
-
     }
-
 }
 
 
@@ -4532,11 +4465,12 @@ function showConnectionStatus(
     const element =
         $("connectionStatus");
 
+
     if (!element) {
 
         return;
-
     }
+
 
     if (offline) {
 
@@ -4549,12 +4483,11 @@ function showConnectionStatus(
 
         element.className =
             "connection-status online";
-
     }
+
 
     element.textContent =
         message;
-
 }
 
 
@@ -4569,47 +4502,40 @@ function showLivePriceErrors(
     const element =
         $("liveErrorMessage");
 
+
     if (!element) {
 
         return;
-
     }
 
+
     if (
-
         !Array.isArray(errors)
-
         ||
-
         errors.length === 0
-
     ) {
 
         element.textContent =
             "";
 
+
         element.classList.remove(
             "visible"
         );
 
-        return;
 
+        return;
     }
 
+
     element.textContent =
+        "Price unavailable: " +
+        errors.join(" • ");
 
-        "Price unavailable: "
-
-        +
-
-        errors.join(
-            " • "
-        );
 
     element.classList.add(
         "visible"
     );
-
 }
 
 
@@ -4626,53 +4552,55 @@ function setPriceArrow(
     const element =
         $(id);
 
+
     if (!element) {
 
         return;
-
     }
 
+
     element.classList.remove(
-
         "arrow-up",
-
         "arrow-down",
-
         "arrow-flat"
-
     );
+
 
     const current =
         Number(currentPrice);
 
+
     const previous =
         Number(previousPrice);
 
+
     if (
-
         !Number.isFinite(current)
-
         ||
-
         !Number.isFinite(previous)
-
     ) {
 
         element.textContent =
             "→";
 
+
         element.classList.add(
             "arrow-flat"
         );
 
-        return;
 
+        return;
     }
 
-    if (current > previous) {
+
+    if (
+        current >
+        previous
+    ) {
 
         element.textContent =
             "↑";
+
 
         element.classList.add(
             "arrow-up"
@@ -4680,10 +4608,14 @@ function setPriceArrow(
 
     }
 
-    else if (current < previous) {
+    else if (
+        current <
+        previous
+    ) {
 
         element.textContent =
             "↓";
+
 
         element.classList.add(
             "arrow-down"
@@ -4696,12 +4628,11 @@ function setPriceArrow(
         element.textContent =
             "→";
 
+
         element.classList.add(
             "arrow-flat"
         );
-
     }
-
 }
 
 
@@ -4716,6 +4647,7 @@ function jalaliToGregorian(
 ) {
 
     jy -= 979;
+
 
     let days =
 
@@ -4733,6 +4665,7 @@ function jalaliToGregorian(
             ((jy % 33) + 3) / 4
         );
 
+
     for (
         let i = 1;
         i < jm;
@@ -4743,11 +4676,12 @@ function jalaliToGregorian(
             i <= 6
                 ? 31
                 : 30;
-
     }
+
 
     days +=
         jd - 1;
+
 
     let gy =
         1600
@@ -4757,9 +4691,14 @@ function jalaliToGregorian(
             days / 146097
         );
 
-    days %= 146097;
 
-    if (days > 36524) {
+    days %=
+        146097;
+
+
+    if (
+        days > 36524
+    ) {
 
         gy +=
             100 *
@@ -4767,15 +4706,19 @@ function jalaliToGregorian(
                 --days / 36524
             );
 
-        days %= 36524;
 
-        if (days >= 365) {
+        days %=
+            36524;
+
+
+        if (
+            days >= 365
+        ) {
 
             days++;
-
         }
-
     }
+
 
     gy +=
         4 *
@@ -4783,38 +4726,40 @@ function jalaliToGregorian(
             days / 1461
         );
 
-    days %= 1461;
 
-    if (days > 365) {
+    days %=
+        1461;
+
+
+    if (
+        days > 365
+    ) {
 
         gy +=
             Math.floor(
                 (days - 1) / 365
             );
 
+
         days =
             (days - 1) % 365;
-
     }
+
 
     const gd =
         days + 1;
 
+
     const leap =
 
         (
-
             gy % 4 === 0
-
             &&
-
             gy % 100 !== 0
-
         )
-
         ||
-
         gy % 400 === 0;
+
 
     const monthDays = [
 
@@ -4822,7 +4767,9 @@ function jalaliToGregorian(
 
         31,
 
-        leap ? 29 : 28,
+        leap
+            ? 29
+            : 28,
 
         31,
 
@@ -4846,26 +4793,27 @@ function jalaliToGregorian(
 
     ];
 
+
     let day =
         gd;
+
 
     let month =
         1;
 
+
     while (
-
         day >
-
         monthDays[month]
-
     ) {
 
         day -=
             monthDays[month];
 
-        month++;
 
+        month++;
     }
+
 
     return new Date(
 
@@ -4876,7 +4824,6 @@ function jalaliToGregorian(
         day
 
     );
-
 }
 
 
@@ -4890,73 +4837,61 @@ function daysBetweenInclusive(
             .split("/")
             .map(Number);
 
+
     const endParts =
         String(end)
             .split("/")
             .map(Number);
 
+
     if (
-
         startParts.length !== 3
-
         ||
-
         endParts.length !== 3
-
     ) {
 
         return 0;
-
     }
+
 
     const startDate =
         jalaliToGregorian(
 
             startParts[0],
-
             startParts[1],
-
             startParts[2]
 
         );
+
 
     const endDate =
         jalaliToGregorian(
 
             endParts[0],
-
             endParts[1],
-
             endParts[2]
 
         );
+
 
     const difference =
 
         Math.floor(
 
             (
-
                 endDate -
-
                 startDate
-
             )
-
             /
-
             86400000
 
         );
 
+
     return Math.max(
-
         0,
-
         difference + 1
-
     );
-
 }
 
 
@@ -4965,52 +4900,48 @@ function getTodayJalali() {
     const now =
         new Date();
 
+
     const gy =
         now.getFullYear();
+
 
     const gm =
         now.getMonth() + 1;
 
+
     const gd =
         now.getDate();
+
 
     const gdm = [
 
         0,
-
         31,
-
         59,
-
         90,
-
         120,
-
         151,
-
         181,
-
         212,
-
         243,
-
         273,
-
         304,
-
         334
 
     ];
+
 
     let jy =
         gy > 1600
             ? 979
             : 0;
 
+
     const y =
         gy > 1600
             ? gy - 1600
             : gy - 621;
+
 
     let days =
 
@@ -5046,62 +4977,61 @@ function getTodayJalali() {
 
         gdm[gm - 1];
 
+
     jy +=
 
         33 *
-
         Math.floor(
             days / 12053
         );
 
-    days %=
 
-        12053;
+    days %= 12053;
+
 
     jy +=
 
         4 *
-
         Math.floor(
             days / 1461
         );
 
-    days %=
 
-        1461;
+    days %= 1461;
 
-    if (days > 365) {
+
+    if (
+        days > 365
+    ) {
 
         jy +=
-
             Math.floor(
                 (days - 1) / 365
             );
 
+
         days =
-
             (days - 1) % 365;
-
     }
 
-    let jm;
 
+    let jm;
     let jd;
 
-    if (days < 186) {
+
+    if (
+        days < 186
+    ) {
 
         jm =
-
             1 +
-
             Math.floor(
                 days / 31
             );
 
+
         jd =
-
             1 +
-
             days % 31;
 
     }
@@ -5109,45 +5039,33 @@ function getTodayJalali() {
     else {
 
         jm =
-
             7 +
-
             Math.floor(
                 (days - 186) / 30
             );
 
+
         jd =
-
             1 +
-
             (days - 186) % 30;
-
     }
+
 
     return (
 
         jy
-
         +
-
         "/"
-
         +
-
         String(jm)
             .padStart(2, "0")
-
         +
-
         "/"
-
         +
-
         String(jd)
             .padStart(2, "0")
 
     );
-
 }
 
 
@@ -5158,15 +5076,14 @@ function dateNumber(date) {
             .split("/")
             .map(Number);
 
+
     if (
-
         parts.length !== 3
-
     ) {
 
         return 0;
-
     }
+
 
     return (
 
@@ -5181,7 +5098,6 @@ function dateNumber(date) {
         parts[2]
 
     );
-
 }
 
 
@@ -5190,28 +5106,24 @@ function dateNumber(date) {
 ===================================================== */
 
 function compoundValue(
-
     principal,
-
     startDate,
-
     endDate,
-
     annualRate
-
 ) {
 
     const days =
         daysBetweenInclusive(
-
             startDate,
-
             endDate
-
         );
 
+
     const dailyRate =
-        annualRate / 100 / 365;
+        annualRate /
+        100 /
+        365;
+
 
     return (
 
@@ -5226,7 +5138,6 @@ function compoundValue(
         )
 
     );
-
 }
 
 
@@ -5235,84 +5146,68 @@ function compoundValue(
 ===================================================== */
 
 function calculatePortfolio(
-
     transactions,
-
     currentPrice,
-
     today,
-
     annualRate
-
 ) {
 
     const lots = [];
 
+
     let realizedPurchase =
         0;
+
 
     let realizedBank =
         0;
 
+
     let buyCount =
         0;
+
 
     let sellCount =
         0;
 
 
     for (
-
         const transaction
-
         of transactions
-
     ) {
 
         const amount =
             Number(
-
                 transaction.amount
-
             );
+
 
         const price =
             Number(
-
                 transaction.price
-
             );
 
+
         if (
-
             !Number.isFinite(amount)
-
             ||
-
             !Number.isFinite(price)
-
             ||
-
             amount <= 0
-
             ||
-
             price < 0
-
         ) {
 
             continue;
-
         }
 
 
         if (
-
             transaction.type === "buy"
-
         ) {
 
             buyCount++;
+
 
             lots.push({
 
@@ -5321,7 +5216,6 @@ function calculatePortfolio(
                 price,
 
                 date:
-
                     transaction.date
 
             });
@@ -5330,48 +5224,42 @@ function calculatePortfolio(
 
 
         else if (
-
             transaction.type === "sell"
-
         ) {
 
             sellCount++;
+
 
             let remaining =
                 amount;
 
 
             while (
-
                 remaining > 0
-
                 &&
-
                 lots.length > 0
-
             ) {
 
                 const lot =
                     lots[0];
 
+
                 const used =
                     Math.min(
-
                         remaining,
-
                         lot.amount
-
                     );
+
 
                 const purchaseCost =
                     used *
-
                     lot.price;
+
 
                 const saleRevenue =
                     used *
-
                     price;
+
 
                 const bankCost =
                     compoundValue(
@@ -5386,40 +5274,36 @@ function calculatePortfolio(
 
                     );
 
+
                 realizedPurchase +=
 
                     saleRevenue -
-
                     purchaseCost;
+
 
                 realizedBank +=
 
                     saleRevenue -
-
                     bankCost;
+
 
                 lot.amount -=
                     used;
 
+
                 remaining -=
                     used;
 
+
                 if (
-
                     lot.amount <=
-
                     0.0000001
-
                 ) {
 
                     lots.shift();
-
                 }
-
             }
-
         }
-
     }
 
 
@@ -5428,15 +5312,11 @@ function calculatePortfolio(
         lots.reduce(
 
             (
-
                 total,
-
                 lot
-
             ) =>
 
                 total +
-
                 lot.amount,
 
             0
@@ -5449,17 +5329,12 @@ function calculatePortfolio(
         lots.reduce(
 
             (
-
                 total,
-
                 lot
-
             ) =>
 
                 total +
-
                 lot.amount *
-
                 lot.price,
 
             0
@@ -5474,7 +5349,6 @@ function calculatePortfolio(
             ?
 
             paidAmount /
-
             currentQuantity
 
             :
@@ -5487,11 +5361,8 @@ function calculatePortfolio(
 
 
     for (
-
         const lot
-
         of lots
-
     ) {
 
         bankValue +=
@@ -5499,7 +5370,6 @@ function calculatePortfolio(
             compoundValue(
 
                 lot.amount *
-
                 lot.price,
 
                 lot.date,
@@ -5509,14 +5379,12 @@ function calculatePortfolio(
                 annualRate
 
             );
-
     }
 
 
     const currentValue =
 
         currentQuantity *
-
         currentPrice;
 
 
@@ -5527,7 +5395,6 @@ function calculatePortfolio(
             ?
 
             bankValue /
-
             currentQuantity
 
             :
@@ -5538,14 +5405,12 @@ function calculatePortfolio(
     const unrealizedPurchaseAmount =
 
         currentValue -
-
         paidAmount;
 
 
     const unrealizedBankAmount =
 
         currentValue -
-
         bankValue;
 
 
@@ -5556,17 +5421,10 @@ function calculatePortfolio(
             ?
 
             (
-
-                unrealizedPurchaseAmount
-
-                /
-
+                unrealizedPurchaseAmount /
                 paidAmount
-
             )
-
             *
-
             100
 
             :
@@ -5581,17 +5439,10 @@ function calculatePortfolio(
             ?
 
             (
-
-                unrealizedBankAmount
-
-                /
-
+                unrealizedBankAmount /
                 bankValue
-
             )
-
             *
-
             100
 
             :
@@ -5632,7 +5483,6 @@ function calculatePortfolio(
         sellCount
 
     };
-
 }
 
 
@@ -5641,63 +5491,47 @@ function calculatePortfolio(
 ===================================================== */
 
 function buildPeriods(
-
     transactions
-
 ) {
 
     const periods = [];
+
 
     let current =
         null;
 
 
     for (
-
         const transaction
-
         of transactions
-
     ) {
 
         if (
-
             transaction.type === "buy"
-
         ) {
 
             if (
-
                 current
-
                 &&
-
                 current.transactions.length > 0
-
             ) {
 
                 periods.push(
-
                     current
-
                 );
-
             }
+
 
             current = {
 
                 transactions: [
-
                     transaction
-
                 ],
 
                 startDate:
-
                     transaction.date,
 
                 endDate:
-
                     transaction.date
 
             };
@@ -5705,119 +5539,87 @@ function buildPeriods(
         }
 
         else if (
-
             transaction.type === "sell"
-
         ) {
 
             if (current) {
 
                 current.transactions.push(
-
                     transaction
-
                 );
 
+
                 current.endDate =
-
                     transaction.date;
-
             }
-
         }
-
     }
 
 
     if (
-
         current
-
         &&
-
         current.transactions.length > 0
-
     ) {
 
         periods.push(
-
             current
-
         );
-
     }
 
 
     return periods;
-
 }
 
 
 function getLastPeriods(
-
     transactions,
-
     count
-
 ) {
 
     const periods =
-
         buildPeriods(
-
             transactions
-
         );
+
 
     return periods
 
         .slice(-count)
 
         .flatMap(
-
             period =>
-
                 period.transactions
-
         );
-
 }
 
 
 function getLastPeriod(
-
     transactions
-
 ) {
 
     const periods =
-
         buildPeriods(
-
             transactions
-
         );
 
+
     if (
-
         periods.length === 0
-
     ) {
 
         return [];
-
     }
 
+
     return periods[
-
         periods.length - 1
-
     ].transactions;
-
 }
 
+
 /* =====================================================
-   TOP 6 HIGHEST PRICE PURCHASES
+   TOP PURCHASES
 ===================================================== */
 
 function getTop6HighestPricePurchases(
@@ -5847,330 +5649,225 @@ function getTop6HighestPricePurchases(
             0,
             TOP_PURCHASES_COUNT
         );
-
 }
+
+
 /* =====================================================
    DISPLAY SECTION
 ===================================================== */
 
 function displaySection(
-
     result,
-
     prefix,
-
     previousLivePrice,
-
     age
-
 ) {
 
     safeText(
-
         prefix +
-
         "Average",
-
         formatNumber(
-
             result.averagePurchasePrice
-
         )
-
     );
 
 
     safeText(
-
         prefix +
-
         "Paid",
-
         formatNumber(
-
             result.paidAmount
-
         )
-
     );
 
 
     safeText(
-
         prefix +
-
         "Adjusted",
-
         formatNumber(
-
             result.bankAdjustedPrice
-
         )
-
     );
 
 
     safeText(
-
         prefix +
-
         "Live",
-
         formatNumber(
-
             result.currentPrice
-
         )
-
     );
 
 
     setPriceArrow(
-
         prefix +
-
         "PriceArrow",
 
         result.currentPrice,
 
         previousLivePrice
-
     );
 
 
     safeText(
-
         prefix +
-
         "Quantity",
 
         formatNumber(
-
             result.currentQuantity
-
         )
-
     );
 
 
     safeText(
-
         prefix +
-
         "Value",
 
         formatNumber(
-
             result.currentValue
-
         )
-
     );
 
 
     safeText(
-
         prefix +
-
         "Bank",
 
         formatNumber(
-
             result.bankValue
-
         )
-
     );
 
 
     safeText(
-
         prefix +
-
         "PLPurchase",
 
         formatPercent(
-
             result.plPurchase
-
         )
-
     );
 
 
     safeText(
-
         prefix +
-
         "PLBank",
 
         formatPercent(
-
             result.plBank
-
         )
-
     );
 
 
     safeText(
-
         prefix +
-
         "UnrealizedPurchase",
 
         formatMoneySigned(
-
             result.unrealizedPurchaseAmount
-
         )
-
     );
 
 
     safeText(
-
         prefix +
-
         "UnrealizedBank",
 
         formatMoneySigned(
-
             result.unrealizedBankAmount
-
         )
-
     );
 
 
     safeText(
-
         prefix +
-
         "RealizedPurchase",
 
         formatMoneySigned(
-
             result.realizedPurchase
-
         )
-
     );
 
 
     safeText(
-
         prefix +
-
         "RealizedBank",
 
         formatMoneySigned(
-
             result.realizedBank
-
         )
-
     );
 
 
     setProfitLossClass(
-
         prefix +
-
         "PLPurchase",
 
         result.plPurchase
-
     );
 
 
     setProfitLossClass(
-
         prefix +
-
         "PLBank",
 
         result.plBank
-
     );
 
 
     setProfitLossClass(
-
         prefix +
-
         "UnrealizedPurchase",
 
         result.unrealizedPurchaseAmount
-
     );
 
 
     setProfitLossClass(
-
         prefix +
-
         "UnrealizedBank",
 
         result.unrealizedBankAmount
-
     );
 
 
     setProfitLossClass(
-
         prefix +
-
         "RealizedPurchase",
 
         result.realizedPurchase
-
     );
 
 
     setProfitLossClass(
-
         prefix +
-
         "RealizedBank",
 
         result.realizedBank
-
     );
 
 
     const mainPrice =
-
         $(
-
             prefix +
-
             "MainPrice"
-
         );
 
 
     if (mainPrice) {
 
         mainPrice.classList.remove(
-
             "status-green",
-
             "status-red"
-
         );
 
 
         if (
-
             result.plBank >= 0
-
         ) {
 
             mainPrice.classList.add(
-
                 "status-green"
-
             );
 
         }
@@ -6178,41 +5875,30 @@ function displaySection(
         else {
 
             mainPrice.classList.add(
-
                 "status-red"
-
             );
-
         }
-
     }
 
 
     const resultBox =
-
         $(
-
             prefix +
-
             "Result"
-
         );
 
 
     if (resultBox) {
 
         if (
-
             result.plBank >= 0
-
         ) {
 
             resultBox.textContent =
-
                 "Investment return is better than bank";
 
-            resultBox.style.color =
 
+            resultBox.style.color =
                 "#34d399";
 
         }
@@ -6220,38 +5906,36 @@ function displaySection(
         else {
 
             resultBox.textContent =
-
                 "Bank return is better than investment";
 
+
             resultBox.style.color =
-
                 "#f87171";
-
         }
-
     }
 
 
-const tradeCount =
-    $(
-        prefix +
-        "Trades"
-    );
+    const tradeCount =
+        $(
+            prefix +
+            "Trades"
+        );
 
-if (tradeCount) {
 
-    tradeCount.textContent =
-        result.buyCount
-        +
-        " IN  •  "
-        +
-        result.sellCount
-        +
-        " OUT  •  "
-        +
-        age;
-}
+    if (tradeCount) {
 
+        tradeCount.textContent =
+
+            result.buyCount
+            +
+            " IN  •  "
+            +
+            result.sellCount
+            +
+            " OUT  •  "
+            +
+            age;
+    }
 }
 
 
@@ -6260,66 +5944,50 @@ if (tradeCount) {
 ===================================================== */
 
 function displayLastAction(
-
     transactions
-
 ) {
 
     const badge =
-
         $("lastAction");
 
+
     if (
-
         !badge
-
         ||
-
         !transactions.length
-
     ) {
 
         return;
-
     }
 
+
     const last =
-
         transactions[
-
             transactions.length - 1
-
         ];
 
 
     if (
-
         last.type === "buy"
-
     ) {
 
         badge.textContent =
-
             "IN";
 
+
         badge.className =
-
             "action-badge action-buy";
-
     }
 
     else {
 
         badge.textContent =
-
             "OUT";
 
+
         badge.className =
-
             "action-badge action-sell";
-
     }
-
 }
 
 
@@ -6328,43 +5996,36 @@ function displayLastAction(
 ===================================================== */
 
 async function getCurrentPrice(
-
     apiUrl,
-
     divisor
-
 ) {
 
     if (!apiUrl) {
 
         throw new Error(
-
             "Nobitex API URL is missing"
-
         );
-
     }
 
-    const response =
 
+    const response =
         await fetchWithTimeout(
 
             apiUrl,
 
             {
-
-                method: "GET",
+                method:
+                    "GET",
 
                 headers: {
 
                     "Accept":
-
                         "application/json"
 
                 },
 
-                cache: "no-store"
-
+                cache:
+                    "no-store"
             }
 
         );
@@ -6373,50 +6034,36 @@ async function getCurrentPrice(
     if (!response.ok) {
 
         throw new Error(
-
             "Unable to get Nobitex price"
-
         );
-
     }
 
 
     const data =
-
         await response.json();
 
 
     const rawPrice =
-
         data.lastTradePrice;
 
 
     const price =
-
         Number(rawPrice)
-
         /
-
         divisor;
 
 
     if (
-
         !Number.isFinite(price)
-
     ) {
 
         throw new Error(
-
             "Invalid Nobitex price"
-
         );
-
     }
 
 
     return price;
-
 }
 
 
@@ -6425,42 +6072,35 @@ async function getCurrentPrice(
 ===================================================== */
 
 async function getExirPrice(
-
     apiUrl
-
 ) {
 
     if (!apiUrl) {
 
         throw new Error(
-
             "Exir API URL is missing"
-
         );
-
     }
 
 
     const response =
-
         await fetchWithTimeout(
 
             apiUrl,
 
             {
-
-                method: "GET",
+                method:
+                    "GET",
 
                 headers: {
 
                     "Accept":
-
                         "application/json"
 
                 },
 
-                cache: "no-store"
-
+                cache:
+                    "no-store"
             }
 
         );
@@ -6469,16 +6109,12 @@ async function getExirPrice(
     if (!response.ok) {
 
         throw new Error(
-
             "Unable to get Exir price"
-
         );
-
     }
 
 
     const data =
-
         await response.json();
 
 
@@ -6506,46 +6142,34 @@ async function getExirPrice(
 
 
     const rawPrice =
-
         candidates.find(
 
             value =>
 
                 value !== null
-
                 &&
-
                 value !== undefined
-
                 &&
-
                 value !== ""
 
         );
 
 
     const price =
-
         Number(rawPrice);
 
 
     if (
-
         !Number.isFinite(price)
-
     ) {
 
         throw new Error(
-
             "Invalid Exir price"
-
         );
-
     }
 
 
     return price;
-
 }
 
 
@@ -6554,42 +6178,35 @@ async function getExirPrice(
 ===================================================== */
 
 async function getBitpinPrice(
-
     apiUrl
-
 ) {
 
     if (!apiUrl) {
 
         throw new Error(
-
             "Bitpin API URL is missing"
-
         );
-
     }
 
 
     const response =
-
         await fetchWithTimeout(
 
             apiUrl,
 
             {
-
-                method: "GET",
+                method:
+                    "GET",
 
                 headers: {
 
                     "Accept":
-
                         "application/json"
 
                 },
 
-                cache: "no-store"
-
+                cache:
+                    "no-store"
             }
 
         );
@@ -6598,16 +6215,12 @@ async function getBitpinPrice(
     if (!response.ok) {
 
         throw new Error(
-
             "Unable to get Bitpin price"
-
         );
-
     }
 
 
     const data =
-
         await response.json();
 
 
@@ -6655,66 +6268,45 @@ async function getBitpinPrice(
 
 
     let rawPrice =
-
         candidates.find(
 
             value => {
 
                 if (
-
                     value === null
-
                     ||
-
                     value === undefined
-
                     ||
-
                     value === ""
-
                 ) {
 
                     return false;
-
                 }
+
 
                 if (
-
                     typeof value ===
-
                     "object"
-
                 ) {
 
                     return false;
-
                 }
 
+
                 return Number.isFinite(
-
                     Number(value)
-
                 );
-
             }
 
         );
 
 
     if (
-
         rawPrice === undefined
-
         &&
-
-        typeof data ===
-
-        "object"
-
+        typeof data === "object"
         &&
-
         data !== null
-
     ) {
 
         const recursiveKeys = [
@@ -6737,71 +6329,50 @@ async function getBitpinPrice(
 
 
         for (
-
             const key
-
             of recursiveKeys
-
         ) {
 
             if (
-
                 data[key] !== undefined
-
                 &&
-
                 Number.isFinite(
-
                     Number(
-
                         data[key]
-
                     )
-
                 )
-
             ) {
 
                 rawPrice =
-
                     data[key];
 
+
                 break;
-
             }
-
         }
-
     }
 
 
     const price =
-
         Number(rawPrice);
 
 
     if (
-
         !Number.isFinite(price)
-
     ) {
 
         throw new Error(
-
             "Invalid Bitpin price"
-
         );
-
     }
 
 
     return price;
-
 }
+
 
 /* =====================================================
    AVERAGE LIVE PRICE
-   ONLINE ONLY + SAVED AVERAGE CACHE FALLBACK
 ===================================================== */
 
 function calculateAverageLivePrice(
@@ -6816,89 +6387,103 @@ function calculateAverageLivePrice(
 
 ) {
 
-
     let prices = [];
 
 
-    if (nobitexOnline && Number(nobitexPrice) > 0) {
+    if (
+        nobitexOnline
+        &&
+        Number(nobitexPrice) > 0
+    ) {
 
-        prices.push(Number(nobitexPrice));
-
+        prices.push(
+            Number(nobitexPrice)
+        );
     }
 
 
-    if (exirOnline && Number(exirPrice) > 0) {
+    if (
+        exirOnline
+        &&
+        Number(exirPrice) > 0
+    ) {
 
-        prices.push(Number(exirPrice));
-
+        prices.push(
+            Number(exirPrice)
+        );
     }
 
 
-    if (bitpinOnline && Number(bitpinPrice) > 0) {
+    if (
+        bitpinOnline
+        &&
+        Number(bitpinPrice) > 0
+    ) {
 
-        prices.push(Number(bitpinPrice));
-
+        prices.push(
+            Number(bitpinPrice)
+        );
     }
-
 
 
     /*
        ONLINE:
-       ذخیره میانگین جدید
+       save new average
     */
 
-    if (prices.length > 0) {
-
+    if (
+        prices.length > 0
+    ) {
 
         const average =
 
             prices.reduce(
 
-                (total, price) =>
+                (
+                    total,
+                    price
+                ) =>
                     total + price,
 
                 0
 
             )
-
             /
-
             prices.length;
 
 
-
-saveAveragePrice(average);
+        saveAveragePrice(
+            average
+        );
 
 
         return average;
-
     }
-
 
 
     /*
        OFFLINE:
-       استفاده از آخرین میانگین ذخیره شده
+       use cached average
     */
 
-const cachedAverage =
-    loadAveragePrice();
+    const cachedAverage =
+        loadAveragePrice();
 
-if (cachedAverage !== null) {
 
-    return cachedAverage;
+    if (
+        cachedAverage !== null
+    ) {
 
-}
-
+        return cachedAverage;
+    }
 
 
     return null;
-
-
 }
 
+
 /* =====================================================
-   LOAD DATA
+   LOAD DASHBOARD DATA
 ===================================================== */
 
 async function loadDashboardData() {
@@ -6908,67 +6493,84 @@ async function loadDashboardData() {
     ) {
 
         return dashboardLoadInProgress;
-
     }
 
 
     dashboardLoadInProgress =
+
         (async () => {
 
+            /*
+               These requests are intentionally independent.
+               Dashboard does not wait for them.
+            */
 
-Promise.allSettled([
-    loadUsdTxt(),
-    loadYekusd(),
-    loadCryptoValue()
-]);
+            Promise.allSettled([
+
+                loadUsdTxt(),
+
+                loadYekusd(),
+
+                loadCryptoValue()
+
+            ]);
 
 
-        let data =
-            loadCachedDashboardData();
+            let data =
+                loadCachedDashboardData();
 
 
-        let usingCachedData =
-            Boolean(data);
+            let usingCachedData =
+                Boolean(data);
+
 
             /* =================================================
                DATA.JSON
             ================================================= */
 
             const dataRequest =
+
                 fetchWithTimeout(
+
                     "data.json",
+
                     {
                         cache:
                             "default"
                     },
+
                     5000
+
                 )
-                    .then(
-                        response => {
 
-                            if (!response.ok) {
+                .then(
+                    response => {
 
-                                throw new Error(
-                                    "Cannot load data.json"
-                                );
+                        if (!response.ok) {
 
-                            }
-
-                            return response.json();
-
-                        }
-                    )
-                    .then(
-                        freshData => {
-
-                            saveLocalData(
-                                freshData
+                            throw new Error(
+                                "Cannot load data.json"
                             );
-
-                            return freshData;
-
                         }
-                    );
+
+
+                        return response.json();
+
+                    }
+                )
+
+                .then(
+                    freshData => {
+
+                        saveLocalData(
+                            freshData
+                        );
+
+
+                        return freshData;
+
+                    }
+                );
 
 
             if (!data) {
@@ -6977,6 +6579,7 @@ Promise.allSettled([
 
                     data =
                         await dataRequest;
+
 
                     usingCachedData =
                         false;
@@ -6988,7 +6591,6 @@ Promise.allSettled([
                     throw new Error(
                         "Offline and no saved dashboard data is available."
                     );
-
                 }
 
             }
@@ -6998,11 +6600,11 @@ Promise.allSettled([
                 usingCachedData =
                     false;
 
+
                 dataRequest
                     .catch(
                         () => {}
                     );
-
             }
 
 
@@ -7085,7 +6687,6 @@ Promise.allSettled([
 
                 currentPrice =
                     defaultPrice;
-
             }
 
 
@@ -7095,7 +6696,6 @@ Promise.allSettled([
 
                 exirPrice =
                     defaultPrice;
-
             }
 
 
@@ -7105,7 +6705,6 @@ Promise.allSettled([
 
                 bitpinPrice =
                     defaultPrice;
-
             }
 
 
@@ -7152,11 +6751,14 @@ Promise.allSettled([
                 currentPrice =
                     nobitexResult.value;
 
+
                 nobitexOnline =
                     true;
 
+
                 usingCachedNobitex =
                     false;
+
 
                 saveNobitexPrice(
                     currentPrice
@@ -7169,7 +6771,6 @@ Promise.allSettled([
                 priceErrors.push(
                     "Nobitex"
                 );
-
             }
 
 
@@ -7181,11 +6782,14 @@ Promise.allSettled([
                 exirPrice =
                     exirResult.value;
 
+
                 exirOnline =
                     true;
 
+
                 usingCachedExir =
                     false;
+
 
                 saveExirPrice(
                     exirPrice
@@ -7198,7 +6802,6 @@ Promise.allSettled([
                 priceErrors.push(
                     "Exir"
                 );
-
             }
 
 
@@ -7210,11 +6813,14 @@ Promise.allSettled([
                 bitpinPrice =
                     bitpinResult.value;
 
+
                 bitpinOnline =
                     true;
 
+
                 usingCachedBitpin =
                     false;
+
 
                 saveBitpinPrice(
                     bitpinPrice
@@ -7227,19 +6833,23 @@ Promise.allSettled([
                 priceErrors.push(
                     "Bitpin"
                 );
-
             }
 
 
-/* =================================================
-   UPDATE MARKET PRICE CONNECTION COLORS
-================================================= */
+            /* =================================================
+               MARKET CONNECTION COLORS
+            ================================================= */
 
-updateMarketPriceConnectionColors(
-    nobitexOnline,
-    exirOnline,
-    bitpinOnline
-);
+            updateMarketPriceConnectionColors(
+
+                nobitexOnline,
+
+                exirOnline,
+
+                bitpinOnline
+
+            );
+
 
             /* =================================================
                TODAY
@@ -7291,21 +6901,22 @@ updateMarketPriceConnectionColors(
 
 
             const averageLivePrice =
-    calculateAverageLivePrice(
 
-        currentPrice,
+                calculateAverageLivePrice(
 
-        exirPrice,
+                    currentPrice,
 
-        bitpinPrice,
+                    exirPrice,
 
-        nobitexOnline,
+                    bitpinPrice,
 
-        exirOnline,
+                    nobitexOnline,
 
-        bitpinOnline
+                    exirOnline,
 
-    );
+                    bitpinOnline
+
+                );
 
 
             if (
@@ -7315,7 +6926,6 @@ updateMarketPriceConnectionColors(
                 throw new Error(
                     "No valid live market price is available."
                 );
-
             }
 
 
@@ -7325,6 +6935,7 @@ updateMarketPriceConnectionColors(
 
 
             const isOffline =
+
                 !navigator.onLine
                 ||
                 usingCachedData;
@@ -7347,7 +6958,6 @@ updateMarketPriceConnectionColors(
                     message +=
                         " • Saved: " +
                         cachedTime;
-
                 }
 
 
@@ -7364,24 +6974,29 @@ updateMarketPriceConnectionColors(
                     false,
                     "Online • Live Data"
                 );
-
             }
 
 
             const updateTime =
                 new Date()
                     .toLocaleTimeString(
+
                         "en-US",
+
                         {
                             hour:
                                 "2-digit",
+
                             minute:
                                 "2-digit",
+
                             second:
                                 "2-digit",
+
                             hour12:
                                 false
                         }
+
                     );
 
 
@@ -7422,7 +7037,9 @@ updateMarketPriceConnectionColors(
 
             setPriceArrow(
                 "topPriceArrow",
+
                 currentPrice,
+
                 Number.isFinite(
                     previousNobitex
                 )
@@ -7433,7 +7050,9 @@ updateMarketPriceConnectionColors(
 
             setPriceArrow(
                 "exirPriceArrow",
+
                 exirPrice,
+
                 Number.isFinite(
                     previousExir
                 )
@@ -7444,7 +7063,9 @@ updateMarketPriceConnectionColors(
 
             setPriceArrow(
                 "bitpinPriceArrow",
+
                 bitpinPrice,
+
                 Number.isFinite(
                     previousBitpin
                 )
@@ -7462,12 +7083,14 @@ updateMarketPriceConnectionColors(
                     )
                 );
 
+
                 sessionStorage.setItem(
                     "previousExirPrice",
                     String(
                         exirPrice
                     )
                 );
+
 
                 sessionStorage.setItem(
                     "previousBitpinPrice",
@@ -7486,23 +7109,103 @@ updateMarketPriceConnectionColors(
             ================================================= */
 
             const transactions =
+
                 Array.isArray(
                     data.transactions
                 )
+
                     ?
+
                     data.transactions
+
                         .filter(
                             transaction =>
+
                                 transaction
                                 &&
                                 (
                                     transaction.type ===
                                     "buy"
+
                                     ||
+
                                     transaction.type ===
                                     "sell"
                                 )
                         )
+
+                        .slice()
+
+                        .sort(
+
+                            (
+                                a,
+                                b
+                            ) =>
+
+                                dateNumber(
+                                    a.date
+                                )
+                                -
+                                dateNumber(
+                                    b.date
+                                )
+
+                        )
+
+                    :
+
+                    [];
+
+
+            const previousAverageLivePrice =
+                Number(
+                    sessionStorage.getItem(
+                        "previousAverageLivePrice"
+                    )
+                );
+
+
+            /* =================================================
+               BUY AGE
+            ================================================= */
+
+            /*
+               OVERALL
+               Oldest BUY from all transactions
+            */
+
+            const overallBuys =
+                transactions.filter(
+                    transaction =>
+                        transaction.type ===
+                        "buy"
+                );
+
+
+            const overallFirstBuy =
+                overallBuys.length > 0
+                    ? overallBuys[0]
+                    : null;
+
+
+            /*
+               TOP PURCHASES
+               Oldest BUY from selected Top Purchases
+            */
+
+            const sixTransactions =
+                getTop6HighestPricePurchases(
+                    transactions
+                );
+
+
+            const sixFirstBuy =
+                sixTransactions.length > 0
+
+                    ?
+
+                    sixTransactions
                         .slice()
                         .sort(
                             (
@@ -7516,188 +7219,218 @@ updateMarketPriceConnectionColors(
                                 dateNumber(
                                     b.date
                                 )
-                        )
+                        )[0]
+
                     :
-                    [];
 
-			const previousAverageLivePrice =
-    Number(
-        sessionStorage.getItem(
-            "previousAverageLivePrice"
-        )
-    );
+                    null;
 
 
-/* =================================================
-   BUY AGE
-================================================= */
+            /*
+               LAST PERIOD
+            */
 
-/* OVERALL
-   Oldest BUY from all transactions
-*/
-const overallBuys =
-    transactions.filter(
-        transaction =>
-            transaction.type === "buy"
-    );
-
-const overallFirstBuy =
-    overallBuys.length > 0
-        ? overallBuys[0]
-        : null;
+            const lastTransactions =
+                getLastPeriod(
+                    transactions
+                );
 
 
-/* TOP PURCHASES
-   Oldest BUY from the selected Top Purchases
-*/
-const sixTransactions =
-    getTop6HighestPricePurchases(
-        transactions
-    );
+            const lastFirstBuy =
+                lastTransactions.length > 0
 
-const sixFirstBuy =
-    sixTransactions.length > 0
-        ? sixTransactions
-            .slice()
-            .sort(
-                (a, b) =>
-                    dateNumber(a.date) -
-                    dateNumber(b.date)
-            )[0]
-        : null;
+                    ?
+
+                    lastTransactions.find(
+                        transaction =>
+                            transaction.type ===
+                            "buy"
+                    )
+
+                    :
+
+                    null;
 
 
-/* LAST PERIOD
-   First BUY inside Last Period
-*/
-const lastTransactions =
-    getLastPeriod(
-        transactions
-    );
-
-const lastFirstBuy =
-    lastTransactions.length > 0
-        ? lastTransactions.find(
-            transaction =>
-                transaction.type === "buy"
-        )
-        : null;
+            const overallAge =
+                daysFromBuyToToday(
+                    overallFirstBuy,
+                    today
+                );
 
 
-const overallAge =
-    daysFromBuyToToday(
-        overallFirstBuy,
-        today
-    );
+            const sixAge =
+                daysFromBuyToToday(
+                    sixFirstBuy,
+                    today
+                );
 
-const sixAge =
-    daysFromBuyToToday(
-        sixFirstBuy,
-        today
-    );
 
-const lastAge =
-    daysFromBuyToToday(
-        lastFirstBuy,
-        today
-    );
+            const lastAge =
+                daysFromBuyToToday(
+                    lastFirstBuy,
+                    today
+                );
 
-/* ================================================== */
+
+            /* =================================================
+               OVERALL
+            ================================================= */
+
             const overall =
                 calculatePortfolio(
+
                     transactions,
+
                     averageLivePrice,
+
                     today,
+
                     annualBankRate
+
                 );
 
 
             displaySection(
-    overall,
-    "overall",
-    Number.isFinite(previousAverageLivePrice)
-        ? previousAverageLivePrice
-        : null,
-    overallAge
-);
-		
-  updateCardColor(
-    "overallMainPrice",
-    overall.plBank
-    );
 
-safeText(
-    "topPurchasesTitle",
-    TOP_PURCHASES_COUNT
-	);
+                overall,
 
+                "overall",
+
+                Number.isFinite(
+                    previousAverageLivePrice
+                )
+                    ? previousAverageLivePrice
+                    : null,
+
+                overallAge
+
+            );
+
+
+            updateCardColor(
+                "overallMainPrice",
+                overall.plBank
+            );
+
+
+            safeText(
+                "topPurchasesTitle",
+                TOP_PURCHASES_COUNT
+            );
+
+
+            /* =================================================
+               TOP PURCHASES
+            ================================================= */
 
             const six =
                 calculatePortfolio(
+
                     sixTransactions,
+
                     averageLivePrice,
+
                     today,
+
                     annualBankRate
+
                 );
 
 
             displaySection(
-    six,
-    "six",
-    Number.isFinite(previousAverageLivePrice)
-        ? previousAverageLivePrice
-        : null,
-    sixAge
-);
 
-updateCardColor(
-    "sixMainPrice",
-    six.plBank
-);
+                six,
+
+                "six",
+
+                Number.isFinite(
+                    previousAverageLivePrice
+                )
+                    ? previousAverageLivePrice
+                    : null,
+
+                sixAge
+
+            );
 
 
+            updateCardColor(
+                "sixMainPrice",
+                six.plBank
+            );
+
+
+            /* =================================================
+               LAST PERIOD
+            ================================================= */
 
             const last =
                 calculatePortfolio(
+
                     lastTransactions,
+
                     averageLivePrice,
+
                     today,
+
                     annualBankRate
+
                 );
 
 
-displaySection(
-    last,
-    "last",
-    Number.isFinite(previousAverageLivePrice)
-        ? previousAverageLivePrice
-        : null,
-    lastAge
-);
+            displaySection(
 
-updateCardColor(
-    "lastMainPrice",
-    last.plBank
-);
+                last,
+
+                "last",
+
+                Number.isFinite(
+                    previousAverageLivePrice
+                )
+                    ? previousAverageLivePrice
+                    : null,
+
+                lastAge
+
+            );
+
+
+            updateCardColor(
+                "lastMainPrice",
+                last.plBank
+            );
+
+
             displayLastAction(
                 lastTransactions
             );
 
 
+            /* =================================================
+               SAVE PREVIOUS AVERAGE
+            ================================================= */
 
             try {
 
                 sessionStorage.setItem(
+
                     "previousAverageLivePrice",
+
                     String(
                         averageLivePrice
                     )
+
                 );
 
             }
 
             catch (error) {}
 
+
+            /* =================================================
+               FINISH LOADING
+            ================================================= */
 
             const loading =
                 $("loading");
@@ -7707,7 +7440,6 @@ updateCardColor(
 
                 loading.style.display =
                     "none";
-
             }
 
 
@@ -7719,7 +7451,6 @@ updateCardColor(
 
                 dashboard.style.display =
                     "grid";
-
             }
 
         })();
@@ -7735,42 +7466,32 @@ updateCardColor(
 
         dashboardLoadInProgress =
             null;
-
     }
-
 }
+
 
 /* =====================================================
    AUTO REFRESH
 ===================================================== */
 
 let countdownTimer =
-
     null;
 
 
 function startAutoRefresh() {
 
     clearInterval(
-
         countdownTimer
-
     );
 
 
     let seconds =
-
         10;
 
 
     safeText(
-
         "updateCountdown",
-
-        seconds +
-
-        "s"
-
+        seconds + "s"
     );
 
 
@@ -7784,13 +7505,10 @@ function startAutoRefresh() {
 
 
                 if (
-
                     seconds <= 0
-
                 ) {
 
                     seconds =
-
                         10;
 
 
@@ -7803,24 +7521,15 @@ function startAutoRefresh() {
                     catch (error) {
 
                         console.error(
-
                             error
-
                         );
-
                     }
-
                 }
 
 
                 safeText(
-
                     "updateCountdown",
-
-                    seconds +
-
-                    "s"
-
+                    seconds + "s"
                 );
 
             },
@@ -7828,15 +7537,20 @@ function startAutoRefresh() {
             1000
 
         );
-
 }
+
 
 /* =====================================================
    CRYPTO PRICE
 ===================================================== */
 
-let cryptoOnline = false;
-let lastCryptoPrice = null;
+let cryptoOnline =
+    false;
+
+
+let lastCryptoPrice =
+    null;
+
 
 async function loadCryptoValue() {
 
@@ -7848,11 +7562,14 @@ async function loadCryptoValue() {
 
         const response =
             await fetch(
+
                 "https://coin.rxw.workers.dev/",
+
                 {
                     cache:
                         "no-store"
                 }
+
             );
 
 
@@ -7861,7 +7578,6 @@ async function loadCryptoValue() {
             throw new Error(
                 "Crypto worker unavailable"
             );
-
         }
 
 
@@ -7882,14 +7598,14 @@ async function loadCryptoValue() {
             throw new Error(
                 "Invalid crypto value"
             );
-
         }
 
 
-        safeText(
-            "cryptoValue",
+        const cryptoText =
             value.toLocaleString(
+
                 "en-US",
+
                 {
                     minimumFractionDigits:
                         2,
@@ -7897,37 +7613,88 @@ async function loadCryptoValue() {
                     maximumFractionDigits:
                         2
                 }
-            )
+
+            );
+
+
+        safeText(
+            "cryptoValue",
+            cryptoText
         );
-const cryptoText = value.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-});
 
-safeText("cryptoValue", cryptoText);
-const cryptoElement = $("cryptoValue");
 
-if (lastCryptoPrice !== null) {
+        const cryptoElement =
+            $("cryptoValue");
 
-    if (value > lastCryptoPrice) {
-        cryptoElement.classList.add("up");
-        cryptoElement.classList.remove("down");
-    }
-    else if (value < lastCryptoPrice) {
-        cryptoElement.classList.add("down");
-        cryptoElement.classList.remove("up");
-    }
 
-    setTimeout(() => {
-        cryptoElement.classList.remove("up", "down");
-    }, 350);
-}
+        if (
+            lastCryptoPrice !== null
+            &&
+            cryptoElement
+        ) {
 
-lastCryptoPrice = value;
-const mini = document.getElementById("cryptoMini");
-if (mini) {
-    mini.textContent = cryptoText;
-}
+            if (
+                value >
+                lastCryptoPrice
+            ) {
+
+                cryptoElement.classList.add(
+                    "up"
+                );
+
+
+                cryptoElement.classList.remove(
+                    "down"
+                );
+
+            }
+
+            else if (
+                value <
+                lastCryptoPrice
+            ) {
+
+                cryptoElement.classList.add(
+                    "down"
+                );
+
+
+                cryptoElement.classList.remove(
+                    "up"
+                );
+            }
+
+
+            setTimeout(
+                () => {
+
+                    cryptoElement.classList.remove(
+                        "up",
+                        "down"
+                    );
+
+                },
+                350
+            );
+        }
+
+
+        lastCryptoPrice =
+            value;
+
+
+        const mini =
+            document.getElementById(
+                "cryptoMini"
+            );
+
+
+        if (mini) {
+
+            mini.textContent =
+                cryptoText;
+        }
+
 
         cryptoOnline =
             true;
@@ -7938,9 +7705,7 @@ if (mini) {
             element.classList.remove(
                 "market-price-offline"
             );
-
         }
-
 
     }
 
@@ -7955,7 +7720,6 @@ if (mini) {
             element.classList.add(
                 "market-price-offline"
             );
-
         }
 
 
@@ -7963,10 +7727,10 @@ if (mini) {
             "Crypto Price Offline:",
             error
         );
-
     }
-
 }
+
+
 /* =====================================================
    ONLINE / OFFLINE
 ===================================================== */
@@ -8014,11 +7778,8 @@ window.addEventListener(
         catch (error) {
 
             console.error(
-
                 error
-
             );
-
         }
 
     }
@@ -8030,11 +7791,28 @@ window.addEventListener(
    INIT
 ===================================================== */
 
+/*
+   IMPORTANT FIX:
+
+   The old version did:
+
+       loadDashboardData();
+       startAutoRefresh();
+
+   without awaiting loadDashboardData().
+
+   This version waits for the async dashboard
+   initialization so errors are caught correctly.
+
+   Financial calculations are NOT changed.
+*/
+
 async function init() {
 
     try {
 
-        loadDashboardData();
+        await loadDashboardData();
+
 
         startAutoRefresh();
 
@@ -8043,28 +7821,23 @@ async function init() {
     catch (error) {
 
         console.error(
-
+            "Dashboard initialization error:",
             error
-
         );
 
 
         const loading =
-
             $("loading");
 
 
         if (loading) {
 
             loading.style.display =
-
                 "none";
-
         }
 
 
         const errorBox =
-
             $("errorBox");
 
 
@@ -8073,15 +7846,10 @@ async function init() {
             errorBox.innerHTML =
 
                 `<div class="error">
-
-                    ${error.message}
-
+                    ${error.message || "Unable to load dashboard."}
                 </div>`;
-
         }
-
     }
-
 }
 
 
@@ -8093,13 +7861,7 @@ init();
 ===================================================== */
 
 if (
-
-    "serviceWorker"
-
-    in
-
-    navigator
-
+    "serviceWorker" in navigator
 ) {
 
     window.addEventListener(
@@ -8115,11 +7877,8 @@ if (
                     "./sw.js",
 
                     {
-
                         updateViaCache:
-
                             "none"
-
                     }
 
                 )
@@ -8129,9 +7888,7 @@ if (
                     registration => {
 
                         console.log(
-
                             "Financial Dashboard PWA Ready"
-
                         );
 
 
@@ -8160,9 +7917,7 @@ if (
         }
 
     );
-
 }
-
 </script>
 
 </body>
