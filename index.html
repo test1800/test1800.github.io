@@ -3289,12 +3289,11 @@ function getCardNotificationTitle(
     return "Financial Dashboard";
 }
 
-
 /* =====================================================
    SEND BROWSER NOTIFICATION
 ===================================================== */
 
-function sendDashboardNotification(
+async function sendDashboardNotification(
     title,
     message
 ) {
@@ -3304,6 +3303,7 @@ function sendDashboardNotification(
     ) {
 
         return false;
+
     }
 
 
@@ -3313,31 +3313,67 @@ function sendDashboardNotification(
     ) {
 
         console.log(
-            "Notification skipped because permission " +
-            "is not granted:",
+            "Notification skipped because permission is not granted:",
             title,
             message
         );
 
         return false;
+
     }
 
 
     try {
 
-        const notification =
-            new Notification(
+        if (
+            "serviceWorker" in navigator
+        ) {
+
+            const registration =
+                await navigator.serviceWorker.ready;
+
+
+            await registration.showNotification(
                 title,
                 {
                     body: message,
-                    icon: "icon.png"
+
+                    icon:
+                        "./icon-192.png",
+
+                    badge:
+                        "./icon-192.png",
+
+                    tag:
+                        "financial-dashboard",
+
+                    renotify:
+                        true
                 }
             );
 
 
+            return true;
+
+        }
+
+
         /*
-           Close after 8 seconds.
+           Fallback for desktop browsers
         */
+
+        const notification =
+            new Notification(
+                title,
+                {
+                    body:
+                        message,
+
+                    icon:
+                        "icon.png"
+                }
+            );
+
 
         setTimeout(
             () => {
@@ -3359,6 +3395,7 @@ function sendDashboardNotification(
 
     }
 
+
     catch (error) {
 
         console.warn(
@@ -3367,9 +3404,10 @@ function sendDashboardNotification(
         );
 
         return false;
-    }
-}
 
+    }
+
+}
 
 /* =====================================================
    CARD COLOR + NOTIFICATION HOOK
