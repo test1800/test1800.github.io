@@ -2748,9 +2748,8 @@ h1 {
 const TOP_PURCHASES_COUNT =  6;
 
 
-
 /* =====================================================
-   DASHBOARD NOTIFICATION SYSTEM
+DASHBOARD NOTIFICATION SYSTEM
 ===================================================== */
 
 const notificationThresholds = [
@@ -2763,7 +2762,7 @@ const notificationStates = {};
 
 
 /* =====================================================
-   REQUEST NOTIFICATION PERMISSION
+REQUEST NOTIFICATION PERMISSION
 ===================================================== */
 
 if ("Notification" in window) {
@@ -2778,8 +2777,9 @@ if ("Notification" in window) {
 
 
 /* =====================================================
-   CARD COLOR CHANGE NOTIFICATION
+CARD COLOR CHANGE NOTIFICATION
 ===================================================== */
+
 function notifyColorChange(cardId, percent) {
 
     let currentColor = "neutral";
@@ -2793,16 +2793,11 @@ function notifyColorChange(cardId, percent) {
     }
 
 
-    /* First calculation:
-       Store only the color.
-       Do NOT create threshold state here. */
-
     if (!(cardId in notificationStates)) {
 
         notificationStates[cardId] = {
-
-            color: currentColor
-
+            color: currentColor,
+            threshold: 0
         };
 
         return;
@@ -2812,8 +2807,6 @@ function notifyColorChange(cardId, percent) {
     const previousColor =
         notificationStates[cardId].color;
 
-
-    /* Notify only when RED ↔ GREEN */
 
     if (
         previousColor !== currentColor &&
@@ -2825,13 +2818,15 @@ function notifyColorChange(cardId, percent) {
              currentColor === "red")
         )
     ) {
+
         console.log(
-        "NOTIFY TRIGGERED:",
-        previousColor,
-        "→",
-        currentColor
-    );
-		
+            "NOTIFY TRIGGERED:",
+            previousColor,
+            "→",
+            currentColor
+        );
+
+
         if (currentColor === "green") {
 
             sendDashboardNotification(
@@ -2849,15 +2844,18 @@ function notifyColorChange(cardId, percent) {
             );
 
         }
+
     }
 
 
     notificationStates[cardId].color =
         currentColor;
+
 }
 
+
 /* =====================================================
-   PERCENTAGE THRESHOLD NOTIFICATION
+PERCENTAGE THRESHOLD NOTIFICATION
 ===================================================== */
 
 function notifyPercentThreshold(cardId, percent) {
@@ -2865,11 +2863,8 @@ function notifyPercentThreshold(cardId, percent) {
     const absolutePercent =
         Math.abs(percent);
 
-
     let currentThreshold = 0;
 
-
-    /* Find the highest crossed threshold */
 
     for (
         let i = 0;
@@ -2892,17 +2887,20 @@ function notifyPercentThreshold(cardId, percent) {
             break;
 
         }
+
     }
 
-
-    /* First calculation:
-       Store the threshold without notification */
 
     if (!(cardId in notificationStates)) {
 
         notificationStates[cardId] = {
 
-            color: "neutral",
+            color:
+                percent > 0
+                    ? "green"
+                    : percent < 0
+                        ? "red"
+                        : "neutral",
 
             threshold: currentThreshold
 
@@ -2916,8 +2914,6 @@ function notifyPercentThreshold(cardId, percent) {
         notificationStates[cardId].threshold;
 
 
-    /* Notify only when a new threshold is crossed */
-
     if (currentThreshold > previousThreshold) {
 
         const direction =
@@ -2930,55 +2926,40 @@ function notifyPercentThreshold(cardId, percent) {
             getCardNotificationTitle(cardId),
             `Price divergence reached ${currentThreshold}% ${direction} the bank-adjusted level.`
         );
+
     }
 
 
-    /*
-       Store current threshold.
-
-       If the percentage falls back below
-       a threshold, that threshold can trigger
-       again if crossed later.
-    */
-
     notificationStates[cardId].threshold =
         currentThreshold;
+
 }
 
 
 /* =====================================================
-   CARD TITLES
+CARD TITLES
 ===================================================== */
 
 function getCardNotificationTitle(cardId) {
 
     if (cardId === "overallMainPrice") {
-
         return "Overall Performance";
-
     }
-
 
     if (cardId === "sixMainPrice") {
-
         return "Top Purchases";
-
     }
-
 
     if (cardId === "lastMainPrice") {
-
         return "Last Period";
-
     }
-
 
     return "Financial Dashboard";
 }
 
 
 /* =====================================================
-   SEND BROWSER / WINDOWS NOTIFICATION
+SEND BROWSER / WINDOWS NOTIFICATION
 ===================================================== */
 
 function sendDashboardNotification(
@@ -3000,9 +2981,68 @@ function sendDashboardNotification(
         );
 
     }
+
 }
 
 
+/* =====================================================
+colour background
+===================================================== */
+
+function updateCardColor(cardId, percent) {
+
+    const card =
+        document.getElementById(cardId);
+
+    if (!card) return;
+
+
+    /* Notification system */
+
+    notifyColorChange(
+        cardId,
+        percent
+    );
+
+    notifyPercentThreshold(
+        cardId,
+        percent
+    );
+
+
+    /* Existing color logic */
+
+    const p =
+        Math.max(
+            -20,
+            Math.min(20, percent)
+        );
+
+    const t =
+        Math.abs(p) / 20;
+
+
+    if (p >= 0) {
+
+        card.style.borderColor =
+            `rgba(34,197,94,${0.15 + t * 0.55})`;
+
+        card.style.boxShadow =
+            `0 8px 30px rgba(34,197,94,${0.05 + t * 0.20})`;
+
+    }
+
+    else {
+
+        card.style.borderColor =
+            `rgba(239,68,68,${0.15 + t * 0.55})`;
+
+        card.style.boxShadow =
+            `0 8px 30px rgba(239,68,68,${0.05 + t * 0.20})`;
+
+    }
+
+}
 /* =====================================================
    colour background 
 ===================================================== */
@@ -3014,12 +3054,6 @@ function updateCardColor(cardId, percent) {
 
     if (!card) return;
 
-/*-------------- Notification system------------ */ 
-notifyColorChange(cardId, percent); 
-notifyPercentThreshold(cardId, percent);
-
-
-/*---------------- Existing color logic ----------------*/
     const p = Math.max(-20, Math.min(20, percent));
 
     const t = Math.abs(p) / 20;
