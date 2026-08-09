@@ -1,5 +1,4 @@
 const CACHE_NAME = "financial-dashboard-v4";
-    
 
 const STATIC_FILES = [
 
@@ -37,13 +36,41 @@ self.addEventListener(
 
             .then(
 
-                cache =>
+                async cache => {
 
-                    cache.addAll(
+                    for (
 
-                        STATIC_FILES
+                        const file
 
-                    )
+                        of STATIC_FILES
+
+                    ) {
+
+                        try {
+
+                            await cache.add(
+
+                                file
+
+                            );
+
+                        }
+
+                        catch (error) {
+
+                            console.warn(
+
+                                "Cache skipped:",
+
+                                file
+
+                            );
+
+                        }
+
+                    }
+
+                }
 
             )
 
@@ -152,10 +179,12 @@ self.addEventListener(
 
 
         /*
+
             DATA.JSON
 
             Always network first
             Offline => cache
+
         */
 
         if (
@@ -189,10 +218,12 @@ self.addEventListener(
 
 
         /*
+
             External APIs
 
             Network first
             Offline => cached response
+
         */
 
         if (
@@ -218,10 +249,12 @@ self.addEventListener(
 
 
         /*
+
             Local files
 
             Cache first
             Network fallback
+
         */
 
         event.respondWith(
@@ -241,18 +274,15 @@ self.addEventListener(
 
 
 
-
 /* =====================================================
    NETWORK FIRST
 ===================================================== */
-
 
 async function networkFirst(
 
     request
 
 ) {
-
 
     try {
 
@@ -328,10 +358,7 @@ async function networkFirst(
 
     }
 
-
 }
-
-
 
 
 
@@ -339,13 +366,11 @@ async function networkFirst(
    CACHE FIRST
 ===================================================== */
 
-
 async function cacheFirst(
 
     request
 
 ) {
-
 
     const cachedResponse = await caches.match(
 
@@ -407,8 +432,8 @@ async function cacheFirst(
 
     return response;
 
-
 }
+
 
 /* =====================================================
    NOTIFICATION CLICK
