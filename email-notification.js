@@ -11,7 +11,8 @@
    بعداً آدرس Worker را اینجا قرار می‌دهیم.
 */
 
-const EMAIL_WORKER_URL = "";
+const EMAIL_WORKER_URL =
+    "https://email.rxw.workers.dev/";
 
 
 /* =====================================================
