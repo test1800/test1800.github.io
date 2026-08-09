@@ -2746,56 +2746,38 @@ const TOP_PURCHASES_COUNT = 6;
 
 
 /* =====================================================
-   DASHBOARD NOTIFICATION SYSTEM
+DASHBOARD NOTIFICATION SYSTEM
 ===================================================== */
 
 /*
-   Notification thresholds.
-   These are based on ABSOLUTE plBank percentage.
+Notification thresholds.
+Based on ABSOLUTE plBank percentage.
 */
 
 const notificationThresholds = [
-    0.80,
-    0.85,
-    0.90,
-    1,
-    1.5,
-    2,
-    2.5,
-    3,
-    3.5,
-    4,
-    4.5,
-    70,
-    80,
-    90,
-    100
+    0.5,
+    ...Array.from(
+        { length: 1000 },
+        (_, i) => i + 1
+    )
 ];
 
-
 /*
-   Each card has its own independent notification state.
-
-   Example:
-
-   notificationStates = {
-       overallMainPrice: {
-           color: "green",
-           threshold: 1
-       },
-
-       sixMainPrice: {
-           color: "red",
-           threshold: 25
-       }
-   }
+Each card has its own independent notification state.
 */
 
 const notificationStates = Object.create(null);
 
+/*
+Same threshold can notify again
+after 5 minutes.
+*/
+
+const NOTIFICATION_COOLDOWN = 5 * 60 * 1000;
+
 
 /* =====================================================
-   REQUEST NOTIFICATION PERMISSION
+REQUEST NOTIFICATION PERMISSION
 ===================================================== */
 
 function requestDashboardNotificationPermission() {
@@ -2866,7 +2848,7 @@ function requestDashboardNotificationPermission() {
 
 
 /* =====================================================
-   REQUEST PERMISSION ON USER GESTURE
+REQUEST PERMISSION ON USER GESTURE
 ===================================================== */
 
 if (
@@ -2904,7 +2886,7 @@ if (
 
 
 /* =====================================================
-   CARD COLOR
+CARD COLOR
 ===================================================== */
 
 function getCardColorFromPercent(percent) {
@@ -2929,7 +2911,7 @@ function getCardColorFromPercent(percent) {
 
 
 /* =====================================================
-   THRESHOLD
+THRESHOLD
 ===================================================== */
 
 function getThresholdFromPercent(percent) {
@@ -2980,7 +2962,7 @@ function getThresholdFromPercent(percent) {
 
 
 /* =====================================================
-   CREATE INITIAL STATE
+CREATE INITIAL STATE
 ===================================================== */
 
 function createNotificationState(
@@ -2998,7 +2980,21 @@ function createNotificationState(
         threshold:
             getThresholdFromPercent(
                 percent
-            )
+            ),
+
+        /*
+           Last time each threshold
+           generated a notification.
+
+           Example:
+           {
+               "2": 123456789,
+               "3": 123456999
+           }
+        */
+
+        thresholdNotificationTimes:
+            Object.create(null)
 
     };
 
@@ -3008,7 +3004,7 @@ function createNotificationState(
 
 
 /* =====================================================
-   GET CARD STATE
+GET CARD STATE
 ===================================================== */
 
 function getNotificationState(
@@ -3032,7 +3028,7 @@ function getNotificationState(
 
 
 /* =====================================================
-   COLOR CHANGE MESSAGE
+COLOR CHANGE MESSAGE
 ===================================================== */
 
 function getColorChangeMessage(
@@ -3050,10 +3046,7 @@ function getColorChangeMessage(
 
 
     /*
-       Only red <-> green is a real
-       performance direction change.
-
-       neutral transitions are ignored.
+       Red → Green
     */
 
     if (
@@ -3062,11 +3055,14 @@ function getColorChangeMessage(
     ) {
 
         return (
-            "Performance moved from " +
-            "negative to positive territory."
+            "Investment is better than bank return"
         );
     }
 
+
+    /*
+       Green → Red
+    */
 
     if (
         previousColor === "green" &&
@@ -3074,61 +3070,233 @@ function getColorChangeMessage(
     ) {
 
         return (
-            "Performance moved from " +
-            "positive to negative territory."
+            "Bank return is better than investment"
         );
     }
 
+
+    /*
+       Neutral transitions are ignored.
+    */
 
     return null;
 }
 
 
 /* =====================================================
-   THRESHOLD CHANGE MESSAGE
+THRESHOLD CROSSING
+===================================================== */
+
+/*
+Finds the FIRST threshold crossed between
+previous and current percentage.
+
+Example:
+
+1.8 → 3.2
+
+returns:
+
+2
+
+NOT 3
+
+because 2 was the first threshold crossed.
+*/
+
+function getCrossedThreshold(
+    previousPercent,
+    currentPercent
+) {
+
+    const previous =
+        Number(previousPercent);
+
+    const current =
+        Number(currentPercent);
+
+
+    if (
+        !Number.isFinite(previous) ||
+        !Number.isFinite(current)
+    ) {
+
+        return 0;
+    }
+
+
+    const previousAbs =
+        Math.abs(previous);
+
+    const currentAbs =
+        Math.abs(current);
+
+
+    /*
+       Moving upward through thresholds.
+    */
+
+    if (
+        currentAbs >
+        previousAbs
+    ) {
+
+        for (
+            const threshold
+            of notificationThresholds
+        ) {
+
+            if (
+                threshold > previousAbs &&
+                threshold <= currentAbs
+            ) {
+
+                return threshold;
+            }
+        }
+    }
+
+
+    /*
+       Moving downward through thresholds
+       is also considered a crossing.
+
+       Example:
+
+       -3.2 → -1.8
+
+       crosses 3, 2.5, 2, etc.
+
+       We use the first threshold crossed
+       from the previous value.
+    */
+
+    if (
+        currentAbs <
+        previousAbs
+    ) {
+
+        for (
+            let i =
+                notificationThresholds.length - 1;
+
+            i >= 0;
+
+            i--
+        ) {
+
+            const threshold =
+                notificationThresholds[i];
+
+
+            if (
+                threshold < previousAbs &&
+                threshold >= currentAbs
+            ) {
+
+                return threshold;
+            }
+        }
+    }
+
+
+    return 0;
+}
+
+
+/* =====================================================
+THRESHOLD MESSAGE
 ===================================================== */
 
 function getThresholdChangeMessage(
-    previousThreshold,
-    currentThreshold,
+    cardId,
+    crossedThreshold,
     percent
 ) {
 
     if (
-        previousThreshold ===
-        currentThreshold
+        !crossedThreshold
     ) {
 
         return null;
     }
 
 
-    const direction =
-        currentThreshold >
-        previousThreshold
-            ? "increased"
-            : "decreased";
+    const state =
+        notificationStates[cardId];
 
 
-    const signText =
+    if (!state) {
+
+        return null;
+    }
+
+
+    const now =
+        Date.now();
+
+
+    const key =
+        String(crossedThreshold);
+
+
+    const lastNotificationTime =
+        state.thresholdNotificationTimes[key] || 0;
+
+
+    /*
+       Same threshold:
+       wait 5 minutes.
+    */
+
+    if (
+        now -
+        lastNotificationTime <
+        NOTIFICATION_COOLDOWN
+    ) {
+
+        return null;
+    }
+
+
+    /*
+       Save notification time
+       for THIS threshold only.
+    */
+
+    state.thresholdNotificationTimes[key] =
+        now;
+
+
+    /*
+       Keep the sign of the CURRENT
+       percentage.
+
+       Positive:
+       +2%
+
+       Negative:
+       -2%
+    */
+
+    const sign =
         Number(percent) >= 0
             ? "+"
             : "-";
 
 
     return (
-        "Live vs bank-adjusted divergence " +
-        direction +
-        ": " +
-        signText +
-        currentThreshold +
-        "% threshold."
+        getCardNotificationTitle(cardId) +
+        ": Price " +
+        sign +
+        crossedThreshold +
+        "% vs Bank"
     );
 }
 
 
 /* =====================================================
-   EVALUATE NOTIFICATION
+EVALUATE NOTIFICATION
 ===================================================== */
 
 function evaluateDashboardNotification(
@@ -3151,8 +3319,6 @@ function evaluateDashboardNotification(
 
 
     /*
-       IMPORTANT:
-
        First reading creates the baseline
        and NEVER sends a notification.
     */
@@ -3178,21 +3344,16 @@ function evaluateDashboardNotification(
         state.color;
 
 
-    const previousThreshold =
-        state.threshold;
-
-
     const currentColor =
         getCardColorFromPercent(
             numericPercent
         );
 
 
-    const currentThreshold =
-        getThresholdFromPercent(
-            numericPercent
-        );
-
+    /*
+       Check whether a real red/green
+       direction change happened.
+    */
 
     const colorMessage =
         getColorChangeMessage(
@@ -3201,12 +3362,32 @@ function evaluateDashboardNotification(
         );
 
 
-    const thresholdMessage =
-        getThresholdChangeMessage(
-            previousThreshold,
-            currentThreshold,
+    /*
+       Find the FIRST threshold crossed.
+    */
+
+    const crossedThreshold =
+        getCrossedThreshold(
+            state.lastPercent,
             numericPercent
         );
+
+
+    let thresholdMessage =
+        null;
+
+
+    if (
+        crossedThreshold
+    ) {
+
+        thresholdMessage =
+            getThresholdChangeMessage(
+                cardId,
+                crossedThreshold,
+                numericPercent
+            );
+    }
 
 
     let notificationMessage =
@@ -3214,11 +3395,10 @@ function evaluateDashboardNotification(
 
 
     /*
-       One dashboard update can generate
-       MAXIMUM ONE notification.
+       One dashboard update = maximum
+       ONE notification.
 
-       Color change has priority over
-       threshold change.
+       Color change has priority.
     */
 
     if (colorMessage) {
@@ -3244,7 +3424,13 @@ function evaluateDashboardNotification(
 
 
     state.threshold =
-        currentThreshold;
+        getThresholdFromPercent(
+            numericPercent
+        );
+
+
+    state.lastPercent =
+        numericPercent;
 
 
     return notificationMessage;
@@ -3252,7 +3438,7 @@ function evaluateDashboardNotification(
 
 
 /* =====================================================
-   CARD TITLES
+CARD TITLES
 ===================================================== */
 
 function getCardNotificationTitle(
@@ -3264,7 +3450,7 @@ function getCardNotificationTitle(
         "overallMainPrice"
     ) {
 
-        return "Overall Performance";
+        return "Overall";
     }
 
 
@@ -3289,8 +3475,89 @@ function getCardNotificationTitle(
     return "Financial Dashboard";
 }
 
+
 /* =====================================================
-   SEND BROWSER NOTIFICATION
+NOTIFICATION ICON
+===================================================== */
+
+/*
+   Positive notification:
+   🟢
+
+   Negative notification:
+   🔴
+
+   No image file is required.
+*/
+
+function getNotificationIconEmoji(message) {
+
+    const text =
+        String(message || "");
+
+
+    /*
+       Positive color-change message
+    */
+
+    if (
+        text.includes(
+            "Investment is better than bank return"
+        )
+    ) {
+
+        return "🟢";
+    }
+
+
+    /*
+       Negative color-change message
+    */
+
+    if (
+        text.includes(
+            "Bank return is better than investment"
+        )
+    ) {
+
+        return "🔴";
+    }
+
+
+    /*
+       Positive threshold notification
+    */
+
+    if (
+        text.includes("Price +")
+    ) {
+
+        return "🟢";
+    }
+
+
+    /*
+       Negative threshold notification
+    */
+
+    if (
+        text.includes("Price -")
+    ) {
+
+        return "🔴";
+    }
+
+
+    /*
+       Default
+    */
+
+    return "";
+}
+
+
+/* =====================================================
+SEND BROWSER NOTIFICATION
 ===================================================== */
 
 async function sendDashboardNotification(
@@ -3303,7 +3570,6 @@ async function sendDashboardNotification(
     ) {
 
         return false;
-
     }
 
 
@@ -3319,11 +3585,33 @@ async function sendDashboardNotification(
         );
 
         return false;
-
     }
 
 
     try {
+
+        /*
+           Add universal Unicode emoji
+           to notification title.
+
+           No image file is required.
+        */
+
+        const notificationIcon =
+            getNotificationIconEmoji(
+                message
+            );
+
+
+        const notificationTitle =
+            notificationIcon +
+            (
+                notificationIcon
+                    ? " "
+                    : ""
+            ) +
+            title;
+
 
         if (
             "serviceWorker" in navigator
@@ -3334,9 +3622,11 @@ async function sendDashboardNotification(
 
 
             await registration.showNotification(
-                title,
+                notificationTitle,
                 {
-                    body: message,
+
+                    body:
+                        message,
 
                     icon:
                         "./icon-192.png",
@@ -3354,18 +3644,18 @@ async function sendDashboardNotification(
 
 
             return true;
-
         }
 
 
         /*
-           Fallback for desktop browsers
+           Fallback for desktop browsers.
         */
 
         const notification =
             new Notification(
-                title,
+                notificationTitle,
                 {
+
                     body:
                         message,
 
@@ -3404,13 +3694,12 @@ async function sendDashboardNotification(
         );
 
         return false;
-
     }
-
 }
 
+
 /* =====================================================
-   CARD COLOR + NOTIFICATION HOOK
+CARD COLOR + NOTIFICATION HOOK
 ===================================================== */
 
 function updateCardColor(
@@ -3461,6 +3750,16 @@ function updateCardColor(
     if (
         notificationMessage
     ) {
+
+        /*
+           For color-change notifications,
+           use the card title as notification title.
+
+           For threshold notifications,
+           the title is already included in
+           the message, but keeping the title
+           here makes the notification clear.
+        */
 
         sendDashboardNotification(
 
@@ -3514,8 +3813,6 @@ function updateCardColor(
             `0 8px 30px rgba(239,68,68,${0.05 + t * 0.20})`;
     }
 }
-
-
 /* =====================================================
    HELPERS
 ===================================================== */
