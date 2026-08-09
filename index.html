@@ -1536,7 +1536,7 @@ h1 {
 
 }
 </style>
-<script src="./email-notification.js"></script>
+
 </head>
 
 
@@ -3747,31 +3747,47 @@ function updateCardColor(
         );
 
 
-    if (
-        notificationMessage
-    ) {
+/* =============================================
+   NOTIFICATION
+   WINDOWS / MOBILE + EMAIL
+============================================= */
 
-        /*
-           For color-change notifications,
-           use the card title as notification title.
+if (
+    notificationMessage
+) {
 
-           For threshold notifications,
-           the title is already included in
-           the message, but keeping the title
-           here makes the notification clear.
-        */
-
-        sendDashboardNotification(
-
-            getCardNotificationTitle(
-                cardId
-            ),
-
-            notificationMessage
-
+    const notificationTitle =
+        getCardNotificationTitle(
+            cardId
         );
-    }
 
+
+    /* =============================================
+       WINDOWS / MOBILE NOTIFICATION
+    ============================================= */
+
+    sendDashboardNotification(
+
+        notificationTitle,
+
+        notificationMessage
+
+    );
+
+
+    /* =============================================
+       EMAIL NOTIFICATION
+    ============================================= */
+
+    sendEmailNotification(
+
+        notificationTitle,
+
+        notificationMessage
+
+    );
+
+}
 
     /* =================================================
        EXISTING COLOR LOGIC
@@ -3813,6 +3829,112 @@ function updateCardColor(
             `0 8px 30px rgba(239,68,68,${0.05 + t * 0.20})`;
     }
 }
+
+/* =====================================================
+   EMAIL NOTIFICATION
+   Financial Dashboard → Cloudflare Worker
+===================================================== */
+
+
+/*
+   Cloudflare Worker URL
+
+   فعلاً خالی است.
+   بعداً آدرس Worker را اینجا قرار می‌دهیم.
+*/
+
+const EMAIL_WORKER_URL =
+    "https://email.rxw.workers.dev/";
+
+
+/* =====================================================
+   SEND EMAIL NOTIFICATION
+===================================================== */
+
+async function sendEmailNotification(
+    title,
+    message
+) {
+
+    /*
+       Worker URL هنوز تنظیم نشده
+    */
+
+    if (!EMAIL_WORKER_URL) {
+
+        console.warn(
+            "Email notification skipped: Worker URL is not configured."
+        );
+
+        return false;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                EMAIL_WORKER_URL,
+                {
+
+                    method: "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            title:
+                                String(title),
+
+                            message:
+                                String(message)
+
+                        })
+
+                }
+            );
+
+
+        if (!response.ok) {
+
+            console.warn(
+                "Email notification failed:",
+                response.status
+            );
+
+            return false;
+        }
+
+
+        console.log(
+            "Email notification sent:",
+            title,
+            message
+        );
+
+
+        return true;
+
+    }
+
+    catch (error) {
+
+        console.warn(
+            "Email notification error:",
+            error
+        );
+
+        return false;
+    }
+}
+
+
 /* =====================================================
    HELPERS
 ===================================================== */
