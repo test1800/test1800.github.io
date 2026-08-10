@@ -563,8 +563,8 @@ h1 {
     color:
         #94a3b8;
 
-    font-size: 8px;
-
+    font-size: 11px;
+    font-weight: 700;
     white-space:
         nowrap;
 
@@ -1535,6 +1535,42 @@ h1 {
     }
 
 }
+
+/* =====================================================
+   TOP 6 PURCHASE VALUES
+   Only content inside existing box
+===================================================== */
+
+.six-purchase-values {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    grid-template-rows:
+        repeat(2, 1fr);
+
+    align-items: center;
+
+    justify-items: center;
+
+    gap: 2px 6px;
+
+}
+
+
+.six-purchase-number {
+
+    font-size: 11px;
+
+    font-weight: 800;
+
+    line-height: 1;
+
+    white-space: nowrap;
+
+}
 </style>
 
 </head>
@@ -2338,45 +2374,45 @@ h1 {
 
             </div>
 
+<div class="metric realized-combined six-purchase-values">
 
-            <div class="metric realized-combined">
+    <div
+        class="six-purchase-number"
+        id="sixPurchase1">
+        -
+    </div>
 
-                <div class="realized-row">
+    <div
+        class="six-purchase-number"
+        id="sixPurchase2">
+        -
+    </div>
 
-                    <div class="realized-label">
-                        Realized P/L vs Purchase
-                    </div>
+    <div
+        class="six-purchase-number"
+        id="sixPurchase3">
+        -
+    </div>
 
-                    <div
-                        class="realized-value"
-                        id="sixRealizedPurchase">
+    <div
+        class="six-purchase-number"
+        id="sixPurchase4">
+        -
+    </div>
 
-                        -
+    <div
+        class="six-purchase-number"
+        id="sixPurchase5">
+        -
+    </div>
 
-                    </div>
+    <div
+        class="six-purchase-number"
+        id="sixPurchase6">
+        -
+    </div>
 
-                </div>
-
-
-                <div class="realized-row">
-
-                    <div class="realized-label">
-                        Realized P/L vs Bank
-                    </div>
-
-                    <div
-                        class="realized-value"
-                        id="sixRealizedBank">
-
-                        -
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
+</div>
             <div class="metric">
 
                 <div class="metric-label">
@@ -7811,7 +7847,48 @@ async function loadDashboardData() {
 
             );
 
+/* =================================================
+   TOP 6 PURCHASE PRICES
+================================================= */
 
+sixTransactions.forEach(
+    (
+        transaction,
+        index
+    ) => {
+
+        safeText(
+            "sixPurchase" +
+            (index + 1),
+
+            formatNumber(
+                Number(
+                    transaction.price
+                )
+            )
+        );
+
+    }
+);
+
+
+/* Clear unused positions */
+
+for (
+    let i =
+        sixTransactions.length + 1;
+
+    i <= TOP_PURCHASES_COUNT;
+
+    i++
+) {
+
+    safeText(
+        "sixPurchase" + i,
+        "-"
+    );
+
+}
             updateCardColor(
                 "sixMainPrice",
                 six.plBank
