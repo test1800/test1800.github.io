@@ -2867,6 +2867,63 @@ h1 {
 
 
 <script>
+/* =====================================================
+   WORKER
+===================================================== */
+const WORKER_URLS = {
+
+    crypto: [
+        "https://coin.rxw.workers.dev/",
+        "https://api.cors.syrins.tech/?url=https%3A%2F%2Fcoin.rxw.workers.dev%2F"
+    ],
+
+    email:
+        "https://email.rxw.workers.dev/",
+
+    usd: [
+        "https://usdd.rxw.workers.dev/",
+        "https://api.cors.syrins.tech/?url=https%3A%2F%2Fusdd.rxw.workers.dev%2F"
+    ],
+
+    yekusd: [
+        "https://yekusd-rateusd.rxw.workers.dev/",
+        "https://api.cors.syrins.tech/?url=https%3A%2F%2Fyekusd-rateusd.rxw.workers.dev%2F"
+    ]
+
+};
+
+
+async function fetchWithFallback(urls, options = {}) {
+
+    for (const url of urls) {
+
+        try {
+
+            const response =
+                await fetch(url, {
+                    ...options,
+                    cache: "no-store"
+                });
+
+            if (response.ok) {
+                return response;
+            }
+
+        } catch (error) {
+
+            console.warn(
+                "Worker failed:",
+                url
+            );
+
+        }
+    }
+
+    throw new Error(
+        "All worker URLs unavailable"
+    );
+}
+
 
 /* =====================================================
    TOP PURCHASES
@@ -4052,22 +4109,10 @@ if (
             `0 8px 30px rgba(239,68,68,${0.05 + t * 0.20})`;
     }
 }
-
 /* =====================================================
    EMAIL NOTIFICATION
    Financial Dashboard → Cloudflare Worker
 ===================================================== */
-
-
-/*
-   Cloudflare Worker URL
-
-   فعلاً خالی است.
-   بعداً آدرس Worker را اینجا قرار می‌دهیم.
-*/
-
-const EMAIL_WORKER_URL =
-    "https://email.rxw.workers.dev/";
 
 
 /* =====================================================
@@ -4079,11 +4124,7 @@ async function sendEmailNotification(
     message
 ) {
 
-    /*
-       Worker URL هنوز تنظیم نشده
-    */
-
-    if (!EMAIL_WORKER_URL) {
+    if (!WORKER_URLS.email) {
 
         console.warn(
             "Email notification skipped: Worker URL is not configured."
@@ -4097,7 +4138,7 @@ async function sendEmailNotification(
 
         const response =
             await fetch(
-                EMAIL_WORKER_URL,
+                WORKER_URLS.email,
                 {
 
                     method: "POST",
@@ -4366,13 +4407,9 @@ async function loadYekusd() {
 
     try {
 
-        const response =
-            await fetch(
-                "https://yekusd-rateusd.rxw.workers.dev/",
-                {
-                    cache:
-                        "no-store"
-                }
+         const response =
+            await fetchWithFallback(
+                WORKER_URLS.yekusd
             );
 
 
@@ -4515,14 +4552,10 @@ async function loadUsdTxt() {
 
     try {
 
-        const response =
-            await fetch(
-                "https://usdd.rxw.workers.dev/",
-                {
-                    cache:
-                        "no-store"
-                }
-            );
+const response =
+    await fetchWithFallback(
+        WORKER_URLS.usd
+    );
 
 
         if (!response.ok) {
@@ -8262,17 +8295,10 @@ async function loadCryptoValue() {
 
     try {
 
-        const response =
-            await fetch(
-
-                "https://coin.rxw.workers.dev/",
-
-                {
-                    cache:
-                        "no-store"
-                }
-
-            );
+const response =
+    await fetchWithFallback(
+        WORKER_URLS.crypto
+    );
 
 
         if (!response.ok) {
