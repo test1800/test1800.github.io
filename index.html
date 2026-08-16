@@ -6660,7 +6660,8 @@ async function getExirPrice(
 
 
 /* =====================================================
-   BITPIN WORKER API
+   BITPIN API
+   Uses FIRST ASK price
 ===================================================== */
 
 async function getBitpinPrice(
@@ -6710,133 +6711,52 @@ async function getBitpinPrice(
         await response.json();
 
 
-    const candidates = [
+    /*
+       Bitpin orderbook structure:
 
-        data,
+       {
+           "asks": [
+               ["187380", "400.00"],
+               ["187414", "33.66"],
+               ...
+           ],
 
-        data?.price,
+           "bids": [
+               ["187379", "1.86"],
+               ...
+           ]
+       }
 
-        data?.last,
+       We use the FIRST ASK price:
 
-        data?.lastPrice,
+       asks[0][0]
 
-        data?.lastTradePrice,
+       Example:
 
-        data?.usdt,
+       ["187380", "400.00"]
 
-        data?.usdtPrice,
-
-        data?.value,
-
-        data?.data,
-
-        data?.data?.price,
-
-        data?.data?.last,
-
-        data?.data?.lastPrice,
-
-        data?.data?.lastTradePrice,
-
-        data?.ticker?.price,
-
-        data?.ticker?.last,
-
-        data?.ticker?.lastPrice,
-
-        data?.result,
-
-        data?.result?.price,
-
-        data?.result?.last
-
-    ];
-
-
-    let rawPrice =
-        candidates.find(
-
-            value => {
-
-                if (
-                    value === null
-                    ||
-                    value === undefined
-                    ||
-                    value === ""
-                ) {
-
-                    return false;
-                }
-
-
-                if (
-                    typeof value ===
-                    "object"
-                ) {
-
-                    return false;
-                }
-
-
-                return Number.isFinite(
-                    Number(value)
-                );
-            }
-
-        );
+       price = 187380
+    */
 
 
     if (
-        rawPrice === undefined
-        &&
-        typeof data === "object"
-        &&
-        data !== null
+        !Array.isArray(data?.asks)
+        ||
+        data.asks.length === 0
+        ||
+        !Array.isArray(data.asks[0])
+        ||
+        data.asks[0].length === 0
     ) {
 
-        const recursiveKeys = [
-
-            "price",
-
-            "last",
-
-            "lastPrice",
-
-            "lastTradePrice",
-
-            "value",
-
-            "rate",
-
-            "usdt"
-
-        ];
-
-
-        for (
-            const key
-            of recursiveKeys
-        ) {
-
-            if (
-                data[key] !== undefined
-                &&
-                Number.isFinite(
-                    Number(
-                        data[key]
-                    )
-                )
-            ) {
-
-                rawPrice =
-                    data[key];
-
-
-                break;
-            }
-        }
+        throw new Error(
+            "Invalid Bitpin orderbook: asks not found"
+        );
     }
+
+
+    const rawPrice =
+        data.asks[0][0];
 
 
     const price =
@@ -6845,17 +6765,18 @@ async function getBitpinPrice(
 
     if (
         !Number.isFinite(price)
+        ||
+        price <= 0
     ) {
 
         throw new Error(
-            "Invalid Bitpin price"
+            "Invalid Bitpin ask price"
         );
     }
 
 
     return price;
 }
-
 
 /* =====================================================
    AVERAGE LIVE PRICE
