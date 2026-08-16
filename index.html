@@ -2803,6 +2803,7 @@ Each card has its own independent notification state.
 */
 
 const notificationStates = Object.create(null);
+const SIGN_CONFIRMATIONS_REQUIRED = 5;
 
 /*
 Same threshold can notify again
@@ -3008,29 +3009,60 @@ function createNotificationState(
 
     notificationStates[cardId] = {
 
+        /*
+           Confirmed direction.
+
+           IMPORTANT:
+           This changes only after
+           5 consecutive readings confirm
+           the new direction.
+        */
+
         color:
             getCardColorFromPercent(
                 percent
             ),
+
 
         threshold:
             getThresholdFromPercent(
                 percent
             ),
 
-        /*
-           Last time each threshold
-           generated a notification.
 
-           Example:
-           {
-               "2": 123456789,
-               "3": 123456999
-           }
+        /*
+           Candidate direction for
+           positive <-> negative change.
+        */
+
+        signCandidateColor:
+            null,
+
+
+        /*
+           Number of consecutive readings
+           confirming the candidate direction.
+        */
+
+        signCandidateCount:
+            0,
+
+
+        /*
+           Last notification time
+           for each threshold.
         */
 
         thresholdNotificationTimes:
-            Object.create(null)
+            Object.create(null),
+
+
+        /*
+           Last percentage value.
+        */
+
+        lastPercent:
+            Number(percent)
 
     };
 
@@ -3065,16 +3097,89 @@ function getNotificationState(
 
 /* =====================================================
 COLOR CHANGE MESSAGE
+5 CONSECUTIVE CONFIRMATIONS
 ===================================================== */
 
 function getColorChangeMessage(
-    previousColor,
+    state,
     currentColor
 ) {
 
+    /*
+       Neutral does not confirm
+       a direction change.
+
+       Cancel pending confirmation.
+    */
+
     if (
-        previousColor ===
+        currentColor === "neutral"
+    ) {
+
+        state.signCandidateColor =
+            null;
+
+        state.signCandidateCount =
+            0;
+
+        return null;
+    }
+
+
+    /*
+       Current direction is already
+       confirmed.
+
+       Cancel any pending candidate.
+    */
+
+    if (
+        currentColor ===
+        state.color
+    ) {
+
+        state.signCandidateColor =
+            null;
+
+        state.signCandidateCount =
+            0;
+
+        return null;
+    }
+
+
+    /*
+       New direction detected.
+
+       Start or continue confirmation.
+    */
+
+    if (
+        state.signCandidateColor !==
         currentColor
+    ) {
+
+        state.signCandidateColor =
+            currentColor;
+
+        state.signCandidateCount =
+            1;
+
+    }
+
+    else {
+
+        state.signCandidateCount++;
+    }
+
+
+    /*
+       Need 5 consecutive readings.
+    */
+
+    if (
+        state.signCandidateCount <
+        SIGN_CONFIRMATIONS_REQUIRED
     ) {
 
         return null;
@@ -3082,11 +3187,33 @@ function getColorChangeMessage(
 
 
     /*
-       Red → Green
+       Five consecutive readings
+       confirmed the new direction.
+    */
+
+    const previousColor =
+        state.color;
+
+
+    state.color =
+        currentColor;
+
+
+    state.signCandidateColor =
+        null;
+
+
+    state.signCandidateCount =
+        0;
+
+
+    /*
+       RED -> GREEN
     */
 
     if (
-        previousColor === "red" &&
+        previousColor === "red"
+        &&
         currentColor === "green"
     ) {
 
@@ -3097,11 +3224,12 @@ function getColorChangeMessage(
 
 
     /*
-       Green → Red
+       GREEN -> RED
     */
 
     if (
-        previousColor === "green" &&
+        previousColor === "green"
+        &&
         currentColor === "red"
     ) {
 
@@ -3111,10 +3239,6 @@ function getColorChangeMessage(
     }
 
 
-    /*
-       Neutral transitions are ignored.
-    */
-
     return null;
 }
 
@@ -3122,23 +3246,6 @@ function getColorChangeMessage(
 /* =====================================================
 THRESHOLD CROSSING
 ===================================================== */
-
-/*
-Finds the FIRST threshold crossed between
-previous and current percentage.
-
-Example:
-
-1.8 → 3.2
-
-returns:
-
-2
-
-NOT 3
-
-because 2 was the first threshold crossed.
-*/
 
 function getCrossedThreshold(
     previousPercent,
@@ -3196,15 +3303,6 @@ function getCrossedThreshold(
     /*
        Moving downward through thresholds
        is also considered a crossing.
-
-       Example:
-
-       -3.2 → -1.8
-
-       crosses 3, 2.5, 2, etc.
-
-       We use the first threshold crossed
-       from the previous value.
     */
 
     if (
@@ -3282,7 +3380,8 @@ function getThresholdChangeMessage(
 
     /*
        Same threshold:
-       wait 5 minutes.
+       wait according to
+       NOTIFICATION_COOLDOWN.
     */
 
     if (
@@ -3305,14 +3404,7 @@ function getThresholdChangeMessage(
 
 
     /*
-       Keep the sign of the CURRENT
-       percentage.
-
-       Positive:
-       +2%
-
-       Negative:
-       -2%
+       Keep the sign of CURRENT percentage.
     */
 
     const sign =
@@ -3355,8 +3447,8 @@ function evaluateDashboardNotification(
 
 
     /*
-       First reading creates the baseline
-       and NEVER sends a notification.
+       First reading creates baseline.
+       NEVER notify.
     */
 
     if (
@@ -3376,10 +3468,6 @@ function evaluateDashboardNotification(
         notificationStates[cardId];
 
 
-    const previousColor =
-        state.color;
-
-
     const currentColor =
         getCardColorFromPercent(
             numericPercent
@@ -3387,19 +3475,19 @@ function evaluateDashboardNotification(
 
 
     /*
-       Check whether a real red/green
-       direction change happened.
+       Positive <-> Negative
+       requires 5 consecutive readings.
     */
 
     const colorMessage =
         getColorChangeMessage(
-            previousColor,
+            state,
             currentColor
         );
 
 
     /*
-       Find the FIRST threshold crossed.
+       Find threshold crossing.
     */
 
     const crossedThreshold =
@@ -3431,20 +3519,25 @@ function evaluateDashboardNotification(
 
 
     /*
-       One dashboard update = maximum
-       ONE notification.
+       Maximum ONE notification
+       per dashboard update.
 
-       Color change has priority.
+       Confirmed color change
+       has priority.
     */
 
-    if (colorMessage) {
+    if (
+        colorMessage
+    ) {
 
         notificationMessage =
             colorMessage;
 
     }
 
-    else if (thresholdMessage) {
+    else if (
+        thresholdMessage
+    ) {
 
         notificationMessage =
             thresholdMessage;
@@ -3452,11 +3545,17 @@ function evaluateDashboardNotification(
 
 
     /*
-       Save latest state.
-    */
+       IMPORTANT:
 
-    state.color =
-        currentColor;
+       DO NOT do:
+
+       state.color = currentColor;
+
+       here.
+
+       state.color is changed only
+       after 5 confirmed readings.
+    */
 
 
     state.threshold =
