@@ -1,6 +1,6 @@
 {
   "priceApi": "https://apiv2.nobitex.ir/v3/orderbook/USDTIRT",
-  "exirApi": "https://api.exir.io/v2/ticker?symbol=usdt-irt",
+  "exirApi": "https://api.exir.io/v2/orderbook?symbol=usdt-irt",
   "bitpinApi": "https://api.bitpin.org/api/v1/mth/orderbook/USDT_IRT/",
   "defaultPrice": 190000,
   "annualBankRate": 38,
