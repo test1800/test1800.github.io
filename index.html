@@ -6479,6 +6479,7 @@ function displayLastAction(
 
 /* =====================================================
    NOBITEX API
+   Uses lowest ASK price
 ===================================================== */
 
 async function getCurrentPrice(
@@ -6529,22 +6530,65 @@ async function getCurrentPrice(
         await response.json();
 
 
+    /*
+       Nobitex Order Book structure:
+
+       {
+           "asks": [
+               ["1867820", "100"],
+               ["1867830", "571.29"],
+               ...
+           ]
+       }
+
+       We use the FIRST / LOWEST ASK price:
+
+       data.asks[0][0]
+
+       Example:
+
+       1867820
+
+       Then apply priceDivisor:
+
+       1867820 / 10 = 186782
+    */
+
+
+    if (
+        !Array.isArray(data?.asks)
+        ||
+        data.asks.length === 0
+        ||
+        !Array.isArray(data.asks[0])
+        ||
+        data.asks[0].length === 0
+    ) {
+
+        throw new Error(
+            "Invalid Nobitex orderbook: asks not found"
+        );
+    }
+
+
     const rawPrice =
-        data.lastTradePrice;
+        data.asks[0][0];
 
 
     const price =
         Number(rawPrice)
         /
-        divisor;
+        Number(divisor || 1);
 
 
     if (
         !Number.isFinite(price)
+        ||
+        price <= 0
     ) {
 
         throw new Error(
-            "Invalid Nobitex price"
+            "Invalid Nobitex ask price"
         );
     }
 
