@@ -8612,7 +8612,6 @@ function hidePinLock() {
     }
 }
 
-
 function checkAppPin() {
 
     const pinInput =
@@ -8627,7 +8626,6 @@ function checkAppPin() {
 
 
     if (!pinInput) {
-
         return;
     }
 
@@ -8636,6 +8634,19 @@ function checkAppPin() {
         pinInput.value ===
         APP_PIN
     ) {
+
+        /*
+           Remember unlock for this
+           browser tab/session.
+
+           Refresh will NOT ask again.
+        */
+
+        sessionStorage.setItem(
+            "financialDashboardPinUnlocked",
+            "1"
+        );
+
 
         hidePinLock();
 
@@ -8703,11 +8714,28 @@ if (pinInput) {
 
 
 /*
-   Every time the page opens,
-   show PIN.
+   Show PIN only if this tab/session
+   has not already been unlocked.
 */
 
-showPinLock();
+const pinUnlocked =
+    sessionStorage.getItem(
+        "financialDashboardPinUnlocked"
+    );
+
+
+if (
+    pinUnlocked === "1"
+) {
+
+    hidePinLock();
+
+}
+else {
+
+    showPinLock();
+
+}
 
 /* =====================================================
    SERVICE WORKER
