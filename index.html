@@ -1578,6 +1578,100 @@ h1 {
 
 <body>
 
+<!-- =====================================================
+     PIN LOCK
+===================================================== -->
+
+<div
+    id="pinLock"
+    style="
+        position:fixed;
+        inset:0;
+        z-index:99999;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:#070b14;
+    "
+>
+
+    <div
+        style="
+            width:280px;
+            padding:25px;
+            border-radius:18px;
+            background:#0f172a;
+            border:1px solid rgba(255,255,255,.12);
+            box-shadow:0 20px 60px rgba(0,0,0,.45);
+            text-align:center;
+        "
+    >
+
+        <div
+            style="
+                font-size:18px;
+                font-weight:800;
+                margin-bottom:18px;
+            "
+        >
+            Financial Dashboard
+        </div>
+
+        <input
+            id="pinInput"
+            type="password"
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="4"
+            placeholder="Enter PIN"
+            style="
+                width:100%;
+                padding:12px;
+                border-radius:10px;
+                border:1px solid rgba(255,255,255,.15);
+                background:#020617;
+                color:white;
+                text-align:center;
+                font-size:20px;
+                outline:none;
+            "
+        >
+
+        <button
+            id="pinButton"
+            type="button"
+            style="
+                width:100%;
+                margin-top:12px;
+                padding:11px;
+                border:0;
+                border-radius:10px;
+                background:#2563eb;
+                color:white;
+                font-size:15px;
+                font-weight:700;
+                cursor:pointer;
+            "
+        >
+            Unlock
+        </button>
+
+        <div
+            id="pinError"
+            style="
+                margin-top:10px;
+                min-height:20px;
+                color:#f87171;
+                font-size:12px;
+            "
+        ></div>
+
+    </div>
+
+</div>
+
+
+
 <div class="container">
 
 
@@ -8463,6 +8557,157 @@ async function init() {
 
 init();
 
+
+/* =====================================================
+   APP PIN LOCK
+===================================================== */
+
+const APP_PIN = "1111";
+
+
+function showPinLock() {
+
+    const pinLock =
+        document.getElementById(
+            "pinLock"
+        );
+
+    if (pinLock) {
+
+        pinLock.style.display =
+            "flex";
+    }
+
+
+    const pinInput =
+        document.getElementById(
+            "pinInput"
+        );
+
+    if (pinInput) {
+
+        setTimeout(
+            () => {
+
+                pinInput.focus();
+
+            },
+            150
+        );
+    }
+}
+
+
+function hidePinLock() {
+
+    const pinLock =
+        document.getElementById(
+            "pinLock"
+        );
+
+    if (pinLock) {
+
+        pinLock.style.display =
+            "none";
+    }
+}
+
+
+function checkAppPin() {
+
+    const pinInput =
+        document.getElementById(
+            "pinInput"
+        );
+
+    const pinError =
+        document.getElementById(
+            "pinError"
+        );
+
+
+    if (!pinInput) {
+
+        return;
+    }
+
+
+    if (
+        pinInput.value ===
+        APP_PIN
+    ) {
+
+        hidePinLock();
+
+        pinInput.value = "";
+
+
+        if (pinError) {
+
+            pinError.textContent =
+                "";
+        }
+
+        return;
+    }
+
+
+    pinInput.value = "";
+
+
+    if (pinError) {
+
+        pinError.textContent =
+            "Incorrect PIN";
+    }
+}
+
+
+const pinButton =
+    document.getElementById(
+        "pinButton"
+    );
+
+
+if (pinButton) {
+
+    pinButton.addEventListener(
+        "click",
+        checkAppPin
+    );
+}
+
+
+const pinInput =
+    document.getElementById(
+        "pinInput"
+    );
+
+
+if (pinInput) {
+
+    pinInput.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                checkAppPin();
+            }
+
+        }
+    );
+}
+
+
+/*
+   Every time the page opens,
+   show PIN.
+*/
+
+showPinLock();
 
 /* =====================================================
    SERVICE WORKER
