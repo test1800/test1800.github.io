@@ -6552,9 +6552,9 @@ async function getCurrentPrice(
     return price;
 }
 
-
 /* =====================================================
    EXIR API
+   Uses lowest ASK price
 ===================================================== */
 
 async function getExirPrice(
@@ -6604,41 +6604,39 @@ async function getExirPrice(
         await response.json();
 
 
-    const candidates = [
+    /*
+       Exir Order Book
 
-        data?.last,
+       We use the lowest ASK price.
 
-        data?.lastTradePrice,
+       asks[0][0]
 
-        data?.lastPrice,
+       Example:
 
-        data?.price,
+       ["187380", "400"]
 
-        data?.ticker?.last,
+       price = 187380
+    */
 
-        data?.ticker?.lastTradePrice,
 
-        data?.data?.last,
+    if (
+        !Array.isArray(data?.asks)
+        ||
+        data.asks.length === 0
+        ||
+        !Array.isArray(data.asks[0])
+        ||
+        data.asks[0].length === 0
+    ) {
 
-        data?.data?.lastTradePrice,
-
-        data?.data?.price
-
-    ];
+        throw new Error(
+            "Invalid Exir orderbook: asks not found"
+        );
+    }
 
 
     const rawPrice =
-        candidates.find(
-
-            value =>
-
-                value !== null
-                &&
-                value !== undefined
-                &&
-                value !== ""
-
-        );
+        data.asks[0][0];
 
 
     const price =
@@ -6647,17 +6645,18 @@ async function getExirPrice(
 
     if (
         !Number.isFinite(price)
+        ||
+        price <= 0
     ) {
 
         throw new Error(
-            "Invalid Exir price"
+            "Invalid Exir ask price"
         );
     }
 
 
     return price;
 }
-
 
 /* =====================================================
    BITPIN API
