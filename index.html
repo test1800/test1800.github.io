@@ -6605,38 +6605,56 @@ async function getExirPrice(
 
 
     /*
-       Exir Order Book
+       Exir Order Book structure:
 
-       We use the lowest ASK price.
-
-       asks[0][0]
+       data["usdt-irt"].asks
 
        Example:
 
-       ["187380", "400"]
+       "asks": [
+           [187499, 500],
+           [187500, 738.18],
+           ...
+       ]
 
-       price = 187380
+       We use the first / lowest ASK price:
+
+       data["usdt-irt"].asks[0][0]
+
+       Result:
+
+       187499
     */
 
 
+    const orderBook =
+        data?.["usdt-irt"];
+
+
     if (
-        !Array.isArray(data?.asks)
+        !orderBook
         ||
-        data.asks.length === 0
+        !Array.isArray(
+            orderBook.asks
+        )
         ||
-        !Array.isArray(data.asks[0])
+        orderBook.asks.length === 0
         ||
-        data.asks[0].length === 0
+        !Array.isArray(
+            orderBook.asks[0]
+        )
+        ||
+        orderBook.asks[0].length === 0
     ) {
 
         throw new Error(
-            "Invalid Exir orderbook: asks not found"
+            "Invalid Exir orderbook: usdt-irt asks not found"
         );
     }
 
 
     const rawPrice =
-        data.asks[0][0];
+        orderBook.asks[0][0];
 
 
     const price =
