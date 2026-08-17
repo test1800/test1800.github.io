@@ -10195,7 +10195,7 @@ async function init() {
 }
 
 
-/* init will start after PIN unlock */
+init();
 
 
 /* =====================================================
@@ -10292,11 +10292,6 @@ function checkAppPin() {
 
         pinInput.value = "";
 
-        if (!window.dashboardStarted) {
-            window.dashboardStarted = true;
-            init();
-        }
-
 
         if (pinError) {
 
@@ -10374,11 +10369,6 @@ if (
 ) {
 
     hidePinLock();
-
-    if (!window.dashboardStarted) {
-        window.dashboardStarted = true;
-        init();
-    }
 
 }
 else {
