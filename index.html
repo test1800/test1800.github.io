@@ -3366,9 +3366,17 @@ async function loadCryptoSignals(){
                             ? "SELL"
                             : "NEUTRAL";
 
+                    const signalIcon =
+                    value > 0
+                        ? "🟢"
+                        : value < 0
+                            ? "🔴"
+                            : "⚪";
+
                     sendDashboardNotification(
-                        `${coin} Crypto Signal`,
-                        `${coin} signal changed to ${signalType}`
+                        `${signalIcon} ${coin} Crypto Signal`,
+                        `${signalIcon} ${coin} → ${signalType}`,
+                        SIGNAL_ICONS[coin]
                     );
 
                 }
@@ -4413,7 +4421,8 @@ SEND BROWSER NOTIFICATION
 
 async function sendDashboardNotification(
     title,
-    message
+    message,
+    notificationImage = "./icon-192.png"
 ) {
 
     if (
@@ -4480,7 +4489,7 @@ async function sendDashboardNotification(
                         message,
 
                     icon:
-                        "./icon-192.png",
+                        notificationImage,
 
                     badge:
                         "./icon-192.png",
