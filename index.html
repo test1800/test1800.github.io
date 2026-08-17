@@ -3440,10 +3440,7 @@ const WORKER_URLS = {
         "https://yekusd-rateusd.rxw.workers.dev/",
         "https://api.cors.syrins.tech/?url=https%3A%2F%2Fyekusd-rateusd.rxw.workers.dev%2F"
     ],
-    signal: "https://coinsignaltable.rxw.workers.dev/",
-
-    data:
-        "https://financial-data.rxw.workers.dev/data.json"
+    signal: "https://coinsignaltable.rxw.workers.dev/"
     
 
 };
@@ -8085,7 +8082,7 @@ async function loadDashboardData() {
 
                 fetchWithTimeout(
 
-                    WORKER_URLS.data,
+                    "data.json",
 
                     {
                         cache:
@@ -10198,7 +10195,7 @@ async function init() {
 }
 
 
-init();
+/* init will start after PIN unlock */
 
 
 /* =====================================================
@@ -10295,6 +10292,11 @@ function checkAppPin() {
 
         pinInput.value = "";
 
+        if (!window.dashboardStarted) {
+            window.dashboardStarted = true;
+            init();
+        }
+
 
         if (pinError) {
 
@@ -10372,6 +10374,11 @@ if (
 ) {
 
     hidePinLock();
+
+    if (!window.dashboardStarted) {
+        window.dashboardStarted = true;
+        init();
+    }
 
 }
 else {
