@@ -3440,7 +3440,10 @@ const WORKER_URLS = {
         "https://yekusd-rateusd.rxw.workers.dev/",
         "https://api.cors.syrins.tech/?url=https%3A%2F%2Fyekusd-rateusd.rxw.workers.dev%2F"
     ],
-    signal: "https://coinsignaltable.rxw.workers.dev/"
+    signal: "https://coinsignaltable.rxw.workers.dev/",
+
+    data:
+        "https://financial-data.rxw.workers.dev/data.json"
     
 
 };
@@ -8082,7 +8085,7 @@ async function loadDashboardData() {
 
                 fetchWithTimeout(
 
-                    "data.json",
+                    WORKER_URLS.data,
 
                     {
                         cache:
