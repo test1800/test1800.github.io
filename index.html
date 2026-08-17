@@ -1571,6 +1571,257 @@ h1 {
     white-space: nowrap;
 
 }
+/* =====================================================
+   SIGNAL BOARD
+===================================================== */
+
+
+.signal-board{
+
+    margin-top:10px;
+    padding:10px;
+
+    border-radius:15px;
+
+    background:
+    linear-gradient(
+        145deg,
+        rgba(255,255,255,.07),
+        rgba(255,255,255,.025)
+    );
+
+    border:
+    1px solid rgba(255,255,255,.08);
+
+    box-shadow:
+    0 12px 30px rgba(0,0,0,.25);
+
+}
+
+
+.signal-header{
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    color:#94a3b8;
+
+    font-size:11px;
+    font-weight:800;
+
+    margin-bottom:8px;
+
+}
+
+
+.signal-header small{
+
+    font-size:9px;
+    color:#64748b;
+
+}
+
+
+
+.signal-grid{
+
+    display:grid;
+
+    grid-template-columns:
+    repeat(9,1fr);
+
+    gap:7px;
+
+}
+
+
+
+.signal-box{
+
+    height:55px;
+
+    border-radius:12px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+
+    background:
+    rgba(2,6,23,.55);
+
+
+    border:
+    1px solid rgba(255,255,255,.08);
+
+
+    transition:.3s;
+
+}
+
+
+.signal-box img{
+
+    width:22px;
+    height:22px;
+
+    margin-bottom:3px;
+
+}
+
+
+.signal-name{
+
+    font-size:8px;
+
+    color:#94a3b8;
+
+    font-weight:800;
+
+}
+
+
+/* BUY */
+
+.signal-buy{
+
+    background:
+    linear-gradient(
+    145deg,
+    rgba(16,185,129,.35),
+    rgba(16,185,129,.08)
+    );
+
+
+    border-color:
+    rgba(16,185,129,.6);
+
+
+    box-shadow:
+    0 0 15px rgba(16,185,129,.35);
+
+}
+
+
+
+/* SELL */
+
+.signal-sell{
+
+    background:
+    linear-gradient(
+    145deg,
+    rgba(239,68,68,.35),
+    rgba(239,68,68,.08)
+    );
+
+
+    border-color:
+    rgba(239,68,68,.6);
+
+
+    box-shadow:
+    0 0 15px rgba(239,68,68,.35);
+
+}
+
+
+
+/* NEUTRAL */
+
+.signal-neutral{
+
+    opacity:.7;
+
+}
+
+/* =====================================================
+   RESPONSIVE SIGNAL BOARD
+===================================================== */
+
+
+@media (max-width: 700px){
+
+    .signal-name{
+
+        display:none;
+
+    }
+
+
+    .signal-box{
+
+        height:30px;
+        border-radius:8px;
+
+    }
+
+
+    .signal-box img{
+
+        width:18px;
+        height:18px;
+
+    }
+
+}
+
+/* =====================================================
+   SIGNAL CHANGE NOTIFICATION ANIMATION
+===================================================== */
+
+
+.signal-alert{
+
+    animation:
+    signalPulse
+    1s
+    ease;
+
+}
+
+
+
+@keyframes signalPulse{
+
+
+    0%{
+
+        transform:scale(1);
+
+        filter:
+        brightness(1);
+
+    }
+
+
+
+    40%{
+
+        transform:scale(1.15);
+
+        filter:
+        brightness(1.6);
+
+    }
+
+
+
+    100%{
+
+        transform:scale(1);
+
+        filter:
+        brightness(1);
+
+    }
+
+}
 </style>
 
 </head>
@@ -1872,7 +2123,25 @@ h1 {
         </div>
 
     </div>
+<!-- =====================================================
+     CRYPTO SIGNAL BOARD
+===================================================== -->
 
+<div class="signal-board">
+
+    <div class="signal-header">
+        <span>Crypto Signal</span>
+        <small id="signalInfo">
+            -
+        </small>
+    </div>
+
+
+    <div class="signal-grid" id="signalGrid">
+
+    </div>
+
+</div>
 
     <div
         id="connectionStatus"
@@ -2888,7 +3157,9 @@ const WORKER_URLS = {
     yekusd: [
         "https://yekusd-rateusd.rxw.workers.dev/",
         "https://api.cors.syrins.tech/?url=https%3A%2F%2Fyekusd-rateusd.rxw.workers.dev%2F"
-    ]
+    ],
+    signal: "https://coinsignaltable.rxw.workers.dev/"
+    
 
 };
 
@@ -2931,7 +3202,289 @@ async function fetchWithFallback(urls, options = {}) {
 
 const TOP_PURCHASES_COUNT = 6;
 
+/* =====================================================
+   CRYPTO SIGNAL BOARD
+===================================================== */
 
+
+const SIGNAL_ICONS = {
+
+    BTC:
+    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png",
+
+    DOGE:
+    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/doge.png",
+
+    ETH:
+    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png",
+
+    BNB:
+    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png",
+
+    ADA:
+    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/ada.png",
+
+    SOL:
+    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png",
+
+    POL:
+    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/matic.png",
+
+    ONE:
+    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/one.png",
+
+    TRX:
+    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/trx.png"
+
+};
+
+/* =====================================================
+   SIGNAL MEMORY
+===================================================== */
+
+let previousSignals = {}
+
+/* =====================================================
+   LOAD CRYPTO SIGNALS
+===================================================== */
+
+
+async function loadCryptoSignals(){
+
+
+    console.log(
+        "LOAD SIGNAL START"
+    );
+
+
+    try {
+
+
+        const res =
+        await fetch(
+
+            WORKER_URLS.signal +
+            "?t=" +
+            Date.now(),
+
+            {
+                cache:
+                "no-store"
+            }
+
+        );
+
+
+
+        console.log(
+            "SIGNAL RESPONSE:",
+            res
+        );
+
+
+
+        if(!res.ok){
+
+            throw new Error(
+                "Signal API HTTP " +
+                res.status
+            );
+
+        }
+
+
+
+        const data =
+        await res.json();
+
+
+
+        console.log(
+            "SIGNAL DATA:",
+            data
+        );
+
+
+
+        const grid =
+        document.getElementById(
+            "signalGrid"
+        );
+
+
+
+        if(!grid){
+
+            console.warn(
+                "signalGrid not found"
+            );
+
+            return;
+
+        }
+
+
+
+        grid.innerHTML =
+        "";
+
+
+
+        Object.keys(
+            SIGNAL_ICONS
+        )
+        .forEach(
+
+            coin => {
+
+
+                const value =
+                Number(
+                    data[coin] ?? 0
+                );
+
+
+
+                let changed =
+                false;
+
+
+
+                if(
+                    previousSignals[coin] !== undefined
+                    &&
+                    previousSignals[coin] !== value
+                ){
+
+                    changed =
+                    true;
+
+                }
+
+
+
+                previousSignals[coin] =
+                value;
+
+
+
+                let cls =
+                "signal-neutral";
+
+
+
+                if(value > 0){
+
+                    cls =
+                    "signal-buy";
+
+                }
+
+                else if(value < 0){
+
+                    cls =
+                    "signal-sell";
+
+                }
+
+
+
+                console.log(
+                    "ADDING SIGNAL:",
+                    coin,
+                    value,
+                    cls,
+                    changed
+                );
+
+
+
+                grid.innerHTML += `
+
+                <div class="signal-box ${cls}${changed ? " signal-alert" : ""}"
+                     data-coin="${coin}">
+
+                    <img
+                    src="${SIGNAL_ICONS[coin]}"
+                    alt="${coin}"
+                    >
+
+                    <div class="signal-name">
+                        ${coin}
+                    </div>
+
+                </div>
+
+                `;
+
+
+            }
+
+        );
+
+
+
+        console.log(
+            "AFTER BUILD:",
+            grid.innerHTML
+        );
+
+
+
+        console.log(
+            "SIGNAL BOX COUNT:",
+            grid.children.length
+        );
+
+
+
+        const info =
+        document.getElementById(
+            "signalInfo"
+        );
+
+
+
+        if(info){
+
+
+            info.textContent =
+
+            `${data.timeframe || "-"} • ${
+            
+                data.updated
+
+                ?
+
+                new Date(
+                    data.updated
+                )
+                .toLocaleTimeString()
+
+                :
+
+                "-"
+
+            }`;
+
+        }
+
+
+
+    }
+
+    catch(error){
+
+
+        console.error(
+            "Signal API Error:",
+            error
+        );
+
+
+    }
+
+}
 /* =====================================================
 DASHBOARD NOTIFICATION SYSTEM
 ===================================================== */
@@ -8250,6 +8803,7 @@ function startAutoRefresh() {
                     try {
 
                         await loadDashboardData();
+                        await loadCryptoSignals();
 
                     }
 
@@ -8540,6 +9094,7 @@ async function init() {
     try {
 
         await loadDashboardData();
+        await loadCryptoSignals();
 
 
         startAutoRefresh();
@@ -8588,7 +9143,7 @@ init();
    APP PIN LOCK
 ===================================================== */
 
-const APP_PIN = "1111";
+const APP_PIN = "4181";
 
 
 function showPinLock() {
