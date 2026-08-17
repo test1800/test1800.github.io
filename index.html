@@ -1822,7 +1822,6 @@ h1 {
     }
 
 }
-
 /* =====================================================
    CRYPTO PORTFOLIO
 ===================================================== */
@@ -1841,8 +1840,8 @@ h1 {
 }
 
 .crypto-portfolio-title{
-    font-size:17px;
-    font-weight:800;
+    font-size:20px;
+    font-weight:900;
 }
 
 .crypto-portfolio-total{
@@ -1854,21 +1853,21 @@ h1 {
 
 .crypto-portfolio-total-label{
     color:#64748b;
-    font-size:9px;
+    font-size:11px;
     font-weight:700;
     text-transform:uppercase;
     letter-spacing:.7px;
 }
 
 .crypto-portfolio-total-value{
-    font-size:18px;
-    font-weight:850;
+    font-size:21px;
+    font-weight:900;
     font-variant-numeric:tabular-nums;
 }
 
 .crypto-portfolio-total-change{
-    font-size:10px;
-    font-weight:850;
+    font-size:11px;
+    font-weight:900;
     font-variant-numeric:tabular-nums;
 }
 
@@ -1919,15 +1918,15 @@ h1 {
 }
 
 .crypto-portfolio-name{
-    font-size:11px;
-    font-weight:850;
+    font-size:13px;
+    font-weight:900;
     color:#e2e8f0;
 }
 
 .crypto-portfolio-amount{
     min-width:0;
     color:#94a3b8;
-    font-size:8px;
+    font-size:10px;
     font-weight:700;
     overflow:hidden;
     text-overflow:ellipsis;
@@ -1937,8 +1936,8 @@ h1 {
 .crypto-portfolio-change{
     padding:3px 5px;
     border-radius:6px;
-    font-size:8px;
-    font-weight:850;
+    font-size:10px;
+    font-weight:900;
     white-space:nowrap;
     font-variant-numeric:tabular-nums;
 }
@@ -1952,16 +1951,16 @@ h1 {
 
 .crypto-portfolio-price{
     color:#f8fafc;
-    font-size:13px;
-    font-weight:850;
+    font-size:15px;
+    font-weight:900;
     white-space:nowrap;
     font-variant-numeric:tabular-nums;
 }
 
 .crypto-portfolio-value{
     color:#a5b4fc;
-    font-size:11px;
-    font-weight:800;
+    font-size:13px;
+    font-weight:850;
     white-space:nowrap;
     font-variant-numeric:tabular-nums;
 }
@@ -1972,6 +1971,7 @@ h1 {
     font-size:7px;
     text-align:right;
 }
+
 
 .crypto-portfolio-item.up .crypto-portfolio-change{
     color:#34d399;
@@ -1996,7 +1996,19 @@ h1 {
     color:#64748b !important;
 }
 
+
+/* ================= MOBILE ================= */
+
 @media (max-width:650px){
+
+    .crypto-portfolio-title{
+        font-size:17px;
+    }
+
+    .crypto-portfolio-total-value{
+        font-size:15px;
+    }
+
     .crypto-portfolio-header{
         align-items:flex-start;
     }
@@ -2005,10 +2017,6 @@ h1 {
         flex-wrap:wrap;
         justify-content:flex-end;
         gap:4px 6px;
-    }
-
-    .crypto-portfolio-total-value{
-        font-size:15px;
     }
 
     .crypto-portfolio-total-change{
@@ -2032,23 +2040,23 @@ h1 {
     }
 
     .crypto-portfolio-name{
-        font-size:9px;
-    }
-
-    .crypto-portfolio-amount{
-        font-size:7px;
-    }
-
-    .crypto-portfolio-price{
         font-size:10px;
     }
 
+    .crypto-portfolio-amount{
+        font-size:8px;
+    }
+
+    .crypto-portfolio-price{
+        font-size:11px;
+    }
+
     .crypto-portfolio-value{
-        font-size:9px;
+        font-size:10px;
     }
 
     .crypto-portfolio-change{
-        font-size:7px;
+        font-size:8px;
         padding:2px 3px;
     }
 
@@ -2056,7 +2064,6 @@ h1 {
         font-size:6px;
     }
 }
-
 </style>
 
 </head>
