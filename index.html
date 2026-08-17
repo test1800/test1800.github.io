@@ -1822,6 +1822,241 @@ h1 {
     }
 
 }
+
+/* =====================================================
+   CRYPTO PORTFOLIO
+===================================================== */
+
+.crypto-portfolio-card{
+    grid-column:1 / -1;
+    overflow:hidden;
+}
+
+.crypto-portfolio-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:9px;
+}
+
+.crypto-portfolio-title{
+    font-size:17px;
+    font-weight:800;
+}
+
+.crypto-portfolio-total{
+    display:flex;
+    align-items:baseline;
+    gap:7px;
+    white-space:nowrap;
+}
+
+.crypto-portfolio-total-label{
+    color:#64748b;
+    font-size:9px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.7px;
+}
+
+.crypto-portfolio-total-value{
+    font-size:18px;
+    font-weight:850;
+    font-variant-numeric:tabular-nums;
+}
+
+.crypto-portfolio-total-change{
+    font-size:10px;
+    font-weight:850;
+    font-variant-numeric:tabular-nums;
+}
+
+.crypto-portfolio-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:7px;
+}
+
+.crypto-portfolio-item{
+    min-width:0;
+    padding:8px 9px;
+    border-radius:11px;
+    background:rgba(2,6,23,.38);
+    border:1px solid rgba(255,255,255,.07);
+    transition:
+        transform .2s ease,
+        border-color .2s ease,
+        background .2s ease;
+}
+
+.crypto-portfolio-item:hover{
+    transform:translateY(-1px);
+    border-color:rgba(255,255,255,.13);
+    background:rgba(255,255,255,.045);
+}
+
+.crypto-portfolio-item-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:7px;
+    margin-bottom:6px;
+}
+
+.crypto-portfolio-coin{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    min-width:0;
+}
+
+.crypto-portfolio-coin img{
+    width:22px;
+    height:22px;
+    flex:0 0 22px;
+    object-fit:contain;
+}
+
+.crypto-portfolio-name{
+    font-size:11px;
+    font-weight:850;
+    color:#e2e8f0;
+}
+
+.crypto-portfolio-amount{
+    min-width:0;
+    color:#94a3b8;
+    font-size:8px;
+    font-weight:700;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.crypto-portfolio-change{
+    padding:3px 5px;
+    border-radius:6px;
+    font-size:8px;
+    font-weight:850;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+}
+
+.crypto-portfolio-price-row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:8px;
+}
+
+.crypto-portfolio-price{
+    color:#f8fafc;
+    font-size:13px;
+    font-weight:850;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+}
+
+.crypto-portfolio-value{
+    color:#a5b4fc;
+    font-size:11px;
+    font-weight:800;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+}
+
+.crypto-portfolio-status{
+    margin-top:5px;
+    color:#475569;
+    font-size:7px;
+    text-align:right;
+}
+
+.crypto-portfolio-item.up .crypto-portfolio-change{
+    color:#34d399;
+    background:rgba(16,185,129,.10);
+    border:1px solid rgba(16,185,129,.20);
+}
+
+.crypto-portfolio-item.down .crypto-portfolio-change{
+    color:#f87171;
+    background:rgba(239,68,68,.10);
+    border:1px solid rgba(239,68,68,.20);
+}
+
+.crypto-portfolio-item.flat .crypto-portfolio-change{
+    color:#94a3b8;
+    background:rgba(148,163,184,.08);
+    border:1px solid rgba(148,163,184,.12);
+}
+
+.crypto-portfolio-item.offline .crypto-portfolio-price,
+.crypto-portfolio-item.offline .crypto-portfolio-value{
+    color:#64748b !important;
+}
+
+@media (max-width:650px){
+    .crypto-portfolio-header{
+        align-items:flex-start;
+    }
+
+    .crypto-portfolio-total{
+        flex-wrap:wrap;
+        justify-content:flex-end;
+        gap:4px 6px;
+    }
+
+    .crypto-portfolio-total-value{
+        font-size:15px;
+    }
+
+    .crypto-portfolio-total-change{
+        width:100%;
+        text-align:right;
+    }
+
+    .crypto-portfolio-grid{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:5px;
+    }
+
+    .crypto-portfolio-item{
+        padding:7px 6px;
+    }
+
+    .crypto-portfolio-coin img{
+        width:18px;
+        height:18px;
+        flex-basis:18px;
+    }
+
+    .crypto-portfolio-name{
+        font-size:9px;
+    }
+
+    .crypto-portfolio-amount{
+        font-size:7px;
+    }
+
+    .crypto-portfolio-price{
+        font-size:10px;
+    }
+
+    .crypto-portfolio-value{
+        font-size:9px;
+    }
+
+    .crypto-portfolio-change{
+        font-size:7px;
+        padding:2px 3px;
+    }
+
+    .crypto-portfolio-status{
+        font-size:6px;
+    }
+}
+
 </style>
 
 </head>
@@ -3129,6 +3364,53 @@ h1 {
         </div>
 
     </div>
+
+
+<!-- =================================================
+     CRYPTO PORTFOLIO
+================================================= -->
+
+<div class="card crypto-portfolio-card">
+
+    <div class="crypto-portfolio-header">
+
+        <div class="crypto-portfolio-title">
+            Crypto Portfolio
+        </div>
+
+        <div class="crypto-portfolio-total">
+
+            <span class="crypto-portfolio-total-label">
+                Total Value
+            </span>
+
+            <span
+                class="crypto-portfolio-total-value"
+                id="cryptoPortfolioTotal">
+                -
+            </span>
+
+            <span
+                class="crypto-portfolio-total-change"
+                id="cryptoPortfolioTotalChange">
+                -
+            </span>
+
+        </div>
+
+    </div>
+
+    <div
+        class="crypto-portfolio-grid"
+        id="cryptoPortfolioGrid">
+
+        <div class="crypto-portfolio-item">
+            Loading...
+        </div>
+
+    </div>
+
+</div>
 
 </div>
 
@@ -7876,6 +8158,22 @@ async function loadDashboardData() {
             }
 
 
+            /*
+               CRYPTO PORTFOLIO
+               Independent MEXC market panel.
+               It does not block the main dashboard.
+            */
+            loadCryptoPortfolio(
+                data
+            ).catch(
+                error =>
+                    console.warn(
+                        "Crypto portfolio load error:",
+                        error
+                    )
+            );
+
+
             const annualBankRate =
                 Number(
                     data.annualBankRate
@@ -9088,6 +9386,746 @@ window.addEventListener(
     }
 
 );
+
+
+
+/* =====================================================
+   CRYPTO PORTFOLIO
+   MEXC FUTURES KLINE
+===================================================== */
+
+const MEXC_KLINE_BASE =
+    "https://api.mexc.com/api/v1/contract/kline/";
+
+const MEXC_CORS_PROXY =
+    "https://api.cors.syrins.tech/?url=";
+
+const DEFAULT_CRYPTO_HOLDINGS = {
+    BTC:  { amount: 0.05139851, symbol: "BTC_USDT" },
+    DOGE: { amount: 8180.49,    symbol: "DOGE_USDT" },
+    ETH:  { amount: 0.05984,    symbol: "ETH_USDT" },
+    BNB:  { amount: 6.17861,    symbol: "BNB_USDT" },
+    ADA:  { amount: 1459,       symbol: "ADA_USDT" },
+    SOL:  { amount: 4.642,      symbol: "SOL_USDT" },
+    POL:  { amount: 1242.82,    symbol: "POL_USDT" },
+    ONE:  { amount: 33540,      symbol: "ONE_USDT" },
+    TRX:  { amount: 1.1,        symbol: "TRX_USDT" }
+};
+
+const CRYPTO_PORTFOLIO_REFRESH_MS = 30 * 1000;
+
+const CRYPTO_PORTFOLIO_ICONS = {
+    BTC: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png",
+    DOGE: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/doge.png",
+    ETH: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png",
+    BNB: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png",
+    ADA: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/ada.png",
+    SOL: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png",
+    POL: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/matic.png",
+    ONE: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/one.png",
+    TRX: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/trx.png"
+};
+
+let cryptoPortfolioLoadInProgress = null;
+let cryptoPortfolioLastLoadTime = 0;
+
+function cryptoPortfolioCacheKey(symbol) {
+    return "financialDashboardMexc_" + symbol;
+}
+
+function saveCryptoPortfolioCache(symbol, item) {
+    try {
+        localStorage.setItem(
+            cryptoPortfolioCacheKey(symbol),
+            JSON.stringify({
+                price: item.price,
+                previousClose: item.previousClose,
+                changePct: item.changePct,
+                time: item.time
+            })
+        );
+    }
+    catch (error) {}
+}
+
+function loadCryptoPortfolioCache(symbol) {
+    try {
+        const raw =
+            localStorage.getItem(
+                cryptoPortfolioCacheKey(symbol)
+            );
+
+        if (!raw) {
+            return null;
+        }
+
+        const item =
+            JSON.parse(raw);
+
+        if (
+            !item ||
+            !Number.isFinite(Number(item.price))
+        ) {
+            return null;
+        }
+
+        return item;
+    }
+    catch (error) {
+        return null;
+    }
+}
+
+function formatCryptoAmount(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "-";
+    }
+
+    return number.toLocaleString(
+        "en-US",
+        {
+            maximumFractionDigits: 8
+        }
+    );
+}
+
+function formatCryptoUsd(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number) || number <= 0) {
+        return "-";
+    }
+
+    let maximumFractionDigits = 2;
+
+    if (number < 1) {
+        maximumFractionDigits = 6;
+    }
+    else if (number < 10) {
+        maximumFractionDigits = 4;
+    }
+    else if (number < 100) {
+        maximumFractionDigits = 3;
+    }
+
+    return "$" +
+        number.toLocaleString(
+            "en-US",
+            {
+                minimumFractionDigits:
+                    number < 1 ? 4 : 2,
+                maximumFractionDigits
+            }
+        );
+}
+
+function formatCryptoUsdValue(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "-";
+    }
+
+    return "$" +
+        number.toLocaleString(
+            "en-US",
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        );
+}
+
+function formatCryptoPct(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "-";
+    }
+
+    return (
+        number >= 0 ? "+" : ""
+    ) +
+    number.toFixed(2) +
+    "%";
+}
+
+function getCryptoPortfolioClass(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "flat";
+    }
+
+    if (number > 0) {
+        return "up";
+    }
+
+    if (number < 0) {
+        return "down";
+    }
+
+    return "flat";
+}
+
+function extractMexcKlineCloses(payload) {
+
+    if (
+        !payload ||
+        payload.success === false
+    ) {
+        throw new Error(
+            "Invalid MEXC response"
+        );
+    }
+
+    const data =
+        payload.data;
+
+    if (
+        data &&
+        Array.isArray(data.close)
+    ) {
+        return data.close
+            .map(Number)
+            .filter(
+                value =>
+                    Number.isFinite(value) &&
+                    value > 0
+            );
+    }
+
+    if (
+        Array.isArray(data)
+    ) {
+        return data
+            .map(row => {
+
+                if (Array.isArray(row)) {
+                    return Number(
+                        row[4]
+                    );
+                }
+
+                if (
+                    row &&
+                    typeof row === "object"
+                ) {
+                    return Number(
+                        row.close ??
+                        row.c ??
+                        row[4]
+                    );
+                }
+
+                return NaN;
+            })
+            .filter(
+                value =>
+                    Number.isFinite(value) &&
+                    value > 0
+            );
+    }
+
+    throw new Error(
+        "MEXC close data not found"
+    );
+}
+
+async function fetchMexcKlines(
+    symbol,
+    interval,
+    start,
+    end
+) {
+
+    let lastError = null;
+
+    const directUrl =
+        new URL(
+            MEXC_KLINE_BASE +
+            symbol
+        );
+
+    directUrl.searchParams.set(
+        "interval",
+        interval
+    );
+
+    directUrl.searchParams.set(
+        "start",
+        String(start)
+    );
+
+    directUrl.searchParams.set(
+        "end",
+        String(end)
+    );
+
+    const requestUrls = [
+        directUrl.toString(),
+        MEXC_CORS_PROXY +
+            encodeURIComponent(
+                directUrl.toString()
+            )
+    ];
+
+    for (const requestUrl of requestUrls) {
+
+        try {
+
+            const response =
+                await fetchWithTimeout(
+                    requestUrl,
+                    {
+                        cache: "no-store"
+                    },
+                    10000
+                );
+
+            if (!response.ok) {
+                throw new Error(
+                    "MEXC HTTP " +
+                    response.status
+                );
+            }
+
+            const payload =
+                await response.json();
+
+            return extractMexcKlineCloses(
+                payload
+            );
+
+        }
+        catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw (
+        lastError ||
+        new Error(
+            "MEXC unavailable"
+        )
+    );
+}
+
+async function getMexcCryptoData(
+    symbol
+) {
+
+    const now =
+        Math.floor(
+            Date.now() / 1000
+        );
+
+    const currentCloses =
+        await fetchMexcKlines(
+            symbol,
+            "Min1",
+            now - 180,
+            now + 5
+        );
+
+    const price =
+        currentCloses[
+            currentCloses.length - 1
+        ];
+
+    if (
+        !Number.isFinite(price) ||
+        price <= 0
+    ) {
+        throw new Error(
+            "Current MEXC price unavailable"
+        );
+    }
+
+    const dayStart =
+        now -
+        (3 * 86400);
+
+    const dailyCloses =
+        await fetchMexcKlines(
+            symbol,
+            "Day1",
+            dayStart,
+            now + 5
+        );
+
+    let previousClose = null;
+
+    if (
+        dailyCloses.length >= 2
+    ) {
+        previousClose =
+            dailyCloses[
+                dailyCloses.length - 2
+            ];
+    }
+    else if (
+        dailyCloses.length === 1
+    ) {
+        previousClose =
+            dailyCloses[0];
+    }
+
+    if (
+        !Number.isFinite(previousClose) ||
+        previousClose <= 0
+    ) {
+        throw new Error(
+            "Previous daily close unavailable"
+        );
+    }
+
+    const changePct =
+        (
+            (
+                price -
+                previousClose
+            ) /
+            previousClose
+        ) *
+        100;
+
+    return {
+        price,
+        previousClose,
+        changePct,
+        time: Date.now(),
+        offline: false
+    };
+}
+
+function renderCryptoPortfolio(
+    holdings,
+    marketData
+) {
+
+    const grid =
+        $("cryptoPortfolioGrid");
+
+    if (!grid) {
+        return;
+    }
+
+    let totalValue = 0;
+    let totalPreviousValue = 0;
+
+    const coins =
+        Object.keys(holdings || {});
+
+    const html =
+        coins.map(
+            coin => {
+
+                const holding =
+                    holdings[coin] ||
+                    {};
+
+                const amount =
+                    Number(
+                        holding.amount
+                    );
+
+                const market =
+                    marketData[coin];
+
+                if (
+                    !market ||
+                    !Number.isFinite(
+                        Number(market.price)
+                    )
+                ) {
+
+                    return `
+                        <div class="crypto-portfolio-item flat">
+                            <div class="crypto-portfolio-item-top">
+                                <div class="crypto-portfolio-coin">
+                                    <img
+                                        src="${CRYPTO_PORTFOLIO_ICONS[coin] || ""}"
+                                        alt="${coin}"
+                                    >
+                                    <div>
+                                        <div class="crypto-portfolio-name">${coin}</div>
+                                        <div class="crypto-portfolio-amount">
+                                            ${formatCryptoAmount(amount)}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="crypto-portfolio-change">-</div>
+                            </div>
+                            <div class="crypto-portfolio-price-row">
+                                <div class="crypto-portfolio-price">-</div>
+                                <div class="crypto-portfolio-value">-</div>
+                            </div>
+                            <div class="crypto-portfolio-status">
+                                MEXC unavailable
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const price =
+                    Number(
+                        market.price
+                    );
+
+                const previousClose =
+                    Number(
+                        market.previousClose
+                    );
+
+                const value =
+                    Number.isFinite(amount)
+                        ? amount * price
+                        : 0;
+
+                const previousValue =
+                    Number.isFinite(amount) &&
+                    Number.isFinite(previousClose)
+                        ? amount * previousClose
+                        : value;
+
+                totalValue += value;
+                totalPreviousValue += previousValue;
+
+                const className =
+                    getCryptoPortfolioClass(
+                        market.changePct
+                    );
+
+                return `
+                    <div class="crypto-portfolio-item ${className}${market.offline ? " offline" : ""}">
+                        <div class="crypto-portfolio-item-top">
+                            <div class="crypto-portfolio-coin">
+                                <img
+                                    src="${CRYPTO_PORTFOLIO_ICONS[coin] || ""}"
+                                    alt="${coin}"
+                                >
+                                <div>
+                                    <div class="crypto-portfolio-name">${coin}</div>
+                                    <div class="crypto-portfolio-amount">
+                                        ${formatCryptoAmount(amount)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="crypto-portfolio-change">
+                                ${formatCryptoPct(market.changePct)}
+                            </div>
+                        </div>
+
+                        <div class="crypto-portfolio-price-row">
+                            <div class="crypto-portfolio-price">
+                                ${formatCryptoUsd(price)}
+                            </div>
+
+                            <div class="crypto-portfolio-value">
+                                ${formatCryptoUsdValue(value)}
+                            </div>
+                        </div>
+
+                        <div class="crypto-portfolio-status">
+                            ${market.offline ? "Cached" : "MEXC • Live"}
+                        </div>
+                    </div>
+                `;
+            }
+        ).join("");
+
+    grid.innerHTML =
+        html ||
+        `<div class="crypto-portfolio-item flat">No crypto holdings</div>`;
+
+    safeText(
+        "cryptoPortfolioTotal",
+        formatCryptoUsdValue(
+            totalValue
+        )
+    );
+
+    const totalChangePct =
+        totalPreviousValue > 0
+            ? (
+                (
+                    totalValue -
+                    totalPreviousValue
+                ) /
+                totalPreviousValue
+            ) *
+            100
+            :
+            null;
+
+    const totalChange =
+        $("cryptoPortfolioTotalChange");
+
+    if (totalChange) {
+
+        totalChange.textContent =
+            formatCryptoPct(
+                totalChangePct
+            );
+
+        totalChange.classList.remove(
+            "profit",
+            "loss"
+        );
+
+        if (
+            Number.isFinite(
+                totalChangePct
+            )
+        ) {
+            totalChange.classList.add(
+                totalChangePct >= 0
+                    ? "profit"
+                    : "loss"
+            );
+        }
+    }
+}
+
+async function loadCryptoPortfolio(
+    data
+) {
+
+    if (
+        cryptoPortfolioLoadInProgress
+    ) {
+        return cryptoPortfolioLoadInProgress;
+    }
+
+    const now =
+        Date.now();
+
+    if (
+        cryptoPortfolioLastLoadTime > 0 &&
+        (
+            now -
+            cryptoPortfolioLastLoadTime
+        ) <
+        CRYPTO_PORTFOLIO_REFRESH_MS
+    ) {
+        return;
+    }
+
+    cryptoPortfolioLastLoadTime =
+        now;
+
+    cryptoPortfolioLoadInProgress =
+        (async () => {
+
+            const holdings =
+                data &&
+                data.cryptoHoldings &&
+                typeof data.cryptoHoldings ===
+                    "object"
+                    ?
+                    {
+                        ...DEFAULT_CRYPTO_HOLDINGS,
+                        ...data.cryptoHoldings
+                    }
+                    :
+                    {
+                        ...DEFAULT_CRYPTO_HOLDINGS
+                    };
+
+            const coins =
+                Object.keys(
+                    holdings
+                );
+
+            if (
+                coins.length === 0
+            ) {
+                renderCryptoPortfolio(
+                    holdings,
+                    {}
+                );
+                return;
+            }
+
+            const marketData = {};
+
+            await Promise.all(
+                coins.map(
+                    async coin => {
+
+                        const symbol =
+                            holdings[coin] &&
+                            holdings[coin].symbol
+                                ?
+                                holdings[coin].symbol
+                                :
+                                coin +
+                                "_USDT";
+
+                        try {
+
+                            marketData[coin] =
+                                await getMexcCryptoData(
+                                    symbol
+                                );
+
+                            saveCryptoPortfolioCache(
+                                symbol,
+                                marketData[coin]
+                            );
+
+                        }
+                        catch (error) {
+
+                            const cached =
+                                loadCryptoPortfolioCache(
+                                    symbol
+                                );
+
+                            if (cached) {
+
+                                marketData[coin] = {
+                                    ...cached,
+                                    offline: true
+                                };
+
+                            }
+                            else {
+
+                                marketData[coin] = null;
+
+                            }
+
+                            console.warn(
+                                "MEXC portfolio error:",
+                                coin,
+                                error
+                            );
+                        }
+
+                    }
+                )
+            );
+
+            renderCryptoPortfolio(
+                holdings,
+                marketData
+            );
+
+        })();
+
+    try {
+        await cryptoPortfolioLoadInProgress;
+    }
+    finally {
+        cryptoPortfolioLoadInProgress =
+            null;
+    }
+}
 
 
 /* =====================================================
