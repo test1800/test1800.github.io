@@ -10150,6 +10150,11 @@ async function loadCryptoPortfolio(
 
 async function init() {
 
+    // Do not load any API/data until PIN is unlocked
+    if (sessionStorage.getItem("financialDashboardPinUnlocked") !== "1") {
+        return;
+    }
+
     try {
 
         await loadDashboardData();
@@ -10195,7 +10200,7 @@ async function init() {
 }
 
 
-init();
+/* init() is called after PIN unlock */
 
 
 /* =====================================================
@@ -10289,6 +10294,8 @@ function checkAppPin() {
 
 
         hidePinLock();
+
+        init();
 
         pinInput.value = "";
 
