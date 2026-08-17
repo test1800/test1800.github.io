@@ -3359,6 +3359,18 @@ async function loadCryptoSignals(){
                     changed =
                     true;
 
+                    const signalType =
+                    value > 0
+                        ? "BUY"
+                        : value < 0
+                            ? "SELL"
+                            : "NEUTRAL";
+
+                    sendDashboardNotification(
+                        `${coin} Crypto Signal`,
+                        `${coin} signal changed to ${signalType}`
+                    );
+
                 }
 
 
