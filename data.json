@@ -5,29 +5,25 @@
   "defaultPrice": 190000,
   "annualBankRate": 38,
   "priceDivisor": 10,
-  
   "transactions": [
     {
       "date": "1405/02/13",
       "type": "buy",
       "amount": 300,
       "price": 187000
-    }
-    ,
+    },
     {
       "date": "1405/02/17",
       "type": "buy",
       "amount": 1100,
       "price": 174000
-    }
-    ,
+    },
     {
       "date": "1405/02/20",
       "type": "buy",
       "amount": 1000,
       "price": 177500
-    }
-    ,
+    },
     {
       "date": "1405/02/26",
       "type": "buy",
@@ -45,34 +41,68 @@
       "type": "buy",
       "amount": 2200,
       "price": 180000
-    }
-    ,
+    },
     {
       "date": "1405/03/02",
       "type": "buy",
       "amount": 600,
       "price": 179167
-    }
-    ,
+    },
     {
       "date": "1405/03/26",
       "type": "buy",
       "amount": 2500,
       "price": 158160
-    }
-    ,
+    },
     {
       "date": "1405/05/14",
       "type": "buy",
       "amount": 1500,
       "price": 190000
-    } 
-    ,
+    },
     {
       "date": "1405/05/19",
       "type": "buy",
       "amount": 1000,
       "price": 186000
     }
-  ]
+  ],
+  "cryptoHoldings": {
+    "BTC": {
+      "amount": 0.05139851,
+      "symbol": "BTC_USDT"
+    },
+    "DOGE": {
+      "amount": 8180.49,
+      "symbol": "DOGE_USDT"
+    },
+    "ETH": {
+      "amount": 0.05984,
+      "symbol": "ETH_USDT"
+    },
+    "BNB": {
+      "amount": 6.17861,
+      "symbol": "BNB_USDT"
+    },
+    "ADA": {
+      "amount": 1459,
+      "symbol": "ADA_USDT"
+    },
+    "SOL": {
+      "amount": 4.642,
+      "symbol": "SOL_USDT"
+    },
+    "POL": {
+      "amount": 1242.82,
+      "symbol": "POL_USDT"
+    },
+    "ONE": {
+      "amount": 33540,
+      "symbol": "ONE_USDT"
+    },
+    "TRX": {
+      "amount": 1.1,
+      "symbol": "TRX_USDT"
+    }
+  }
 }
