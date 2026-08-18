@@ -1756,17 +1756,17 @@ h1 {
     background:
     linear-gradient(
     145deg,
-    rgba(16,185,129,.35),
-    rgba(16,185,129,.08)
-    );
+    rgba(0,255,136,.40),
+    rgba(16,185,129,.10)
+    ) !important;
 
 
     border-color:
-    rgba(16,185,129,.6);
+    rgba(0,255,136,.78) !important;
 
 
     box-shadow:
-    0 0 15px rgba(16,185,129,.35);
+    0 0 18px rgba(0,255,136,.46) !important;
 
 }
 
@@ -1779,21 +1779,37 @@ h1 {
     background:
     linear-gradient(
     145deg,
-    rgba(239,68,68,.35),
-    rgba(239,68,68,.08)
-    );
+    rgba(239,68,68,.38),
+    rgba(239,68,68,.10)
+    ) !important;
 
 
     border-color:
-    rgba(239,68,68,.6);
+    rgba(239,68,68,.72) !important;
 
 
     box-shadow:
-    0 0 15px rgba(239,68,68,.35);
+    0 0 18px rgba(239,68,68,.40) !important;
 
 }
 
+/* OFFLINE */
 
+.signal-offline,
+.signal-box.offline{
+    background:
+    linear-gradient(
+    145deg,
+    rgba(100,116,139,.28),
+    rgba(71,85,105,.12)
+    ) !important;
+
+    border-color:
+    rgba(148,163,184,.32) !important;
+
+    box-shadow: none !important;
+    opacity: .82 !important;
+}
 
 /* NEUTRAL */
 
@@ -2501,6 +2517,125 @@ h1 {
     .crypto-portfolio-change{
         font-size:10px !important;
         padding:3px 4px !important;
+    }
+}
+
+
+/* =====================================================
+   CRYPTO PORTFOLIO - FINAL NUMERIC LAYOUT
+   Keep every numeric value fully visible.
+===================================================== */
+.crypto-portfolio-item{
+    overflow:visible;
+}
+
+.crypto-portfolio-price-row{
+    min-width:0;
+}
+
+.crypto-portfolio-price,
+.crypto-portfolio-value,
+.crypto-portfolio-amount,
+.crypto-portfolio-change,
+.crypto-portfolio-total-value,
+.crypto-portfolio-total-change{
+    text-overflow:clip !important;
+}
+
+.crypto-portfolio-price,
+.crypto-portfolio-value,
+.crypto-portfolio-amount,
+.crypto-portfolio-change,
+.crypto-portfolio-total-value,
+.crypto-portfolio-total-change{
+    font-variant-numeric:tabular-nums;
+    font-feature-settings:"tnum";
+}
+
+@media (min-width:351px) and (max-width:550px){
+    .crypto-portfolio-grid{
+        align-items:stretch;
+        gap:7px;
+    }
+
+    .crypto-portfolio-item{
+        padding:9px 8px;
+        overflow:visible;
+    }
+
+    .crypto-portfolio-item-top{
+        margin-bottom:7px;
+    }
+
+    .crypto-portfolio-price-row{
+        display:flex !important;
+        flex-direction:column !important;
+        align-items:flex-start !important;
+        justify-content:flex-start !important;
+        gap:3px !important;
+        width:100%;
+    }
+
+    .crypto-portfolio-price,
+    .crypto-portfolio-value{
+        width:100% !important;
+        max-width:none !important;
+        min-width:0 !important;
+        overflow:visible !important;
+        text-overflow:clip !important;
+        white-space:nowrap !important;
+        text-align:left !important;
+        line-height:1.2;
+    }
+
+    .crypto-portfolio-price{
+        font-size:clamp(11px, 2.7vw, 14px) !important;
+        font-weight:750 !important;
+    }
+
+    .crypto-portfolio-value{
+        font-size:clamp(10px, 2.35vw, 12px) !important;
+        font-weight:650 !important;
+        color:#a5b4fc;
+    }
+
+    .crypto-portfolio-amount{
+        max-width:100% !important;
+        overflow:visible !important;
+        text-overflow:clip !important;
+        white-space:nowrap !important;
+        font-size:7px !important;
+    }
+
+    .crypto-portfolio-change{
+        max-width:none !important;
+        overflow:visible !important;
+        text-overflow:clip !important;
+        white-space:nowrap !important;
+        font-size:10px !important;
+        font-weight:750 !important;
+        padding:3px 5px !important;
+    }
+
+    .crypto-portfolio-status{
+        overflow:visible !important;
+        text-overflow:clip !important;
+        white-space:nowrap !important;
+        font-size:6px !important;
+    }
+}
+
+@media (max-width:360px){
+    .crypto-portfolio-item{
+        padding:8px 7px;
+    }
+
+    .crypto-portfolio-price{
+        font-size:12px !important;
+    }
+
+    .crypto-portfolio-value{
+        font-size:10px !important;
     }
 }
 </style>
@@ -4062,14 +4197,27 @@ function loadSignalCache() {
     }
 }
 
-function getSignalClass(value) {
-    if (Number(value) > 0) {
-        return "signal-buy";
+function getSignalNumericValue(value) {
+    if (value && typeof value === "object") {
+        const nested = value.signal ?? value.type ?? value.action ?? value.direction ?? value.value ?? value.score;
+        if (nested !== undefined && nested !== value) return getSignalNumericValue(nested);
     }
 
-    if (Number(value) < 0) {
-        return "signal-sell";
-    }
+    const text = String(value ?? "").trim().toUpperCase();
+    if (text === "BUY" || text === "BULL" || text === "BULLISH" || text === "LONG" || text.includes("BUY")) return 1;
+    if (text === "SELL" || text === "BEAR" || text === "BEARISH" || text === "SHORT" || text.includes("SELL")) return -1;
+
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function getSignalClass(value, offline = false) {
+    if (offline) return "signal-offline";
+
+    const numericValue = getSignalNumericValue(value);
+
+    if (numericValue === 1) return "signal-buy";
+    if (numericValue === -1) return "signal-sell";
 
     return "signal-neutral";
 }
@@ -4083,7 +4231,7 @@ function renderCryptoSignals(data, offline = false) {
         "SOL", "POL", "ONE", "TRX"
     ];
 
-    const values = signalCoins.map(coin => Number(data[coin] ?? 0));
+    const values = signalCoins.map(coin => getSignalNumericValue(data[coin] ?? 0));
     const signature = JSON.stringify({ values, offline: !!offline });
 
     if (signature !== lastSignalRenderSignature) {
@@ -4091,7 +4239,7 @@ function renderCryptoSignals(data, offline = false) {
         signalCoins.forEach((coin, index) => {
             const value = values[index];
             const box = document.createElement("div");
-            box.className = `signal-box ${getSignalClass(value)}${offline ? " offline" : ""}`;
+            box.className = `signal-box ${getSignalClass(value, offline)}${offline ? " offline" : ""}`;
             box.dataset.coin = coin;
 
             const img = document.createElement("img");
@@ -4121,7 +4269,7 @@ function renderCryptoSignals(data, offline = false) {
 
     previousSignals = {};
     signalCoins.forEach(coin => {
-        previousSignals[coin] = Number(data[coin] ?? 0);
+        previousSignals[coin] = getSignalNumericValue(data[coin] ?? 0);
     });
 }
 
@@ -4199,7 +4347,7 @@ async function loadCryptoSignals() {
 
         signalCoins.forEach(coin => {
             const value =
-                Number(data[coin] ?? 0);
+                getSignalNumericValue(data[coin] ?? 0);
 
             if (
                 oldSignals[coin] !== undefined &&
@@ -5364,6 +5512,23 @@ prepareAllDashboardNotificationSounds();
 });
 
 /* =====================================================
+BACKGROUND NOTIFICATION RELIABILITY
+===================================================== */
+
+/*
+   A normal web page cannot force arbitrary MP3 playback while it is
+   backgrounded or suspended by the mobile browser. In that state the
+   Service Worker notification is the reliable channel and the OS/browser
+   supplies its own notification sound because silent=false.
+*/
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+        unlockDashboardNotificationSound();
+        prepareAllDashboardNotificationSounds();
+    }
+});
+
+/* =====================================================
 SEND BROWSER NOTIFICATION
 ===================================================== */
 
@@ -5422,8 +5587,10 @@ async function sendDashboardNotification(
                     badge: "./icon-192.png",
                     tag: `financial-dashboard-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
                     renotify: true,
+                    requireInteraction: true,
                     silent: false,
-                    vibrate: [120, 70, 120],
+                    vibrate: [220, 100, 220, 100, 220],
+                    timestamp: Date.now(),
                     data: {
                         notificationType: resolvedSoundType
                     }
@@ -5445,7 +5612,8 @@ async function sendDashboardNotification(
                 {
                     body: message,
                     icon: "icon.png",
-                    silent: false
+                    silent: false,
+                    requireInteraction: true
                 }
             );
 
@@ -5455,13 +5623,8 @@ async function sendDashboardNotification(
             );
         }
 
-        setTimeout(() => {
-            try {
-                notification.close();
-            }
-            catch (error) {}
-        }, 8000);
-
+        /* Do not auto-close the notification.
+           It remains visible until the user dismisses it or the OS/browser decides otherwise. */
         return true;
     }
     catch (error) {
@@ -10724,9 +10887,6 @@ function renderCryptoPortfolio(
                                 <div class="crypto-portfolio-price">-</div>
                                 <div class="crypto-portfolio-value">-</div>
                             </div>
-                            <div class="crypto-portfolio-status">
-                                MEXC unavailable
-                            </div>
                         </div>
                     `;
                 }
@@ -10791,9 +10951,6 @@ function renderCryptoPortfolio(
                             </div>
                         </div>
 
-                        <div class="crypto-portfolio-status">
-                            ${market.offline ? "Cached" : "MEXC • Live"}
-                        </div>
                     </div>
                 `;
             }
