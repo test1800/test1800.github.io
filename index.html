@@ -106,10 +106,6 @@ body {
 
 header {
 
-    position: sticky;
-    top: 0;
-    z-index: 5000;
-    isolation: isolate;
     padding:
         14px
         18px;
@@ -143,18 +139,13 @@ header {
 .header-top {
 
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
-}
 
-.header-top > div {
-    min-width: 0;
-}
+    justify-content:
+        space-between;
 
-.header-top > .crypto-card {
-    flex: 0 0 auto;
+    align-items:
+        center;
+
 }
 
 h1 {
@@ -433,85 +424,51 @@ h1 {
 
 /* =====================================================
    CONNECTION STATUS
+   SINGLE LINE / YELLOW STATUS
 ===================================================== */
-
-/* Compact page health / real page status */
-.connection-status .connection-status-chip {
-    font-size: 8px;
-    padding: 2px 6px;
-    border-width: 1px;
-    box-shadow: none;
-}
-
 
 .connection-status {
     display: none;
-    margin-top: 6px;
-    padding: 0;
-    border: 0 !important;
-    border-radius: 0;
-    background: transparent !important;
-    box-shadow: none !important;
+    margin-top: 8px;
+    padding: 6px 8px;
+    border-radius: 9px;
     font-size: 9px;
     font-weight: 800;
-    line-height: 1.35;
+    line-height: 1.45;
     text-align: center;
-    gap: 5px;
-    flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     width: 100%;
-
+    color: #fbbf24;
+    background: rgba(245,158,11,.08);
+    border: 1px solid rgba(245,158,11,.18);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .connection-status.visible { display: flex; }
 
 .connection-status.online {
-    background: transparent;
+    color: #34d399;
+    background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(16,185,129,.05));
+    border: 1px solid rgba(52,211,153,.30);
+    box-shadow: 0 0 14px rgba(16,185,129,.10);
 }
 
 .connection-status.offline {
-    background: transparent;
+    color: #fbbf24;
+    background: rgba(245,158,11,.08);
+    border: 1px solid rgba(245,158,11,.18);
 }
 
 .connection-status-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 6px;
-    border-radius: 999px;
-    border: 1px solid transparent;
+    display: inline;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    padding: 0;
     white-space: nowrap;
-}
-
-.connection-status-chip.ok {
-    color: #34d399;
-    background: rgba(16,185,129,.10);
-    border-color: rgba(16,185,129,.20);
-}
-
-.connection-status-chip.warn {
-    color: #fbbf24;
-    background: rgba(245,158,11,.10);
-    border-color: rgba(245,158,11,.20);
-}
-
-.connection-status-chip.error {
-    color: #fb7185;
-    background: rgba(244,63,94,.10);
-    border-color: rgba(244,63,94,.20);
-}
-
-.connection-status-chip.cache {
-    color: #60a5fa;
-    background: rgba(59,130,246,.10);
-    border-color: rgba(59,130,246,.20);
-}
-
-.connection-status-chip.info {
-    color: #c084fc;
-    background: rgba(168,85,247,.10);
-    border-color: rgba(168,85,247,.20);
 }
 
 
@@ -589,7 +546,7 @@ h1 {
     align-items:
         center;
 
-    gap: 5px;ّ
+    gap: 5px;
 
 }
 
@@ -1074,6 +1031,76 @@ h1 {
         rgba(239,68,68,.20);
 
 }
+.error.page-status-report {
+    color: #fbbf24;
+    background: rgba(245,158,11,.08);
+    border: 1px solid rgba(245,158,11,.20);
+    line-height: 1.55;
+}
+
+.page-status-report-title {
+    font-size: 11px;
+    font-weight: 850;
+    margin-bottom: 6px;
+}
+
+.page-status-report-summary {
+    color: #e2e8f0;
+    font-size: 10px;
+    font-weight: 700;
+    margin-bottom: 7px;
+}
+
+.page-status-report-list {
+    display: grid;
+    gap: 4px;
+}
+
+.page-status-report-item {
+    color: #cbd5e1;
+    font-size: 9px;
+    font-weight: 650;
+}
+
+.page-status-report-item strong {
+    color: #fbbf24;
+}
+
+.page-status-report-item.cache {
+    color: #93c5fd;
+}
+
+.page-status-report-item.error {
+    color: #fda4af;
+}
+
+
+#errorBox {
+    width:100%;
+    margin-top:12px;
+    margin-bottom:0;
+}
+
+.page-status-report {
+    width:100%;
+}
+
+.page-status-report-list {
+    gap:6px;
+}
+
+.page-status-report-item {
+    line-height:1.5;
+}
+
+.page-status-report-detail {
+    display:block;
+    margin-top:3px;
+    color:#94a3b8;
+    font-size:8px;
+    line-height:1.45;
+    font-weight:600;
+}
 
 .loading {
 
@@ -1087,53 +1114,6 @@ h1 {
 
 }
 
-
-
-/* =====================================================
-   COMPACT NUMBER SAFETY
-   Prevent clipping/overlap in narrow viewports.
-===================================================== */
-
-.live-price,
-.live-price-values,
-.live-price-left,
-.live-price-center,
-.live-price-right,
-.live-price-item,
-.main-price,
-.main-price-values,
-.main-price-side,
-.crypto-card,
-.crypto-value,
-.pl-box,
-.pl-value,
-.metric,
-.metric-value,
-.compare-box,
-.compare-value {
-    min-width: 0;
-}
-
-.main-price-number,
-.live-main-number,
-.pl-value,
-.metric-value,
-.compare-value,
-.realized-value,
-.six-purchase-number {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.main-price-values {
-    width: 100%;
-}
-
-.main-price-side {
-    overflow: hidden;
-}
 
 /* =====================================================
    RESPONSIVE
@@ -1155,21 +1135,20 @@ h1 {
     .container {
 
         padding:
+            9px
             8px
-            7px
-            24px;
+            25px;
 
     }
 
     header {
 
         position: sticky;
+
         top: 0;
-        z-index: 5000;
-        isolation: isolate;
-        width: 100%;
-        max-width: 100%;
-        overflow: visible;
+
+        z-index: 1000;
+
     }
 
     h1 {
@@ -1358,13 +1337,9 @@ h1 {
     }
 
     .live-number {
-        font-size: clamp(10px, 3.9vw, 13px) !important;
+        font-size: 13px !important;
         line-height: 1 !important;
-        font-weight: 750 !important;
-        min-width: 0 !important;
-        max-width: 100% !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+        font-weight: 700 !important;
     }
 
     .price-arrow {
@@ -1388,219 +1363,16 @@ h1 {
 
 @media (max-width: 380px) {
 
-    header {
-        padding: 7px 7px !important;
-    }
-
-    .header-top {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 6px;
-        width: 100%;
-    }
-
-    .header-top > div:first-child {
-        width: 100%;
-        min-width: 0;
-    }
-
-    h1 {
-        display: block !important;
-        font-size: 16px !important;
-        line-height: 1.1 !important;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .today {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .crypto-card {
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-        padding: 6px 8px;
-    }
-
-    .crypto-value {
-        font-size: clamp(15px, 5.8vw, 20px);
-        line-height: 1.05;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
     .live-market-title,
     .live-market-separator,
     .live-market-bank {
         display: none !important;
     }
-
-    .live-price {
-        width: 100%;
-        min-width: 0;
-        padding: 7px 6px !important;
-    }
-
-    .live-price-values {
-        gap: 5px !important;
-        width: 100%;
-        min-width: 0;
-    }
-
-    .live-price-left,
-    .live-price-center,
-    .live-price-right {
-        flex: 1 1 0 !important;
-        min-width: 0 !important;
-        max-width: 33.333%;
-    }
-
-    .live-price-item {
-        width: 100%;
-        min-width: 0 !important;
-        gap: 2px !important;
-        overflow: hidden;
-    }
-
-    .live-number {
-        font-size: clamp(11px, 4.1vw, 15px) !important;
-        line-height: 1.05 !important;
-        min-width: 0;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .price-arrow {
-        flex: 0 0 auto;
-        width: auto !important;
-        font-size: clamp(12px, 4.5vw, 17px) !important;
-        line-height: 1 !important;
-    }
-
-    .signal-board {
-        margin-top: 7px;
-        padding: 7px;
-    }
-
-    .signal-grid {
-        gap: 4px;
-    }
-
-    .signal-box {
-        height: 34px;
-        min-width: 0;
-    }
-
-    .signal-box img {
-        width: 18px;
-        height: 18px;
-        margin-bottom: 0;
-    }
-
-    .signal-name {
-        display: none;
-    }
+ h1 {
+        display: none !important;
+    }	
 }
 
-
-
-@media (max-width: 300px) {
-
-    .container {
-        padding-left: 5px !important;
-        padding-right: 5px !important;
-    }
-
-    header {
-        padding: 6px 5px !important;
-    }
-
-    h1 {
-        font-size: 14px !important;
-    }
-
-    .today {
-        font-size: 10px !important;
-    }
-
-    .update-time,
-    .update-countdown {
-        font-size: 8px !important;
-    }
-
-    .crypto-card {
-        padding: 5px 7px;
-    }
-
-    .crypto-label {
-        font-size: 7px;
-    }
-
-    .crypto-value {
-        font-size: clamp(14px, 5vw, 17px);
-    }
-
-    .live-price {
-        padding: 6px 4px !important;
-    }
-
-    .live-price-values {
-        gap: 2px !important;
-    }
-
-    .live-number {
-        font-size: clamp(10px, 3.8vw, 13px) !important;
-    }
-
-    .price-arrow {
-        font-size: 12px !important;
-    }
-
-    .signal-board {
-        padding: 5px;
-    }
-
-    .signal-box {
-        height: 30px;
-        border-radius: 7px;
-    }
-
-    .signal-box img {
-        width: 16px;
-        height: 16px;
-    }
-}
-
-
-@media (max-height: 300px) and (min-width: 381px) {
-
-    header {
-        padding: 7px 10px !important;
-    }
-
-    .signal-board {
-        margin-top: 5px;
-        padding: 6px;
-    }
-
-    .signal-box {
-        height: 36px;
-    }
-
-    .live-price {
-        margin-top: 6px;
-        padding: 6px 8px;
-    }
-
-    .live-number {
-        font-size: clamp(11px, 2.3vw, 15px) !important;
-    }
-}
 
 /* =====================================================
    OFFLINE MARKET PRICE COLOR
@@ -2315,7 +2087,7 @@ h1 {
     }
 
     .crypto-portfolio-total-value{
-        font-size:15px;
+        font-size:18px;
     }
 
     .crypto-portfolio-total-change{
@@ -2380,7 +2152,7 @@ h1 {
 }
 
 .crypto-portfolio-total-value{
-    font-size:21px;
+    font-size:23px;
 }
 
 .crypto-portfolio-name{
@@ -2393,12 +2165,12 @@ h1 {
 }
 
 .crypto-portfolio-price{
-    font-size:15px;
+    font-size:17px;
     font-weight:900;
 }
 
 .crypto-portfolio-value{
-    font-size:13px;
+    font-size:15px;
     font-weight:850;
 }
 
@@ -2415,7 +2187,7 @@ h1 {
     }
 
     .crypto-portfolio-total-value{
-        font-size:15px;
+        font-size:18px;
     }
 
     .crypto-portfolio-name{
@@ -2427,17 +2199,222 @@ h1 {
     }
 
     .crypto-portfolio-price{
-        font-size:11px;
+        font-size:14px;
     }
 
     .crypto-portfolio-value{
-        font-size:10px;
+        font-size:12px;
     }
 
     .crypto-portfolio-change{
         font-size:8px;
     }
 }
+
+
+/* =====================================================
+   CRYPTO PORTFOLIO - MOBILE SAFE LAYOUT
+   Only affects the Crypto Portfolio section.
+===================================================== */
+
+@media (max-width:650px){
+
+    .crypto-portfolio-card{
+        overflow:hidden;
+    }
+
+    .crypto-portfolio-header{
+        gap:8px;
+        min-width:0;
+    }
+
+    .crypto-portfolio-title{
+        min-width:0;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+
+    .crypto-portfolio-total{
+        min-width:0;
+        max-width:58%;
+        gap:3px 5px;
+        flex-wrap:wrap;
+        justify-content:flex-end;
+    }
+
+    .crypto-portfolio-total-label{
+        font-size:8px;
+    }
+
+    .crypto-portfolio-total-value{
+        font-size:14px;
+        max-width:100%;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+
+    .crypto-portfolio-total-change{
+        width:auto;
+        max-width:100%;
+        font-size:8px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+
+    /* Normal phones keep the original three-column layout. */
+    .crypto-portfolio-grid{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:5px;
+        width:100%;
+    }
+
+    .crypto-portfolio-item{
+        min-width:0;
+        width:100%;
+        padding:7px 7px;
+        overflow:hidden;
+    }
+
+    .crypto-portfolio-item-top{
+        min-width:0;
+        gap:5px;
+        margin-bottom:5px;
+    }
+
+    .crypto-portfolio-coin{
+        min-width:0;
+        gap:5px;
+        overflow:hidden;
+    }
+
+    .crypto-portfolio-coin > div{
+        min-width:0;
+        overflow:hidden;
+    }
+
+    .crypto-portfolio-coin img{
+        width:19px;
+        height:19px;
+        flex:0 0 19px;
+    }
+
+    .crypto-portfolio-name{
+        font-size:10px;
+        line-height:1.1;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+
+    .crypto-portfolio-amount{
+        font-size:7px;
+        line-height:1.1;
+        max-width:100%;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+
+    .crypto-portfolio-change{
+        flex:0 0 auto;
+        max-width:44%;
+        font-size:7px;
+        padding:2px 3px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+
+    /* Price and portfolio value each get their own controlled area. */
+    .crypto-portfolio-price-row{
+        display:grid;
+        grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+        align-items:end;
+        gap:4px;
+        width:100%;
+    }
+
+    .crypto-portfolio-price,
+    .crypto-portfolio-value{
+        min-width:0;
+        max-width:100%;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+        font-variant-numeric:tabular-nums;
+    }
+
+    .crypto-portfolio-price{
+        font-size:14px;
+        text-align:left;
+    }
+
+    .crypto-portfolio-value{
+        font-size:12px;
+        text-align:right;
+    }
+
+    .crypto-portfolio-status{
+        margin-top:4px;
+        font-size:6px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+}
+
+@media (max-width:360px){
+
+    .crypto-portfolio-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:5px;
+    }
+
+    .crypto-portfolio-item{
+        padding:6px 5px;
+    }
+
+    .crypto-portfolio-coin img{
+        width:17px;
+        height:17px;
+        flex-basis:17px;
+    }
+
+    .crypto-portfolio-name{
+        font-size:10px;
+    }
+
+    .crypto-portfolio-price{
+        font-size:13px;
+    }
+
+    .crypto-portfolio-value{
+        font-size:11px;
+    }
+
+    .crypto-portfolio-change{
+        font-size:6px;
+        padding:2px;
+    }
+}
+
+@media (max-width:300px){
+
+    .crypto-portfolio-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+
+    .crypto-portfolio-price{
+        font-size:14px;
+    }
+
+    .crypto-portfolio-value{
+        font-size:12px;
+    }
+}
+
 </style>
 
 </head>
@@ -2761,16 +2738,11 @@ h1 {
 
     <div
         id="connectionStatus"
-        class="connection-status"
-        aria-live="polite"
-        aria-label="Page Status">
+        class="connection-status">
 
     </div>
 
 </header>
-
-
-<div id="errorBox"></div>
 
 
 <div
@@ -3799,6 +3771,8 @@ h1 {
 
 </div>
 
+<div id="errorBox"></div>
+
 
 <script>
 /* =====================================================
@@ -4157,27 +4131,11 @@ async function loadCryptoSignals() {
                             ? "🔴"
                             : "⚪";
 
-                if (
-                    signalType === "BUY" ||
-                    signalType === "SELL"
-                ) {
-                    sendDashboardNotification(
-                        `${signalIcon} ${coin} Crypto Signal`,
-                        `${signalIcon} ${coin} → ${signalType}`,
-                        getCryptoIconSrc(coin),
-                        signalType === "BUY"
-                            ? "buy"
-                            : "sell"
-                    );
-                }
-                else {
-                    sendDashboardNotification(
-                        `${signalIcon} ${coin} Crypto Signal`,
-                        `${signalIcon} ${coin} → ${signalType}`,
-                        getCryptoIconSrc(coin),
-                        ""
-                    );
-                }
+                sendDashboardNotification(
+                    `${signalIcon} ${coin} Crypto Signal`,
+                    `${signalIcon} ${coin} → ${signalType}`,
+                    getCryptoIconSrc(coin)
+                );
             }
         });
 
@@ -4318,6 +4276,7 @@ if (
 
     const requestPermissionOnUserGesture = () => {
 
+        unlockDashboardNotificationSound();
         requestDashboardNotificationPermission();
 
     };
@@ -5114,287 +5073,113 @@ function getNotificationIconEmoji(message) {
 }
 
 
-
 /* =====================================================
-   NOTIFICATION SOUNDS
-   BUY / SELL / USD
-   Files: ./file/Buy.mp3, ./file/Sell.mp3, ./file/Usd.mp3
+NOTIFICATION SOUND
 ===================================================== */
 
-const NOTIFICATION_SOUND_CACHE_NAME =
-    "financialDashboardNotificationSounds-v1";
-
-const NOTIFICATION_SOUND_FILES = {
-    buy: "./file/Buy.mp3",
-    sell: "./file/Sell.mp3",
-    usd: "./file/Usd.mp3"
-};
-
-const notificationSoundAudio = Object.create(null);
-let notificationSoundUnlocked = false;
-
-async function cacheNotificationSounds() {
-    if (!("caches" in window)) return false;
-
-    try {
-        const cache = await caches.open(
-            NOTIFICATION_SOUND_CACHE_NAME
-        );
-
-        await Promise.all(
-            Object.entries(
-                NOTIFICATION_SOUND_FILES
-            ).map(async ([type, url]) => {
-                try {
-                    const existing =
-                        await cache.match(url);
-
-                    if (existing) return;
-
-                    const response =
-                        await fetch(
-                            url,
-                            { cache: "no-store" }
-                        );
-
-                    if (response.ok) {
-                        await cache.put(
-                            url,
-                            response.clone()
-                        );
-                    }
-                }
-                catch (error) {
-                    console.warn(
-                        "Sound cache failed:",
-                        type,
-                        error
-                    );
-                }
-            })
-        );
-
-        return true;
-    }
-    catch (error) {
-        console.warn(
-            "Sound cache unavailable:",
-            error
-        );
-        return false;
-    }
-}
-
-async function loadNotificationSound(
-    type
-) {
-    const url =
-        NOTIFICATION_SOUND_FILES[type];
-
-    if (
-        !url ||
-        !("caches" in window)
-    ) {
-        return null;
-    }
-
-    try {
-        const cache =
-            await caches.open(
-                NOTIFICATION_SOUND_CACHE_NAME
-            );
-
-        let response =
-            await cache.match(url);
-
-        if (!response) {
-            const fetched =
-                await fetch(
-                    url,
-                    { cache: "no-store" }
-                );
-
-            if (!fetched.ok) {
-                return null;
-            }
-
-            await cache.put(
-                url,
-                fetched.clone()
-            );
-
-            response = fetched;
-        }
-
-        const blob =
-            await response.blob();
-
-        const objectUrl =
-            URL.createObjectURL(blob);
-
-        const audio =
-            new Audio(objectUrl);
-
-        audio.preload = "auto";
-        audio.volume = 1;
-
-        notificationSoundAudio[type] =
-            audio;
-
-        return audio;
-    }
-    catch (error) {
-        console.warn(
-            "Sound load failed:",
-            type,
-            error
-        );
-        return null;
-    }
-}
-
-async function prepareNotificationSounds() {
-    await cacheNotificationSounds();
-
-    await Promise.all(
-        Object.keys(
-            NOTIFICATION_SOUND_FILES
-        ).map(
-            type =>
-                loadNotificationSound(type)
-        )
-    );
-}
+let dashboardAudioContext = null;
+let dashboardNotificationAudio = null;
 
 /*
-   Browsers require a real user gesture before
-   audio can reliably play later.
+   A real HTMLAudioElement is used as the primary sound path.
+   It is more reliable than AudioContext when the tab/window is minimized.
+   Web Audio remains as a fallback.
 */
-async function unlockNotificationAudio() {
-    if (notificationSoundUnlocked) {
-        return;
+const DASHBOARD_NOTIFICATION_WAV =
+    "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=";
+
+function unlockDashboardNotificationSound() {
+    try {
+        if (!dashboardNotificationAudio) {
+            dashboardNotificationAudio = new Audio(DASHBOARD_NOTIFICATION_WAV);
+            dashboardNotificationAudio.preload = "auto";
+            dashboardNotificationAudio.volume = 0.75;
+        }
+
+        const AudioContextClass =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+        if (AudioContextClass) {
+            if (!dashboardAudioContext) {
+                dashboardAudioContext =
+                    new AudioContextClass();
+            }
+
+            if (dashboardAudioContext.state === "suspended") {
+                dashboardAudioContext.resume().catch(() => {});
+            }
+        }
     }
-
-    notificationSoundUnlocked = true;
-
-    await Promise.all(
-        Object.values(
-            notificationSoundAudio
-        ).map(async audio => {
-            if (!audio) return;
-
-            try {
-                const originalVolume =
-                    audio.volume;
-
-                audio.volume = 0;
-                audio.currentTime = 0;
-
-                await audio.play();
-                audio.pause();
-                audio.currentTime = 0;
-
-                audio.volume =
-                    originalVolume;
-            }
-            catch (error) {
-                audio.volume = 1;
-            }
-        })
-    );
+    catch (error) {}
 }
 
-window.addEventListener(
-    "pointerdown",
-    unlockNotificationAudio,
-    { once: true, passive: true }
-);
-
-window.addEventListener(
-    "touchstart",
-    unlockNotificationAudio,
-    { once: true, passive: true }
-);
-
-window.addEventListener(
-    "keydown",
-    unlockNotificationAudio,
-    { once: true }
-);
-
-async function playNotificationSound(
-    type
-) {
-    if (!notificationSoundUnlocked) {
-        return false;
-    }
-
-    const source =
-        notificationSoundAudio[type];
-
-    if (!source) {
-        return false;
-    }
+function playDashboardNotificationSound() {
+    let htmlAudioPlayed = false;
 
     try {
-        const audio =
-            source.cloneNode(true);
+        if (!dashboardNotificationAudio) {
+            unlockDashboardNotificationSound();
+        }
 
-        audio.volume = 1;
-        audio.currentTime = 0;
+        if (dashboardNotificationAudio) {
+            dashboardNotificationAudio.pause();
+            dashboardNotificationAudio.currentTime = 0;
+            const playPromise =
+                dashboardNotificationAudio.play();
 
-        await audio.play();
-        return true;
+            if (playPromise && typeof playPromise.then === "function") {
+                playPromise
+                    .then(() => {
+                        htmlAudioPlayed = true;
+                    })
+                    .catch(() => {});
+            }
+            else {
+                htmlAudioPlayed = true;
+            }
+        }
     }
-    catch (error) {
-        console.warn(
-            "Sound playback blocked:",
-            type,
-            error
-        );
-        return false;
+    catch (error) {}
+
+    /* Web Audio fallback */
+    try {
+        if (htmlAudioPlayed) return;
+
+        unlockDashboardNotificationSound();
+
+        if (
+            !dashboardAudioContext ||
+            dashboardAudioContext.state !== "running"
+        ) {
+            return;
+        }
+
+        const now = dashboardAudioContext.currentTime;
+        const oscillator = dashboardAudioContext.createOscillator();
+        const gain = dashboardAudioContext.createGain();
+
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(880, now);
+        oscillator.frequency.setValueAtTime(1175, now + 0.10);
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.16, now + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+
+        oscillator.connect(gain);
+        gain.connect(dashboardAudioContext.destination);
+
+        oscillator.start(now);
+        oscillator.stop(now + 0.25);
     }
+    catch (error) {}
 }
 
-function getNotificationSoundType(
-    message = "",
-    explicitType = ""
-) {
-    if (
-        explicitType === "buy" ||
-        explicitType === "sell" ||
-        explicitType === "usd"
-    ) {
-        return explicitType;
-    }
-
-    const text =
-        String(message).toUpperCase();
-
-    if (
-        text.includes("→ BUY") ||
-        text.includes(" BUY")
-    ) {
-        return "buy";
-    }
-
-    if (
-        text.includes("→ SELL") ||
-        text.includes(" SELL")
-    ) {
-        return "sell";
-    }
-
-    return "usd";
-}
-
-prepareNotificationSounds().catch(
-    error =>
-        console.warn(
-            "Sound preparation failed:",
-            error
-        )
-);
+window.addEventListener("click", unlockDashboardNotificationSound, { passive: true });
+window.addEventListener("touchstart", unlockDashboardNotificationSound, { passive: true });
+window.addEventListener("keydown", unlockDashboardNotificationSound, { passive: true });
+window.addEventListener("pointerdown", unlockDashboardNotificationSound, { passive: true });
 
 /* =====================================================
 SEND BROWSER NOTIFICATION
@@ -5403,18 +5188,8 @@ SEND BROWSER NOTIFICATION
 async function sendDashboardNotification(
     title,
     message,
-    notificationImage = "./icon-192.png",
-    soundType = ""
+    notificationImage = "./icon-192.png"
 ) {
-    const selectedSoundType =
-        getNotificationSoundType(
-            message,
-            soundType
-        );
-
-    playNotificationSound(
-        selectedSoundType
-    ).catch(() => {});
 
     if (
         !("Notification" in window)
@@ -5486,13 +5261,20 @@ async function sendDashboardNotification(
                         "./icon-192.png",
 
                     tag:
-                        "financial-dashboard",
+                        `financial-dashboard-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
 
                     renotify:
-                        true
+                        true,
+
+                    silent:
+                        false,
+
+                    vibrate:
+                        [120, 70, 120]
                 }
             );
 
+            playDashboardNotificationSound();
 
             return true;
         }
@@ -5511,9 +5293,14 @@ async function sendDashboardNotification(
                         message,
 
                     icon:
-                        "icon.png"
+                        "icon.png",
+
+                    silent:
+                        false
                 }
             );
+
+        playDashboardNotificationSound();
 
 
         setTimeout(
@@ -5618,10 +5405,11 @@ if (
     ============================================= */
 
     sendDashboardNotification(
+
         notificationTitle,
-        notificationMessage,
-        "./icon-192.png",
-        "usd"
+
+        notificationMessage
+
     );
 
 
@@ -6735,48 +6523,206 @@ const pageIssues = new Map();
 function setPageIssue(key, message, type = "warn") {
     if (!message) pageIssues.delete(key);
     else pageIssues.set(key, { message: String(message), type });
+
     renderPageStatus();
+    renderErrorBox();
 }
 
 function clearPageIssue(key) {
     pageIssues.delete(key);
     renderPageStatus();
+    renderErrorBox();
+}
+
+function pageIssueLabel(key, issue) {
+    const k = String(key || "");
+    const m = String(issue?.message || "").toLowerCase();
+
+    if (k === "connection") return "Internet connection";
+    if (k === "usd") return "USD";
+    if (k === "yekusd") return "YEKUSD";
+    if (k === "signal-api") return "Crypto Signal API";
+    if (k === "signal-cache") return "Crypto Signal cache";
+    if (k === "crypto-portfolio") return "Crypto Portfolio";
+    if (k === "crypto-price") return "Crypto price";
+    if (k === "portfolio-data") return "Portfolio data";
+    if (k === "market-connection") return "Live market connection";
+    if (k === "mexc-cache") return "Crypto market cache";
+    if (k.startsWith("mexc:")) return `${k.slice(5)} market price`;
+    if (k === "js") return "Page JavaScript";
+    if (k === "promise") return "Background request";
+    if (k.startsWith("img:")) return `${k.slice(4)} icon`;
+    if (m.includes("nobitex")) return "Nobitex";
+    if (m.includes("exir")) return "Exir";
+    if (m.includes("bitpin")) return "Bitpin";
+
+    return "Page component";
+}
+
+function pageIssueDescription(key, issue) {
+    const k = String(key || "");
+    const message = String(issue?.message || "");
+
+    if (k === "connection") {
+        return "Internet connection is offline; new data cannot be fetched from online sources.";
+    }
+
+    if (k === "usd") {
+        return "A fresh USD price was not received; the previously cached value may be shown.";
+    }
+
+    if (k === "yekusd") {
+        return "A fresh YEKUSD rate was not received; the previous value may be shown.";
+    }
+
+    if (k === "signal-api") {
+        return "Fresh crypto signals were not received from the API.";
+    }
+
+    if (k === "signal-cache") {
+        return "Crypto Signal is using the latest cached data; this section may not be real-time.";
+    }
+
+    if (k === "crypto-portfolio") {
+        return "Fresh Crypto Portfolio data or prices were not received. The portfolio may be showing cached values or incomplete market data.";
+    }
+
+    if (k === "crypto-price") {
+        return "The main crypto price feed is unavailable or using cached data. The displayed crypto price may not be real-time.";
+    }
+
+    if (k === "portfolio-data") {
+        return "Portfolio holdings or required portfolio data are missing. Portfolio totals may be unavailable until valid data is loaded.";
+    }
+
+    if (k === "market-connection") {
+        return "One or more live market price sources could not be reached. Affected prices may be stale or unavailable while the other sources continue normally.";
+    }
+
+    if (k === "mexc-cache") {
+        return "Some crypto prices are being served from cache because the live MEXC market feed is unavailable. Cached prices may not be current.";
+    }
+
+    if (k.startsWith("mexc:")) {
+        return `${k.slice(5)} live price is unavailable. The dashboard may be showing its last cached value or no current value for this asset.`;
+    }
+
+    if (k === "js") {
+        return "A JavaScript error occurred and part of the dashboard may not have updated correctly.";
+    }
+
+    if (k === "promise") {
+        return "A background request failed and only that section may be out of date.";
+    }
+
+    if (k.startsWith("img:")) {
+        return `${k.slice(4)} icon failed to load; this does not necessarily mean that section data is invalid.`;
+    }
+
+    return message || "This section needs attention.";
 }
 
 function renderPageStatus() {
     const element = $("connectionStatus");
     if (!element) return;
 
-    const issues = Array.from(pageIssues.values()).slice(0, 8);
+    const issues = Array.from(pageIssues.values());
+
     element.replaceChildren();
 
+    const chip = document.createElement("span");
+    chip.className = "connection-status-chip";
+
     if (!navigator.onLine) {
-        const chip = document.createElement("span");
-        chip.className = "connection-status-chip cache";
-        chip.textContent = "● Page Offline";
-        element.appendChild(chip);
-    } else if (!issues.length) {
-        const chip = document.createElement("span");
-        chip.className = "connection-status-chip ok";
-        chip.textContent = "● Page Ready";
-        element.appendChild(chip);
+        chip.textContent = "● Page status: Internet connection is offline";
+    }
+    else if (issues.length) {
+        chip.textContent =
+            `● Page status: ${issues.length} item${issues.length === 1 ? "" : "s"} need attention`;
+    }
+    else {
+        chip.textContent = "● Page status: Data is up to date";
     }
 
-    for (const issue of issues) {
-        const chip = document.createElement("span");
-        chip.className = `connection-status-chip ${issue.type || "warn"}`;
-        chip.textContent = issue.message;
-        element.appendChild(chip);
+    element.appendChild(chip);
+    element.className =
+        `connection-status visible ${
+            (!navigator.onLine || issues.length)
+                ? "offline"
+                : "online"
+        }`;
+}
+
+function renderErrorBox() {
+    const errorBox = $("errorBox");
+    if (!errorBox) return;
+
+    const issues = Array.from(pageIssues.entries());
+
+    if (!issues.length && navigator.onLine) {
+        errorBox.innerHTML = "";
+        return;
     }
 
-    element.className = `connection-status visible ${(!navigator.onLine || issues.length) ? "offline" : "online"}`;
+    const rows = issues.map(
+        ([key, issue]) => {
+            const label = pageIssueLabel(key, issue);
+            const detail = pageIssueDescription(key, issue);
+            const raw = String(issue?.message || "").trim();
+            const showRaw = raw && raw !== detail && !/^(offline|page error|request failed|internet offline)$/i.test(raw);
+
+            return `
+                <div class="page-status-report-item ${issue.type || "warn"}">
+                    <strong>${label}:</strong>
+                    <span>${detail}</span>
+                    ${showRaw ? `<small class="page-status-report-detail">Status: ${raw}</small>` : ""}
+                </div>
+            `;
+        }
+    ).join("");
+
+    const offlineRow = !navigator.onLine
+        ? `
+            <div class="page-status-report-item cache">
+                <strong>Cached:</strong>
+                Any section using cache may show the latest stored data instead of real-time data.
+            </div>
+        `
+        : "";
+
+    errorBox.innerHTML = `
+        <div class="error page-status-report">
+            <div class="page-status-report-title">
+                Page Update Status
+            </div>
+
+            <div class="page-status-report-summary">
+                ${
+                    !navigator.onLine
+                        ? "The page is currently offline. The report below lists every known problem, cache fallback, and affected section detected by the dashboard."
+                        : `Currently ${issues.length} section${issues.length === 1 ? "" : "s"} need attention. The report below lists every known problem, affected data source, cache fallback, and related status detail; unaffected sections continue to update normally.`
+                }
+            </div>
+
+            <div class="page-status-report-list">
+                ${
+                    rows ||
+                    `<div class="page-status-report-item cache">
+                        <strong>Status:</strong>
+                        No issues are currently reported.
+                    </div>`
+                }
+                ${offlineRow}
+            </div>
+        </div>
+    `;
 }
 
 function showConnectionStatus(offline, message) {
     if (offline) {
         setPageIssue(
             "connection",
-            message || "Page Offline",
+            message || "Offline",
             "warn"
         );
     }
