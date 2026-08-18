@@ -2365,6 +2365,42 @@ h1 {
     }
 }
 
+/* =====================================================
+   CRYPTO PORTFOLIO - 351px TO 550px SAFE PRICE LAYOUT
+   Live price and portfolio value are stacked vertically.
+   Only affects the Crypto Portfolio section in this width.
+===================================================== */
+@media (min-width:351px) and (max-width:550px){
+
+    .crypto-portfolio-price-row{
+        display:flex;
+        flex-direction:column;
+        align-items:flex-start;
+        justify-content:flex-start;
+        gap:3px;
+        width:100%;
+    }
+
+    .crypto-portfolio-price,
+    .crypto-portfolio-value{
+        width:100%;
+        max-width:100%;
+        min-width:0;
+        overflow:visible !important;
+        text-overflow:clip !important;
+        white-space:nowrap !important;
+        line-height:1.1;
+    }
+
+    .crypto-portfolio-price{
+        text-align:left;
+    }
+
+    .crypto-portfolio-value{
+        text-align:left;
+    }
+}
+
 @media (max-width:360px){
 
     .crypto-portfolio-grid{
@@ -5139,6 +5175,18 @@ const DASHBOARD_NOTIFICATION_SOUND_URLS = {
     USD: "./file/Usd.mp3"
 };
 
+function getDashboardNotificationSoundURL(soundType) {
+    const relativeURL = DASHBOARD_NOTIFICATION_SOUND_URLS[soundType];
+    if (!relativeURL) return null;
+
+    try {
+        return new URL(relativeURL, document.baseURI).href;
+    }
+    catch (error) {
+        return relativeURL;
+    }
+}
+
 const dashboardNotificationSounds = Object.create(null);
 let dashboardNotificationAudioReady = null;
 let dashboardAudioContext = null;
@@ -5158,7 +5206,10 @@ function getNotificationSoundType(title, message, explicitType = null) {
 }
 
 async function cacheNotificationSound(soundType) {
-    const url = DASHBOARD_NOTIFICATION_SOUND_URLS[soundType];
+    const relativeURL = DASHBOARD_NOTIFICATION_SOUND_URLS[soundType];
+    if (!relativeURL) return null;
+
+    const url = getDashboardNotificationSoundURL(soundType);
     if (!url) return null;
 
     try {
@@ -5192,11 +5243,14 @@ async function prepareNotificationSound(soundType) {
     const source = await cacheNotificationSound(soundType);
     if (!source) return null;
 
-    const audio = new Audio(source);
+    const audio = new Audio();
+    audio.src = source;
     audio.preload = "auto";
     audio.autoplay = false;
     audio.loop = false;
+    audio.muted = false;
     audio.volume = 1.0;
+    audio.setAttribute("playsinline", "true");
 
     dashboardNotificationSounds[soundType] = audio;
 
@@ -5232,6 +5286,7 @@ function unlockDashboardNotificationSound() {
                 audio.muted = true;
                 audio.volume = 0;
                 audio.currentTime = 0;
+
                 const promise = audio.play();
 
                 if (promise && typeof promise.then === "function") {
@@ -5270,6 +5325,10 @@ async function playDashboardNotificationSound(soundType = "USD") {
     const type = getNotificationSoundType("", "", soundType);
 
     try {
+        if (dashboardAudioContext && dashboardAudioContext.state === "suspended") {
+            await dashboardAudioContext.resume().catch(() => {});
+        }
+
         const audio =
             dashboardNotificationSounds[type] ||
             await prepareNotificationSound(type);
@@ -5344,8 +5403,12 @@ async function sendDashboardNotification(
             (notificationIcon ? " " : "") +
             title;
 
-        const soundPromise =
-            prepareNotificationSound(resolvedSoundType);
+        await prepareNotificationSound(resolvedSoundType);
+
+        /* Play the user-selected MP3 first.
+           Browser Notification API does not support arbitrary sound files. */
+        const customSoundPlayed =
+            await playDashboardNotificationSound(resolvedSoundType);
 
         if ("serviceWorker" in navigator) {
             const registration =
@@ -5367,8 +5430,11 @@ async function sendDashboardNotification(
                 }
             );
 
-            await soundPromise;
-            playDashboardNotificationSound(resolvedSoundType).catch(() => {});
+            if (!customSoundPlayed) {
+                console.warn(
+                    `Custom notification sound could not be played for ${resolvedSoundType}.`
+                );
+            }
 
             return true;
         }
@@ -5383,8 +5449,11 @@ async function sendDashboardNotification(
                 }
             );
 
-        await soundPromise;
-        playDashboardNotificationSound(resolvedSoundType).catch(() => {});
+        if (!customSoundPlayed) {
+            console.warn(
+                `Custom notification sound could not be played for ${resolvedSoundType}.`
+            );
+        }
 
         setTimeout(() => {
             try {
