@@ -2250,8 +2250,8 @@ h1 {
     .crypto-portfolio-total-value{
         font-size:14px;
         max-width:100%;
-        overflow:hidden;
-        text-overflow:ellipsis;
+        overflow:visible;
+        text-overflow:clip;
         white-space:nowrap;
     }
 
@@ -2259,8 +2259,8 @@ h1 {
         width:auto;
         max-width:100%;
         font-size:8px;
-        overflow:hidden;
-        text-overflow:ellipsis;
+        overflow:visible;
+        text-overflow:clip;
         white-space:nowrap;
     }
 
@@ -2340,8 +2340,8 @@ h1 {
     .crypto-portfolio-value{
         min-width:0;
         max-width:100%;
-        overflow:hidden;
-        text-overflow:ellipsis;
+        overflow:visible;
+        text-overflow:clip;
         white-space:nowrap;
         font-variant-numeric:tabular-nums;
     }
@@ -2370,6 +2370,12 @@ h1 {
     .crypto-portfolio-grid{
         grid-template-columns:repeat(2,minmax(0,1fr));
         gap:5px;
+    }
+
+    .crypto-portfolio-price,
+    .crypto-portfolio-value{
+        font-size:11px;
+        letter-spacing:-.15px;
     }
 
     .crypto-portfolio-item{
@@ -2406,15 +2412,61 @@ h1 {
         grid-template-columns:repeat(2,minmax(0,1fr));
     }
 
-    .crypto-portfolio-price{
-        font-size:14px;
-    }
-
+    .crypto-portfolio-price,
     .crypto-portfolio-value{
-        font-size:12px;
+        font-size:10px;
+        letter-spacing:-.2px;
     }
 }
 
+
+/* =====================================================
+   NO PRICE TRUNCATION
+   Display full numeric values; never use ellipsis.
+===================================================== */
+.crypto-portfolio-price,
+.crypto-portfolio-value,
+.crypto-portfolio-total-value,
+.crypto-portfolio-total-change{
+    text-overflow: clip !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+}
+
+/* =====================================================
+   CRYPTO PORTFOLIO CHANGE % - READABLE
+   Only affects percentage badges in Crypto Portfolio.
+===================================================== */
+.crypto-portfolio-change{
+    font-size:13px !important;
+    font-weight:900 !important;
+    padding:4px 6px !important;
+    line-height:1.15 !important;
+    max-width:none !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    white-space:nowrap !important;
+    letter-spacing:.1px;
+}
+
+@media (max-width:650px){
+    .crypto-portfolio-change{
+        font-size:11px !important;
+        font-weight:900 !important;
+        padding:3px 5px !important;
+        max-width:none !important;
+        overflow:visible !important;
+        text-overflow:clip !important;
+        white-space:nowrap !important;
+    }
+}
+
+@media (max-width:360px){
+    .crypto-portfolio-change{
+        font-size:10px !important;
+        padding:3px 4px !important;
+    }
+}
 </style>
 
 </head>
@@ -4134,7 +4186,8 @@ async function loadCryptoSignals() {
                 sendDashboardNotification(
                     `${signalIcon} ${coin} Crypto Signal`,
                     `${signalIcon} ${coin} → ${signalType}`,
-                    getCryptoIconSrc(coin)
+                    getCryptoIconSrc(coin),
+                    signalType === "BUY" ? "BUY" : "SELL"
                 );
             }
         });
@@ -5077,109 +5130,179 @@ function getNotificationIconEmoji(message) {
 NOTIFICATION SOUND
 ===================================================== */
 
-let dashboardAudioContext = null;
-let dashboardNotificationAudio = null;
+const DASHBOARD_NOTIFICATION_AUDIO_CACHE =
+    "financial-dashboard-notification-audio-v1";
 
-/*
-   A real HTMLAudioElement is used as the primary sound path.
-   It is more reliable than AudioContext when the tab/window is minimized.
-   Web Audio remains as a fallback.
-*/
-const DASHBOARD_NOTIFICATION_WAV =
-    "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=";
+const DASHBOARD_NOTIFICATION_SOUND_URLS = {
+    BUY: "./file/Buy.mp3",
+    SELL: "./file/Sell.mp3",
+    USD: "./file/Usd.mp3"
+};
+
+const dashboardNotificationSounds = Object.create(null);
+let dashboardNotificationAudioReady = null;
+let dashboardAudioContext = null;
+
+function getNotificationSoundType(title, message, explicitType = null) {
+    if (explicitType === "BUY" || explicitType === "SELL" || explicitType === "USD") {
+        return explicitType;
+    }
+
+    const text = `${title || ""} ${message || ""}`.toUpperCase();
+
+    if (/\bSELL\b/.test(text)) return "SELL";
+    if (/\bBUY\b/.test(text)) return "BUY";
+
+    /* Dashboard percentage/color notifications use the USD sound. */
+    return "USD";
+}
+
+async function cacheNotificationSound(soundType) {
+    const url = DASHBOARD_NOTIFICATION_SOUND_URLS[soundType];
+    if (!url) return null;
+
+    try {
+        if ("caches" in window) {
+            const cache = await caches.open(DASHBOARD_NOTIFICATION_AUDIO_CACHE);
+            let response = await cache.match(url);
+
+            if (!response) {
+                response = await fetch(url, { cache: "no-store" });
+                if (!response.ok) {
+                    throw new Error(`Audio HTTP ${response.status}`);
+                }
+                await cache.put(url, response.clone());
+            }
+
+            return URL.createObjectURL(await response.blob());
+        }
+    }
+    catch (error) {
+        console.warn(`Notification sound cache unavailable for ${soundType}:`, error);
+    }
+
+    return url;
+}
+
+async function prepareNotificationSound(soundType) {
+    if (dashboardNotificationSounds[soundType]) {
+        return dashboardNotificationSounds[soundType];
+    }
+
+    const source = await cacheNotificationSound(soundType);
+    if (!source) return null;
+
+    const audio = new Audio(source);
+    audio.preload = "auto";
+    audio.autoplay = false;
+    audio.loop = false;
+    audio.volume = 1.0;
+
+    dashboardNotificationSounds[soundType] = audio;
+
+    try {
+        audio.load();
+    }
+    catch (error) {}
+
+    return audio;
+}
 
 function unlockDashboardNotificationSound() {
     try {
-        if (!dashboardNotificationAudio) {
-            dashboardNotificationAudio = new Audio(DASHBOARD_NOTIFICATION_WAV);
-            dashboardNotificationAudio.preload = "auto";
-            dashboardNotificationAudio.volume = 0.75;
-        }
-
         const AudioContextClass =
             window.AudioContext ||
             window.webkitAudioContext;
 
         if (AudioContextClass) {
             if (!dashboardAudioContext) {
-                dashboardAudioContext =
-                    new AudioContextClass();
+                dashboardAudioContext = new AudioContextClass();
             }
 
             if (dashboardAudioContext.state === "suspended") {
                 dashboardAudioContext.resume().catch(() => {});
             }
         }
+
+        ["BUY", "SELL", "USD"].forEach(soundType => {
+            const audio = dashboardNotificationSounds[soundType];
+            if (!audio) return;
+
+            try {
+                audio.muted = true;
+                audio.volume = 0;
+                audio.currentTime = 0;
+                const promise = audio.play();
+
+                if (promise && typeof promise.then === "function") {
+                    promise.then(() => {
+                        try {
+                            audio.pause();
+                            audio.currentTime = 0;
+                            audio.muted = false;
+                            audio.volume = 1.0;
+                        } catch (error) {}
+                    }).catch(() => {
+                        audio.muted = false;
+                        audio.volume = 1.0;
+                    });
+                }
+            }
+            catch (error) {}
+        });
     }
     catch (error) {}
 }
 
-function playDashboardNotificationSound() {
-    let htmlAudioPlayed = false;
-
-    try {
-        if (!dashboardNotificationAudio) {
-            unlockDashboardNotificationSound();
-        }
-
-        if (dashboardNotificationAudio) {
-            dashboardNotificationAudio.pause();
-            dashboardNotificationAudio.currentTime = 0;
-            const playPromise =
-                dashboardNotificationAudio.play();
-
-            if (playPromise && typeof playPromise.then === "function") {
-                playPromise
-                    .then(() => {
-                        htmlAudioPlayed = true;
-                    })
-                    .catch(() => {});
-            }
-            else {
-                htmlAudioPlayed = true;
-            }
-        }
+async function prepareAllDashboardNotificationSounds() {
+    if (!dashboardNotificationAudioReady) {
+        dashboardNotificationAudioReady = Promise.all([
+            prepareNotificationSound("BUY"),
+            prepareNotificationSound("SELL"),
+            prepareNotificationSound("USD")
+        ]).catch(() => null);
     }
-    catch (error) {}
 
-    /* Web Audio fallback */
+    return dashboardNotificationAudioReady;
+}
+
+async function playDashboardNotificationSound(soundType = "USD") {
+    const type = getNotificationSoundType("", "", soundType);
+
     try {
-        if (htmlAudioPlayed) return;
+        const audio =
+            dashboardNotificationSounds[type] ||
+            await prepareNotificationSound(type);
 
+        if (!audio) return false;
+
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = false;
+        audio.volume = 1.0;
+
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.then === "function") {
+            await playPromise;
+        }
+
+        return true;
+    }
+    catch (error) {
+        console.warn(`Notification sound playback blocked for ${type}:`, error);
+        return false;
+    }
+}
+
+/* Cache all three sounds once. Later notifications use the cached copies. */
+prepareAllDashboardNotificationSounds();
+
+["click", "touchstart", "keydown", "pointerdown"].forEach(eventName => {
+    window.addEventListener(eventName, () => {
         unlockDashboardNotificationSound();
-
-        if (
-            !dashboardAudioContext ||
-            dashboardAudioContext.state !== "running"
-        ) {
-            return;
-        }
-
-        const now = dashboardAudioContext.currentTime;
-        const oscillator = dashboardAudioContext.createOscillator();
-        const gain = dashboardAudioContext.createGain();
-
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(880, now);
-        oscillator.frequency.setValueAtTime(1175, now + 0.10);
-
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.exponentialRampToValueAtTime(0.16, now + 0.012);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
-
-        oscillator.connect(gain);
-        gain.connect(dashboardAudioContext.destination);
-
-        oscillator.start(now);
-        oscillator.stop(now + 0.25);
-    }
-    catch (error) {}
-}
-
-window.addEventListener("click", unlockDashboardNotificationSound, { passive: true });
-window.addEventListener("touchstart", unlockDashboardNotificationSound, { passive: true });
-window.addEventListener("keydown", unlockDashboardNotificationSound, { passive: true });
-window.addEventListener("pointerdown", unlockDashboardNotificationSound, { passive: true });
+        prepareAllDashboardNotificationSounds();
+    }, { passive: true });
+});
 
 /* =====================================================
 SEND BROWSER NOTIFICATION
@@ -5188,153 +5311,98 @@ SEND BROWSER NOTIFICATION
 async function sendDashboardNotification(
     title,
     message,
-    notificationImage = "./icon-192.png"
+    notificationImage = "./icon-192.png",
+    soundType = "USD"
 ) {
 
-    if (
-        !("Notification" in window)
-    ) {
-
+    if (!("Notification" in window)) {
         return false;
     }
 
-
-    if (
-        Notification.permission !==
-        "granted"
-    ) {
-
+    if (Notification.permission !== "granted") {
         console.log(
             "Notification skipped because permission is not granted:",
             title,
             message
         );
-
         return false;
     }
 
-
     try {
-
-        /*
-           Add universal Unicode emoji
-           to notification title.
-
-           No image file is required.
-        */
-
-        const notificationIcon =
-            getNotificationIconEmoji(
-                message
+        const resolvedSoundType =
+            getNotificationSoundType(
+                title,
+                message,
+                soundType
             );
 
+        const notificationIcon =
+            getNotificationIconEmoji(message);
 
         const notificationTitle =
             notificationIcon +
-            (
-                notificationIcon
-                    ? " "
-                    : ""
-            ) +
+            (notificationIcon ? " " : "") +
             title;
 
+        const soundPromise =
+            prepareNotificationSound(resolvedSoundType);
 
-        if (
-            "serviceWorker" in navigator
-        ) {
-
+        if ("serviceWorker" in navigator) {
             const registration =
                 await navigator.serviceWorker.ready;
-
 
             await registration.showNotification(
                 notificationTitle,
                 {
-
-                    body:
-                        message,
-
-                    icon:
-                        notificationImage,
-
-                    badge:
-                        "./icon-192.png",
-
-                    tag:
-                        `financial-dashboard-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-
-                    renotify:
-                        true,
-
-                    silent:
-                        false,
-
-                    vibrate:
-                        [120, 70, 120]
+                    body: message,
+                    icon: notificationImage,
+                    badge: "./icon-192.png",
+                    tag: `financial-dashboard-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    renotify: true,
+                    silent: false,
+                    vibrate: [120, 70, 120],
+                    data: {
+                        notificationType: resolvedSoundType
+                    }
                 }
             );
 
-            playDashboardNotificationSound();
+            await soundPromise;
+            playDashboardNotificationSound(resolvedSoundType).catch(() => {});
 
             return true;
         }
-
-
-        /*
-           Fallback for desktop browsers.
-        */
 
         const notification =
             new Notification(
                 notificationTitle,
                 {
-
-                    body:
-                        message,
-
-                    icon:
-                        "icon.png",
-
-                    silent:
-                        false
+                    body: message,
+                    icon: "icon.png",
+                    silent: false
                 }
             );
 
-        playDashboardNotificationSound();
+        await soundPromise;
+        playDashboardNotificationSound(resolvedSoundType).catch(() => {});
 
-
-        setTimeout(
-            () => {
-
-                try {
-
-                    notification.close();
-
-                }
-
-                catch (error) {}
-
-            },
-            8000
-        );
-
+        setTimeout(() => {
+            try {
+                notification.close();
+            }
+            catch (error) {}
+        }, 8000);
 
         return true;
-
     }
-
-
     catch (error) {
-
         console.warn(
             "Notification could not be displayed:",
             error
         );
-
         return false;
     }
 }
-
 
 /* =====================================================
 CARD COLOR + NOTIFICATION HOOK
@@ -5405,11 +5473,10 @@ if (
     ============================================= */
 
     sendDashboardNotification(
-
         notificationTitle,
-
-        notificationMessage
-
+        notificationMessage,
+        "./icon-192.png",
+        "USD"
     );
 
 
