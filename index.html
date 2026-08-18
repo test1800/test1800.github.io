@@ -4029,9 +4029,30 @@ const WORKER_URLS = {
 };
 
 
+function buildApiProxyFallbacks(targetUrl) {
+
+    const target = String(targetUrl || "").trim();
+
+    if (!target) {
+        return [];
+    }
+
+    const encoded = encodeURIComponent(target);
+
+    return [
+        target,
+        `https://api.cors.syrins.tech/?url=${encoded}`,
+        `https://api.allorigins.win/raw?url=${encoded}`
+    ].filter((url, index, list) => list.indexOf(url) === index);
+}
+
 async function fetchWithFallback(urls, options = {}) {
 
-    for (const url of urls) {
+    const queue = Array.isArray(urls)
+        ? urls
+        : buildApiProxyFallbacks(urls);
+
+    for (const url of queue) {
 
         try {
 
@@ -4048,7 +4069,7 @@ async function fetchWithFallback(urls, options = {}) {
         } catch (error) {
 
             console.warn(
-                "Worker failed:",
+                "API/proxy failed:",
                 url
             );
 
@@ -4056,7 +4077,44 @@ async function fetchWithFallback(urls, options = {}) {
     }
 
     throw new Error(
-        "All worker URLs unavailable"
+        "All API/proxy URLs unavailable"
+    );
+}
+
+async function fetchApiWithProxyFallback(
+    apiUrl,
+    options = {},
+    timeout = PRICE_REQUEST_TIMEOUT
+) {
+
+    const urls = buildApiProxyFallbacks(apiUrl);
+    let lastError = null;
+
+    for (const url of urls) {
+        try {
+            const response =
+                await fetchWithTimeout(
+                    url,
+                    options,
+                    timeout
+                );
+
+            if (response.ok) {
+                return response;
+            }
+
+            lastError = new Error(
+                `API HTTP ${response.status}`
+            );
+        }
+        catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw (
+        lastError ||
+        new Error("All API/proxy URLs unavailable")
     );
 }
 
@@ -8576,25 +8634,16 @@ async function getCurrentPrice(
 
 
     const response =
-        await fetchWithTimeout(
-
+        await fetchApiWithProxyFallback(
             apiUrl,
-
             {
-                method:
-                    "GET",
-
+                method: "GET",
                 headers: {
-
-                    "Accept":
-                        "application/json"
-
+                    "Accept": "application/json"
                 },
-
-                cache:
-                    "no-store"
-            }
-
+                cache: "no-store"
+            },
+            PRICE_REQUEST_TIMEOUT
         );
 
 
@@ -8694,25 +8743,16 @@ async function getExirPrice(
 
 
     const response =
-        await fetchWithTimeout(
-
+        await fetchApiWithProxyFallback(
             apiUrl,
-
             {
-                method:
-                    "GET",
-
+                method: "GET",
                 headers: {
-
-                    "Accept":
-                        "application/json"
-
+                    "Accept": "application/json"
                 },
-
-                cache:
-                    "no-store"
-            }
-
+                cache: "no-store"
+            },
+            PRICE_REQUEST_TIMEOUT
         );
 
 
@@ -8818,25 +8858,16 @@ async function getBitpinPrice(
 
 
     const response =
-        await fetchWithTimeout(
-
+        await fetchApiWithProxyFallback(
             apiUrl,
-
             {
-                method:
-                    "GET",
-
+                method: "GET",
                 headers: {
-
-                    "Accept":
-                        "application/json"
-
+                    "Accept": "application/json"
                 },
-
-                cache:
-                    "no-store"
-            }
-
+                cache: "no-store"
+            },
+            PRICE_REQUEST_TIMEOUT
         );
 
 
@@ -11477,14 +11508,36 @@ if (
 
                 .then(
 
-                    registration => {
+                    async registration => {
 
                         console.log(
                             "Financial Dashboard PWA Ready"
                         );
 
+                        await registration.update();
 
-                        registration.update();
+                        /*
+                           Best-effort background check. Browser/OS decides
+                           when periodic sync is actually allowed to run.
+                        */
+                        if (
+                            "periodicSync" in registration &&
+                            registration.periodicSync &&
+                            typeof registration.periodicSync.register === "function"
+                        ) {
+                            try {
+                                await registration.periodicSync.register(
+                                    "financial-dashboard-background-check",
+                                    { minInterval: 60 * 1000 }
+                                );
+                            }
+                            catch (error) {
+                                console.warn(
+                                    "Periodic background check unavailable:",
+                                    error
+                                );
+                            }
+                        }
 
                     }
 
