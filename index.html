@@ -2386,7 +2386,7 @@ h1 {
    Live price and portfolio value are stacked vertically.
    Only affects the Crypto Portfolio section in this width.
 ===================================================== */
-@media (min-width:351px) and (max-width:550px){
+@media (min-width:450px) and (max-width:550px){
 
     .crypto-portfolio-price-row{
         display:flex;
@@ -2552,7 +2552,7 @@ h1 {
     font-feature-settings:"tnum";
 }
 
-@media (min-width:351px) and (max-width:550px){
+@media (min-width:450px) and (max-width:550px){
     .crypto-portfolio-grid{
         align-items:stretch;
         gap:7px;
@@ -2625,7 +2625,7 @@ h1 {
     }
 }
 
-@media (max-width:360px){
+@media (max-width:450px){
     .crypto-portfolio-item{
         padding:8px 7px;
     }
@@ -2638,6 +2638,102 @@ h1 {
         font-size:10px !important;
     }
 }
+/* =====================================================
+   CRYPTO PORTFOLIO - FINAL ASSET AMOUNT
+===================================================== */
+
+/* مقدار دارایی */
+.crypto-portfolio-amount {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    line-height: 1.15 !important;
+
+    color: #94a3b8 !important;
+    opacity: 1 !important;
+
+    display: block !important;
+    width: 100% !important;
+
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+
+/* درصد تغییر */
+.crypto-portfolio-change {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    line-height: 1.15 !important;
+
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 650px) {
+
+    .crypto-portfolio-amount {
+        font-size: 10px !important;
+        font-weight: 600 !important;
+    }
+
+    .crypto-portfolio-change {
+        font-size: 9px !important;
+        font-weight: 600 !important;
+    }
+}
+
+
+/* =====================================================
+   450px - 550px
+===================================================== */
+
+@media (min-width: 450px) and (max-width: 550px) {
+
+    .crypto-portfolio-amount {
+        font-size: 11px !important;
+        font-weight: 600 !important;
+    }
+
+    .crypto-portfolio-change {
+        font-size: 9px !important;
+        font-weight: 600 !important;
+    }
+}
+/* =====================================================
+   CRYPTO PORTFOLIO - END CENTERED
+   Same size as normal cards
+===================================================== */
+
+@media (max-width: 450px){
+
+    .crypto-portfolio-grid{
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 7px !important;
+    }
+
+    /* TRX occupies the last row */
+    .crypto-portfolio-grid > .crypto-portfolio-item:last-child{
+        grid-column: 1 / -1 !important;
+
+        /* same width as one normal card */
+        width: calc(50% - 3.5px) !important;
+
+        /* center it */
+        justify-self: center !important;
+    }
+
+}
+
 </style>
 
 </head>
