@@ -436,6 +436,172 @@ async function cacheFirst(
 
 
 /* =====================================================
+   PUSH NOTIFICATION
+   Background / PWA / Mobile
+===================================================== */
+
+self.addEventListener(
+
+    "push",
+
+    event => {
+
+        let payload = {};
+
+        try {
+
+            if (
+
+                event.data
+
+            ) {
+
+                payload =
+                    event.data.json();
+
+            }
+
+        }
+
+        catch (error) {
+
+            try {
+
+                payload = {
+
+                    body:
+                        event.data
+                            ? event.data.text()
+                            : ""
+
+                };
+
+            }
+
+            catch (textError) {
+
+                payload = {};
+
+            }
+
+        }
+
+
+
+        const title =
+            payload.title ||
+
+            "Financial Dashboard";
+
+
+
+        const body =
+            payload.body ||
+
+            payload.message ||
+
+            "New notification";
+
+
+
+        const icon =
+            payload.icon ||
+
+            "./icon-192.png";
+
+
+
+        const badge =
+            payload.badge ||
+
+            "./icon-192.png";
+
+
+
+        const tag =
+            payload.tag ||
+
+            `financial-dashboard-${Date.now()}`;
+
+
+
+        const notificationOptions = {
+
+            body: body,
+
+            icon: icon,
+
+            badge: badge,
+
+
+
+            tag: tag,
+
+
+
+            renotify: true,
+
+
+
+            requireInteraction: true,
+
+
+
+            silent: false,
+
+
+
+            vibrate: [
+
+                120,
+
+                70,
+
+                120
+
+            ],
+
+
+
+            data: {
+
+                url:
+                    payload.url ||
+
+                    "./",
+
+
+
+                notificationType:
+                    payload.notificationType ||
+
+                    "USD"
+
+            }
+
+        };
+
+
+
+        event.waitUntil(
+
+            self.registration.showNotification(
+
+                title,
+
+                notificationOptions
+
+            )
+
+        );
+
+    }
+
+);
+
+
+
+/* =====================================================
    NOTIFICATION CLICK
 ===================================================== */
 
@@ -443,47 +609,137 @@ self.addEventListener(
     "notificationclick",
     event => {
 
-        event.notification.close();
+        const notification =
+            event.notification;
+
+
+
+        const notificationData =
+            notification.data || {};
+
+
+
+        const targetUrl =
+            notificationData.url ||
+
+            "./";
+
+
+
+        notification.close();
+
+
 
         event.waitUntil(
 
             clients.matchAll({
+
                 type: "window",
+
                 includeUncontrolled: true
+
             })
 
             .then(
+
                 clientList => {
 
                     for (
+
                         const client
+
                         of clientList
+
                     ) {
 
-                        if (
-                            "focus" in client
-                        ) {
+                        try {
 
-                            return client.focus();
+                            const clientUrl =
+                                new URL(
+                                    client.url
+                                );
+
+                            const target =
+                                new URL(
+                                    targetUrl,
+                                    self.location.origin
+                                );
+
+
+
+                            if (
+
+                                clientUrl.origin ===
+
+                                target.origin
+
+                            ) {
+
+                                if (
+
+                                    "focus" in client
+
+                                ) {
+
+                                    return client.focus();
+
+                                }
+
+                            }
 
                         }
 
+                        catch (error) {}
+
                     }
 
+
+
                     if (
+
                         clients.openWindow
+
                     ) {
 
                         return clients.openWindow(
-                            "./"
+
+                            targetUrl
+
                         );
 
                     }
 
                 }
+
             )
 
         );
 
     }
+
+);
+
+
+
+/* =====================================================
+   NOTIFICATION CLOSE
+===================================================== */
+
+self.addEventListener(
+
+    "notificationclose",
+
+    event => {
+
+        /*
+
+            Intentionally kept empty.
+
+            This event is available for future
+            notification analytics if needed.
+
+        */
+
+    }
+
 );
