@@ -106,6 +106,10 @@ body {
 
 header {
 
+    position: sticky;
+    top: 0;
+    z-index: 5000;
+    isolation: isolate;
     padding:
         14px
         18px;
@@ -139,13 +143,18 @@ header {
 .header-top {
 
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
 
-    justify-content:
-        space-between;
+.header-top > div {
+    min-width: 0;
+}
 
-    align-items:
-        center;
-
+.header-top > .crypto-card {
+    flex: 0 0 auto;
 }
 
 h1 {
@@ -426,57 +435,83 @@ h1 {
    CONNECTION STATUS
 ===================================================== */
 
+/* Compact page health / real page status */
+.connection-status .connection-status-chip {
+    font-size: 8px;
+    padding: 2px 6px;
+    border-width: 1px;
+    box-shadow: none;
+}
+
+
 .connection-status {
-
     display: none;
+    margin-top: 6px;
+    padding: 0;
+    border: 0 !important;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1.35;
+    text-align: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
 
-    margin-top: 8px;
+}
 
-    padding:
-        7px
-        10px;
+.connection-status.visible { display: flex; }
 
-    border-radius: 9px;
-
-    font-size: 10px;
-
-    font-weight: 700;
-
-    text-align:
-        center;
-
+.connection-status.online {
+    background: transparent;
 }
 
 .connection-status.offline {
-
-    display: block;
-
-    color:
-        #fbbf24;
-
-    background:
-        rgba(245,158,11,.10);
-
-    border:
-        1px solid
-        rgba(245,158,11,.20);
-
+    background: transparent;
 }
 
-.connection-status.online {
+.connection-status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
 
-    display: block;
+.connection-status-chip.ok {
+    color: #34d399;
+    background: rgba(16,185,129,.10);
+    border-color: rgba(16,185,129,.20);
+}
 
-    color:
-        #34d399;
+.connection-status-chip.warn {
+    color: #fbbf24;
+    background: rgba(245,158,11,.10);
+    border-color: rgba(245,158,11,.20);
+}
 
-    background:
-        rgba(16,185,129,.10);
+.connection-status-chip.error {
+    color: #fb7185;
+    background: rgba(244,63,94,.10);
+    border-color: rgba(244,63,94,.20);
+}
 
-    border:
-        1px solid
-        rgba(16,185,129,.20);
+.connection-status-chip.cache {
+    color: #60a5fa;
+    background: rgba(59,130,246,.10);
+    border-color: rgba(59,130,246,.20);
+}
 
+.connection-status-chip.info {
+    color: #c084fc;
+    background: rgba(168,85,247,.10);
+    border-color: rgba(168,85,247,.20);
 }
 
 
@@ -1053,6 +1088,53 @@ h1 {
 }
 
 
+
+/* =====================================================
+   COMPACT NUMBER SAFETY
+   Prevent clipping/overlap in narrow viewports.
+===================================================== */
+
+.live-price,
+.live-price-values,
+.live-price-left,
+.live-price-center,
+.live-price-right,
+.live-price-item,
+.main-price,
+.main-price-values,
+.main-price-side,
+.crypto-card,
+.crypto-value,
+.pl-box,
+.pl-value,
+.metric,
+.metric-value,
+.compare-box,
+.compare-value {
+    min-width: 0;
+}
+
+.main-price-number,
+.live-main-number,
+.pl-value,
+.metric-value,
+.compare-value,
+.realized-value,
+.six-purchase-number {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.main-price-values {
+    width: 100%;
+}
+
+.main-price-side {
+    overflow: hidden;
+}
+
 /* =====================================================
    RESPONSIVE
 ===================================================== */
@@ -1073,20 +1155,21 @@ h1 {
     .container {
 
         padding:
-            9px
             8px
-            25px;
+            7px
+            24px;
 
     }
 
     header {
 
         position: sticky;
-
         top: 0;
-
-        z-index: 1000;
-
+        z-index: 5000;
+        isolation: isolate;
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
     }
 
     h1 {
@@ -1275,9 +1358,13 @@ h1 {
     }
 
     .live-number {
-        font-size: 13px !important;
+        font-size: clamp(10px, 3.9vw, 13px) !important;
         line-height: 1 !important;
-        font-weight: 700 !important;
+        font-weight: 750 !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
 
     .price-arrow {
@@ -1301,16 +1388,219 @@ h1 {
 
 @media (max-width: 380px) {
 
+    header {
+        padding: 7px 7px !important;
+    }
+
+    .header-top {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 6px;
+        width: 100%;
+    }
+
+    .header-top > div:first-child {
+        width: 100%;
+        min-width: 0;
+    }
+
+    h1 {
+        display: block !important;
+        font-size: 16px !important;
+        line-height: 1.1 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .today {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .crypto-card {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        padding: 6px 8px;
+    }
+
+    .crypto-value {
+        font-size: clamp(15px, 5.8vw, 20px);
+        line-height: 1.05;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
     .live-market-title,
     .live-market-separator,
     .live-market-bank {
         display: none !important;
     }
- h1 {
-        display: none !important;
-    }	
+
+    .live-price {
+        width: 100%;
+        min-width: 0;
+        padding: 7px 6px !important;
+    }
+
+    .live-price-values {
+        gap: 5px !important;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .live-price-left,
+    .live-price-center,
+    .live-price-right {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        max-width: 33.333%;
+    }
+
+    .live-price-item {
+        width: 100%;
+        min-width: 0 !important;
+        gap: 2px !important;
+        overflow: hidden;
+    }
+
+    .live-number {
+        font-size: clamp(11px, 4.1vw, 15px) !important;
+        line-height: 1.05 !important;
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .price-arrow {
+        flex: 0 0 auto;
+        width: auto !important;
+        font-size: clamp(12px, 4.5vw, 17px) !important;
+        line-height: 1 !important;
+    }
+
+    .signal-board {
+        margin-top: 7px;
+        padding: 7px;
+    }
+
+    .signal-grid {
+        gap: 4px;
+    }
+
+    .signal-box {
+        height: 34px;
+        min-width: 0;
+    }
+
+    .signal-box img {
+        width: 18px;
+        height: 18px;
+        margin-bottom: 0;
+    }
+
+    .signal-name {
+        display: none;
+    }
 }
 
+
+
+@media (max-width: 300px) {
+
+    .container {
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+    }
+
+    header {
+        padding: 6px 5px !important;
+    }
+
+    h1 {
+        font-size: 14px !important;
+    }
+
+    .today {
+        font-size: 10px !important;
+    }
+
+    .update-time,
+    .update-countdown {
+        font-size: 8px !important;
+    }
+
+    .crypto-card {
+        padding: 5px 7px;
+    }
+
+    .crypto-label {
+        font-size: 7px;
+    }
+
+    .crypto-value {
+        font-size: clamp(14px, 5vw, 17px);
+    }
+
+    .live-price {
+        padding: 6px 4px !important;
+    }
+
+    .live-price-values {
+        gap: 2px !important;
+    }
+
+    .live-number {
+        font-size: clamp(10px, 3.8vw, 13px) !important;
+    }
+
+    .price-arrow {
+        font-size: 12px !important;
+    }
+
+    .signal-board {
+        padding: 5px;
+    }
+
+    .signal-box {
+        height: 30px;
+        border-radius: 7px;
+    }
+
+    .signal-box img {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+
+@media (max-height: 300px) and (min-width: 381px) {
+
+    header {
+        padding: 7px 10px !important;
+    }
+
+    .signal-board {
+        margin-top: 5px;
+        padding: 6px;
+    }
+
+    .signal-box {
+        height: 36px;
+    }
+
+    .live-price {
+        margin-top: 6px;
+        padding: 6px 8px;
+    }
+
+    .live-number {
+        font-size: clamp(11px, 2.3vw, 15px) !important;
+    }
+}
 
 /* =====================================================
    OFFLINE MARKET PRICE COLOR
@@ -1660,7 +1950,7 @@ h1 {
     1px solid rgba(255,255,255,.08);
 
 
-    transition:.3s;
+    transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
 
 }
 
@@ -1671,6 +1961,7 @@ h1 {
     height:22px;
 
     margin-bottom:3px;
+    transition: opacity .18s ease, filter .18s ease;
 
 }
 
@@ -1769,6 +2060,22 @@ h1 {
 
     }
 
+}
+
+/* =====================================================
+   OFFLINE CRYPTO ICONS
+===================================================== */
+
+.signal-box.offline img,
+.crypto-portfolio-item.offline img {
+    filter: grayscale(1) !important;
+    opacity: .58;
+    transition: none !important;
+}
+
+.signal-box.offline,
+.crypto-portfolio-item.offline {
+    animation: none !important;
 }
 
 /* =====================================================
@@ -2454,7 +2761,9 @@ h1 {
 
     <div
         id="connectionStatus"
-        class="connection-status">
+        class="connection-status"
+        aria-live="polite"
+        aria-label="Page Status">
 
     </div>
 
@@ -3514,7 +3823,10 @@ const WORKER_URLS = {
         "https://yekusd-rateusd.rxw.workers.dev/",
         "https://api.cors.syrins.tech/?url=https%3A%2F%2Fyekusd-rateusd.rxw.workers.dev%2F"
     ],
-    signal: "https://coinsignaltable.rxw.workers.dev/"
+    signal: [
+        "https://coinsignaltable.rxw.workers.dev/",
+        "https://api.cors.syrins.tech/?url=https%3A%2F%2Fcoinsignaltable.rxw.workers.dev%2F"
+    ]
     
 
 };
@@ -3563,306 +3875,337 @@ const TOP_PURCHASES_COUNT = 6;
 ===================================================== */
 
 
-const SIGNAL_ICONS = {
-
-    BTC:
-    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png",
-
-    DOGE:
-    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/doge.png",
-
-    ETH:
-    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png",
-
-    BNB:
-    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png",
-
-    ADA:
-    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/ada.png",
-
-    SOL:
-    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png",
-
-    POL:
-    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/matic.png",
-
-    ONE:
-    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/one.png",
-
-    TRX:
-    "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/trx.png"
-
+const CRYPTO_ICON_FILES = {
+    BTC:  "file/btc.png",
+    DOGE: "file/doge.png",
+    ETH:  "file/eth.png",
+    BNB:  "file/bnb.png",
+    ADA:  "file/ada.png",
+    SOL:  "file/sol.png",
+    POL:  "file/pol.png",
+    ONE:  "file/one.png",
+    TRX:  "file/trx.png"
 };
+
+/*
+   All crypto icons are local files next to index.html.
+   They are also copied into the browser Cache Storage so
+   they can still be displayed after the network is lost.
+*/
+const CRYPTO_ICON_CACHE_NAME = "financial-dashboard-crypto-icons-v1";
+const cryptoIconSources = {};
+
+async function prepareCryptoIconCache() {
+    if (!("caches" in window)) {
+        Object.assign(cryptoIconSources, CRYPTO_ICON_FILES);
+        return;
+    }
+
+    try {
+        const cache = await caches.open(CRYPTO_ICON_CACHE_NAME);
+
+        await Promise.all(
+            Object.entries(CRYPTO_ICON_FILES).map(
+                async ([coin, url]) => {
+                    try {
+                        let cached = await cache.match(url);
+
+                        if (!cached) {
+                            const response = await fetch(
+                                url,
+                                { cache: "no-store" }
+                            );
+
+                            if (response.ok) {
+                                await cache.put(
+                                    url,
+                                    response.clone()
+                                );
+                                cached = response;
+                            }
+                        }
+
+                        if (cached) {
+                            const blob = await cached.blob();
+                            cryptoIconSources[coin] =
+                                URL.createObjectURL(blob);
+                        } else {
+                            cryptoIconSources[coin] = url;
+                        }
+                    }
+                    catch (error) {
+                        cryptoIconSources[coin] = url;
+                    }
+                }
+            )
+        );
+    }
+    catch (error) {
+        Object.assign(cryptoIconSources, CRYPTO_ICON_FILES);
+    }
+}
+
+function getCryptoIconSrc(coin) {
+    return (
+        cryptoIconSources[coin] ||
+        CRYPTO_ICON_FILES[coin] ||
+        ""
+    );
+}
 
 /* =====================================================
    SIGNAL MEMORY
 ===================================================== */
 
-let previousSignals = {}
+const SIGNAL_CACHE_KEY =
+    "financialDashboardCryptoSignals-v1";
+
+let previousSignals = {};
+let lastSignalRenderSignature = "";
+
+function saveSignalCache(data) {
+    try {
+        localStorage.setItem(
+            SIGNAL_CACHE_KEY,
+            JSON.stringify(data)
+        );
+    }
+    catch (error) {}
+}
+
+function loadSignalCache() {
+    try {
+        const raw =
+            localStorage.getItem(
+                SIGNAL_CACHE_KEY
+            );
+
+        if (!raw) {
+            return null;
+        }
+
+        const data = JSON.parse(raw);
+
+        if (
+            !data ||
+            typeof data !== "object"
+        ) {
+            return null;
+        }
+
+        return data;
+    }
+    catch (error) {
+        return null;
+    }
+}
+
+function getSignalClass(value) {
+    if (Number(value) > 0) {
+        return "signal-buy";
+    }
+
+    if (Number(value) < 0) {
+        return "signal-sell";
+    }
+
+    return "signal-neutral";
+}
+
+function renderCryptoSignals(data, offline = false) {
+    const grid = document.getElementById("signalGrid");
+    if (!grid || !data) return;
+
+    const signalCoins = [
+        "BTC", "BNB", "ETH", "DOGE", "ADA",
+        "SOL", "POL", "ONE", "TRX"
+    ];
+
+    const values = signalCoins.map(coin => Number(data[coin] ?? 0));
+    const signature = JSON.stringify({ values, offline: !!offline });
+
+    if (signature !== lastSignalRenderSignature) {
+        const fragment = document.createDocumentFragment();
+        signalCoins.forEach((coin, index) => {
+            const value = values[index];
+            const box = document.createElement("div");
+            box.className = `signal-box ${getSignalClass(value)}${offline ? " offline" : ""}`;
+            box.dataset.coin = coin;
+
+            const img = document.createElement("img");
+            img.src = getCryptoIconSrc(coin);
+            img.alt = coin;
+            img.loading = "eager";
+            img.decoding = "async";
+
+            const name = document.createElement("div");
+            name.className = "signal-name";
+            name.textContent = coin;
+
+            box.appendChild(img);
+            box.appendChild(name);
+            fragment.appendChild(box);
+        });
+        grid.replaceChildren(fragment);
+        lastSignalRenderSignature = signature;
+    }
+
+    const info = document.getElementById("signalInfo");
+    if (info) {
+        const updated = data.updated ? new Date(data.updated).toLocaleTimeString() : "-";
+        const nextInfo = `${data.timeframe || "-"} • ${updated}${offline ? " • Cached" : ""}`;
+        if (info.textContent !== nextInfo) info.textContent = nextInfo;
+    }
+
+    previousSignals = {};
+    signalCoins.forEach(coin => {
+        previousSignals[coin] = Number(data[coin] ?? 0);
+    });
+}
 
 /* =====================================================
    LOAD CRYPTO SIGNALS
 ===================================================== */
 
+async function loadCryptoSignals() {
 
-async function loadCryptoSignals(){
+    /*
+       Always make the last known signal available first.
+       This means the signal boxes do not disappear when
+       the API is temporarily unavailable.
+    */
+    const cachedSignal =
+        loadSignalCache();
 
-
-    console.log(
-        "LOAD SIGNAL START"
-    );
-
+    if (cachedSignal) {
+        renderCryptoSignals(
+            cachedSignal,
+            !navigator.onLine
+        );
+    }
 
     try {
-
-
         const res =
-        await fetch(
+            await fetchWithFallback(
+                WORKER_URLS.signal.map(
+                    url =>
+                        url +
+                        (url.includes("?") ? "&" : "?") +
+                        "t=" +
+                        Date.now()
+                )
+            );
 
-            WORKER_URLS.signal +
-            "?t=" +
-            Date.now(),
-
-            {
-                cache:
-                "no-store"
-            }
-
-        );
-
-
-
-        console.log(
-            "SIGNAL RESPONSE:",
-            res
-        );
-
-
-
-        if(!res.ok){
-
+        if (!res.ok) {
             throw new Error(
                 "Signal API HTTP " +
                 res.status
             );
-
         }
-
-
 
         const data =
-        await res.json();
+            await res.json();
 
-
-
-        console.log(
-            "SIGNAL DATA:",
-            data
-        );
-
-
-
-        const grid =
-        document.getElementById(
-            "signalGrid"
-        );
-
-
-
-        if(!grid){
-
-            console.warn(
-                "signalGrid not found"
+        if (
+            !data ||
+            typeof data !== "object"
+        ) {
+            throw new Error(
+                "Invalid signal response"
             );
-
-            return;
-
         }
 
+        /*
+           Use the cached/previous signal as the
+           comparison baseline so changes are still
+           detected across page reloads.
+        */
+        const oldSignals =
+            { ...previousSignals };
 
+        const signalCoins = [
+            "BTC",
+            "BNB",
+            "ETH",
+            "DOGE",
+            "ADA",
+            "SOL",
+            "POL",
+            "ONE",
+            "TRX"
+        ];
 
-        grid.innerHTML =
-        "";
+        signalCoins.forEach(coin => {
+            const value =
+                Number(data[coin] ?? 0);
 
-
-
-        Object.keys(
-            SIGNAL_ICONS
-        )
-        .forEach(
-
-            coin => {
-
-
-                const value =
-                Number(
-                    data[coin] ?? 0
-                );
-
-
-
-                let changed =
-                false;
-
-
-
-                if(
-                    previousSignals[coin] !== undefined
-                    &&
-                    previousSignals[coin] !== value
-                ){
-
-                    changed =
-                    true;
-
-                    const signalType =
+            if (
+                oldSignals[coin] !== undefined &&
+                oldSignals[coin] !== value
+            ) {
+                const signalType =
                     value > 0
                         ? "BUY"
                         : value < 0
                             ? "SELL"
                             : "NEUTRAL";
 
-                    const signalIcon =
+                const signalIcon =
                     value > 0
                         ? "🟢"
                         : value < 0
                             ? "🔴"
                             : "⚪";
 
+                if (
+                    signalType === "BUY" ||
+                    signalType === "SELL"
+                ) {
                     sendDashboardNotification(
                         `${signalIcon} ${coin} Crypto Signal`,
                         `${signalIcon} ${coin} → ${signalType}`,
-                        SIGNAL_ICONS[coin]
+                        getCryptoIconSrc(coin),
+                        signalType === "BUY"
+                            ? "buy"
+                            : "sell"
                     );
-
                 }
-
-
-
-                previousSignals[coin] =
-                value;
-
-
-
-                let cls =
-                "signal-neutral";
-
-
-
-                if(value > 0){
-
-                    cls =
-                    "signal-buy";
-
+                else {
+                    sendDashboardNotification(
+                        `${signalIcon} ${coin} Crypto Signal`,
+                        `${signalIcon} ${coin} → ${signalType}`,
+                        getCryptoIconSrc(coin),
+                        ""
+                    );
                 }
-
-                else if(value < 0){
-
-                    cls =
-                    "signal-sell";
-
-                }
-
-
-
-                console.log(
-                    "ADDING SIGNAL:",
-                    coin,
-                    value,
-                    cls,
-                    changed
-                );
-
-
-
-                grid.innerHTML += `
-
-                <div class="signal-box ${cls}${changed ? " signal-alert" : ""}"
-                     data-coin="${coin}">
-
-                    <img
-                    src="${SIGNAL_ICONS[coin]}"
-                    alt="${coin}"
-                    >
-
-                    <div class="signal-name">
-                        ${coin}
-                    </div>
-
-                </div>
-
-                `;
-
-
             }
+        });
 
-        );
+        saveSignalCache(data);
+        renderCryptoSignals(data, false);
+        clearPageIssue("signal-api");
+        clearPageIssue("signal-cache");
 
+    }
+    catch (error) {
 
+        const cached =
+            loadSignalCache();
 
-        console.log(
-            "AFTER BUILD:",
-            grid.innerHTML
-        );
-
-
-
-        console.log(
-            "SIGNAL BOX COUNT:",
-            grid.children.length
-        );
-
-
-
-        const info =
-        document.getElementById(
-            "signalInfo"
-        );
-
-
-
-        if(info){
-
-
-            info.textContent =
-
-            `${data.timeframe || "-"} • ${
-            
-                data.updated
-
-                ?
-
-                new Date(
-                    data.updated
-                )
-                .toLocaleTimeString()
-
-                :
-
-                "-"
-
-            }`;
-
+        if (cached) {
+            renderCryptoSignals(cached, !navigator.onLine);
+            setPageIssue("signal-api", "Signal API offline", "warn");
+            setPageIssue("signal-cache", "Signal cached", "cache");
+        } else {
+            setPageIssue("signal-api", "Signal not received", "error");
         }
 
-
-
+        console.warn("Signal API Error:", error);
     }
-
-    catch(error){
-
-
-        console.error(
-            "Signal API Error:",
-            error
-        );
-
-
-    }
-
 }
+
 /* =====================================================
-DASHBOARD NOTIFICATION SYSTEM
+   DASHBOARD NOTIFICATION SYSTEM
 ===================================================== */
 
 /*
@@ -4771,6 +5114,288 @@ function getNotificationIconEmoji(message) {
 }
 
 
+
+/* =====================================================
+   NOTIFICATION SOUNDS
+   BUY / SELL / USD
+   Files: ./file/Buy.mp3, ./file/Sell.mp3, ./file/Usd.mp3
+===================================================== */
+
+const NOTIFICATION_SOUND_CACHE_NAME =
+    "financialDashboardNotificationSounds-v1";
+
+const NOTIFICATION_SOUND_FILES = {
+    buy: "./file/Buy.mp3",
+    sell: "./file/Sell.mp3",
+    usd: "./file/Usd.mp3"
+};
+
+const notificationSoundAudio = Object.create(null);
+let notificationSoundUnlocked = false;
+
+async function cacheNotificationSounds() {
+    if (!("caches" in window)) return false;
+
+    try {
+        const cache = await caches.open(
+            NOTIFICATION_SOUND_CACHE_NAME
+        );
+
+        await Promise.all(
+            Object.entries(
+                NOTIFICATION_SOUND_FILES
+            ).map(async ([type, url]) => {
+                try {
+                    const existing =
+                        await cache.match(url);
+
+                    if (existing) return;
+
+                    const response =
+                        await fetch(
+                            url,
+                            { cache: "no-store" }
+                        );
+
+                    if (response.ok) {
+                        await cache.put(
+                            url,
+                            response.clone()
+                        );
+                    }
+                }
+                catch (error) {
+                    console.warn(
+                        "Sound cache failed:",
+                        type,
+                        error
+                    );
+                }
+            })
+        );
+
+        return true;
+    }
+    catch (error) {
+        console.warn(
+            "Sound cache unavailable:",
+            error
+        );
+        return false;
+    }
+}
+
+async function loadNotificationSound(
+    type
+) {
+    const url =
+        NOTIFICATION_SOUND_FILES[type];
+
+    if (
+        !url ||
+        !("caches" in window)
+    ) {
+        return null;
+    }
+
+    try {
+        const cache =
+            await caches.open(
+                NOTIFICATION_SOUND_CACHE_NAME
+            );
+
+        let response =
+            await cache.match(url);
+
+        if (!response) {
+            const fetched =
+                await fetch(
+                    url,
+                    { cache: "no-store" }
+                );
+
+            if (!fetched.ok) {
+                return null;
+            }
+
+            await cache.put(
+                url,
+                fetched.clone()
+            );
+
+            response = fetched;
+        }
+
+        const blob =
+            await response.blob();
+
+        const objectUrl =
+            URL.createObjectURL(blob);
+
+        const audio =
+            new Audio(objectUrl);
+
+        audio.preload = "auto";
+        audio.volume = 1;
+
+        notificationSoundAudio[type] =
+            audio;
+
+        return audio;
+    }
+    catch (error) {
+        console.warn(
+            "Sound load failed:",
+            type,
+            error
+        );
+        return null;
+    }
+}
+
+async function prepareNotificationSounds() {
+    await cacheNotificationSounds();
+
+    await Promise.all(
+        Object.keys(
+            NOTIFICATION_SOUND_FILES
+        ).map(
+            type =>
+                loadNotificationSound(type)
+        )
+    );
+}
+
+/*
+   Browsers require a real user gesture before
+   audio can reliably play later.
+*/
+async function unlockNotificationAudio() {
+    if (notificationSoundUnlocked) {
+        return;
+    }
+
+    notificationSoundUnlocked = true;
+
+    await Promise.all(
+        Object.values(
+            notificationSoundAudio
+        ).map(async audio => {
+            if (!audio) return;
+
+            try {
+                const originalVolume =
+                    audio.volume;
+
+                audio.volume = 0;
+                audio.currentTime = 0;
+
+                await audio.play();
+                audio.pause();
+                audio.currentTime = 0;
+
+                audio.volume =
+                    originalVolume;
+            }
+            catch (error) {
+                audio.volume = 1;
+            }
+        })
+    );
+}
+
+window.addEventListener(
+    "pointerdown",
+    unlockNotificationAudio,
+    { once: true, passive: true }
+);
+
+window.addEventListener(
+    "touchstart",
+    unlockNotificationAudio,
+    { once: true, passive: true }
+);
+
+window.addEventListener(
+    "keydown",
+    unlockNotificationAudio,
+    { once: true }
+);
+
+async function playNotificationSound(
+    type
+) {
+    if (!notificationSoundUnlocked) {
+        return false;
+    }
+
+    const source =
+        notificationSoundAudio[type];
+
+    if (!source) {
+        return false;
+    }
+
+    try {
+        const audio =
+            source.cloneNode(true);
+
+        audio.volume = 1;
+        audio.currentTime = 0;
+
+        await audio.play();
+        return true;
+    }
+    catch (error) {
+        console.warn(
+            "Sound playback blocked:",
+            type,
+            error
+        );
+        return false;
+    }
+}
+
+function getNotificationSoundType(
+    message = "",
+    explicitType = ""
+) {
+    if (
+        explicitType === "buy" ||
+        explicitType === "sell" ||
+        explicitType === "usd"
+    ) {
+        return explicitType;
+    }
+
+    const text =
+        String(message).toUpperCase();
+
+    if (
+        text.includes("→ BUY") ||
+        text.includes(" BUY")
+    ) {
+        return "buy";
+    }
+
+    if (
+        text.includes("→ SELL") ||
+        text.includes(" SELL")
+    ) {
+        return "sell";
+    }
+
+    return "usd";
+}
+
+prepareNotificationSounds().catch(
+    error =>
+        console.warn(
+            "Sound preparation failed:",
+            error
+        )
+);
+
 /* =====================================================
 SEND BROWSER NOTIFICATION
 ===================================================== */
@@ -4778,8 +5403,18 @@ SEND BROWSER NOTIFICATION
 async function sendDashboardNotification(
     title,
     message,
-    notificationImage = "./icon-192.png"
+    notificationImage = "./icon-192.png",
+    soundType = ""
 ) {
+    const selectedSoundType =
+        getNotificationSoundType(
+            message,
+            soundType
+        );
+
+    playNotificationSound(
+        selectedSoundType
+    ).catch(() => {});
 
     if (
         !("Notification" in window)
@@ -4983,11 +5618,10 @@ if (
     ============================================= */
 
     sendDashboardNotification(
-
         notificationTitle,
-
-        notificationMessage
-
+        notificationMessage,
+        "./icon-192.png",
+        "usd"
     );
 
 
@@ -5378,8 +6012,8 @@ async function loadYekusd() {
         );
 
 
-        yekusdOnline =
-            true;
+        yekusdOnline = true;
+        clearPageIssue("yekusd");
 
 
         updateYekusdConnectionColor(
@@ -5409,10 +6043,8 @@ async function loadYekusd() {
         );
 
 
-        console.warn(
-            "YEKUSD Offline:",
-            error
-        );
+        setPageIssue("yekusd", "YEKUSD cached", "cache");
+        console.warn("YEKUSD Offline:", error);
     }
 }
 
@@ -5523,8 +6155,8 @@ const response =
         );
 
 
-        usdTxtOnline =
-            true;
+        usdTxtOnline = true;
+        clearPageIssue("usd");
 
 
         updateUsdTxtConnectionColor(
@@ -5554,10 +6186,8 @@ const response =
         );
 
 
-        console.warn(
-            "USD TXT Offline:",
-            error
-        );
+        setPageIssue("usd", "USD cached", "cache");
+        console.warn("USD TXT Offline:", error);
     }
 }
 
@@ -6097,41 +6727,90 @@ function getCachedPriceTime() {
 
 
 /* =====================================================
-   CONNECTION
+   CONNECTION STATUS / PAGE HEALTH
 ===================================================== */
 
-function showConnectionStatus(
-    offline,
-    message
-) {
+const pageIssues = new Map();
 
-    const element =
-        $("connectionStatus");
-
-
-    if (!element) {
-
-        return;
-    }
-
-
-    if (offline) {
-
-        element.className =
-            "connection-status offline";
-
-    }
-
-    else {
-
-        element.className =
-            "connection-status online";
-    }
-
-
-    element.textContent =
-        message;
+function setPageIssue(key, message, type = "warn") {
+    if (!message) pageIssues.delete(key);
+    else pageIssues.set(key, { message: String(message), type });
+    renderPageStatus();
 }
+
+function clearPageIssue(key) {
+    pageIssues.delete(key);
+    renderPageStatus();
+}
+
+function renderPageStatus() {
+    const element = $("connectionStatus");
+    if (!element) return;
+
+    const issues = Array.from(pageIssues.values()).slice(0, 8);
+    element.replaceChildren();
+
+    if (!navigator.onLine) {
+        const chip = document.createElement("span");
+        chip.className = "connection-status-chip cache";
+        chip.textContent = "● Page Offline";
+        element.appendChild(chip);
+    } else if (!issues.length) {
+        const chip = document.createElement("span");
+        chip.className = "connection-status-chip ok";
+        chip.textContent = "● Page Ready";
+        element.appendChild(chip);
+    }
+
+    for (const issue of issues) {
+        const chip = document.createElement("span");
+        chip.className = `connection-status-chip ${issue.type || "warn"}`;
+        chip.textContent = issue.message;
+        element.appendChild(chip);
+    }
+
+    element.className = `connection-status visible ${(!navigator.onLine || issues.length) ? "offline" : "online"}`;
+}
+
+function showConnectionStatus(offline, message) {
+    if (offline) {
+        setPageIssue(
+            "connection",
+            message || "Page Offline",
+            "warn"
+        );
+    }
+    else {
+        clearPageIssue("connection");
+    }
+}
+
+window.addEventListener("error", event => {
+    if (event?.target?.tagName === "IMG") {
+        const coin = event.target.alt || "Image";
+        setPageIssue(`img:${coin}`, `${coin} image unavailable`, "error");
+    } else {
+        setPageIssue("js", "Page error", "error");
+    }
+});
+
+window.addEventListener("unhandledrejection", () => {
+    setPageIssue("promise", "Request failed", "error");
+});
+
+window.addEventListener("offline", () => {
+    setPageIssue("connection", "Internet offline", "warn");
+    lastSignalRenderSignature = "";
+    lastPortfolioRenderSignature = "";
+});
+
+window.addEventListener("online", () => {
+    clearPageIssue("connection");
+    // Repaint once when connectivity actually changes; normal refreshes do not repaint.
+    lastSignalRenderSignature = "";
+    lastPortfolioRenderSignature = "";
+});
+
 
 
 /* =====================================================
@@ -8237,6 +8916,10 @@ async function loadDashboardData() {
                Independent MEXC market panel.
                It does not block the main dashboard.
             */
+            if (data && data.cryptoHoldings) {
+                saveCryptoHoldingsCache(data.cryptoHoldings);
+            }
+
             loadCryptoPortfolio(
                 data
             ).catch(
@@ -8601,19 +9284,13 @@ async function loadDashboardData() {
                 }
 
 
-                showConnectionStatus(
-                    true,
-                    message
-                );
+                setPageIssue("market-connection", message, "warn");
 
             }
 
             else {
 
-                showConnectionStatus(
-                    false,
-                    "Online • Live Data"
-                );
+                clearPageIssue("market-connection");
             }
 
 
@@ -9371,8 +10048,8 @@ const response =
         }
 
 
-        cryptoOnline =
-            true;
+        cryptoOnline = true;
+        clearPageIssue("crypto-price");
 
 
         if (element) {
@@ -9398,10 +10075,8 @@ const response =
         }
 
 
-        console.warn(
-            "Crypto Price Offline:",
-            error
-        );
+        setPageIssue("crypto-price", "Crypto price cached", "cache");
+        console.warn("Crypto Price Offline:", error);
     }
 }
 
@@ -9416,13 +10091,7 @@ window.addEventListener(
 
     () => {
 
-        showConnectionStatus(
-
-            true,
-
-            "Offline Mode • Showing Cached Data"
-
-        );
+        setPageIssue("connection", "Offline • Using cache", "cache");
 
     }
 
@@ -9435,13 +10104,7 @@ window.addEventListener(
 
     async () => {
 
-        showConnectionStatus(
-
-            false,
-
-            "Online • Refreshing Data..."
-
-        );
+        setPageIssue("connection", "Online • Refreshing", "info");
 
 
         try {
@@ -9463,6 +10126,8 @@ window.addEventListener(
 
 
 
+window.addEventListener("DOMContentLoaded", renderPageStatus);
+
 /* =====================================================
    CRYPTO PORTFOLIO
    MEXC FUTURES KLINE
@@ -9474,34 +10139,23 @@ const MEXC_KLINE_BASE =
 const MEXC_CORS_PROXY =
     "https://api.cors.syrins.tech/?url=";
 
-const DEFAULT_CRYPTO_HOLDINGS = {
-    BTC:  { amount: 0.05139851, symbol: "BTC_USDT" },
-    DOGE: { amount: 8180.49,    symbol: "DOGE_USDT" },
-    ETH:  { amount: 0.05984,    symbol: "ETH_USDT" },
-    BNB:  { amount: 6.17861,    symbol: "BNB_USDT" },
-    ADA:  { amount: 1459,       symbol: "ADA_USDT" },
-    SOL:  { amount: 4.642,      symbol: "SOL_USDT" },
-    POL:  { amount: 1242.82,    symbol: "POL_USDT" },
-    ONE:  { amount: 33540,      symbol: "ONE_USDT" },
-    TRX:  { amount: 1.1,        symbol: "TRX_USDT" }
-};
+const MEXC_CORS_PROXY_2 =
+    "https://api.allorigins.win/raw?url=";
+
+/*
+   Holdings are read ONLY from data.json.
+   There is intentionally no crypto holding data
+   hard-coded in index.html.
+*/
 
 const CRYPTO_PORTFOLIO_REFRESH_MS = 30 * 1000;
 
-const CRYPTO_PORTFOLIO_ICONS = {
-    BTC: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png",
-    DOGE: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/doge.png",
-    ETH: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png",
-    BNB: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png",
-    ADA: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/ada.png",
-    SOL: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png",
-    POL: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/matic.png",
-    ONE: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/one.png",
-    TRX: "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/trx.png"
-};
+const CRYPTO_PORTFOLIO_ICONS =
+    CRYPTO_ICON_FILES;
 
 let cryptoPortfolioLoadInProgress = null;
 let cryptoPortfolioLastLoadTime = 0;
+let lastPortfolioRenderSignature = "";
 
 function cryptoPortfolioCacheKey(symbol) {
     return "financialDashboardMexc_" + symbol;
@@ -9548,6 +10202,44 @@ function loadCryptoPortfolioCache(symbol) {
     catch (error) {
         return null;
     }
+}
+
+const CRYPTO_HOLDINGS_CACHE_KEY = "financialDashboardCryptoHoldings_v1";
+
+function saveCryptoHoldingsCache(holdings) {
+    try {
+        if (holdings && typeof holdings === "object") {
+            localStorage.setItem(
+                CRYPTO_HOLDINGS_CACHE_KEY,
+                JSON.stringify(holdings)
+            );
+        }
+    } catch (error) {}
+}
+
+function loadCryptoHoldingsCache() {
+    try {
+        const raw = localStorage.getItem(CRYPTO_HOLDINGS_CACHE_KEY);
+        if (!raw) return null;
+        const holdings = JSON.parse(raw);
+        return holdings && typeof holdings === "object" ? holdings : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function getCachedCryptoPortfolioMarketData(holdings) {
+    const marketData = {};
+    Object.keys(holdings || {}).forEach(coin => {
+        const symbol = holdings[coin] && holdings[coin].symbol
+            ? holdings[coin].symbol
+            : coin + "_USDT";
+        const cached = loadCryptoPortfolioCache(symbol);
+        if (cached) {
+            marketData[coin] = { ...cached, offline: !navigator.onLine };
+        }
+    });
+    return marketData;
 }
 
 function formatCryptoAmount(value) {
@@ -9743,6 +10435,10 @@ async function fetchMexcKlines(
         MEXC_CORS_PROXY +
             encodeURIComponent(
                 directUrl.toString()
+            ),
+        MEXC_CORS_PROXY_2 +
+            encodeURIComponent(
+                directUrl.toString()
             )
     ];
 
@@ -9893,6 +10589,15 @@ function renderCryptoPortfolio(
     const coins =
         Object.keys(holdings || {});
 
+    // DOGE and BNB are swapped only in display order.
+    const dogeIndex = coins.indexOf("DOGE");
+    const bnbIndex = coins.indexOf("BNB");
+
+    if (dogeIndex !== -1 && bnbIndex !== -1) {
+        [coins[dogeIndex], coins[bnbIndex]] =
+        [coins[bnbIndex], coins[dogeIndex]];
+    }
+
     const html =
         coins.map(
             coin => {
@@ -10012,9 +10717,24 @@ function renderCryptoPortfolio(
             }
         ).join("");
 
-    grid.innerHTML =
-        html ||
-        `<div class="crypto-portfolio-item flat">No crypto holdings</div>`;
+    const renderSignature = JSON.stringify(
+        (coins || []).map(coin => {
+            const market = marketData[coin] || null;
+            return {
+                coin,
+                amount: holdings[coin]?.amount,
+                price: market?.price ?? null,
+                previousClose: market?.previousClose ?? null,
+                changePct: market?.changePct ?? null,
+                offline: !!market?.offline
+            };
+        })
+    );
+
+    if (renderSignature !== lastPortfolioRenderSignature) {
+        grid.innerHTML = html || `<div class="crypto-portfolio-item flat">No crypto holdings</div>`;
+        lastPortfolioRenderSignature = renderSignature;
+    }
 
     safeText(
         "cryptoPortfolioTotal",
@@ -10069,135 +10789,159 @@ async function loadCryptoPortfolio(
     data
 ) {
 
-    if (
-        cryptoPortfolioLoadInProgress
-    ) {
+    if (cryptoPortfolioLoadInProgress) {
         return cryptoPortfolioLoadInProgress;
     }
 
-    const now =
-        Date.now();
+    const now = Date.now();
 
     if (
         cryptoPortfolioLastLoadTime > 0 &&
-        (
-            now -
-            cryptoPortfolioLastLoadTime
-        ) <
-        CRYPTO_PORTFOLIO_REFRESH_MS
+        now - cryptoPortfolioLastLoadTime < CRYPTO_PORTFOLIO_REFRESH_MS
     ) {
         return;
     }
 
-    cryptoPortfolioLastLoadTime =
-        now;
+    cryptoPortfolioLoadInProgress = (async () => {
 
-    cryptoPortfolioLoadInProgress =
-        (async () => {
+        let sourceData = data;
+        let holdings = null;
 
-            const holdings =
-                data &&
-                data.cryptoHoldings &&
-                typeof data.cryptoHoldings ===
-                    "object"
-                    ?
-                    {
-                        ...DEFAULT_CRYPTO_HOLDINGS,
-                        ...data.cryptoHoldings
-                    }
-                    :
-                    {
-                        ...DEFAULT_CRYPTO_HOLDINGS
-                    };
+        // 1) Use data.json data when it is already available.
+        if (
+            sourceData &&
+            sourceData.cryptoHoldings &&
+            typeof sourceData.cryptoHoldings === "object"
+        ) {
+            holdings = sourceData.cryptoHoldings;
+        }
 
-            const coins =
-                Object.keys(
-                    holdings
-                );
-
+        // 2) Offline fallback: use the dashboard's saved data.
+        if (!holdings) {
+            const cachedDashboardData = loadCachedDashboardData();
             if (
-                coins.length === 0
+                cachedDashboardData &&
+                cachedDashboardData.cryptoHoldings &&
+                typeof cachedDashboardData.cryptoHoldings === "object"
             ) {
-                renderCryptoPortfolio(
-                    holdings,
-                    {}
-                );
-                return;
+                holdings = cachedDashboardData.cryptoHoldings;
             }
+        }
 
-            const marketData = {};
+        // 3) Dedicated Crypto Portfolio cache.
+        if (!holdings) {
+            holdings = loadCryptoHoldingsCache();
+        }
 
-            await Promise.all(
-                coins.map(
-                    async coin => {
+        // 4) Independent data.json request. This is deliberately separate
+        //    from loadDashboardData(), so one dashboard API failure cannot
+        //    make the Crypto Portfolio disappear.
+        if (!holdings) {
+            try {
+                const response = await fetchWithTimeout(
+                    "data.json?t=" + Date.now(),
+                    { cache: "no-store" },
+                    5000
+                );
 
-                        const symbol =
-                            holdings[coin] &&
-                            holdings[coin].symbol
-                                ?
-                                holdings[coin].symbol
-                                :
-                                coin +
-                                "_USDT";
-
-                        try {
-
-                            marketData[coin] =
-                                await getMexcCryptoData(
-                                    symbol
-                                );
-
-                            saveCryptoPortfolioCache(
-                                symbol,
-                                marketData[coin]
-                            );
-
-                        }
-                        catch (error) {
-
-                            const cached =
-                                loadCryptoPortfolioCache(
-                                    symbol
-                                );
-
-                            if (cached) {
-
-                                marketData[coin] = {
-                                    ...cached,
-                                    offline: true
-                                };
-
-                            }
-                            else {
-
-                                marketData[coin] = null;
-
-                            }
-
-                            console.warn(
-                                "MEXC portfolio error:",
-                                coin,
-                                error
-                            );
-                        }
-
+                if (response.ok) {
+                    const freshData = await response.json();
+                    if (
+                        freshData &&
+                        freshData.cryptoHoldings &&
+                        typeof freshData.cryptoHoldings === "object"
+                    ) {
+                        sourceData = freshData;
+                        holdings = freshData.cryptoHoldings;
+                        saveLocalData(freshData);
                     }
-                )
-            );
+                }
+            }
+            catch (error) {
+                console.warn(
+                    "Independent data.json Crypto Portfolio request failed:",
+                    error
+                );
+            }
+        }
 
-            renderCryptoPortfolio(
-                holdings,
-                marketData
-            );
+        // Never overwrite the visible Portfolio with an empty object.
+        // If there is no previous data at all, leave the existing UI intact.
+        if (
+            !holdings ||
+            typeof holdings !== "object" ||
+            Object.keys(holdings).length === 0
+        ) {
+            setPageIssue("portfolio-data", "Portfolio data missing", "error");
+            console.warn("Crypto Portfolio: no holdings available yet.");
+            return;
+        }
+        clearPageIssue("portfolio-data");
 
-        })();
+        cryptoPortfolioLastLoadTime = Date.now();
+
+        saveCryptoHoldingsCache(holdings);
+
+        // Show cached prices immediately.
+        const cachedMarketData =
+            getCachedCryptoPortfolioMarketData(holdings);
+
+        renderCryptoPortfolio(
+            holdings,
+            cachedMarketData
+        );
+
+        const coins = Object.keys(holdings);
+        const marketData = { ...cachedMarketData };
+
+        await Promise.all(
+            coins.map(async coin => {
+
+                const symbol =
+                    holdings[coin] && holdings[coin].symbol
+                        ? holdings[coin].symbol
+                        : coin + "_USDT";
+
+                try {
+                    const liveData =
+                        await getMexcCryptoData(symbol);
+
+                    marketData[coin] = liveData;
+
+                    saveCryptoPortfolioCache(symbol, liveData);
+                    clearPageIssue(`mexc:${coin}`);
+                }
+                catch (error) {
+                    const cached =
+                        loadCryptoPortfolioCache(symbol);
+
+                    if (cached) {
+                        marketData[coin] = { ...cached, offline: !navigator.onLine };
+                        setPageIssue(`mexc:${coin}`, `${coin} price cached`, "cache");
+                    } else {
+                        setPageIssue(`mexc:${coin}`, `${coin} price unavailable`, "error");
+                    }
+
+                    console.warn("MEXC portfolio error:", coin, error);
+                }
+            })
+        );
+
+        renderCryptoPortfolio(holdings, marketData);
+
+        const liveCount = Object.values(marketData).filter(item => item && !item.offline).length;
+        const cachedCount = Object.values(marketData).filter(item => item && item.offline).length;
+        if (liveCount > 0) clearPageIssue("mexc-api");
+        if (cachedCount > 0) setPageIssue("mexc-cache", `${cachedCount} crypto prices cached`, "cache");
+        else clearPageIssue("mexc-cache");
+
+    })();
 
     try {
         await cryptoPortfolioLoadInProgress;
     }
     finally {
-        cryptoPortfolioLoadInProgress =
-            null;
+        cryptoPortfolioLoadInProgress = null;
     }
 }
 
@@ -10230,6 +10974,11 @@ async function init() {
     }
 
     try {
+
+        await prepareCryptoIconCache();
+
+        // Crypto Portfolio is independent from the main dashboard load.
+        await loadCryptoPortfolio();
 
         await loadDashboardData();
         await loadCryptoSignals();
