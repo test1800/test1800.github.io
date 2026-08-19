@@ -1125,6 +1125,11 @@ h1 {
     white-space: nowrap !important;
     flex: 0 0 auto !important;
     margin: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
 }
 
 .page-status-report-title {
@@ -7342,10 +7347,13 @@ function renderErrorBox() {
 
     const issues = Array.from(pageIssues.entries());
 
-    if (!issues.length && navigator.onLine) {
+    if (!issues.length) {
         errorBox.innerHTML = "";
+        errorBox.style.display = "none";
         return;
     }
+
+    errorBox.style.display = "block";
 
     const statusIcon = type => {
         if (type === "error") return "🔴";
