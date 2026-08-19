@@ -11504,6 +11504,21 @@ async function loadCryptoPortfolio(
     }
 
     let enteredPin = "";
+    const PIN_SESSION_KEY = "financialAppPinUnlocked";
+
+    function isUnlockedForThisWebViewSession() {
+        try {
+            return sessionStorage.getItem(PIN_SESSION_KEY) === "1";
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function markUnlockedForThisWebViewSession() {
+        try {
+            sessionStorage.setItem(PIN_SESSION_KEY, "1");
+        } catch (error) {}
+    }
 
     // Publish the initial state immediately. The Android side defaults to locked,
     // but making the bridge explicit keeps the Native checker synchronized even
@@ -11519,9 +11534,7 @@ async function loadCryptoPortfolio(
         }
     }
 
-    // The overlay is visible on first load, so Native must own notifications
-    // until the correct PIN is entered.
-    setNativeLockState(true);
+    const alreadyUnlocked = isUnlockedForThisWebViewSession();
 
     function renderPin() {
         pinBoxes.forEach((box, index) => {
@@ -11541,6 +11554,7 @@ async function loadCryptoPortfolio(
     }
 
     function unlock() {
+        markUnlockedForThisWebViewSession();
         setNativeLockState(false);
         pinOverlay.classList.add("pin-unlocked");
         pinOverlay.setAttribute("aria-hidden", "true");
@@ -11602,11 +11616,17 @@ async function loadCryptoPortfolio(
         }
     });
 
-    // The overlay exists and blocks the dashboard until the correct PIN is entered.
-    // Tell the Native service immediately so notifications can continue even while
-    // the Activity/WebView is behind the app PIN.
-    setNativeLockState(true);
-    renderPin();
+    // On a normal page refresh, keep the already-unlocked state for this WebView.
+    // When the app is closed and a new WebView is created, sessionStorage is empty,
+    // so the PIN is required again.
+    if (alreadyUnlocked) {
+        pinOverlay.classList.add("pin-unlocked");
+        pinOverlay.setAttribute("aria-hidden", "true");
+        setNativeLockState(false);
+    } else {
+        setNativeLockState(true);
+        renderPin();
+    }
 })();
 
 /* =====================================================
