@@ -5320,8 +5320,19 @@ function getThresholdChangeMessage(
     crossedThreshold,
     percent
 ) {
-
+    /*
+       Top 6 Purchases and Last Period:
+       disable threshold-crossing notifications only.
+       Color-change notifications remain unchanged.
+    */
     if (
+        cardId === "sixMainPrice" ||
+        cardId === "lastMainPrice"
+    ) {
+        return null;
+    }
+
+if (
         !crossedThreshold
     ) {
 
