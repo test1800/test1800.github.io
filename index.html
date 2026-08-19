@@ -1053,25 +1053,49 @@ h1 {
 
 .page-status-report-list {
     display: grid;
-    gap: 4px;
+    grid-template-columns: repeat(auto-fit, minmax(118px, max-content));
+    gap: 3px 10px;
+    align-items: center;
 }
 
 .page-status-report-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     color: #cbd5e1;
     font-size: 9px;
-    font-weight: 650;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
 }
 
 .page-status-report-item strong {
-    color: #fbbf24;
+    color: #f8fafc;
+    font-weight: 800;
 }
 
-.page-status-report-item.cache {
+.page-status-dot {
+    font-size: 8px;
+    line-height: 1;
+    flex: 0 0 auto;
+}
+
+.page-status-short {
+    color: #94a3b8;
+    font-size: 8px;
+    font-weight: 750;
+}
+
+.page-status-report-item.cache .page-status-short {
     color: #93c5fd;
 }
 
-.page-status-report-item.error {
+.page-status-report-item.error .page-status-short {
     color: #fda4af;
+}
+
+.page-status-report-item.info .page-status-short {
+    color: #86efac;
 }
 
 
@@ -1086,11 +1110,40 @@ h1 {
 }
 
 .page-status-report-list {
-    gap:6px;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 4px 10px !important;
+    width: 100%;
 }
 
 .page-status-report-item {
-    line-height:1.5;
+    display: inline-flex !important;
+    align-items: center !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+}
+
+.page-status-report-title {
+    margin-bottom: 4px !important;
+    font-size: 9px !important;
+}
+
+@media (max-width: 650px) {
+    .page-status-report-list {
+        gap: 3px 7px !important;
+    }
+
+    .page-status-report-item {
+        font-size: 8px !important;
+    }
+
+    .page-status-short {
+        font-size: 7px !important;
+    }
 }
 
 .page-status-report-detail {
@@ -7165,16 +7218,20 @@ function pageIssueLabel(key, issue) {
     const m = String(issue?.message || "").toLowerCase();
 
     if (k === "connection") return "Internet connection";
+    if (k === "data-json") return "data.json";
     if (k === "usd") return "USD";
     if (k === "yekusd") return "YEKUSD";
-    if (k === "signal-api") return "Crypto Signal API";
-    if (k === "signal-cache") return "Crypto Signal cache";
-    if (k === "crypto-portfolio") return "Crypto Portfolio";
-    if (k === "crypto-price") return "Crypto price";
-    if (k === "portfolio-data") return "Portfolio data";
-    if (k === "market-connection") return "Live market connection";
-    if (k === "mexc-cache") return "Crypto market cache";
-    if (k.startsWith("mexc:")) return `${k.slice(5)} market price`;
+    if (k === "signal-api") return "Signal";
+    if (k === "signal-cache") return "Signal";
+    if (k === "crypto-portfolio") return "Portfolio";
+    if (k === "crypto-price") return "Crypto";
+    if (k === "portfolio-data") return "Portfolio";
+    if (k === "nobitex") return "Nobitex";
+    if (k === "exir") return "Exir";
+    if (k === "bitpin") return "Bitpin";
+    if (k === "market-connection") return "Market";
+    if (k === "mexc-cache") return "MEXC Cache";
+    if (k.startsWith("mexc:")) return `MEXC ${k.slice(5)}`;
     if (k === "js") return "Page JavaScript";
     if (k === "promise") return "Background request";
     if (k.startsWith("img:")) return `${k.slice(4)} icon`;
@@ -7290,55 +7347,38 @@ function renderErrorBox() {
         return;
     }
 
-    const rows = issues.map(
-        ([key, issue]) => {
-            const label = pageIssueLabel(key, issue);
-            const detail = pageIssueDescription(key, issue);
-            const raw = String(issue?.message || "").trim();
-            const showRaw = raw && raw !== detail && !/^(offline|page error|request failed|internet offline)$/i.test(raw);
+    const statusIcon = type => {
+        if (type === "error") return "🔴";
+        if (type === "cache") return "🔵";
+        if (type === "info") return "🟢";
+        return "🟡";
+    };
 
-            return `
-                <div class="page-status-report-item ${issue.type || "warn"}">
-                    <strong>${label}:</strong>
-                    <span>${detail}</span>
-                    ${showRaw ? `<small class="page-status-report-detail">Status: ${raw}</small>` : ""}
-                </div>
-            `;
-        }
-    ).join("");
+    const statusText = type => {
+        if (type === "error") return "Error";
+        if (type === "cache") return "Cache";
+        if (type === "info") return "OK";
+        return "Warn";
+    };
 
-    const offlineRow = !navigator.onLine
-        ? `
-            <div class="page-status-report-item cache">
-                <strong>Cached:</strong>
-                Any section using cache may show the latest stored data instead of real-time data.
+    const rows = issues.map(([key, issue]) => {
+        const label = pageIssueLabel(key, issue);
+        const type = issue?.type || "warn";
+
+        return `
+            <div class="page-status-report-item ${type}" title="${label}">
+                <span class="page-status-dot" aria-hidden="true">${statusIcon(type)}</span>
+                <strong>${label}</strong>
+                <span class="page-status-short">${statusText(type)}</span>
             </div>
-        `
-        : "";
+        `;
+    }).join("");
 
     errorBox.innerHTML = `
         <div class="error page-status-report">
-            <div class="page-status-report-title">
-                Page Update Status
-            </div>
-
-            <div class="page-status-report-summary">
-                ${
-                    !navigator.onLine
-                        ? "The page is currently offline. The report below lists every known problem, cache fallback, and affected section detected by the dashboard."
-                        : `Currently ${issues.length} section${issues.length === 1 ? "" : "s"} need attention. The report below lists every known problem, affected data source, cache fallback, and related status detail; unaffected sections continue to update normally.`
-                }
-            </div>
-
+            <div class="page-status-report-title">Issues</div>
             <div class="page-status-report-list">
-                ${
-                    rows ||
-                    `<div class="page-status-report-item cache">
-                        <strong>Status:</strong>
-                        No issues are currently reported.
-                    </div>`
-                }
-                ${offlineRow}
+                ${rows}
             </div>
         </div>
     `;
@@ -9414,11 +9454,23 @@ async function loadDashboardData() {
                             freshData
                         );
 
+                        clearPageIssue("data-json");
 
                         return freshData;
 
                     }
-                );
+                )
+                .catch(error => {
+                    const hasCachedDashboard = Boolean(data);
+                    setPageIssue(
+                        "data-json",
+                        hasCachedDashboard
+                            ? "data.json cached"
+                            : "data.json unavailable",
+                        hasCachedDashboard ? "cache" : "error"
+                    );
+                    throw error;
+                });
 
 
             if (!data) {
@@ -9615,6 +9667,8 @@ async function loadDashboardData() {
                 nobitexResult.status ===
                 "fulfilled"
             ) {
+                clearPageIssue("nobitex");
+
 
                 currentPrice =
                     nobitexResult.value;
@@ -9639,6 +9693,7 @@ async function loadDashboardData() {
                 priceErrors.push(
                     "Nobitex"
                 );
+                setPageIssue("nobitex", "Nobitex unavailable", "error");
             }
 
 
@@ -9646,6 +9701,8 @@ async function loadDashboardData() {
                 exirResult.status ===
                 "fulfilled"
             ) {
+                clearPageIssue("exir");
+
 
                 exirPrice =
                     exirResult.value;
@@ -9670,6 +9727,7 @@ async function loadDashboardData() {
                 priceErrors.push(
                     "Exir"
                 );
+                setPageIssue("exir", "Exir unavailable", "error");
             }
 
 
@@ -9677,6 +9735,8 @@ async function loadDashboardData() {
                 bitpinResult.status ===
                 "fulfilled"
             ) {
+                clearPageIssue("bitpin");
+
 
                 bitpinPrice =
                     bitpinResult.value;
@@ -9701,6 +9761,7 @@ async function loadDashboardData() {
                 priceErrors.push(
                     "Bitpin"
                 );
+                setPageIssue("bitpin", "Bitpin unavailable", "error");
             }
 
 
