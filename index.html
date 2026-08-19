@@ -2734,6 +2734,192 @@ h1 {
 
 }
 
+
+
+/* =====================================================
+   NATIVE-STYLE APP PIN OVERLAY
+   The dashboard stays loaded underneath this overlay so
+   JavaScript refreshes and native notifications continue
+   running while the app is locked.
+===================================================== */
+
+#appPinLock {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    padding: 20px;
+    background: #080e1a;
+    color: #f5f8fc;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+#appPinLock.pin-unlocked {
+    display: none;
+}
+
+.app-pin-card {
+    width: min(100%, 520px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 22px 20px 24px;
+}
+
+.app-pin-lock-circle {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #4696ff;
+    color: #f5f8fc;
+    font-size: 24px;
+    font-weight: 800;
+    box-shadow: 0 14px 35px rgba(0,0,0,.22);
+}
+
+.app-pin-title {
+    margin-top: 18px;
+    font-size: 28px;
+    line-height: 1.15;
+    font-weight: 800;
+    text-align: center;
+}
+
+.app-pin-subtitle {
+    margin-top: 7px;
+    margin-bottom: 30px;
+    color: #919eb2;
+    font-size: 16px;
+    text-align: center;
+}
+
+.app-pin-boxes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 25px;
+}
+
+.app-pin-box {
+    width: 78px;
+    height: 78px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #121b2b;
+    border: 1px solid #37465c;
+    color: #f5f8fc;
+    font-size: 32px;
+    font-weight: 800;
+}
+
+.app-pin-box.active {
+    border-width: 2px;
+    border-color: #4696ff;
+}
+
+.app-pin-error {
+    width: 100%;
+    min-height: 25px;
+    margin-bottom: 4px;
+    color: #ff5a5a;
+    font-size: 13px;
+    text-align: center;
+}
+
+.app-pin-keypad {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.app-pin-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.app-pin-key {
+    width: 82px;
+    height: 82px;
+    margin: 7px;
+    padding: 0;
+    border: 1px solid #37465c;
+    border-radius: 50%;
+    background: #182336;
+    color: #f5f8fc;
+    font: inherit;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.app-pin-key:active {
+    background: #26344c;
+}
+
+.app-pin-key.spacer {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+@media (max-width: 420px) {
+    #appPinLock {
+        padding: 14px;
+    }
+
+    .app-pin-card {
+        padding: 18px 10px 20px;
+    }
+
+    .app-pin-lock-circle {
+        width: 62px;
+        height: 62px;
+        font-size: 20px;
+    }
+
+    .app-pin-title {
+        font-size: 24px;
+    }
+
+    .app-pin-subtitle {
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    .app-pin-boxes {
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .app-pin-box {
+        width: 56px;
+        height: 56px;
+        border-radius: 15px;
+        font-size: 26px;
+    }
+
+    .app-pin-key {
+        width: 60px;
+        height: 60px;
+        margin: 5px;
+        font-size: 26px;
+    }
+}
+
 </style>
 
 </head>
@@ -2741,99 +2927,55 @@ h1 {
 
 <body>
 
-<!-- =====================================================
-     PIN LOCK
-===================================================== -->
+<!--
+    PIN stays inside the same WebView as the dashboard.
+    It is only a visual/interaction lock: the dashboard JS remains
+    loaded underneath it so refreshes and Android notifications keep working.
+-->
+<div id="appPinLock" aria-modal="true" role="dialog">
+    <div class="app-pin-card">
+        <div class="app-pin-lock-circle">●</div>
 
-<div
-    id="pinLock"
-    style="
-        position:fixed;
-        inset:0;
-        z-index:99999;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        background:#070b14;
-    "
->
+        <div class="app-pin-title">Welcome</div>
 
-    <div
-        style="
-            width:280px;
-            padding:25px;
-            border-radius:18px;
-            background:#0f172a;
-            border:1px solid rgba(255,255,255,.12);
-            box-shadow:0 20px 60px rgba(0,0,0,.45);
-            text-align:center;
-        "
-    >
+        <div class="app-pin-subtitle">Enter your 4-digit PIN</div>
 
-        <div
-            style="
-                font-size:18px;
-                font-weight:800;
-                margin-bottom:18px;
-            "
-        >
-            Financial Dashboard
+        <div class="app-pin-boxes" id="appPinBoxes">
+            <div class="app-pin-box"></div>
+            <div class="app-pin-box"></div>
+            <div class="app-pin-box"></div>
+            <div class="app-pin-box"></div>
         </div>
 
-        <input
-            id="pinInput"
-            type="password"
-            inputmode="numeric"
-            autocomplete="off"
-            maxlength="4"
-            placeholder="Enter PIN"
-            style="
-                width:100%;
-                padding:12px;
-                border-radius:10px;
-                border:1px solid rgba(255,255,255,.15);
-                background:#020617;
-                color:white;
-                text-align:center;
-                font-size:20px;
-                outline:none;
-            "
-        >
+        <div class="app-pin-error" id="appPinError"></div>
 
-        <button
-            id="pinButton"
-            type="button"
-            style="
-                width:100%;
-                margin-top:12px;
-                padding:11px;
-                border:0;
-                border-radius:10px;
-                background:#2563eb;
-                color:white;
-                font-size:15px;
-                font-weight:700;
-                cursor:pointer;
-            "
-        >
-            Unlock
-        </button>
+        <div class="app-pin-keypad" id="appPinKeypad">
+            <div class="app-pin-row">
+                <button class="app-pin-key" type="button" data-pin="1">1</button>
+                <button class="app-pin-key" type="button" data-pin="2">2</button>
+                <button class="app-pin-key" type="button" data-pin="3">3</button>
+            </div>
 
-        <div
-            id="pinError"
-            style="
-                margin-top:10px;
-                min-height:20px;
-                color:#f87171;
-                font-size:12px;
-            "
-        ></div>
+            <div class="app-pin-row">
+                <button class="app-pin-key" type="button" data-pin="4">4</button>
+                <button class="app-pin-key" type="button" data-pin="5">5</button>
+                <button class="app-pin-key" type="button" data-pin="6">6</button>
+            </div>
 
+            <div class="app-pin-row">
+                <button class="app-pin-key" type="button" data-pin="7">7</button>
+                <button class="app-pin-key" type="button" data-pin="8">8</button>
+                <button class="app-pin-key" type="button" data-pin="9">9</button>
+            </div>
+
+            <div class="app-pin-row">
+                <button class="app-pin-key spacer" type="button" tabindex="-1" aria-hidden="true">0</button>
+                <button class="app-pin-key" type="button" data-pin="0">0</button>
+                <button class="app-pin-key" type="button" data-pin-delete="true" aria-label="Delete">⌫</button>
+            </div>
+        </div>
     </div>
-
 </div>
-
-
 
 <div class="container">
 
@@ -5693,6 +5835,34 @@ async function sendDashboardNotification(
     soundType = "USD"
 ) {
 
+    if (
+        window.AndroidNotifications &&
+        typeof window.AndroidNotifications.showNotification === "function"
+    ) {
+        try {
+            const resolvedType =
+                getNotificationSoundType(
+                    title,
+                    message,
+                    soundType
+                );
+
+            window.AndroidNotifications.showNotification(
+                resolvedType,
+                title,
+                message
+            );
+
+            return true;
+        }
+        catch (nativeError) {
+            console.warn(
+                "Native Android notification bridge failed:",
+                nativeError
+            );
+        }
+    }
+
     if (!("Notification" in window)) {
         return false;
     }
@@ -6613,6 +6783,9 @@ function setProfitLossClass(
 /* =====================================================
    DASHBOARD CACHE / REQUEST
 ===================================================== */
+
+const REMOTE_DATA_JSON_URL =
+    "https://test1800.github.io/data.json";
 
 const DATA_CACHE_MAX_AGE =
     5 * 60 * 1000;
@@ -9207,7 +9380,7 @@ async function loadDashboardData() {
 
                 fetchWithTimeout(
 
-                    "data.json",
+                    REMOTE_DATA_JSON_URL,
 
                     {
                         cache:
@@ -11205,7 +11378,7 @@ async function loadCryptoPortfolio(
         if (!holdings) {
             try {
                 const response = await fetchWithTimeout(
-                    "data.json?t=" + Date.now(),
+                    REMOTE_DATA_JSON_URL + "?t=" + Date.now(),
                     { cache: "no-store" },
                     5000
                 );
@@ -11312,6 +11485,130 @@ async function loadCryptoPortfolio(
 }
 
 
+
+/* =====================================================
+   APP PIN LOCK
+   The PIN is intentionally handled in index.html so the
+   dashboard WebView never has to be removed from the Activity.
+===================================================== */
+
+(function initializeAppPinLock() {
+    const APP_PIN = "4181";
+    const pinOverlay = document.getElementById("appPinLock");
+    const pinBoxes = Array.from(document.querySelectorAll("#appPinBoxes .app-pin-box"));
+    const pinError = document.getElementById("appPinError");
+    const pinKeypad = document.getElementById("appPinKeypad");
+
+    if (!pinOverlay || !pinKeypad || pinBoxes.length !== 4) {
+        return;
+    }
+
+    let enteredPin = "";
+
+    // Publish the initial state immediately. The Android side defaults to locked,
+    // but making the bridge explicit keeps the Native checker synchronized even
+    // after a process recreation or WebView restore.
+    function setNativeLockState(locked) {
+        try {
+            if (window.AndroidNotifications &&
+                typeof window.AndroidNotifications.setAppLocked === "function") {
+                window.AndroidNotifications.setAppLocked(locked);
+            }
+        } catch (error) {
+            console.warn("Unable to update native app-lock state", error);
+        }
+    }
+
+    // The overlay is visible on first load, so Native must own notifications
+    // until the correct PIN is entered.
+    setNativeLockState(true);
+
+    function renderPin() {
+        pinBoxes.forEach((box, index) => {
+            if (index < enteredPin.length) {
+                box.textContent = "●";
+                box.classList.add("active");
+            } else {
+                box.textContent = "";
+                box.classList.remove("active");
+            }
+        });
+    }
+
+    function resetPin() {
+        enteredPin = "";
+        renderPin();
+    }
+
+    function unlock() {
+        setNativeLockState(false);
+        pinOverlay.classList.add("pin-unlocked");
+        pinOverlay.setAttribute("aria-hidden", "true");
+    }
+
+    function checkPin() {
+        if (enteredPin === APP_PIN) {
+            pinError.textContent = "";
+            unlock();
+            return;
+        }
+
+        pinError.textContent = "Incorrect PIN";
+        resetPin();
+
+        window.setTimeout(() => {
+            if (pinError) {
+                pinError.textContent = "";
+            }
+        }, 1800);
+    }
+
+    function addDigit(digit) {
+        if (enteredPin.length >= 4) {
+            return;
+        }
+
+        enteredPin += digit;
+        renderPin();
+
+        if (enteredPin.length === 4) {
+            window.setTimeout(checkPin, 120);
+        }
+    }
+
+    function deleteDigit() {
+        if (enteredPin.length === 0) {
+            return;
+        }
+
+        enteredPin = enteredPin.slice(0, -1);
+        pinError.textContent = "";
+        renderPin();
+    }
+
+    pinKeypad.addEventListener("click", event => {
+        const button = event.target.closest("button");
+        if (!button) {
+            return;
+        }
+
+        if (button.dataset.pinDelete === "true") {
+            deleteDigit();
+            return;
+        }
+
+        if (button.dataset.pin !== undefined) {
+            addDigit(button.dataset.pin);
+        }
+    });
+
+    // The overlay exists and blocks the dashboard until the correct PIN is entered.
+    // Tell the Native service immediately so notifications can continue even while
+    // the Activity/WebView is behind the app PIN.
+    setNativeLockState(true);
+    renderPin();
+})();
+
 /* =====================================================
    INIT
 ===================================================== */
@@ -11334,21 +11631,17 @@ async function loadCryptoPortfolio(
 
 async function init() {
 
-    // Do not load any API/data until PIN is unlocked
-    if (sessionStorage.getItem("financialDashboardPinUnlocked") !== "1") {
-        return;
-    }
-
     try {
 
-        await prepareCryptoIconCache();
+        const dashboardPromise = loadDashboardData();
 
-        // Crypto Portfolio is independent from the main dashboard load.
-        await loadCryptoPortfolio();
+        void Promise.allSettled([
+            prepareCryptoIconCache(),
+            loadCryptoPortfolio(),
+            loadCryptoSignals()
+        ]);
 
-        await loadDashboardData();
-        await loadCryptoSignals();
-
+        await dashboardPromise;
 
         startAutoRefresh();
 
@@ -11389,191 +11682,9 @@ async function init() {
 }
 
 
-/* init() is called after PIN unlock */
+/* PIN protection is handled by the HTML overlay above. */
 
-
-/* =====================================================
-   APP PIN LOCK
-===================================================== */
-
-const APP_PIN = "4181";
-
-
-function showPinLock() {
-
-    const pinLock =
-        document.getElementById(
-            "pinLock"
-        );
-
-    if (pinLock) {
-
-        pinLock.style.display =
-            "flex";
-    }
-
-
-    const pinInput =
-        document.getElementById(
-            "pinInput"
-        );
-
-    if (pinInput) {
-
-        setTimeout(
-            () => {
-
-                pinInput.focus();
-
-            },
-            150
-        );
-    }
-}
-
-
-function hidePinLock() {
-
-    const pinLock =
-        document.getElementById(
-            "pinLock"
-        );
-
-    if (pinLock) {
-
-        pinLock.style.display =
-            "none";
-    }
-}
-
-function checkAppPin() {
-
-    const pinInput =
-        document.getElementById(
-            "pinInput"
-        );
-
-    const pinError =
-        document.getElementById(
-            "pinError"
-        );
-
-
-    if (!pinInput) {
-        return;
-    }
-
-
-    if (
-        pinInput.value ===
-        APP_PIN
-    ) {
-
-        /*
-           Remember unlock for this
-           browser tab/session.
-
-           Refresh will NOT ask again.
-        */
-
-        sessionStorage.setItem(
-            "financialDashboardPinUnlocked",
-            "1"
-        );
-
-
-        hidePinLock();
-
-        init();
-
-        pinInput.value = "";
-
-
-        if (pinError) {
-
-            pinError.textContent =
-                "";
-        }
-
-        return;
-    }
-
-
-    pinInput.value = "";
-
-
-    if (pinError) {
-
-        pinError.textContent =
-            "Incorrect PIN";
-    }
-}
-
-
-const pinButton =
-    document.getElementById(
-        "pinButton"
-    );
-
-
-if (pinButton) {
-
-    pinButton.addEventListener(
-        "click",
-        checkAppPin
-    );
-}
-
-
-const pinInput =
-    document.getElementById(
-        "pinInput"
-    );
-
-
-if (pinInput) {
-
-    pinInput.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key === "Enter"
-            ) {
-
-                checkAppPin();
-            }
-
-        }
-    );
-}
-
-
-/*
-   Show PIN only if this tab/session
-   has not already been unlocked.
-*/
-
-const pinUnlocked =
-    sessionStorage.getItem(
-        "financialDashboardPinUnlocked"
-    );
-
-
-if (
-    pinUnlocked === "1"
-) {
-
-    hidePinLock();
-
-    init();
-
-}
-else {
-
-    showPinLock();
-
-}
+init();
 
 /* =====================================================
    SERVICE WORKER
