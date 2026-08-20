@@ -81,7 +81,7 @@
       "symbol": "ETH_USDT"
     },
     "BNB": {
-      "amount": 6.17861,
+      "amount": 6.18161,
       "symbol": "BNB_USDT"
     },
     "ADA": {
@@ -89,7 +89,7 @@
       "symbol": "ADA_USDT"
     },
     "SOL": {
-      "amount": 4.642,
+      "amount": 4.652,
       "symbol": "SOL_USDT"
     },
     "POL": {
@@ -97,7 +97,7 @@
       "symbol": "POL_USDT"
     },
     "ONE": {
-      "amount": 33540,
+      "amount": 33604,
       "symbol": "ONE_USDT"
     },
     "TRX": {
