@@ -1100,9 +1100,9 @@ h1 {
 
 
 #errorBox {
-    width:100%;
-    margin-top:12px;
-    margin-bottom:0;
+    width: 100%;
+    margin-top: 12px;
+    margin-bottom: 0;
 }
 
 .page-status-report {
@@ -7436,7 +7436,7 @@ window.addEventListener("offline", () => {
 });
 
 window.addEventListener("online", () => {
-    clearPageIssue("connection");
+    // The connection status is shown as OK briefly by the main online handler.
     // Repaint once when connectivity actually changes; normal refreshes do not repaint.
     lastSignalRenderSignature = "";
     lastPortfolioRenderSignature = "";
@@ -10731,6 +10731,9 @@ window.addEventListener(
 
         setPageIssue("connection", "Online • Refreshing", "info");
 
+        setTimeout(() => {
+            clearPageIssue("connection");
+        }, 2000);
 
         try {
 
