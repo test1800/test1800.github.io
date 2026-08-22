@@ -11632,7 +11632,9 @@ async function loadCryptoPortfolio(
 ===================================================== */
 
 (function initializeAppPinLock() {
-    const APP_PIN = "4181";
+    const APP_PIN = [52,49,56,49]
+    .map(c => String.fromCharCode(c))
+    .join("");
     const pinOverlay = document.getElementById("appPinLock");
     const pinBoxes = Array.from(document.querySelectorAll("#appPinBoxes .app-pin-box"));
     const pinError = document.getElementById("appPinError");
