@@ -1100,9 +1100,17 @@ h1 {
 
 
 #errorBox {
+    grid-column: 1 / -1;
     width: 100%;
-    margin-top: 12px;
-    margin-bottom: 0;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+#errorBox .page-status-report {
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
 }
 
 .page-status-report {
@@ -1745,14 +1753,48 @@ h1 {
 
 
 .signal-grid{
-
     display:grid;
-
-    grid-template-columns:
-    repeat(9,1fr);
-
+    grid-template-columns:repeat(10,minmax(0,1fr));
     gap:7px;
+    width:100%;
+}
 
+/* Crypto Signal: always one row at every screen width.
+   Boxes and icons may shrink, but the row never wraps. */
+.signal-grid .signal-box{
+    min-width:0;
+    width:100%;
+}
+
+.signal-grid .signal-box img{
+    width:22px;
+    height:22px;
+    max-width:100%;
+    max-height:100%;
+    object-fit:contain;
+}
+
+/* Keep icons fully inside their boxes. Only shrink them when
+   the available screen width becomes too small for 10 boxes. */
+@media (max-width: 900px){
+    .signal-grid .signal-box img{
+        width:18px;
+        height:18px;
+    }
+}
+
+@media (max-width: 650px){
+    .signal-grid .signal-box img{
+        width:15px;
+        height:15px;
+    }
+}
+
+@media (max-width: 480px){
+    .signal-grid .signal-box img{
+        width:13px;
+        height:13px;
+    }
 }
 
 
@@ -2027,7 +2069,7 @@ h1 {
 
 .crypto-portfolio-grid{
     display:grid;
-    grid-template-columns:repeat(3,minmax(0,1fr));
+    grid-template-columns:repeat(5,minmax(0,1fr));
     gap:7px;
 }
 
@@ -2697,6 +2739,33 @@ h1 {
     }
 }
 /* =====================================================
+   CRYPTO PORTFOLIO - INTERMEDIATE DESKTOP SAFE NUMBERS
+   Keep the original number sizes; stack price/value so they
+   never overlap when the 5-column desktop grid becomes narrow.
+===================================================== */
+@media (min-width:651px) and (max-width:1100px){
+    .crypto-portfolio-price-row{
+        display:flex !important;
+        flex-direction:column !important;
+        align-items:flex-start !important;
+        justify-content:flex-start !important;
+        gap:3px !important;
+        width:100%;
+    }
+
+    .crypto-portfolio-price,
+    .crypto-portfolio-value{
+        width:100% !important;
+        min-width:0 !important;
+        max-width:none !important;
+        overflow:visible !important;
+        text-overflow:clip !important;
+        white-space:nowrap !important;
+        text-align:left !important;
+    }
+}
+
+/* =====================================================
    CRYPTO PORTFOLIO - FINAL ASSET AMOUNT
 ===================================================== */
 
@@ -2766,30 +2835,6 @@ h1 {
         font-size: 12px !important;
         font-weight: 600 !important;
     }
-}
-/* =====================================================
-   CRYPTO PORTFOLIO - END CENTERED
-   Same size as normal cards
-===================================================== */
-
-@media (max-width: 450px){
-
-    .crypto-portfolio-grid{
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 7px !important;
-    }
-
-    /* TRX occupies the last row */
-    .crypto-portfolio-grid > .crypto-portfolio-item:last-child{
-        grid-column: 1 / -1 !important;
-
-        /* same width as one normal card */
-        width: calc(50% - 3.5px) !important;
-
-        /* center it */
-        justify-self: center !important;
-    }
-
 }
 
 
@@ -4286,12 +4331,11 @@ h1 {
 
 </div>
 
-</div>
-
-</div>
-
 <div id="errorBox"></div>
 
+</div>
+
+</div>
 
 <script>
 /* =====================================================
@@ -4434,6 +4478,7 @@ const CRYPTO_ICON_FILES = {
     ADA:  "file/ada.png",
     SOL:  "file/sol.png",
     POL:  "file/pol.png",
+    AVAX: "file/avax.png",
     ONE:  "file/one.png",
     TRX:  "file/trx.png"
 };
@@ -4582,7 +4627,7 @@ function renderCryptoSignals(data, offline = false) {
 
     const signalCoins = [
         "BTC", "BNB", "ETH", "DOGE", "ADA",
-        "SOL", "POL", "ONE", "TRX"
+        "SOL", "ONE", "AVAX", "POL", "TRX"
     ];
 
     const values = signalCoins.map(coin => getSignalNumericValue(data[coin] ?? 0));
@@ -4694,8 +4739,9 @@ async function loadCryptoSignals() {
             "DOGE",
             "ADA",
             "SOL",
-            "POL",
             "ONE",
+            "AVAX",
+            "POL",
             "TRX"
         ];
 
@@ -11226,6 +11272,16 @@ function renderCryptoPortfolio(
         [coins[bnbIndex], coins[dogeIndex]];
     }
 
+    // AVAX is displayed after POL and before ONE.
+    const avaxIndex = coins.indexOf("AVAX");
+    const polIndex = coins.indexOf("POL");
+
+    if (avaxIndex !== -1 && polIndex !== -1) {
+        coins.splice(avaxIndex, 1);
+        const newPolIndex = coins.indexOf("POL");
+        coins.splice(newPolIndex + 1, 0, "AVAX");
+    }
+
     const html =
         coins.map(
             coin => {
@@ -11878,3 +11934,21 @@ if (
 </body>
 
 </html>
+
+<!-- =====================================================
+     CRYPTO PORTFOLIO - ONLY TWO LAYOUT MODES
+     Desktop: 5 columns x 2 rows
+     Smaller screens: 2 columns x 5 rows
+     No 3-column / 4-column / other modes.
+===================================================== -->
+<style>
+.crypto-portfolio-grid{
+    grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+}
+
+@media (max-width:1100px){
+    .crypto-portfolio-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    }
+}
+</style>
