@@ -96,6 +96,10 @@
       "amount": 1242.82,
       "symbol": "POL_USDT"
     },
+    "AVAX": {
+      "amount": 0.01,
+      "symbol": "AVAX_USDT"
+    },
     "ONE": {
       "amount": 33604,
       "symbol": "ONE_USDT"
