@@ -3312,7 +3312,7 @@ h1 {
 }
 
 .rfkj-signals{
-    grid-template-columns:1fr 1fr !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
     gap:7px !important;
     margin-top:7px !important;
 }
@@ -3432,8 +3432,10 @@ h1 {
 }
 .rfkj-ultra-arrow{
     display:inline-flex;
-    width:10px;
+    width:9px;
     justify-content:center;
+    margin:0 !important;
+    padding:0 !important;
     font-size:12px;
     font-weight:950;
     line-height:1;
@@ -3442,7 +3444,7 @@ h1 {
     .rfkj-ultra-mini{
         display:inline-flex !important;
         align-items:center;
-        gap:2px;
+        gap:0;
         margin-left:3px;
         white-space:nowrap;
         font-size:12px;
@@ -3462,7 +3464,7 @@ h1 {
     .rfkj-ultra-arrow.down{
     color:#38bdf8;
     text-shadow:0 0 7px rgba(56,189,248,.8);
-    }
+     }
     .rfkj-ultra-arrow.neutral{
         color:#64748b;
     }
@@ -3691,8 +3693,7 @@ h1 {
 <span id="rfkjUltraMini" class="rfkj-ultra-mini" aria-label="Signal Matrix">
     <span id="rfkjUltraPrice">-</span>
     <span class="rfkj-ultra-arrows">
-        <span id="rfkjUltraRF" class="rfkj-ultra-arrow neutral" title="Range Filter">↑</span>
-        <span id="rfkjUltraKJ" class="rfkj-ultra-arrow neutral" title="Kijun 288">↓</span>
+        <span id="rfkjUltraRF" class="rfkj-ultra-arrow neutral" title="Range Filter">↑</span><span id="rfkjUltraST" class="rfkj-ultra-arrow neutral" title="Super Trend">↑</span><span id="rfkjUltraKJ" class="rfkj-ultra-arrow neutral" title="Kijun 288">↓</span>
     </span>
 </span>
 			
@@ -4922,6 +4923,13 @@ h1 {
         <div class="rfkj-signal">
             <div id="rfkjKJ" class="rfkj-value signal-zero">
                 <span class="rfkj-code">Kijun 288</span>
+                <span class="rfkj-dot"></span>
+            </div>
+        </div>
+
+        <div class="rfkj-signal">
+            <div id="rfkjST" class="rfkj-value signal-zero">
+                <span class="rfkj-code">Super Trend</span>
                 <span class="rfkj-dot"></span>
             </div>
         </div>
@@ -12412,9 +12420,10 @@ function rfkjFormatUltraPrice(value) {
     return n.toLocaleString("en-US", {minimumFractionDigits:4, maximumFractionDigits:6});
 }
 
-function rfkjUpdateUltraMini(price, rf, kj, valid = false) {
+function rfkjUpdateUltraMini(price, rf, kj, st, valid = false) {
     const priceEl=document.getElementById("rfkjUltraPrice");
     const rfEl=document.getElementById("rfkjUltraRF");
+    const stEl=document.getElementById("rfkjUltraST");
     const kjEl=document.getElementById("rfkjUltraKJ");
     if(!priceEl || !rfEl || !kjEl) return;
 
@@ -12435,6 +12444,7 @@ function rfkjUpdateUltraMini(price, rf, kj, valid = false) {
         el.classList.add(n===1 ? "up" : n===-1 ? "down" : "neutral");
     };
     setArrow(rfEl,rf);
+    setArrow(stEl,st);
     setArrow(kjEl,kj);
 }
 
@@ -12659,8 +12669,16 @@ async function rfkjFetchSignal() {
             data.kijunsen ??
             0;
 
+        const st =
+            data.ST ??
+            data.st ??
+            data.superTrend ??
+            data.supertrend ??
+            0;
+
         const currentRF = rfkjNormalizeSignal(rf);
         const currentKJ = rfkjNormalizeSignal(kj);
+        const currentST = rfkjNormalizeSignal(st);
 
         rfkjApplySignal(
             document.getElementById("rfkjRF"),
@@ -12672,6 +12690,11 @@ async function rfkjFetchSignal() {
             currentKJ
         );
 
+        rfkjApplySignal(
+            document.getElementById("rfkjST"),
+            currentST
+        );
+
         /*
            Do not notify on the first successful request.
            After that, notify only when RF or KJ actually changes.
@@ -12681,8 +12704,10 @@ async function rfkjFetchSignal() {
                 rfkjPreviousSignals.RF !== currentRF;
             const kjChanged =
                 rfkjPreviousSignals.KJ !== currentKJ;
+            const stChanged =
+                rfkjPreviousSignals.ST !== currentST;
 
-            if (rfChanged || kjChanged) {
+            if (rfChanged || kjChanged || stChanged) {
                 const changes = [];
 
                 if (rfChanged) {
@@ -12699,6 +12724,12 @@ async function rfkjFetchSignal() {
                     }
                 }
 
+                if (stChanged) {
+                    changes.push(
+                        `Super Trend: ${rfkjPreviousSignals.ST} → ${currentST}`
+                    );
+                }
+
                 await rfkjSendNotification(
                     `Signal Matrix • ${coin}`,
                     `${coin} • ${rfkjTimeframeLabel(rfkjSelectedTimeframe)} • ${changes.join(" • ")}`
@@ -12708,7 +12739,8 @@ async function rfkjFetchSignal() {
 
         rfkjPreviousSignals = {
             RF: currentRF,
-            KJ: currentKJ
+            KJ: currentKJ,
+            ST: currentST
         };
 
         const workerPrice = Number(data?.price);
@@ -12717,6 +12749,7 @@ async function rfkjFetchSignal() {
             workerPrice,
             currentRF,
             currentKJ,
+            currentST,
             Number.isFinite(workerPrice) && workerPrice > 0
         );
 
@@ -12757,8 +12790,14 @@ async function rfkjFetchSignal() {
             false
         );
 
+        rfkjApplySignal(
+            document.getElementById("rfkjST"),
+            0,
+            false
+        );
+
         rfkjPreviousPrice = null;
-        rfkjUpdateUltraMini(null, 0, 0, false);
+        rfkjUpdateUltraMini(null, 0, 0, 0, false);
 
         rfkjSetStatus(
             `Worker unavailable • ${error.message || "request failed"}`,
@@ -12828,7 +12867,13 @@ function rfkjStop() {
         false
     );
 
-    rfkjUpdateUltraMini(null, 0, 0, false);
+    rfkjApplySignal(
+        document.getElementById("rfkjST"),
+        0,
+        false
+    );
+
+    rfkjUpdateUltraMini(null, 0, 0, 0, false);
 
     rfkjSetStatus(
         "Signal stopped."
@@ -12873,7 +12918,7 @@ function initRFKJSignalMonitor() {
 
                     rfkjPreviousSignals = null;
                     rfkjPreviousPrice = null;
-        rfkjUpdateUltraMini(null, 0, 0, false);
+        rfkjUpdateUltraMini(null, 0, 0, 0, false);
 
                     if (rfkjRunning) {
                         rfkjFetchSignal();
@@ -12894,7 +12939,7 @@ function initRFKJSignalMonitor() {
 
             rfkjPreviousSignals = null;
             rfkjPreviousPrice = null;
-        rfkjUpdateUltraMini(null, 0, 0, false);
+        rfkjUpdateUltraMini(null, 0, 0, 0, false);
 
             if (rfkjRunning) {
                 rfkjFetchSignal();

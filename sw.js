@@ -14,7 +14,6 @@ const STATIC_FILES = [
 
     "./icon-512.png",
 
-    "./data.json"
 
 ];
 
