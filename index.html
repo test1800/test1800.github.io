@@ -3547,6 +3547,22 @@ h1 {
     100%{filter:brightness(1);transform:translateY(0)}
 }
 
+
+<!-- =====================================================
+     CRYPTO PORTFOLIO - ONLY TWO LAYOUT MODES
+     Desktop: 5 columns x 2 rows
+     Smaller screens: 2 columns x 5 rows
+     No 3-column / 4-column / other modes.
+===================================================== -->
+.crypto-portfolio-grid{
+    grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+}
+
+@media (max-width:1100px){
+    .crypto-portfolio-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    }
+}
 </style>
 
 </head>
@@ -4921,15 +4937,15 @@ h1 {
         </div>
 
         <div class="rfkj-signal">
-            <div id="rfkjKJ" class="rfkj-value signal-zero">
-                <span class="rfkj-code">Kijun 288</span>
+            <div id="rfkjST" class="rfkj-value signal-zero">
+                <span class="rfkj-code">Super Trend</span>
                 <span class="rfkj-dot"></span>
             </div>
         </div>
 
         <div class="rfkj-signal">
-            <div id="rfkjST" class="rfkj-value signal-zero">
-                <span class="rfkj-code">Super Trend</span>
+            <div id="rfkjKJ" class="rfkj-value signal-zero">
+                <span class="rfkj-code">Kijun 288</span>
                 <span class="rfkj-dot"></span>
             </div>
         </div>
@@ -13135,21 +13151,3 @@ if (
 </body>
 
 </html>
-
-<!-- =====================================================
-     CRYPTO PORTFOLIO - ONLY TWO LAYOUT MODES
-     Desktop: 5 columns x 2 rows
-     Smaller screens: 2 columns x 5 rows
-     No 3-column / 4-column / other modes.
-===================================================== -->
-<style>
-.crypto-portfolio-grid{
-    grid-template-columns:repeat(5,minmax(0,1fr)) !important;
-}
-
-@media (max-width:1100px){
-    .crypto-portfolio-grid{
-        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-    }
-}
-</style>
