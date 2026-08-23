@@ -3547,20 +3547,130 @@ h1 {
     100%{filter:brightness(1);transform:translateY(0)}
 }
 
+</style>
 
-<!-- =====================================================
-     CRYPTO PORTFOLIO - ONLY TWO LAYOUT MODES
-     Desktop: 5 columns x 2 rows
-     Smaller screens: 2 columns x 5 rows
-     No 3-column / 4-column / other modes.
-===================================================== -->
-.crypto-portfolio-grid{
-    grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+
+<style id="compact-crypto-selector-style">
+/* Compact 2-column cryptocurrency picker.
+   Existing #rfkjCoin remains the real select so all existing logic stays untouched. */
+.rfkj-compact-coin-picker{
+    position:relative;
+    width:100%;
+    min-width:0;
 }
-
-@media (max-width:1100px){
-    .crypto-portfolio-grid{
-        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+.rfkj-compact-coin-trigger{
+    width:100%;
+    min-height:42px;
+    padding:0 11px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    color:#f8fafc;
+    background:rgba(2,6,23,.62);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:11px;
+    outline:none;
+    font:800 12px/1 Inter,"Segoe UI",Arial,sans-serif;
+    cursor:pointer;
+    transition:.18s ease;
+}
+.rfkj-compact-coin-trigger:hover,
+.rfkj-compact-coin-trigger.open{
+    border-color:rgba(165,180,252,.55);
+    box-shadow:0 0 16px rgba(129,140,248,.12);
+    background:rgba(15,23,42,.82);
+}
+.rfkj-compact-coin-current{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-width:0;
+}
+.rfkj-compact-coin-current-name{
+    white-space:nowrap;
+}
+.rfkj-compact-coin-chevron{
+    color:#94a3b8;
+    font-size:10px;
+    transition:transform .18s ease;
+}
+.rfkj-compact-coin-trigger.open .rfkj-compact-coin-chevron{
+    transform:rotate(180deg);
+}
+.rfkj-compact-coin-menu{
+    position:absolute;
+    z-index:3000;
+    top:calc(100% + 6px);
+    left:0;
+    width:100%;
+    min-width:190px;
+    padding:7px;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:5px;
+    background:rgba(7,11,20,.97);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:12px;
+    box-shadow:0 16px 38px rgba(0,0,0,.42);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    opacity:0;
+    visibility:hidden;
+    transform:translateY(-4px);
+    pointer-events:none;
+    transition:.16s ease;
+}
+.rfkj-compact-coin-picker.open .rfkj-compact-coin-menu{
+    opacity:1;
+    visibility:visible;
+    transform:translateY(0);
+    pointer-events:auto;
+}
+.rfkj-compact-coin-option{
+    min-width:0;
+    min-height:34px;
+    padding:6px 8px;
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:8px;
+    color:#cbd5e1;
+    background:rgba(255,255,255,.035);
+    font:850 11px/1 Inter,"Segoe UI",Arial,sans-serif;
+    cursor:pointer;
+    text-align:center;
+    transition:.15s ease;
+}
+.rfkj-compact-coin-option:hover{
+    color:#f8fafc;
+    background:rgba(129,140,248,.12);
+    border-color:rgba(165,180,252,.30);
+}
+.rfkj-compact-coin-option.active{
+    color:#f8fafc;
+    background:linear-gradient(145deg,rgba(99,102,241,.24),rgba(59,130,246,.10));
+    border-color:rgba(165,180,252,.42);
+    box-shadow:0 0 12px rgba(99,102,241,.10);
+}
+#rfkjCoin.rfkj-native-hidden{
+    position:absolute !important;
+    width:1px !important;
+    height:1px !important;
+    padding:0 !important;
+    margin:-1px !important;
+    overflow:hidden !important;
+    clip:rect(0,0,0,0) !important;
+    white-space:nowrap !important;
+    border:0 !important;
+}
+@media (max-width:500px){
+    .rfkj-compact-coin-menu{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        min-width:0;
+    }
+    .rfkj-compact-coin-option{
+        min-height:32px;
+        font-size:10.5px;
+        padding:5px 6px;
     }
 }
 </style>
@@ -13148,6 +13258,320 @@ if (
 }
 </script>
 
+
+<script id="compact-crypto-selector-script">
+(function initCompactCryptoSelector(){
+    const select = document.getElementById("rfkjCoin");
+    if (!select || select.dataset.compactPickerReady === "1") return;
+
+    select.dataset.compactPickerReady = "1";
+    select.classList.add("rfkj-native-hidden");
+
+    const picker = document.createElement("div");
+    picker.className = "rfkj-compact-coin-picker";
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "rfkj-compact-coin-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
+
+    const current = document.createElement("span");
+    current.className = "rfkj-compact-coin-current";
+
+    const currentName = document.createElement("span");
+    currentName.className = "rfkj-compact-coin-current-name";
+
+    const chevron = document.createElement("span");
+    chevron.className = "rfkj-compact-coin-chevron";
+    chevron.textContent = "▼";
+
+    current.appendChild(currentName);
+    trigger.appendChild(current);
+    trigger.appendChild(chevron);
+
+    const menu = document.createElement("div");
+    menu.className = "rfkj-compact-coin-menu";
+    menu.setAttribute("role", "listbox");
+
+    function syncVisual(){
+        currentName.textContent = select.value || "BTC";
+        menu.querySelectorAll(".rfkj-compact-coin-option").forEach(option => {
+            const active = option.dataset.value === select.value;
+            option.classList.toggle("active", active);
+            option.setAttribute("aria-selected", active ? "true" : "false");
+        });
+    }
+
+    Array.from(select.options).forEach(option => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "rfkj-compact-coin-option";
+        item.dataset.value = option.value;
+        item.textContent = option.textContent;
+        item.setAttribute("role", "option");
+
+        item.addEventListener("click", () => {
+            if (select.value !== option.value) {
+                select.value = option.value;
+                select.dispatchEvent(new Event("change", {bubbles:true}));
+            }
+            syncVisual();
+            picker.classList.remove("open");
+            trigger.classList.remove("open");
+            trigger.setAttribute("aria-expanded", "false");
+        });
+
+        menu.appendChild(item);
+    });
+
+    function closePicker(){
+        picker.classList.remove("open");
+        trigger.classList.remove("open");
+        trigger.setAttribute("aria-expanded", "false");
+    }
+
+    trigger.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const isOpen = picker.classList.toggle("open");
+        trigger.classList.toggle("open", isOpen);
+        trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    });
+
+    select.addEventListener("change", syncVisual);
+
+    document.addEventListener("click", (event) => {
+        if (!picker.contains(event.target)) closePicker();
+    });
+
+    picker.appendChild(trigger);
+    picker.appendChild(menu);
+    select.parentNode.insertBefore(picker, select);
+
+    syncVisual();
+})();
+</script>
+
 </body>
 
 </html>
+
+<!-- =====================================================
+     CRYPTO PORTFOLIO - ONLY TWO LAYOUT MODES
+     Desktop: 5 columns x 2 rows
+     Smaller screens: 2 columns x 5 rows
+     No 3-column / 4-column / other modes.
+===================================================== -->
+<style>
+.crypto-portfolio-grid{
+    grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+}
+
+@media (max-width:1100px){
+    .crypto-portfolio-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    }
+}
+
+/* =====================================================
+   MOBILE SIGNAL MATRIX FIX
+   Keep Start/Stop fully inside the viewport and keep
+   signal names readable on small screens.
+===================================================== */
+.rfkj-card,
+.rfkj-controls,
+.rfkj-signals,
+.rfkj-signal,
+.rfkj-value,
+.rfkj-start-stop{
+    box-sizing:border-box;
+    min-width:0;
+}
+
+.rfkj-controls{
+    width:100%;
+    max-width:100%;
+}
+
+.rfkj-start-stop{
+    max-width:100%;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:clip;
+    box-sizing:border-box;
+}
+
+.rfkj-signals{
+    width:100%;
+    max-width:100%;
+    min-width:0;
+}
+
+.rfkj-signal{
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    overflow:hidden;
+}
+
+.rfkj-value{
+    max-width:100%;
+    min-width:0;
+    overflow:hidden;
+}
+
+.rfkj-code{
+    max-width:100%;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:clip;
+    white-space:nowrap;
+    font-size:15px !important;
+    letter-spacing:1px !important;
+}
+
+@media (max-width:500px){
+    .rfkj-card{
+        width:100%;
+        max-width:100%;
+        padding-left:8px !important;
+        padding-right:8px !important;
+        overflow:hidden;
+    }
+
+    .rfkj-controls{
+        width:100%;
+        grid-template-columns:minmax(0,1fr) !important;
+    }
+
+    .rfkj-start-stop{
+        width:100% !important;
+        min-width:0 !important;
+        max-width:100% !important;
+        padding-left:8px !important;
+        padding-right:8px !important;
+        font-size:11px !important;
+    }
+
+    .rfkj-signals{
+        grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+        gap:4px !important;
+        width:100% !important;
+    }
+
+    .rfkj-signal{
+        padding:3px !important;
+        min-width:0 !important;
+    }
+
+    .rfkj-value{
+        width:100% !important;
+        min-width:0 !important;
+        padding:0 2px !important;
+    }
+
+    .rfkj-code{
+        font-size:clamp(12px,3.8vw,15px) !important;
+        letter-spacing:.45px !important;
+        line-height:1 !important;
+    }
+}
+
+@media (max-width:360px){
+    .rfkj-card{
+        padding-left:6px !important;
+        padding-right:6px !important;
+    }
+
+    .rfkj-signals{
+        gap:3px !important;
+    }
+
+    .rfkj-code{
+        font-size:13px !important;
+        letter-spacing:.25px !important;
+    }
+}
+
+
+
+/* =====================================================
+   MOBILE RESPONSIVE — SIGNAL MATRIX CONTROLS
+===================================================== */
+
+@media (max-width:650px){
+    .rfkj-controls{
+        width:100% !important;
+        max-width:100% !important;
+        min-width:0 !important;
+        display:grid !important;
+        grid-template-columns:minmax(0,1fr) !important;
+        gap:7px !important;
+        box-sizing:border-box !important;
+    }
+
+    .rfkj-select{
+        width:100% !important;
+        max-width:100% !important;
+        min-width:0 !important;
+        box-sizing:border-box !important;
+        min-height:42px !important;
+        font-size:13px !important;
+        padding-left:10px !important;
+        padding-right:28px !important;
+    }
+
+    .rfkj-timeframes{
+        width:100% !important;
+        max-width:100% !important;
+        min-width:0 !important;
+        box-sizing:border-box !important;
+        display:grid !important;
+        grid-template-columns:repeat(9,minmax(0,1fr)) !important;
+        gap:2px !important;
+        padding:3px !important;
+        overflow:hidden !important;
+    }
+
+    .rfkj-timeframe{
+        width:100% !important;
+        min-width:0 !important;
+        max-width:100% !important;
+        min-height:34px !important;
+        padding:0 1px !important;
+        box-sizing:border-box !important;
+        font-size:clamp(10px,3vw,12px) !important;
+        line-height:1 !important;
+        white-space:nowrap !important;
+        overflow:hidden !important;
+    }
+
+    .rfkj-start-stop{
+        width:100% !important;
+        min-width:0 !important;
+        max-width:100% !important;
+        box-sizing:border-box !important;
+        min-height:42px !important;
+        padding-left:8px !important;
+        padding-right:8px !important;
+        font-size:12px !important;
+        white-space:nowrap !important;
+        overflow:hidden !important;
+        text-overflow:clip !important;
+    }
+}
+
+@media (max-width:380px){
+    .rfkj-select{font-size:12.5px !important;}
+    .rfkj-timeframes{gap:1px !important;padding:2px !important;}
+    .rfkj-timeframe{min-height:33px !important;font-size:10.5px !important;}
+    .rfkj-start-stop{font-size:11.5px !important;}
+}
+
+@media (max-width:320px){
+    .rfkj-select{font-size:12px !important;}
+    .rfkj-timeframe{font-size:10px !important;}
+    .rfkj-start-stop{font-size:11px !important;}
+}
+
+</style>
