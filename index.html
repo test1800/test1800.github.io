@@ -3107,7 +3107,7 @@ h1 {
 
 .rfkj-timeframes{
     display:grid;
-    grid-template-columns:repeat(6,1fr);
+    grid-template-columns:repeat(9,1fr);
     gap:5px;
     padding:4px;
     border-radius:11px;
@@ -4889,12 +4889,15 @@ h1 {
         </select>
 
         <div class="rfkj-timeframes" role="group" aria-label="Signal timeframe">
-            <button type="button" class="rfkj-timeframe active" data-rfkj-time="1">1</button>
-            <button type="button" class="rfkj-timeframe" data-rfkj-time="3">3</button>
-            <button type="button" class="rfkj-timeframe" data-rfkj-time="5">5</button>
-            <button type="button" class="rfkj-timeframe" data-rfkj-time="15">15</button>
-            <button type="button" class="rfkj-timeframe" data-rfkj-time="30">30</button>
-            <button type="button" class="rfkj-timeframe" data-rfkj-time="60">60</button>
+            <button type="button" class="rfkj-timeframe active" data-rfkj-time="1">1M</button>
+            <button type="button" class="rfkj-timeframe" data-rfkj-time="3">3M</button>
+            <button type="button" class="rfkj-timeframe" data-rfkj-time="5">5M</button>
+            <button type="button" class="rfkj-timeframe" data-rfkj-time="15">15M</button>
+            <button type="button" class="rfkj-timeframe" data-rfkj-time="30">30M</button>
+            <button type="button" class="rfkj-timeframe" data-rfkj-time="60">1H</button>
+            <button type="button" class="rfkj-timeframe" data-rfkj-time="4h">4H</button>
+            <button type="button" class="rfkj-timeframe" data-rfkj-time="1D">1D</button>
+            <button type="button" class="rfkj-timeframe" data-rfkj-time="1W">1W</button>
         </div>
 
         <button type="button" id="rfkjStartStop" class="rfkj-start-stop">
@@ -12518,6 +12521,22 @@ function rfkjApplySignal(element, value, valid = true) {
     }
 }
 
+function rfkjTimeframeLabel(timeframe) {
+    const labels = {
+        "1": "1M",
+        "3": "3M",
+        "5": "5M",
+        "15": "15M",
+        "30": "30M",
+        "60": "1H",
+        "4h": "4H",
+        "4H": "4H",
+        "1D": "1D",
+        "1W": "1W"
+    };
+    return labels[String(timeframe)] || String(timeframe);
+}
+
 function rfkjSetPriceStatus(coin, timeframe, timeText, price) {
     const status = document.getElementById("rfkjStatus");
     if (!status) return;
@@ -12543,7 +12562,7 @@ function rfkjSetPriceStatus(coin, timeframe, timeText, price) {
     }
 
     status.innerHTML =
-        `${coin} • ${timeframe}m • updated ${timeText} • ` +
+        `${coin} • ${rfkjTimeframeLabel(timeframe)} • updated ${timeText} • ` +
         `<span class="rfkj-status-price ${direction}">${formatted}</span>`;
 
     status.style.color = "#e2e8f0";
@@ -12682,7 +12701,7 @@ async function rfkjFetchSignal() {
 
                 await rfkjSendNotification(
                     `Signal Matrix • ${coin}`,
-                    `${coin} • ${rfkjSelectedTimeframe}m • ${changes.join(" • ")}`
+                    `${coin} • ${rfkjTimeframeLabel(rfkjSelectedTimeframe)} • ${changes.join(" • ")}`
                 );
             }
         }
@@ -12714,7 +12733,7 @@ async function rfkjFetchSignal() {
         }
         else {
             rfkjSetStatus(
-                `${coin} • ${rfkjSelectedTimeframe}m • updated ${new Date().toLocaleTimeString()}`
+                `${coin} • ${rfkjTimeframeLabel(rfkjSelectedTimeframe)} • updated ${new Date().toLocaleTimeString()}`
             );
         }
 
@@ -12770,7 +12789,7 @@ function rfkjStart() {
 
     rfkjSendNotification(
         `Signal Matrix • ${document.getElementById("rfkjCoin")?.value || "BTC"}`,
-        `${document.getElementById("rfkjCoin")?.value || "BTC"} • ${rfkjSelectedTimeframe}m • Signal STARTED`
+        `${document.getElementById("rfkjCoin")?.value || "BTC"} • ${rfkjTimeframeLabel(rfkjSelectedTimeframe)} • Signal STARTED`
     );
 
     rfkjTimer =
@@ -12817,7 +12836,7 @@ function rfkjStop() {
 
     rfkjSendNotification(
         `Signal Matrix • ${document.getElementById("rfkjCoin")?.value || "BTC"}`,
-        `${document.getElementById("rfkjCoin")?.value || "BTC"} • ${rfkjSelectedTimeframe}m • Signal STOPPED`
+        `${document.getElementById("rfkjCoin")?.value || "BTC"} • ${rfkjTimeframeLabel(rfkjSelectedTimeframe)} • Signal STOPPED`
     );
 }
 
@@ -12861,7 +12880,7 @@ function initRFKJSignalMonitor() {
                     }
                     else {
                         rfkjSetStatus(
-                            `${coin.value} • ${rfkjSelectedTimeframe}m selected`
+                            `${coin.value} • ${rfkjTimeframeLabel(rfkjSelectedTimeframe)} selected`
                         );
                     }
                 }
@@ -12882,7 +12901,7 @@ function initRFKJSignalMonitor() {
             }
             else {
                 rfkjSetStatus(
-                    `${coin.value} • ${rfkjSelectedTimeframe}m selected`
+                    `${coin.value} • ${rfkjTimeframeLabel(rfkjSelectedTimeframe)} selected`
                 );
             }
 
