@@ -3,6 +3,7 @@
 <head>
 
 <meta charset="UTF-8">
+
 <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
@@ -1373,12 +1374,27 @@ h1 {
     display: none !important;
 }
 
+    .live-market-header {
+        justify-content: center !important;
+        gap: 5px !important;
+        width: 100% !important;
+    }
+
+    .live-usd-value,
+    #cryptoMini,
+    #yekusd {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
     .live-price-values {
         display: flex !important;
         width: 100% !important;
-        gap: 8px !important;
+        gap: 12px !important;
         align-items: center !important;
-        justify-content: space-between !important;
+        justify-content: center !important;
     }
 
     .live-price-left,
@@ -3091,16 +3107,16 @@ h1 {
 
 .rfkj-timeframes{
     display:grid;
-    grid-template-columns:repeat(6,minmax(0,1fr));
-    gap:2px;
-    padding:2px;
+    grid-template-columns:repeat(4,1fr);
+    gap:5px;
+    padding:4px;
     border-radius:11px;
     background:rgba(2,6,23,.48);
     border:1px solid rgba(255,255,255,.07);
 }
 
 .rfkj-timeframe{
-    min-height:30px;
+    min-height:32px;
     border:0;
     border-radius:8px;
     color:#94a3b8;
@@ -3465,27 +3481,70 @@ h1 {
 }
 
 
-/* Ultra Compact: tighten first-row number spacing */
+/* Ultra Compact: final balanced spacing for both centered rows */
 @media (max-height: 199px) {
-    .live-price-values {
-        gap: 1px !important;
-        column-gap: 1px !important;
-        justify-content: flex-start !important;
+    .live-market-header {
+        justify-content: center !important;
+        gap: 5px !important;
+        width: 100% !important;
     }
-    .live-price-item {
-        gap: 1px !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    .live-price-item .live-usd-value,
-    .live-price-item .live-price-value,
-    #cryptoMini, #yekusd {
+
+    .live-usd-value,
+    #cryptoMini,
+    #yekusd {
         margin-left: 0 !important;
         margin-right: 0 !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
     }
+
+    .live-price-values {
+        gap: 12px !important;
+        column-gap: 12px !important;
+        justify-content: center !important;
+    }
+
+    .live-price-item {
+        gap: 2px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .live-number {
+        font-weight: 700 !important;
+    }
 }
+
+/* Signal Matrix selected-price live direction effect */
+.rfkj-status-price{
+    font-weight:850;
+    transition:color .35s ease, text-shadow .35s ease, filter .35s ease;
+}
+.rfkj-status-price.price-up{
+    color:#34d399 !important;
+    text-shadow:0 0 10px rgba(52,211,153,.48);
+    animation:rfkjPriceUp .45s ease;
+}
+.rfkj-status-price.price-down{
+    color:#f87171 !important;
+    text-shadow:0 0 10px rgba(248,113,113,.48);
+    animation:rfkjPriceDown .45s ease;
+}
+.rfkj-status-price.price-flat{
+    color:#e2e8f0 !important;
+    text-shadow:none;
+}
+@keyframes rfkjPriceUp{
+    0%{filter:brightness(1);transform:translateY(0)}
+    50%{filter:brightness(1.45);transform:translateY(-1px)}
+    100%{filter:brightness(1);transform:translateY(0)}
+}
+@keyframes rfkjPriceDown{
+    0%{filter:brightness(1);transform:translateY(0)}
+    50%{filter:brightness(1.4);transform:translateY(1px)}
+    100%{filter:brightness(1);transform:translateY(0)}
+}
+
 </style>
 
 </head>
@@ -4834,8 +4893,6 @@ h1 {
             <button type="button" class="rfkj-timeframe" data-rfkj-time="3">3</button>
             <button type="button" class="rfkj-timeframe" data-rfkj-time="5">5</button>
             <button type="button" class="rfkj-timeframe" data-rfkj-time="15">15</button>
-            <button type="button" class="rfkj-timeframe" data-rfkj-time="30">30</button>
-            <button type="button" class="rfkj-timeframe" data-rfkj-time="60">60</button>
         </div>
 
         <button type="button" id="rfkjStartStop" class="rfkj-start-stop">
@@ -12339,6 +12396,7 @@ let rfkjRunning = false;
 let rfkjTimer = null;
 let rfkjRequestInProgress = false;
 let rfkjPreviousSignals = null;
+let rfkjPreviousPrice = null;
 let rfkjUltraPrice = null;
 
 function rfkjFormatUltraPrice(value) {
@@ -12458,6 +12516,40 @@ function rfkjApplySignal(element, value, valid = true) {
     }
 }
 
+function rfkjSetPriceStatus(coin, timeframe, timeText, price) {
+    const status = document.getElementById("rfkjStatus");
+    if (!status) return;
+
+    const numericPrice = Number(price);
+    const formatted =
+        typeof rfkjFormatUltraPrice === "function"
+            ? rfkjFormatUltraPrice(numericPrice)
+            : String(price);
+
+    let direction = "price-flat";
+
+    if (
+        Number.isFinite(rfkjPreviousPrice) &&
+        Number.isFinite(numericPrice)
+    ) {
+        if (numericPrice > rfkjPreviousPrice) {
+            direction = "price-up";
+        }
+        else if (numericPrice < rfkjPreviousPrice) {
+            direction = "price-down";
+        }
+    }
+
+    status.innerHTML =
+        `${coin} • ${timeframe}m • updated ${timeText} • ` +
+        `<span class="rfkj-status-price ${direction}">${formatted}</span>`;
+
+    status.style.color = "#e2e8f0";
+    status.style.borderColor = "rgba(148,163,184,.22)";
+
+    rfkjPreviousPrice = numericPrice;
+}
+
 function rfkjSetStatus(message, error = false) {
     const status = document.getElementById("rfkjStatus");
 
@@ -12470,23 +12562,6 @@ function rfkjSetStatus(message, error = false) {
         error
             ? "rgba(248,113,113,.35)"
             : "rgba(148,163,184,.22)";
-}
-
-function rfkjPersistNativeState(enabled) {
-    try {
-        if (
-            window.AndroidNotifications &&
-            typeof window.AndroidNotifications.setSignalMatrixState === "function"
-        ) {
-            window.AndroidNotifications.setSignalMatrixState(
-                Boolean(enabled),
-                document.getElementById("rfkjCoin")?.value || "BTC",
-                rfkjSelectedTimeframe || "1"
-            );
-        }
-    } catch (error) {
-        console.warn("Signal Matrix native state sync failed:", error);
-    }
 }
 
 async function rfkjSendNotification(title, message) {
@@ -12594,7 +12669,13 @@ async function rfkjFetchSignal() {
                 }
 
                 if (kjChanged) {
-                    changes.push(`KJ: ${rfkjPreviousSignals.KJ} → ${currentKJ}`);
+                    if (currentKJ < 0) {
+                        changes.push("Price moved below Kijun 288");
+                    } else if (currentKJ > 0) {
+                        changes.push("Price moved above Kijun 288");
+                    } else {
+                        changes.push("Price moved to the Kijun 288 neutral zone");
+                    }
                 }
 
                 await rfkjSendNotification(
@@ -12618,9 +12699,22 @@ async function rfkjFetchSignal() {
             Number.isFinite(workerPrice) && workerPrice > 0
         );
 
-        rfkjSetStatus(
-            `${coin} • ${rfkjSelectedTimeframe}m • updated ${new Date().toLocaleTimeString()}${Number.isFinite(workerPrice) && workerPrice > 0 ? ` • ${rfkjFormatUltraPrice(workerPrice)}` : ""}`
-        );
+        if (
+            Number.isFinite(workerPrice) &&
+            workerPrice > 0
+        ) {
+            rfkjSetPriceStatus(
+                coin,
+                rfkjSelectedTimeframe,
+                new Date().toLocaleTimeString(),
+                workerPrice
+            );
+        }
+        else {
+            rfkjSetStatus(
+                `${coin} • ${rfkjSelectedTimeframe}m • updated ${new Date().toLocaleTimeString()}`
+            );
+        }
 
     }
     catch (error) {
@@ -12642,6 +12736,7 @@ async function rfkjFetchSignal() {
             false
         );
 
+        rfkjPreviousPrice = null;
         rfkjUpdateUltraMini(null, 0, 0, false);
 
         rfkjSetStatus(
@@ -12668,8 +12763,6 @@ function rfkjStart() {
         button.textContent = "■ Stop Signal";
         button.classList.add("running");
     }
-
-    rfkjPersistNativeState(true);
 
     rfkjFetchSignal();
 
@@ -12716,8 +12809,6 @@ function rfkjStop() {
 
     rfkjUpdateUltraMini(null, 0, 0, false);
 
-    rfkjPersistNativeState(false);
-
     rfkjSetStatus(
         "Signal stopped."
     );
@@ -12759,12 +12850,9 @@ function initRFKJSignalMonitor() {
                     rfkjSelectedTimeframe =
                         button.dataset.rfkjTime || "1";
 
-                    if (rfkjRunning) {
-                        rfkjPersistNativeState(true);
-                    }
-
                     rfkjPreviousSignals = null;
-                    rfkjUpdateUltraMini(null, 0, 0, false);
+                    rfkjPreviousPrice = null;
+        rfkjUpdateUltraMini(null, 0, 0, false);
 
                     if (rfkjRunning) {
                         rfkjFetchSignal();
@@ -12783,12 +12871,9 @@ function initRFKJSignalMonitor() {
         "change",
         () => {
 
-            if (rfkjRunning) {
-                rfkjPersistNativeState(true);
-            }
-
             rfkjPreviousSignals = null;
-            rfkjUpdateUltraMini(null, 0, 0, false);
+            rfkjPreviousPrice = null;
+        rfkjUpdateUltraMini(null, 0, 0, false);
 
             if (rfkjRunning) {
                 rfkjFetchSignal();
