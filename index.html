@@ -3359,6 +3359,42 @@ h1 {
     .rfkj-matrix-grid[data-count="1"]{--rfkj-matrix-count:1;}
 }
 
+
+@media (min-width:900px){
+    /* Desktop: give the coin picker more horizontal room with 1–2 matrices. */
+    .rfkj-matrix-grid[data-count="1"] .rfkj-instance .rfkj-controls{
+        grid-template-columns:minmax(240px,280px) minmax(0,1fr) !important;
+    }
+    .rfkj-matrix-grid[data-count="2"] .rfkj-instance .rfkj-controls{
+        grid-template-columns:minmax(220px,250px) minmax(0,1fr) !important;
+    }
+
+    /* Desktop: compact the labels when 3 matrices share the screen. */
+    .rfkj-matrix-grid[data-count="1"] .rfkj-compact-coin-trigger,
+    .rfkj-matrix-grid[data-count="2"] .rfkj-compact-coin-trigger{
+        min-height:46px !important;
+        padding:0 13px !important;
+        font-size:13px !important;
+    }
+    .rfkj-matrix-grid[data-count="1"] .rfkj-compact-coin-option,
+    .rfkj-matrix-grid[data-count="2"] .rfkj-compact-coin-option{
+        min-height:36px !important;
+        padding:6px 5px !important;
+        font-size:12px !important;
+    }
+    .rfkj-matrix-grid[data-count="3"] .rfkj-compact-coin-trigger{
+        min-height:42px !important;
+        padding:0 9px !important;
+        font-size:10px !important;
+    }
+    .rfkj-matrix-grid[data-count="3"] .rfkj-compact-coin-option{
+        min-height:30px !important;
+        padding:4px 2px !important;
+        font-size:9px !important;
+        letter-spacing:-.15px !important;
+    }
+}
+
 </style>
 
 </head>
@@ -9620,10 +9656,11 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         const old=state.previousSignals[timeframe];
         if(notify&&old){
             const changes=[];
-            if(old.RF!==rf)changes.push(`Range Filter • ${rf>0?"signal moved upward ↑":rf<0?"signal moved downward ↓":"signal is neutral →"}`);
-            if(old.ST!==st)changes.push(`Super Trend • ${st>0?"signal moved upward ↑":st<0?"signal moved downward ↓":"signal is neutral →"}`);
-            if(old.KJ!==kj)changes.push(kj<0?"Kijun 288 • price moved lower than the 288 line ↓":kj>0?"Kijun 288 • price moved higher than the 288 line ↑":"Kijun 288 • price returned to the 288 line zone →");
-            if(changes.length)await rfkjSendNotification(index,`Signal Matrix #${index} • ${coin}`,`${coin} • ${rfkjTimeframeLabel(timeframe)} • ${changes.join(" • ")}`);
+            const signalBadge=(value)=>value>0?"↑ ⬜":value<0?"↓ 🟦":"→";
+            if(old.RF!==rf)changes.push(`Range ${signalBadge(rf)}`);
+            if(old.ST!==st)changes.push(`SuperTrend ${signalBadge(st)}`);
+            if(old.KJ!==kj)changes.push(`KJ288 ${signalBadge(kj)}`);
+            if(changes.length)await rfkjSendNotification(index,`🔔 ${coin} • ${rfkjTimeframeLabel(timeframe)} • M${index}`,changes.join(" • "));
         }
         state.previousSignals[timeframe]={RF:rf,KJ:kj,ST:st};
     }catch(error){
@@ -9650,7 +9687,7 @@ function rfkjStart(index,sendStart=true){
     if(b){b.textContent="■ Stop Signal";b.classList.add("running");}
     if(sendStart){
         const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
-        rfkjSendNotification(index,`Signal Matrix #${index} • ${coin}`,`${coin} • ${s.selectedTimeframes.map(rfkjTimeframeLabel).join(", ")} • Signal STARTED`);
+        rfkjSendNotification(index,`🔔 ${coin} • M${index}`,`Signal started ↑`);
     }
     rfkjFetchSignal(index);
     s.timer=setInterval(()=>rfkjFetchSignal(index),RFKJ_POLL_MS);
