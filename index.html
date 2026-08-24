@@ -9660,7 +9660,7 @@ async function rfkjFetchOne(index,timeframe,notify=true){
             if(old.RF!==rf)changes.push(`Range ${signalBadge(rf)}`);
             if(old.ST!==st)changes.push(`SuperTrend ${signalBadge(st)}`);
             if(old.KJ!==kj)changes.push(`KJ288 ${signalBadge(kj)}`);
-            if(changes.length)await rfkjSendNotification(index,`🔔 ${coin} • ${rfkjTimeframeLabel(timeframe)} • M${index}`,changes.join(" • "));
+            if(changes.length)await rfkjSendNotification(index,`🔔 ${coin} • ${rfkjTimeframeLabel(timeframe)} • #${index}`,changes.join(" • "));
         }
         state.previousSignals[timeframe]={RF:rf,KJ:kj,ST:st};
     }catch(error){
@@ -9687,7 +9687,7 @@ function rfkjStart(index,sendStart=true){
     if(b){b.textContent="■ Stop Signal";b.classList.add("running");}
     if(sendStart){
         const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
-        rfkjSendNotification(index,`🔔 ${coin} • M${index}`,`Signal started ↑`);
+        rfkjSendNotification(index,`🔔 ${coin} • #${index}`,`Signal started ↑`);
     }
     rfkjFetchSignal(index);
     s.timer=setInterval(()=>rfkjFetchSignal(index),RFKJ_POLL_MS);
