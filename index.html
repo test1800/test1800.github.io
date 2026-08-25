@@ -2407,6 +2407,42 @@ h1 {
     color:#cbd5e1;
     text-shadow:0 1px 8px rgba(0,0,0,.30);
 }
+.rfkj-percent{
+    position:relative;
+    z-index:2;
+    flex:0 1 auto;
+    margin-left:6px;
+    padding:0;
+    border:0;
+    border-radius:0;
+    font-size:clamp(9px,3.0cqw,16px);
+    line-height:1;
+    font-weight:950;
+    letter-spacing:.05px;
+    color:#e2e8f0;
+    background:none;
+    box-shadow:none;
+    white-space:nowrap;
+    text-shadow:0 0 8px rgba(255,255,255,.16);
+}
+.rfkj-percent.percent-positive{
+    color:#ffffff;
+    background:none;
+    box-shadow:none;
+}
+.rfkj-percent.percent-negative{
+    color:#60a5fa;
+    background:none;
+    box-shadow:none;
+}
+.rfkj-percent.percent-zero{
+    color:#cbd5e1;
+    background:none;
+}
+.rfkj-percent.percent-invalid{
+    color:#64748b;
+    opacity:.65;
+}
 .rfkj-dot{
     position:absolute;
     width:5px;
@@ -2745,6 +2781,7 @@ h1 {
     box-sizing:border-box;
 }
 .rfkj-signals{
+    container-type:inline-size;
     width:100%;
     max-width:100%;
     min-width:0;
@@ -3101,6 +3138,7 @@ h1 {
 .rfkj-status-time{font-size:9px;color:#64748b;font-weight:700;white-space:nowrap;}
 /* Preserve the full signal-row width. Only height is reduced. */
 .rfkj-instance .rfkj-signals{
+    container-type:inline-size;
     width:100% !important;
     display:grid !important;
     grid-template-columns:repeat(3,minmax(0,1fr)) !important;
@@ -3127,8 +3165,8 @@ h1 {
     display:none !important;
 }
 .rfkj-instance .rfkj-code{
-    font-size:11.5px !important;
-    letter-spacing:.25px !important;
+    font-size:clamp(7px,3.6cqw,11.5px) !important;
+    letter-spacing:.12px !important;
 }
 /* Multi-timeframe signal rows: one compact row per selected timeframe. */
 .rfkj-signal-rows{
@@ -3160,6 +3198,7 @@ h1 {
     overflow:hidden;
 }
 .rfkj-signal-row .rfkj-signals{
+    container-type:inline-size;
     display:grid !important;
     grid-template-columns:repeat(3,minmax(0,1fr)) !important;
     gap:4px !important;
@@ -3177,8 +3216,8 @@ h1 {
     border-radius:5px !important;
 }
 .rfkj-signal-row .rfkj-code{
-    font-size:9.5px !important;
-    letter-spacing:.15px !important;
+    font-size:clamp(7px,3.25cqw,9.5px) !important;
+    letter-spacing:.08px !important;
 }
 /* 5 columns × 2 rows cryptocurrency menu. */
 .rfkj-compact-coin-picker{
@@ -9765,6 +9804,32 @@ function rfkjSetSelectionStatus(index, error=false){
     el.innerHTML=`<span class="rfkj-status-line rfkj-status-timeframe">${timeframes}</span>`;
     el.style.color=error?"#fca5a5":"#cbd5e1";
 }
+function rfkjFitSignalLabels(root=document){
+    const codes=root.querySelectorAll?.('.rfkj-code')||[];
+    codes.forEach(el=>{
+        const value=el.closest('.rfkj-value');
+        if(!value)return;
+        const width=value.getBoundingClientRect().width;
+        const compact=width>0&&width<92;
+        const short=el.dataset.shortLabel||'';
+        const full=el.dataset.fullLabel||el.textContent.trim();
+        if(!el.dataset.fullLabel)el.dataset.fullLabel=full;
+        if(!el.dataset.shortLabel){
+            el.dataset.shortLabel=full==='Range Filter'?'RF':full==='Super Trend'?'ST':full==='Kijun 288'?'K288':full;
+        }
+        el.textContent=compact?el.dataset.shortLabel:el.dataset.fullLabel;
+    });
+}
+let rfkjSignalLabelObserver;
+function rfkjObserveSignalLabels(){
+    if(typeof ResizeObserver==='undefined')return;
+    if(!rfkjSignalLabelObserver)rfkjSignalLabelObserver=new ResizeObserver(entries=>{
+        entries.forEach(entry=>rfkjFitSignalLabels(entry.target));
+    });
+    document.querySelectorAll('.rfkj-signals').forEach(el=>rfkjSignalLabelObserver.observe(el));
+    rfkjFitSignalLabels(document);
+}
+
 function rfkjRenderSignalRows(index){
     const s=rfkjInstance(index);
     const host=document.getElementById(`rfkjSignalRows${index}`);
@@ -9777,15 +9842,38 @@ function rfkjRenderSignalRows(index){
         row.innerHTML=`
             <div class="rfkj-row-timeframe">${rfkjTimeframeLabel(tf)}</div>
             <div class="rfkj-signals">
-                <div class="rfkj-signal"><div class="rfkj-value signal-zero" data-signal="RF"><span class="rfkj-code">Range Filter</span></div></div>
-                <div class="rfkj-signal"><div class="rfkj-value signal-zero" data-signal="ST"><span class="rfkj-code">Super Trend</span></div></div>
-                <div class="rfkj-signal"><div class="rfkj-value signal-zero" data-signal="KJ"><span class="rfkj-code">Kijun 288</span></div></div>
+                <div class="rfkj-signal"><div class="rfkj-value signal-zero" data-signal="RF"><span class="rfkj-code">Range Filter</span><span class="rfkj-percent" data-percent-for="RF">—</span></div></div>
+                <div class="rfkj-signal"><div class="rfkj-value signal-zero" data-signal="ST"><span class="rfkj-code">Super Trend</span><span class="rfkj-percent" data-percent-for="ST">—</span></div></div>
+                <div class="rfkj-signal"><div class="rfkj-value signal-zero" data-signal="KJ"><span class="rfkj-code">Kijun 288</span><span class="rfkj-percent" data-percent-for="KJ">—</span></div></div>
             </div>`;
         host.appendChild(row);
     });
+    rfkjObserveSignalLabels();
 }
 function rfkjSignalElement(index,timeframe,key){
     return document.querySelector(`#rfkjSignalRows${index} .rfkj-signal-row[data-timeframe="${CSS.escape(String(timeframe))}"] [data-signal="${key}"]`);
+}
+function rfkjFormatPercent(value){
+    const n=Number(value);
+    if(!Number.isFinite(n))return "—";
+    return `${n>0?"+":""}${n.toFixed(2)}%`;
+}
+function rfkjSetSignalPercent(index,timeframe,key,value){
+    const signal=rfkjSignalElement(index,timeframe,key);
+    const el=signal?.querySelector(`[data-percent-for="${key}"]`);
+    if(!el)return;
+    el.classList.remove("percent-positive","percent-negative","percent-zero","percent-invalid");
+    if(value===null||value===undefined||value===""){
+        el.textContent="—";
+        el.classList.add("percent-invalid");
+        return;
+    }
+    el.textContent=rfkjFormatPercent(value);
+    const n=Number(value);
+    if(!Number.isFinite(n))el.classList.add("percent-invalid");
+    else if(n>0)el.classList.add("percent-positive");
+    else if(n<0)el.classList.add("percent-negative");
+    else el.classList.add("percent-zero");
 }
 function rfkjUpdateUltraMini(price,rf,kj,st,valid=false){
     const priceEl=document.getElementById("rfkjUltraPrice");
@@ -9847,10 +9935,16 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         const rf=rfkjNormalizeSignal(data.RF??data.rf??data.rangeFilter??data.range_filter??0);
         const kj=rfkjNormalizeSignal(data.KJ??data.kj??data.kijunsen??0);
         const st=rfkjNormalizeSignal(data.ST??data.st??data.superTrend??data.supertrend??0);
+        const rfPercent=data.RFPercent??data.rfPercent??data.RF_PERCENT??data.rf_percent;
+        const kjPercent=data.KJPercent??data.kjPercent??data.KJ_PERCENT??data.kj_percent;
+        const stPercent=data.STPercent??data.stPercent??data.ST_PERCENT??data.st_percent;
         state.latestTimeframe=timeframe;
         rfkjApplySignal(rfkjSignalElement(index,timeframe,"RF"),rf);
         rfkjApplySignal(rfkjSignalElement(index,timeframe,"ST"),st);
         rfkjApplySignal(rfkjSignalElement(index,timeframe,"KJ"),kj);
+        rfkjSetSignalPercent(index,timeframe,"RF",rfPercent);
+        rfkjSetSignalPercent(index,timeframe,"ST",stPercent);
+        rfkjSetSignalPercent(index,timeframe,"KJ",kjPercent);
         const price=Number(data.price);
         const previousPrice=Number(state.latestPrice);
         state.priceDirection=(Number.isFinite(previousPrice)&&Number.isFinite(price)&&price>0)
@@ -9913,6 +10007,10 @@ function rfkjStop(index,sendStop=true){
         rfkjApplySignal(rfkjSignalElement(index,tf,"RF"),0,false);
         rfkjApplySignal(rfkjSignalElement(index,tf,"ST"),0,false);
         rfkjApplySignal(rfkjSignalElement(index,tf,"KJ"),0,false);
+        // While stopped, hide the last percentage value and show only a neutral dash.
+        rfkjSetSignalPercent(index,tf,"RF",null);
+        rfkjSetSignalPercent(index,tf,"ST",null);
+        rfkjSetSignalPercent(index,tf,"KJ",null);
     });
     s.previousSignals={};
     s.priceDirection=0;
