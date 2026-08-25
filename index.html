@@ -963,18 +963,18 @@ h1 {
     font-feature-settings:"tnum";
 }
 #cryptoValue.up{
-    color:#00e676;
-    transform:scale(1.04);
+    color:#8fc9a8;
+    transform:scale(1.015);
     text-shadow:
-        0 0 8px rgba(0,230,118,.4),
-        0 0 20px rgba(0,230,118,.25);
+        0 0 5px rgba(82,180,122,.16),
+        0 0 10px rgba(82,180,122,.08);
 }
 #cryptoValue.down{
-    color:#ff5252;
-    transform:scale(.96);
+    color:#d49a9a;
+    transform:scale(.99);
     text-shadow:
-        0 0 8px rgba(255,82,82,.4),
-        0 0 20px rgba(255,82,82,.25);
+        0 0 5px rgba(205,105,105,.16),
+        0 0 10px rgba(205,105,105,.08);
 }
 .crypto-card {
     min-width: 125px;
@@ -1202,26 +1202,26 @@ h1 {
     background:
     linear-gradient(
     145deg,
-    rgba(0,255,136,.40),
-    rgba(16,185,129,.10)
+    rgba(74,170,112,.18),
+    rgba(74,170,112,.045)
     ) !important;
     border-color:
-    rgba(0,255,136,.78) !important;
+    rgba(120,190,145,.24) !important;
     box-shadow:
-    0 0 18px rgba(0,255,136,.46) !important;
+    0 0 6px rgba(74,170,112,.08) !important;
 }
 /* SELL */
 .signal-sell{
     background:
     linear-gradient(
     145deg,
-    rgba(239,68,68,.38),
-    rgba(239,68,68,.10)
+    rgba(190,92,92,.18),
+    rgba(190,92,92,.045)
     ) !important;
     border-color:
-    rgba(239,68,68,.72) !important;
+    rgba(205,125,125,.24) !important;
     box-shadow:
-    0 0 18px rgba(239,68,68,.40) !important;
+    0 0 6px rgba(190,92,92,.08) !important;
 }
 /* OFFLINE */
 .signal-offline,
@@ -2374,8 +2374,8 @@ h1 {
 }
 .rfkj-signals{
     grid-template-columns:repeat(3,minmax(0,1fr)) !important;
-    gap:7px !important;
-    margin-top:7px !important;
+    gap:5px !important;
+    margin-top:4px !important;
 }
 .rfkj-signal{
     min-height:62px !important;
@@ -2593,8 +2593,8 @@ h1 {
 }
 .rfkj-compact-coin-trigger{
     width:100%;
-    min-height:42px;
-    padding:0 11px;
+    min-height:30px;
+    padding:0 8px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -2638,7 +2638,7 @@ h1 {
     left:0;
     width:100%;
     min-width:190px;
-    padding:7px;
+    padding:5px;
     display:grid;
     grid-template-columns:repeat(5,minmax(0,1fr));
     gap:5px;
@@ -2701,9 +2701,9 @@ h1 {
         min-width:0;
     }
     .rfkj-compact-coin-option{
-        min-height:32px;
+        min-height:26px;
         font-size:10.5px;
-        padding:5px 6px;
+        padding:3px 5px;
     }
 }
 
@@ -2836,7 +2836,7 @@ h1 {
         max-width:100% !important;
         min-width:0 !important;
         box-sizing:border-box !important;
-        min-height:42px !important;
+        min-height:34px !important;
         font-size:13px !important;
         padding-left:10px !important;
         padding-right:28px !important;
@@ -2856,7 +2856,7 @@ h1 {
         width:100% !important;
         min-width:0 !important;
         max-width:100% !important;
-        min-height:34px !important;
+        min-height:26px !important;
         padding:0 1px !important;
         box-sizing:border-box !important;
         font-size:clamp(10px,3vw,12px) !important;
@@ -2869,7 +2869,7 @@ h1 {
         min-width:0 !important;
         max-width:100% !important;
         box-sizing:border-box !important;
-        min-height:42px !important;
+        min-height:32px !important;
         padding-left:8px !important;
         padding-right:8px !important;
         font-size:12px !important;
@@ -2897,9 +2897,9 @@ h1 {
     align-items:center !important;
     justify-content:center !important;
     gap:1px !important;
-    height:42px !important;
-    min-height:42px !important;
-    line-height:1.05 !important;
+    height:28px !important;
+    min-height:28px !important;
+    line-height:.95 !important;
     white-space:nowrap !important;
     overflow:hidden !important;
     text-overflow:clip !important;
@@ -2927,6 +2927,44 @@ h1 {
     color:#94a3b8 !important;
 }
 
+/* Compact Signal Matrix header: title on one side, selected coin + price + update on the other. */
+.rfkj-header{
+    margin-bottom:5px !important;
+    min-height:24px !important;
+}
+.rfkj-header-title-wrap{
+    min-width:0;
+}
+.rfkj-header-price{
+    display:flex;
+    align-items:baseline;
+    justify-content:flex-end;
+    gap:7px;
+    min-width:0;
+    white-space:nowrap;
+    font-size:20px;
+    line-height:1;
+    font-weight:900;
+}
+.rfkj-header-coin{
+    color:#94a3b8;
+    font-size:20px;
+    font-weight:900;
+}
+.rfkj-header-price-value{
+    font-size:20px;
+    font-weight:900;
+    transition:color .25s ease, text-shadow .25s ease;
+}
+.rfkj-header-price-value.price-up{color:#34d399 !important;text-shadow:0 0 7px rgba(52,211,153,.20);}
+.rfkj-header-price-value.price-down{color:#f87171 !important;text-shadow:0 0 7px rgba(248,113,113,.20);}
+.rfkj-header-price-value.price-flat{color:#e2e8f0 !important;text-shadow:none;}
+.rfkj-header-updated{
+    color:#64748b;
+    font-size:9px;
+    font-weight:700;
+}
+
 /* =====================================================
    SIGNAL MATRIX • 1 / 2 / 3 BOXES
    Exact layout requested:
@@ -2946,7 +2984,7 @@ h1 {
     grid-template-columns:minmax(125px,1.1fr) repeat(3,minmax(0,1fr));
     align-items:stretch;
     gap:6px;
-    margin:0 0 8px;
+    margin:0 0 6px;
     width:100%;
 }
 .rfkj-slot-label{
@@ -2964,8 +3002,8 @@ h1 {
 .rfkj-slot-btn{
     width:100%;
     min-width:0;
-    height:38px;
-    padding:0 12px;
+    height:25px;
+    padding:0 8px;
     border:1px solid rgba(255,255,255,.10);
     border-radius:8px;
     color:#94a3b8;
@@ -2985,7 +3023,7 @@ h1 {
 .rfkj-matrix-grid{
     display:grid;
     grid-template-columns:1fr;
-    gap:10px;
+    gap:6px;
     min-width:0;
     width:100%;
 }
@@ -3032,21 +3070,22 @@ h1 {
 .rfkj-instance .rfkj-timeframe{
     min-width:0 !important;
     width:100% !important;
-    min-height:32px !important;
-    padding:0 3px !important;
+    min-height:27px !important;
+    padding:0 2px !important;
     font-size:10.5px !important;
 }
 .rfkj-action-row{
     display:grid;
-    grid-template-columns:minmax(125px,180px) minmax(0,1fr);
-    gap:8px;
+    grid-template-columns:minmax(115px,180px) minmax(0,1fr);
+    gap:6px;
     align-items:center;
-    margin-top:7px;
+    margin-top:4px;
     min-width:0;
 }
 .rfkj-action-row .rfkj-start-stop{
     width:100%;
     min-width:0;
+    min-height:34px !important;
 }
 .rfkj-action-row .rfkj-status{
     margin:0 !important;
@@ -3061,23 +3100,23 @@ h1 {
     width:100% !important;
     display:grid !important;
     grid-template-columns:repeat(3,minmax(0,1fr)) !important;
-    gap:7px !important;
-    margin-top:7px !important;
+    gap:5px !important;
+    margin-top:4px !important;
 }
 .rfkj-instance .rfkj-signal{
     width:100% !important;
     min-width:0 !important;
-    min-height:42px !important;
-    height:42px !important;
-    padding:4px !important;
-    border-radius:10px !important;
+    min-height:26px !important;
+    height:26px !important;
+    padding:1px !important;
+    border-radius:8px !important;
     box-sizing:border-box !important;
 }
 .rfkj-instance .rfkj-value{
     width:100% !important;
-    height:30px !important;
-    min-height:30px !important;
-    border-radius:8px !important;
+    height:20px !important;
+    min-height:20px !important;
+    border-radius:6px !important;
     box-sizing:border-box !important;
 }
 .rfkj-instance .rfkj-dot{
@@ -3091,9 +3130,9 @@ h1 {
 .rfkj-signal-rows{
     display:flex;
     flex-direction:column;
-    gap:4px;
+    gap:3px;
     width:100%;
-    margin-top:6px;
+    margin-top:4px;
 }
 .rfkj-signal-row{
     display:grid;
@@ -3103,8 +3142,8 @@ h1 {
     width:100%;
 }
 .rfkj-row-timeframe{
-    min-height:34px;
-    padding:0 3px;
+    min-height:27px;
+    padding:0 2px;
     display:flex;
     align-items:center;
     justify-content:center;
@@ -3123,15 +3162,15 @@ h1 {
     margin:0 !important;
 }
 .rfkj-signal-row .rfkj-signal{
-    min-height:34px !important;
-    height:34px !important;
-    padding:2px !important;
+    min-height:26px !important;
+    height:26px !important;
+    padding:1px !important;
     border-radius:7px !important;
 }
 .rfkj-signal-row .rfkj-value{
-    height:28px !important;
-    min-height:28px !important;
-    border-radius:6px !important;
+    height:24px !important;
+    min-height:24px !important;
+    border-radius:5px !important;
 }
 .rfkj-signal-row .rfkj-code{
     font-size:9.5px !important;
@@ -3146,8 +3185,8 @@ h1 {
 }
 .rfkj-compact-coin-trigger{
     width:100%;
-    min-height:42px;
-    padding:0 11px;
+    min-height:30px;
+    padding:0 8px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -3188,10 +3227,10 @@ h1 {
     left:0;
     width:100%;
     min-width:190px;
-    padding:7px;
+    padding:5px;
     display:grid;
     grid-template-columns:repeat(5,minmax(0,1fr));
-    grid-template-rows:repeat(2,minmax(32px,auto));
+    grid-template-rows:repeat(2,minmax(22px,auto));
     gap:5px;
     background:rgba(7,11,20,.98);
     border:1px solid rgba(255,255,255,.12);
@@ -3213,8 +3252,8 @@ h1 {
 }
 .rfkj-compact-coin-option{
     min-width:0;
-    min-height:32px;
-    padding:5px 4px;
+    min-height:22px;
+    padding:2px 2px;
     border:1px solid rgba(255,255,255,.06);
     border-radius:8px;
     color:#cbd5e1;
@@ -3252,8 +3291,8 @@ h1 {
         font-size:11px;
     }
     .rfkj-slot-btn{
-        height:34px;
-        padding:0 8px;
+        height:28px;
+        padding:0 7px;
         font-size:14px;
     }
 }
@@ -3307,8 +3346,8 @@ h1 {
     flex:1 1 50% !important;
     width:auto !important;
     min-width:0 !important;
-    height:42px !important;
-    min-height:42px !important;
+    height:28px !important;
+    min-height:28px !important;
     display:flex !important;
     align-items:center !important;
     justify-content:center !important;
@@ -3397,29 +3436,37 @@ h1 {
     /* Desktop: compact the labels when 3 matrices share the screen. */
     .rfkj-matrix-grid[data-count="1"] .rfkj-compact-coin-trigger,
     .rfkj-matrix-grid[data-count="2"] .rfkj-compact-coin-trigger{
-        min-height:46px !important;
-        padding:0 13px !important;
+        min-height:32px !important;
+        padding:0 9px !important;
         font-size:13px !important;
     }
     .rfkj-matrix-grid[data-count="1"] .rfkj-compact-coin-option,
     .rfkj-matrix-grid[data-count="2"] .rfkj-compact-coin-option{
-        min-height:36px !important;
-        padding:6px 5px !important;
+        min-height:23px !important;
+        padding:2px 3px !important;
         font-size:12px !important;
     }
     .rfkj-matrix-grid[data-count="3"] .rfkj-compact-coin-trigger{
-        min-height:42px !important;
-        padding:0 9px !important;
+        min-height:30px !important;
+        padding:0 7px !important;
         font-size:10px !important;
     }
     .rfkj-matrix-grid[data-count="3"] .rfkj-compact-coin-option{
-        min-height:30px !important;
-        padding:4px 2px !important;
+        min-height:22px !important;
+        padding:2px 2px !important;
         font-size:9px !important;
         letter-spacing:-.15px !important;
     }
 }
 
+
+/* Final compactness pass for Signal Matrix header/action row. */
+.rfkj-header{display:flex !important;align-items:center !important;justify-content:space-between !important;gap:8px !important;margin-bottom:4px !important;}
+.rfkj-header-price{display:flex !important;align-items:baseline !important;justify-content:flex-end !important;gap:6px !important;white-space:nowrap !important;}
+.rfkj-header-price-value,.rfkj-header-coin{font-size:20px !important;line-height:1 !important;font-weight:900 !important;}
+.rfkj-header-updated{font-size:8px !important;}
+.rfkj-action-row .rfkj-start-stop{min-height:28px !important;height:28px !important;}
+.rfkj-action-row .rfkj-status{height:28px !important;min-height:28px !important;}
 </style>
 
 </head>
@@ -4227,10 +4274,10 @@ h1 {
 </div>
 <div class="rfkj-matrix-grid" id="rfkjMatrixGrid" data-count="1"><div class="card rfkj-card rfkj-instance" data-rfkj-index="1" data-timeframe-mode="single-timeframe">
     <div class="rfkj-header">
-        <div>
+        <div class="rfkj-header-title-wrap">
             <div class="rfkj-title">Signal Matrix <span style="color:#64748b;font-size:11px;font-weight:800;">#1</span></div>
-            <div class="rfkj-subtitle">Range Filter • Kijunsen 288</div>
         </div>
+        <div id="rfkjHeaderPrice1" class="rfkj-header-price" aria-live="polite"><span class="rfkj-header-coin">BTC</span><span class="rfkj-header-price-value price-flat">-</span><span class="rfkj-header-updated">--:--:--</span></div>
     </div>
     <div class="rfkj-controls">
         <select id="rfkjCoin1" class="rfkj-select rfkj-instance-coin" aria-label="Select cryptocurrency"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option></select>
@@ -4243,10 +4290,10 @@ h1 {
     <div class="rfkj-signal-rows" id="rfkjSignalRows1"></div>
 </div><div class="card rfkj-card rfkj-instance" data-rfkj-index="2" data-timeframe-mode="multi-timeframe">
     <div class="rfkj-header">
-        <div>
+        <div class="rfkj-header-title-wrap">
             <div class="rfkj-title">Signal Matrix <span style="color:#64748b;font-size:11px;font-weight:800;">#2</span></div>
-            <div class="rfkj-subtitle">Range Filter • Kijunsen 288</div>
         </div>
+        <div id="rfkjHeaderPrice2" class="rfkj-header-price" aria-live="polite"><span class="rfkj-header-coin">BTC</span><span class="rfkj-header-price-value price-flat">-</span><span class="rfkj-header-updated">--:--:--</span></div>
     </div>
     <div class="rfkj-controls">
         <select id="rfkjCoin2" class="rfkj-select rfkj-instance-coin" aria-label="Select cryptocurrency"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option></select>
@@ -4259,10 +4306,10 @@ h1 {
     <div class="rfkj-signal-rows" id="rfkjSignalRows2"></div>
 </div><div class="card rfkj-card rfkj-instance" data-rfkj-index="3" data-timeframe-mode="multi-timeframe">
     <div class="rfkj-header">
-        <div>
+        <div class="rfkj-header-title-wrap">
             <div class="rfkj-title">Signal Matrix <span style="color:#64748b;font-size:11px;font-weight:800;">#3</span></div>
-            <div class="rfkj-subtitle">Range Filter • Kijunsen 288</div>
         </div>
+        <div id="rfkjHeaderPrice3" class="rfkj-header-price" aria-live="polite"><span class="rfkj-header-coin">BTC</span><span class="rfkj-header-price-value price-flat">-</span><span class="rfkj-header-updated">--:--:--</span></div>
     </div>
     <div class="rfkj-controls">
         <select id="rfkjCoin3" class="rfkj-select rfkj-instance-coin" aria-label="Select cryptocurrency"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option></select>
@@ -4453,6 +4500,7 @@ function getCryptoIconSrc(coin) {
 const SIGNAL_CACHE_KEY =
     "financialDashboardCryptoSignals-v1";
 let previousSignals = {};
+let nativeSignalBaselineApplied = false;
 let lastSignalRenderSignature = "";
 function saveSignalCache(data) {
     try {
@@ -4594,8 +4642,20 @@ async function loadCryptoSignals() {
            comparison baseline so changes are still
            detected across page reloads.
         */
-        const oldSignals =
-            { ...previousSignals };
+        let oldSignals = { ...previousSignals };
+        if (!nativeSignalBaselineApplied &&
+            window.AndroidNotifications &&
+            typeof window.AndroidNotifications.getBackgroundSignalStateJson === "function") {
+            try {
+                const rawBaseline = window.AndroidNotifications.getBackgroundSignalStateJson();
+                const nativeBaseline = rawBaseline ? JSON.parse(rawBaseline) : null;
+                if (nativeBaseline && typeof nativeBaseline === "object" &&
+                    Object.keys(nativeBaseline).length) {
+                    oldSignals = nativeBaseline;
+                }
+            } catch (e) {}
+            nativeSignalBaselineApplied = true;
+        }
         const signalCoins = [
             "BTC",
             "BNB",
@@ -9568,18 +9628,33 @@ function rfkjFormatUpdated(value){
 function rfkjSetStatus(index,message,error=false){
     const el=rfkjGet("rfkjStatus",index);
     if(!el)return;
-    el.innerHTML=`${message} <span class="rfkj-status-time">• ${rfkjNowText()}</span>`;
+    el.textContent=message;
     el.style.color=error?"#fca5a5":"#cbd5e1";
+}
+function rfkjUpdateHeaderPrice(index){
+    const el=document.getElementById(`rfkjHeaderPrice${index}`);
+    const s=rfkjInstance(index);
+    if(!el||!s)return;
+    const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
+    const priceEl=el.querySelector(".rfkj-header-price-value");
+    const coinEl=el.querySelector(".rfkj-header-coin");
+    const updatedEl=el.querySelector(".rfkj-header-updated");
+    if(coinEl)coinEl.textContent=coin;
+    if(priceEl){
+        const price=Number(s.latestPrice);
+        const valid=Number.isFinite(price)&&price>0;
+        priceEl.textContent=valid?rfkjFormatPrice(price):"-";
+        priceEl.className=`rfkj-header-price-value ${s.priceDirection>0?"price-up":s.priceDirection<0?"price-down":"price-flat"}`;
+    }
+    if(updatedEl)updatedEl.textContent=s.latestUpdated?rfkjFormatUpdated(s.latestUpdated):"--:--:--";
 }
 function rfkjSetSelectionStatus(index, error=false){
     const el=rfkjGet("rfkjStatus",index);
     const s=rfkjInstance(index);
     if(!el||!s)return;
+    rfkjUpdateHeaderPrice(index);
     const timeframes=s.selectedTimeframes.map(rfkjTimeframeLabel).join(", ")||"-";
-    const price=Number.isFinite(Number(s.latestPrice))&&Number(s.latestPrice)>0?rfkjFormatPrice(s.latestPrice):"-";
-    const updated=rfkjFormatUpdated(s.latestUpdated);
-    const direction=s.priceDirection>0?"price-up":s.priceDirection<0?"price-down":"price-flat";
-    el.innerHTML=`<span class="rfkj-status-line rfkj-status-timeframe">${timeframes}</span><span class="rfkj-status-line rfkj-status-price-line"><span class="rfkj-status-price ${direction}">${price}</span></span><span class="rfkj-status-line rfkj-status-updated">${updated}</span>`;
+    el.innerHTML=`<span class="rfkj-status-line rfkj-status-timeframe">${timeframes}</span>`;
     el.style.color=error?"#fca5a5":"#cbd5e1";
 }
 function rfkjRenderSignalRows(index){
@@ -9676,6 +9751,7 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         state.latestPrice=Number.isFinite(price)&&price>0?price:null;
         state.latestUpdated=data.updated||new Date().toISOString();
         rfkjSetSelectionStatus(index);
+        rfkjUpdateHeaderPrice(index);
         /* Matrix #1 is the source for Ultra Compact price + arrows. */
         if(index===1)rfkjUpdateUltraMini(price,rf,kj,st,Number.isFinite(price)&&price>0);
         const old=state.previousSignals[timeframe];
@@ -9733,6 +9809,7 @@ function rfkjStop(index,sendStop=true){
     s.previousSignals={};
     s.priceDirection=0;
     rfkjSetStatus(index,"Signal stopped.");
+    rfkjUpdateHeaderPrice(index);
     if(index===1)rfkjUpdateUltraMini(null,0,0,0,false);
     if(sendStop){
         const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
@@ -9778,6 +9855,7 @@ function rfkjInitInstance(index){
         s.latestUpdated=null;
         s.priceDirection=0;
         rfkjSetSelectionStatus(index);
+        rfkjUpdateHeaderPrice(index);
         if(index===1)rfkjUpdateUltraMini(null,0,0,0,false);
         if(s.running)rfkjFetchSignal(index);
         rfkjSaveState();
