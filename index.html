@@ -353,6 +353,79 @@ h1 {
         nowrap;
 }
 /* =====================================================
+   LAST PERIOD AGE INDICATOR
+   0-10d: static white, no wave.
+   10-20d: white with a subtle outward wave.
+   20-30d: outward wave + smooth white-to-red gradient.
+===================================================== */
+#lastTrades .last-age-value {
+    position: relative;
+    display: inline-block;
+    z-index: 0;
+    padding: 1px 4px;
+    border-radius: 7px;
+    transform-origin: center center;
+    color: #e2e8f0;
+    transition: color .35s ease, text-shadow .35s ease, transform .35s ease;
+}
+#lastTrades .last-age-value::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    height: 100%;
+    border: 1px solid currentColor;
+    border-radius: 9px;
+    transform: translate(-50%, -50%) scale(.90);
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+/* Wave only starts from 10 days. */
+#lastTrades.last-age-wave .last-age-value::after {
+    animation: lastAgeRipple 3.0s ease-out infinite;
+}
+#lastTrades.last-age-wave .last-age-value {
+    animation: lastAgeNumberPulse 3.0s ease-in-out infinite;
+}
+@keyframes lastAgeRipple {
+    0% {
+        transform: translate(-50%, -50%) scale(.90);
+        opacity: .42;
+    }
+    72% {
+        transform: translate(-50%, -50%) scale(1.38);
+        opacity: .10;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.48);
+        opacity: 0;
+    }
+}
+@keyframes lastAgeNumberPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    38% {
+        transform: scale(1.055);
+    }
+    72% {
+        transform: scale(1);
+    }
+}
+#lastTrades.last-age-white .last-age-value {
+    color: #e2e8f0 !important;
+    text-shadow: 0 0 3px rgba(226,232,240,.14);
+}
+#lastTrades.last-age-red .last-age-value {
+    color: #ff3b3b !important;
+    text-shadow: 0 0 6px rgba(255,59,59,.46), 0 0 12px rgba(255,59,59,.20);
+}
+#lastTrades.last-age-warn .last-age-value {
+    color: #ffb0b0 !important;
+}
+/* =====================================================
    ACTION BADGE
 ===================================================== */
 .action-badge {
@@ -1208,14 +1281,12 @@ h1 {
     rgba(74,170,112,.045)
     ) !important;
     border-color:
-    rgba(75,220,125,.95) !important;
+    rgba(120,190,145,.48) !important;
     box-shadow:
-    0 0 0 1px rgba(75,220,125,.30),
-    0 0 7px rgba(75,220,125,.24),
     0 4px 10px rgba(38,92,61,.16),
     inset 0 1px 0 rgba(255,255,255,.24),
     inset 0 -2px 0 rgba(25,70,45,.20),
-    inset 0 0 0 1px rgba(130,205,155,.12) !important;
+    inset 0 0 0 1px rgba(130,205,155,.08) !important;
     transform: translateY(-1px);
 }
 /* SELL */
@@ -1227,14 +1298,12 @@ h1 {
     rgba(190,92,92,.045)
     ) !important;
     border-color:
-    rgba(255,82,82,.95) !important;
+    rgba(205,125,125,.48) !important;
     box-shadow:
-    0 0 0 1px rgba(255,82,82,.30),
-    0 0 7px rgba(255,82,82,.24),
     0 4px 10px rgba(105,50,50,.16),
     inset 0 1px 0 rgba(255,255,255,.24),
     inset 0 -2px 0 rgba(95,38,38,.20),
-    inset 0 0 0 1px rgba(225,145,145,.12) !important;
+    inset 0 0 0 1px rgba(225,145,145,.08) !important;
     transform: translateY(-1px);
 }
 /* OFFLINE */
@@ -7672,16 +7741,68 @@ function displaySection(
             "Trades"
         );
     if (tradeCount) {
-        tradeCount.textContent =
+        tradeCount.innerHTML =
             result.buyCount
             +
             " IN  •  "
             +
             result.sellCount
             +
-            " OUT  •  "
+            " OUT  •  <span class=\"last-age-value\">"
             +
-            age;
+            age
+            +
+            "</span>";
+
+        /* Last Period only:
+           0-10d: static white, no wave.
+           10-20d: white with subtle wave.
+           20-30d: wave + smooth white-to-strong-red color progression.
+           >=30d: strong red. */
+        if (prefix === "last") {
+            tradeCount.classList.remove(
+                "last-age-red",
+                "last-age-warn",
+                "last-age-white",
+                "last-age-wave"
+            );
+
+            const ageMatch =
+                String(age ?? "").match(/(\d+)\s*d/i);
+            const ageDays = ageMatch
+                ? Number(ageMatch[1])
+                : NaN;
+            const ageValue = tradeCount.querySelector(".last-age-value");
+
+            if (ageValue && Number.isFinite(ageDays)) {
+                ageValue.style.color = "";
+                ageValue.style.textShadow = "";
+
+                if (ageDays < 10) {
+                    tradeCount.classList.add("last-age-white");
+                }
+                else if (ageDays < 20) {
+                    tradeCount.classList.add("last-age-white", "last-age-wave");
+                }
+                else if (ageDays < 30) {
+                    const proximity = (ageDays - 20) / 10;
+                    const red = Math.round(226 + 29 * proximity);
+                    const green = Math.round(232 - 190 * proximity);
+                    const blue = Math.round(240 - 185 * proximity);
+                    const glow = (0.14 + 0.34 * proximity).toFixed(2);
+                    tradeCount.classList.add("last-age-warn", "last-age-wave");
+                    ageValue.style.color = `rgb(${red}, ${green}, ${blue})`;
+                    ageValue.style.textShadow =
+                        `0 0 ${3 + Math.round(5 * proximity)}px rgba(255,70,70,${glow})`;
+                }
+                else {
+                    tradeCount.classList.add("last-age-red", "last-age-wave");
+                }
+            }
+            else {
+                tradeCount.classList.add("last-age-white");
+            }
+        }
     }
 }
 /* =====================================================
