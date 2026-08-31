@@ -9872,7 +9872,10 @@ function rfkjRenderSignalRows(index){
     const host=document.getElementById(`rfkjSignalRows${index}`);
     if(!s||!host)return;
     host.innerHTML="";
-    s.selectedTimeframes.forEach(tf=>{
+    // Always display selected timeframes from lowest to highest, regardless of click order.
+    const orderedTimeframes=s.selectedTimeframes.slice().sort((a,b)=>rfkjTimeframeRank(a)-rfkjTimeframeRank(b));
+    s.selectedTimeframes=orderedTimeframes;
+    orderedTimeframes.forEach(tf=>{
         const row=document.createElement("div");
         row.className="rfkj-signal-row";
         row.dataset.timeframe=tf;
@@ -10096,6 +10099,8 @@ function rfkjSelectTimeframe(index,button){
             s.selectedTimeframes.push(tf);
         }
     }
+    // Keep the internal selection ordered as well, so saved state and every refresh use low → high.
+    s.selectedTimeframes.sort((a,b)=>rfkjTimeframeRank(a)-rfkjTimeframeRank(b));
     s.previousSignals={};
     rfkjRenderSignalRows(index);
     rfkjSetSelectionStatus(index);
