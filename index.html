@@ -1185,6 +1185,8 @@ h1 {
     border:
     1px solid rgba(255,255,255,.08);
     transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    position:relative;
+    overflow:hidden;
 }
 .signal-box img{
     width:22px;
@@ -1206,11 +1208,15 @@ h1 {
     rgba(74,170,112,.045)
     ) !important;
     border-color:
-    rgba(120,190,145,.48) !important;
+    rgba(75,220,125,.95) !important;
     box-shadow:
-    0 2px 5px rgba(74,170,112,.10),
-    inset 0 1px 0 rgba(255,255,255,.10),
-    inset 0 -1px 0 rgba(40,100,65,.12) !important;
+    0 0 0 1px rgba(75,220,125,.30),
+    0 0 7px rgba(75,220,125,.24),
+    0 4px 10px rgba(38,92,61,.16),
+    inset 0 1px 0 rgba(255,255,255,.24),
+    inset 0 -2px 0 rgba(25,70,45,.20),
+    inset 0 0 0 1px rgba(130,205,155,.12) !important;
+    transform: translateY(-1px);
 }
 /* SELL */
 .signal-sell{
@@ -1221,11 +1227,15 @@ h1 {
     rgba(190,92,92,.045)
     ) !important;
     border-color:
-    rgba(205,125,125,.48) !important;
+    rgba(255,82,82,.95) !important;
     box-shadow:
-    0 2px 5px rgba(190,92,92,.10),
-    inset 0 1px 0 rgba(255,255,255,.10),
-    inset 0 -1px 0 rgba(125,55,55,.12) !important;
+    0 0 0 1px rgba(255,82,82,.30),
+    0 0 7px rgba(255,82,82,.24),
+    0 4px 10px rgba(105,50,50,.16),
+    inset 0 1px 0 rgba(255,255,255,.24),
+    inset 0 -2px 0 rgba(95,38,38,.20),
+    inset 0 0 0 1px rgba(225,145,145,.12) !important;
+    transform: translateY(-1px);
 }
 /* OFFLINE */
 .signal-offline,
