@@ -354,9 +354,10 @@ h1 {
 }
 /* =====================================================
    LAST PERIOD AGE INDICATOR
-   0-10d: static white, no wave.
-   10-20d: white with a subtle outward wave.
-   20-30d: outward wave + smooth white-to-red gradient.
+   0-10d: static white, no effect.
+   10-20d: soft white aura.
+   20-30d: white-to-red aura, stronger toward 30d.
+   >=30d: strong red aura.
 ===================================================== */
 #lastTrades .last-age-value {
     position: relative;
@@ -366,53 +367,33 @@ h1 {
     border-radius: 7px;
     transform-origin: center center;
     color: #e2e8f0;
-    transition: color .35s ease, text-shadow .35s ease, transform .35s ease;
+    transition: color .45s ease, text-shadow .45s ease, filter .45s ease;
 }
 #lastTrades .last-age-value::after {
     content: "";
     position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 100%;
-    height: 100%;
-    border: 1px solid currentColor;
+    inset: -3px;
     border-radius: 9px;
-    transform: translate(-50%, -50%) scale(.90);
+    background: currentColor;
     opacity: 0;
+    filter: blur(5px);
     pointer-events: none;
     z-index: -1;
 }
-/* Wave only starts from 10 days. */
+/* The number stays fixed; only the surrounding aura breathes. */
 #lastTrades.last-age-wave .last-age-value::after {
-    animation: lastAgeRipple 3.0s ease-out infinite;
+    animation: lastAgeAura 2.8s ease-in-out infinite;
 }
 #lastTrades.last-age-wave .last-age-value {
-    animation: lastAgeNumberPulse 3.0s ease-in-out infinite;
+    animation: lastAgeGlow 2.8s ease-in-out infinite;
 }
-@keyframes lastAgeRipple {
-    0% {
-        transform: translate(-50%, -50%) scale(.90);
-        opacity: .42;
-    }
-    72% {
-        transform: translate(-50%, -50%) scale(1.38);
-        opacity: .10;
-    }
-    100% {
-        transform: translate(-50%, -50%) scale(1.48);
-        opacity: 0;
-    }
+@keyframes lastAgeAura {
+    0%, 100% { opacity: .08; transform: scale(.96); filter: blur(5px); }
+    50% { opacity: .22; transform: scale(1.04); filter: blur(7px); }
 }
-@keyframes lastAgeNumberPulse {
-    0%, 100% {
-        transform: scale(1);
-    }
-    38% {
-        transform: scale(1.055);
-    }
-    72% {
-        transform: scale(1);
-    }
+@keyframes lastAgeGlow {
+    0%, 100% { text-shadow: 0 0 2px currentColor; }
+    50% { text-shadow: 0 0 7px currentColor; }
 }
 #lastTrades.last-age-white .last-age-value {
     color: #e2e8f0 !important;
