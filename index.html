@@ -3005,13 +3005,21 @@ h1 {
     font-size:9px;
     font-weight:700;
 }
+.rfkj-header-daily-change{
+    font-size:12px;
+    font-weight:900;
+    line-height:1;
+    min-width:0;
+    white-space:nowrap;
+}
+.rfkj-header-daily-change.daily-positive{color:#34d399 !important;text-shadow:0 0 7px rgba(52,211,153,.16);}
+.rfkj-header-daily-change.daily-negative{color:#f87171 !important;text-shadow:0 0 7px rgba(248,113,113,.16);}
+.rfkj-header-daily-change.daily-zero{color:#94a3b8 !important;text-shadow:none;}
+.rfkj-header-daily-change.daily-invalid{color:#64748b !important;text-shadow:none;}
 
 /* =====================================================
-   SIGNAL MATRIX • 1 / 2 / 3 BOXES
-   Exact layout requested:
-   Row 1 = Coin picker + Timeframe selector
-   Row 2 = Start/Stop + selected state / price
-   Row 3 = RF / ST / KJ signal blocks
+   SIGNAL MATRIX • MATRIX COUNT SELECTOR
+   Three compact selector blocks: 1 / 2 / 3 visible matrices.
 ===================================================== */
 .rfkj-matrix-section{
     grid-column:1 / -1;
@@ -3019,14 +3027,22 @@ h1 {
     width:100%;
     position:relative;
     z-index:40;
+    /* Remove the extra dashboard row gap above and below Signal Matrix. */
+    margin-top:-6px;
+    margin-bottom:-6px;
 }
 .rfkj-slot-bar{
     display:grid;
     grid-template-columns:minmax(125px,1.1fr) repeat(3,minmax(0,1fr));
-    align-items:stretch;
+    align-items:center;
     gap:6px;
     margin:0 0 6px;
     width:100%;
+    padding:2px;
+    border:1px solid rgba(148,163,184,.10);
+    border-radius:10px;
+    background:linear-gradient(180deg,rgba(15,23,42,.72),rgba(2,6,23,.55));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 8px 22px rgba(0,0,0,.12);
 }
 .rfkj-slot-label{
     display:flex;
@@ -3040,27 +3056,29 @@ h1 {
     color:#94a3b8;
     white-space:nowrap;
 }
+/* Empty selector blocks — selection is represented only by their fill. */
 .rfkj-slot-btn{
     width:100%;
     min-width:0;
-    height:25px;
-    padding:0 8px;
-    border:1px solid rgba(255,255,255,.10);
-    border-radius:8px;
-    color:#94a3b8;
-    background:rgba(2,6,23,.55);
-    font-size:clamp(14px,1.5vw,18px);
-    line-height:1;
-    font-weight:950;
+    height:14px;
+    padding:0;
+    border:1px solid rgba(148,163,184,.22);
+    border-radius:5px;
+    background:rgba(30,41,59,.62);
     cursor:pointer;
-    transition:.16s ease;
+    transition:background .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+    box-sizing:border-box;
 }
-.rfkj-slot-btn:hover,
+.rfkj-slot-btn:hover{
+    background:rgba(100,116,139,.48);
+    border-color:rgba(203,213,225,.45);
+}
 .rfkj-slot-btn.active{
-    color:#fff;
-    background:linear-gradient(145deg,rgba(99,102,241,.36),rgba(59,130,246,.14));
-    border-color:rgba(165,180,252,.55);
+    background:linear-gradient(180deg,rgba(148,163,184,.92),rgba(71,85,105,.82));
+    border-color:rgba(226,232,240,.72);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 0 8px rgba(148,163,184,.12);
 }
+.rfkj-slot-btn:active{transform:scale(.985);}
 .rfkj-matrix-grid{
     display:grid;
     grid-template-columns:1fr;
@@ -3334,9 +3352,8 @@ h1 {
         font-size:11px;
     }
     .rfkj-slot-btn{
-        height:28px;
-        padding:0 7px;
-        font-size:14px;
+        height:12px;
+        padding:0;
     }
 }
 
@@ -3505,7 +3522,7 @@ h1 {
 
 /* Final compactness pass for Signal Matrix header/action row. */
 .rfkj-header{display:flex !important;align-items:center !important;justify-content:space-between !important;gap:8px !important;margin-bottom:4px !important;position:relative !important;}
-.rfkj-header-price{display:flex !important;align-items:baseline !important;justify-content:flex-end !important;gap:6px !important;white-space:nowrap !important;}
+.rfkj-header-price{display:flex !important;align-items:baseline !important;justify-content:flex-end !important;gap:5px !important;white-space:nowrap !important;}
 .rfkj-header-price-value,.rfkj-header-coin{font-size:20px !important;line-height:1 !important;font-weight:900 !important;}
 .rfkj-header-updated{font-size:8px !important;}
 .rfkj-action-row .rfkj-start-stop{min-height:28px !important;height:28px !important;}
@@ -3587,6 +3604,10 @@ h1 {
         text-align:center !important;
         direction:ltr !important;
     }
+    .rfkj-header-daily-change{
+        font-size:clamp(9px,2.9vw,15px) !important;
+        line-height:1 !important;
+    }
     .rfkj-header-updated{
         grid-column:3 !important;
         position:absolute !important;
@@ -3612,6 +3633,7 @@ h1 {
     .rfkj-title{font-size:clamp(10px,3.4vw,16px) !important;}
     .rfkj-title-number{font-size:clamp(10px,3.2vw,15px) !important;}
     .rfkj-header-coin,.rfkj-header-price-value{font-size:clamp(10px,3.4vw,16px) !important;}
+    .rfkj-header-daily-change{font-size:clamp(8px,2.5vw,12px) !important;}
     .rfkj-header-updated{font-size:clamp(8px,2.4vw,12px) !important;}
 }
 </style>
@@ -4413,22 +4435,22 @@ h1 {
      RF / KJ SIGNAL MONITOR
 ================================================= -->
 <div class="rfkj-matrix-section" id="rfkjMatrixSection">
-<div class="rfkj-slot-bar" role="group" aria-label="Number of Signal Matrix boxes">
+<div class="rfkj-slot-bar" role="group" aria-label="Select number of Signal Matrix panels">
 <span class="rfkj-slot-label">Signal Matrix</span>
-<button type="button" class="rfkj-slot-btn active" data-rfkj-count="1">1</button>
-<button type="button" class="rfkj-slot-btn" data-rfkj-count="2">2</button>
-<button type="button" class="rfkj-slot-btn" data-rfkj-count="3">3</button>
+<button type="button" class="rfkj-slot-btn active" data-rfkj-count="1" aria-label="Show Matrix 1" title="Matrix 1"></button>
+<button type="button" class="rfkj-slot-btn" data-rfkj-count="2" aria-label="Show Matrix 1 and Matrix 2" title="Matrix 2"></button>
+<button type="button" class="rfkj-slot-btn" data-rfkj-count="3" aria-label="Show Matrix 1, Matrix 2 and Matrix 3" title="Matrix 3"></button>
 </div>
-<div class="rfkj-matrix-grid" id="rfkjMatrixGrid" data-count="1"><div class="card rfkj-card rfkj-instance" data-rfkj-index="1" data-timeframe-mode="single-timeframe">
+<div class="rfkj-matrix-grid" id="rfkjMatrixGrid" data-count="1"><div class="card rfkj-card rfkj-instance" data-rfkj-index="1" data-timeframe-mode="multi-timeframe">
     <div class="rfkj-header">
         <div class="rfkj-header-title-wrap">
             <div class="rfkj-title"><span class="rfkj-title-label">Signal Matrix</span> <span class="rfkj-title-number" style="color:#64748b;font-size:11px;font-weight:800;">#1</span></div>
         </div>
-        <div id="rfkjHeaderPrice1" class="rfkj-header-price" aria-live="polite"><span class="rfkj-header-coin">BTC</span><span class="rfkj-header-price-value price-flat">-</span><span class="rfkj-header-updated"></span></div>
+        <div id="rfkjHeaderPrice1" class="rfkj-header-price" aria-live="polite"><span class="rfkj-header-coin">BTC</span><span class="rfkj-header-price-value price-flat">-</span><span class="rfkj-header-daily-change daily-invalid">--</span><span class="rfkj-header-updated"></span></div>
     </div>
     <div class="rfkj-controls">
         <select id="rfkjCoin1" class="rfkj-select rfkj-instance-coin" aria-label="Select cryptocurrency"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option></select>
-        <div class="rfkj-timeframes" role="group" aria-label="Signal timeframe"><button type="button" class="rfkj-timeframe active" data-rfkj-time="1">1M</button><button type="button" class="rfkj-timeframe" data-rfkj-time="3">3M</button><button type="button" class="rfkj-timeframe" data-rfkj-time="5">5M</button><button type="button" class="rfkj-timeframe" data-rfkj-time="15">15M</button><button type="button" class="rfkj-timeframe" data-rfkj-time="30">30M</button><button type="button" class="rfkj-timeframe" data-rfkj-time="60">1H</button><button type="button" class="rfkj-timeframe" data-rfkj-time="4h">4H</button><button type="button" class="rfkj-timeframe" data-rfkj-time="1D">1D</button><button type="button" class="rfkj-timeframe" data-rfkj-time="1W">1W</button></div>
+        <div class="rfkj-timeframes" role="group" aria-label="Signal timeframe"><button type="button" class="rfkj-timeframe active" data-rfkj-time="1" data-rfkj-multi="1">1M</button><button type="button" class="rfkj-timeframe" data-rfkj-time="3" data-rfkj-multi="1">3M</button><button type="button" class="rfkj-timeframe" data-rfkj-time="5" data-rfkj-multi="1">5M</button><button type="button" class="rfkj-timeframe" data-rfkj-time="15" data-rfkj-multi="1">15M</button><button type="button" class="rfkj-timeframe" data-rfkj-time="30" data-rfkj-multi="1">30M</button><button type="button" class="rfkj-timeframe" data-rfkj-time="60" data-rfkj-multi="1">1H</button><button type="button" class="rfkj-timeframe" data-rfkj-time="4h" data-rfkj-multi="1">4H</button><button type="button" class="rfkj-timeframe" data-rfkj-time="1D" data-rfkj-multi="1">1D</button><button type="button" class="rfkj-timeframe" data-rfkj-time="1W" data-rfkj-multi="1">1W</button></div>
     </div>
     <div class="rfkj-action-row">
         <button type="button" id="rfkjStartStop1" class="rfkj-start-stop">▶ Start Signal</button>
@@ -4440,7 +4462,7 @@ h1 {
         <div class="rfkj-header-title-wrap">
             <div class="rfkj-title"><span class="rfkj-title-label">Signal Matrix</span> <span class="rfkj-title-number" style="color:#64748b;font-size:11px;font-weight:800;">#2</span></div>
         </div>
-        <div id="rfkjHeaderPrice2" class="rfkj-header-price" aria-live="polite"><span class="rfkj-header-coin">BTC</span><span class="rfkj-header-price-value price-flat">-</span><span class="rfkj-header-updated"></span></div>
+        <div id="rfkjHeaderPrice2" class="rfkj-header-price" aria-live="polite"><span class="rfkj-header-coin">BTC</span><span class="rfkj-header-price-value price-flat">-</span><span class="rfkj-header-daily-change daily-invalid">--</span><span class="rfkj-header-updated"></span></div>
     </div>
     <div class="rfkj-controls">
         <select id="rfkjCoin2" class="rfkj-select rfkj-instance-coin" aria-label="Select cryptocurrency"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option></select>
@@ -4456,7 +4478,7 @@ h1 {
         <div class="rfkj-header-title-wrap">
             <div class="rfkj-title"><span class="rfkj-title-label">Signal Matrix</span> <span class="rfkj-title-number" style="color:#64748b;font-size:11px;font-weight:800;">#3</span></div>
         </div>
-        <div id="rfkjHeaderPrice3" class="rfkj-header-price" aria-live="polite"><span class="rfkj-header-coin">BTC</span><span class="rfkj-header-price-value price-flat">-</span><span class="rfkj-header-updated"></span></div>
+        <div id="rfkjHeaderPrice3" class="rfkj-header-price" aria-live="polite"><span class="rfkj-header-coin">BTC</span><span class="rfkj-header-price-value price-flat">-</span><span class="rfkj-header-daily-change daily-invalid">--</span><span class="rfkj-header-updated"></span></div>
     </div>
     <div class="rfkj-controls">
         <select id="rfkjCoin3" class="rfkj-select rfkj-instance-coin" aria-label="Select cryptocurrency"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option></select>
@@ -5494,7 +5516,9 @@ const DASHBOARD_NOTIFICATION_SOUND_URLS = {
     BUY: "./file/Buy.mp3",
     SELL: "./file/Sell.mp3",
     USD: "./file/Usd.mp3",
-    RFKJ: "./file/signal.mp3"
+    RFKJ: "./file/signal.mp3",
+    RFKJ_BLUE: "./file/matrisabi.mp3",
+    RFKJ_WHITE: "./file/matrissefid.mp3"
 };
 function getDashboardNotificationSoundURL(soundType) {
     const relativeURL = DASHBOARD_NOTIFICATION_SOUND_URLS[soundType];
@@ -5510,7 +5534,7 @@ const dashboardNotificationSounds = Object.create(null);
 let dashboardNotificationAudioReady = null;
 let dashboardAudioContext = null;
 function getNotificationSoundType(title, message, explicitType = null) {
-    if (explicitType === "BUY" || explicitType === "SELL" || explicitType === "USD" || explicitType === "RFKJ") {
+    if (explicitType === "BUY" || explicitType === "SELL" || explicitType === "USD" || explicitType === "RFKJ" || explicitType === "RFKJ_BLUE" || explicitType === "RFKJ_WHITE") {
         return explicitType;
     }
     const text = `${title || ""} ${message || ""}`.toUpperCase();
@@ -5610,7 +5634,9 @@ async function prepareAllDashboardNotificationSounds() {
             prepareNotificationSound("BUY"),
             prepareNotificationSound("SELL"),
             prepareNotificationSound("USD"),
-            prepareNotificationSound("RFKJ")
+            prepareNotificationSound("RFKJ"),
+            prepareNotificationSound("RFKJ_BLUE"),
+            prepareNotificationSound("RFKJ_WHITE")
         ]).catch(() => null);
     }
     return dashboardNotificationAudioReady;
@@ -9729,6 +9755,7 @@ const rfkjInstances = Array.from({length:RFKJ_SLOT_COUNT},(_,i)=>({
     latestTimeframe:"1",
     latestPrice:null,
     latestUpdated:null,
+    latestDailyChangePercent:null,
     priceDirection:0
 }));
 function rfkjGet(id,index){return document.getElementById(`${id}${index}`);}
@@ -9786,12 +9813,22 @@ function rfkjUpdateHeaderPrice(index){
     const priceEl=el.querySelector(".rfkj-header-price-value");
     const coinEl=el.querySelector(".rfkj-header-coin");
     const updatedEl=el.querySelector(".rfkj-header-updated");
+    const dailyEl=el.querySelector(".rfkj-header-daily-change");
     if(coinEl)coinEl.textContent=coin;
     if(priceEl){
         const price=Number(s.latestPrice);
         const valid=Number.isFinite(price)&&price>0;
         priceEl.textContent=valid?rfkjFormatPrice(price):"-";
         priceEl.className=`rfkj-header-price-value ${s.priceDirection>0?"price-up":s.priceDirection<0?"price-down":"price-flat"}`;
+    }
+    if(dailyEl){
+        const daily=Number(s.latestDailyChangePercent);
+        dailyEl.textContent=Number.isFinite(daily)?`${daily.toFixed(2)}%`:"--";
+        dailyEl.classList.remove("daily-positive","daily-negative","daily-zero","daily-invalid");
+        if(!Number.isFinite(daily))dailyEl.classList.add("daily-invalid");
+        else if(daily>0)dailyEl.classList.add("daily-positive");
+        else if(daily<0)dailyEl.classList.add("daily-negative");
+        else dailyEl.classList.add("daily-zero");
     }
     if(updatedEl)updatedEl.textContent=s.latestUpdated?rfkjFormatUpdated(s.latestUpdated):"--:--:--";
 }
@@ -9875,6 +9912,15 @@ function rfkjSetSignalPercent(index,timeframe,key,value){
     else if(n<0)el.classList.add("percent-negative");
     else el.classList.add("percent-zero");
 }
+function rfkjTimeframeRank(tf){
+    const order={"1":1,"3":3,"5":5,"15":15,"30":30,"60":60,"4h":240,"1D":1440,"1W":10080};
+    return order[String(tf)]??Number.MAX_SAFE_INTEGER;
+}
+function rfkjLowestSelectedTimeframe(index){
+    const s=rfkjInstance(index);
+    if(!s||!s.selectedTimeframes?.length)return "1";
+    return s.selectedTimeframes.slice().sort((a,b)=>rfkjTimeframeRank(a)-rfkjTimeframeRank(b))[0];
+}
 function rfkjUpdateUltraMini(price,rf,kj,st,valid=false){
     const priceEl=document.getElementById("rfkjUltraPrice");
     const rfEl=document.getElementById("rfkjUltraRF");
@@ -9917,10 +9963,10 @@ function rfkjSaveState(){
         try{window.AndroidNotifications.setSignalMatrixStateJson(raw);}catch(e){}
     }
 }
-async function rfkjSendNotification(index,title,message){
+async function rfkjSendNotification(index,title,message,type="RFKJ"){
     try{
         const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
-        await sendDashboardNotification(title,message,getCryptoIconSrc(coin),"RFKJ");
+        await sendDashboardNotification(title,message,getCryptoIconSrc(coin),type);
     }catch(e){console.warn("Signal Matrix notification failed",e);}
 }
 async function rfkjFetchOne(index,timeframe,notify=true){
@@ -9945,6 +9991,8 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         rfkjSetSignalPercent(index,timeframe,"RF",rfPercent);
         rfkjSetSignalPercent(index,timeframe,"ST",stPercent);
         rfkjSetSignalPercent(index,timeframe,"KJ",kjPercent);
+        const dailyChangePercent=Number(data.dailyChangePercent);
+        state.latestDailyChangePercent=Number.isFinite(dailyChangePercent)?dailyChangePercent:null;
         const price=Number(data.price);
         const previousPrice=Number(state.latestPrice);
         state.priceDirection=(Number.isFinite(previousPrice)&&Number.isFinite(price)&&price>0)
@@ -9954,16 +10002,21 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         state.latestUpdated=data.updated||new Date().toISOString();
         rfkjSetSelectionStatus(index);
         rfkjUpdateHeaderPrice(index);
-        /* Matrix #1 is the source for Ultra Compact price + arrows. */
-        if(index===1)rfkjUpdateUltraMini(price,rf,kj,st,Number.isFinite(price)&&price>0);
+        /* Matrix #1 is the source for Ultra Compact. Always use the lowest selected timeframe. */
+        if(index===1 && String(timeframe)===String(rfkjLowestSelectedTimeframe(1))){
+            rfkjUpdateUltraMini(price,rf,kj,st,Number.isFinite(price)&&price>0);
+        }
         const old=state.previousSignals[timeframe];
         if(notify&&old){
             const changes=[];
-            const signalBadge=(value)=>value>0?"↑ ⬜":value<0?"↓ 🟦":"→";
-            if(old.RF!==rf)changes.push(`Range ${signalBadge(rf)}`);
-            if(old.ST!==st)changes.push(`SuperTrend ${signalBadge(st)}`);
-            if(old.KJ!==kj)changes.push(`KJ288 ${signalBadge(kj)}`);
-            if(changes.length)await rfkjSendNotification(index,`🔔 ${coin} • ${rfkjTimeframeLabel(timeframe)} • #${index}`,changes.join(" • "));
+            if(old.RF!==rf)changes.push({name:"Range Filter",value:rf});
+            if(old.ST!==st)changes.push({name:"Super Trend",value:st});
+            if(old.KJ!==kj)changes.push({name:"Kijun 288",value:kj});
+            for(const change of changes){
+                const colorType=change.value>0?"RFKJ_WHITE":"RFKJ_BLUE";
+                const colorText=change.value>0?"WHITE":"BLUE";
+                await rfkjSendNotification(index,`🔔 ${coin} • ${rfkjTimeframeLabel(timeframe)} • #${index}`,`${change.name} → ${colorText}`,colorType);
+            }
         }
         state.previousSignals[timeframe]={RF:rf,KJ:kj,ST:st};
     }catch(error){
@@ -10014,6 +10067,7 @@ function rfkjStop(index,sendStop=true){
     });
     s.previousSignals={};
     s.priceDirection=0;
+    s.latestDailyChangePercent=null;
     rfkjSetStatus(index,"Signal stopped.");
     rfkjUpdateHeaderPrice(index);
     if(index===1)rfkjUpdateUltraMini(null,0,0,0,false);
@@ -10059,6 +10113,7 @@ function rfkjInitInstance(index){
         rfkjRenderSignalRows(index);
         s.latestPrice=null;
         s.latestUpdated=null;
+        s.latestDailyChangePercent=null;
         s.priceDirection=0;
         rfkjSetSelectionStatus(index);
         rfkjUpdateHeaderPrice(index);
@@ -10077,7 +10132,7 @@ function rfkjSetVisibleCount(count,restore=false){
         const i=Number(card.dataset.rfkjIndex);
         card.style.display=i<=n?"":"none";
     });
-    document.querySelectorAll(".rfkj-slot-btn").forEach(btn=>btn.classList.toggle("active",Number(btn.dataset.rfkjCount)===n));
+    document.querySelectorAll(".rfkj-slot-btn").forEach(btn=>btn.classList.toggle("active",Number(btn.dataset.rfkjCount)<=n));
     if(!restore)rfkjSaveState();
 }
 function rfkjRestoreState(){
