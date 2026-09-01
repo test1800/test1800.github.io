@@ -1,25 +1,17 @@
 {
-  "ok": true,
   "symbol": "فولاد",
+  "name": "فولاد مبارکه اصفهان",
   "timeframe": "15m",
+  "updated": "2026-09-01 17:23:31",
+  "signals": {
+    "RF": 1,
+    "ST": 1,
+    "K288": 0
+  },
   "price": {
     "last": 2689.0,
     "close": 2751.0,
     "yesterday": 2772.0,
-    "volume": 3782729420.0,
-    "tradeCount": 34384
-  },
-  "signals": {
-    "RF": 1,
-    "ST": -1,
-    "K288": -1
-  },
-  "signalText": {
-    "RF": "BUY",
-    "ST": "SELL",
-    "K288": "SELL"
-  },
-  "candles": 4628,
-  "updated": "2026-09-01 17:22:06",
-  "unix": 1788270726
+    "volume": 3782729420
+  }
 }
