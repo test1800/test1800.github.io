@@ -1,1 +1,9 @@
-
+{
+    "success": true,
+    "worker": "python",
+    "symbol": "TEST",
+    "price": 12540,
+    "change": 2.31,
+    "volume": 12500000,
+    "timestamp": 1788267144
+}
