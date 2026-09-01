@@ -1,6 +1,15 @@
 {
   "ok": true,
   "worker": "python",
-  "test": true,
-  "message": "Python can write to GitHub"
+  "symbol": "فولاد",
+  "insCode": "46348559193224090",
+  "timeframe": "15m",
+  "updated": "2026-09-01 16:58:17",
+  "signals": {
+    "RF": -1,
+    "ST": 1,
+    "K288": -1
+  },
+  "historyCount": 4627,
+  "lastPrice": 1900.0
 }
