@@ -2141,7 +2141,7 @@ h1 {
 .app-pin-key {
     width: 82px;
     height: 82px;
-    margin: 7px;
+    margin: 14px 21px;
     padding: 0;
     border: 1px solid #37465c;
     border-radius: 50%;
@@ -2194,7 +2194,7 @@ h1 {
     .app-pin-key {
         width: 60px;
         height: 60px;
-        margin: 5px;
+        margin: 10px 15px;
         font-size: 26px;
     }
 }
@@ -4898,33 +4898,41 @@ async function loadCryptoSignals() {
             "POL",
             "TRX"
         ];
+        const signalChanges = [];
+
         signalCoins.forEach(coin => {
-            const value =
-                getSignalNumericValue(data[coin] ?? 0);
+            const value = getSignalNumericValue(data[coin] ?? 0);
+            const oldValue = oldSignals[coin];
+            /*
+               Crypto Signal notifications are emitted only for a real BUY/SELL
+               state. A transient/neutral/invalid value must never become a
+               notification.
+            */
             if (
-                oldSignals[coin] !== undefined &&
-                oldSignals[coin] !== value
+                oldValue !== undefined &&
+                oldValue !== value &&
+                (value === 1 || value === -1)
             ) {
-                const signalType =
-                    value > 0
-                        ? "BUY"
-                        : value < 0
-                            ? "SELL"
-                            : "NEUTRAL";
-                const signalIcon =
-                    value > 0
-                        ? "🟢"
-                        : value < 0
-                            ? "🔴"
-                            : "⚪";
-                sendDashboardNotification(
-                    `${signalIcon} ${coin} Crypto Signal`,
-                    `${signalIcon} ${coin} → ${signalType}`,
-                    getCryptoIconSrc(coin),
-                    signalType === "BUY" ? "BUY" : "SELL"
-                );
+                signalChanges.push({ coin, value });
             }
         });
+
+        /*
+           Worker glitches commonly appear as simultaneous changes for two or
+           more coins. Treat that whole poll as invalid for notification
+           purposes. The UI/color rendering is untouched.
+        */
+        if (signalChanges.length === 1) {
+            const change = signalChanges[0];
+            const signalType = change.value > 0 ? "BUY" : "SELL";
+            const signalIcon = change.value > 0 ? "🟢" : "🔴";
+            sendDashboardNotification(
+                `${signalIcon} ${change.coin} Crypto Signal`,
+                `${signalIcon} ${change.coin} → ${signalType}`,
+                getCryptoIconSrc(change.coin),
+                signalType
+            );
+        }
         saveSignalCache(data);
         renderCryptoSignals(data, false);
         clearPageIssue("signal-api");
@@ -9824,6 +9832,10 @@ async function loadCryptoPortfolio(
         }
 
         if (button.dataset.pin !== undefined) {
+            // Subtle haptic feedback for every numeric key press.
+            try {
+                if (navigator.vibrate) navigator.vibrate(12);
+            } catch (error) {}
             addDigit(button.dataset.pin);
         }
     });
