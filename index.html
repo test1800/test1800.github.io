@@ -9832,9 +9832,14 @@ async function loadCryptoPortfolio(
         }
 
         if (button.dataset.pin !== undefined) {
-            // Subtle haptic feedback for every numeric key press.
+            // Use the native Android haptic bridge because navigator.vibrate()
+            // is not consistently supported/enabled inside Android WebView.
             try {
-                if (navigator.vibrate) navigator.vibrate(12);
+                if (window.AndroidNotifications && typeof window.AndroidNotifications.vibratePinKey === "function") {
+                    window.AndroidNotifications.vibratePinKey();
+                } else if (navigator.vibrate) {
+                    navigator.vibrate(12);
+                }
             } catch (error) {}
             addDigit(button.dataset.pin);
         }
