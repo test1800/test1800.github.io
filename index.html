@@ -10336,15 +10336,20 @@ async function loadCryptoPortfolio(
     function triggerPinHaptic() {
         // Native Android haptic is preferred because navigator.vibrate() is
         // inconsistent inside Android WebView.
+        let nativeTriggered = false;
         try {
             if (window.AndroidNotifications && typeof window.AndroidNotifications.vibratePinKey === "function") {
                 window.AndroidNotifications.vibratePinKey();
-                return;
+                nativeTriggered = true;
             }
         } catch (error) {}
-        try {
-            if (navigator.vibrate) navigator.vibrate(28);
-        } catch (error) {}
+
+        // WebView/browser fallback.
+        if (!nativeTriggered) {
+            try {
+                if (navigator.vibrate) navigator.vibrate(28);
+            } catch (error) {}
+        }
     }
 
     // Trigger on the actual touch so the haptic is immediate, not delayed until
@@ -11176,12 +11181,35 @@ function crossoverInit(){
             if(s.running){crossoverFetchOne(i,false);crossoverSyncRemote();}
         });
         input.addEventListener("input",()=>{
-            const raw=String(input.value||"").replace(/,/g,"").replace(/[^0-9.]/g,"");
-            const parts=raw.split(".");
-            const clean=parts.shift()+(parts.length?"."+parts.join(""):"");
+            // Keep a decimal point while the user is typing (e.g. 125.5).
+            // The previous Number(...).toLocaleString(...) converted "125."
+            // back to "125", which made decimal entry feel impossible.
+            let raw=String(input.value||"").replace(/,/g,"").replace(/[^0-9.]/g,"");
+            const dot=raw.indexOf(".");
+            if(dot>=0){
+                raw=raw.slice(0,dot+1)+raw.slice(dot+1).replace(/\\./g,"");
+                const decimals=raw.slice(dot+1).slice(0,8);
+                raw=raw.slice(0,dot+1)+decimals;
+            }
+            const clean=raw;
             const n=Number(clean);
             s.target=Number.isFinite(n)&&n>0?n:null;
-            input.value=clean?Number(clean).toLocaleString("en-US",{maximumFractionDigits:8}):"";
+
+            // Preserve the exact text while it is being edited so a trailing
+            // decimal point is not removed. Format only the integer part.
+            if(clean){
+                const hasDot=clean.includes(".");
+                const [integerPart,fractionPart=""]=clean.split(".");
+                const formattedInteger=integerPart
+                    ? Number(integerPart).toLocaleString("en-US")
+                    : "0";
+                input.value=hasDot
+                    ? `${formattedInteger}.${fractionPart}`
+                    : formattedInteger;
+            }else{
+                input.value="";
+            }
+
             s.previousPrice=null;s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
             crossoverUpdateUI(i);crossoverSaveState();
             if(s.running&&Number.isFinite(s.target)&&s.target>0)crossoverSyncRemote();
