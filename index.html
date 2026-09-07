@@ -10854,6 +10854,7 @@ initRFKJSignalMonitor();
 const CROSSOVER_WORKER_URL = "https://signalmatrix.rxw1.workers.dev/";
 /* Cloudflare Crossover monitor: independent 15-second server-side checking. */
 const CROSSOVER_REMOTE_WORKER_URL = "https://crossoverworker.rxw1.workers.dev/";
+/* Crossover email alerts are handled only by this remote worker. */
 const CROSSOVER_POLL_MS = 5000;
 const CROSSOVER_COUNT = 4;
 const CROSSOVER_STATE_KEY = "crossoverState-v2";
@@ -11009,7 +11010,7 @@ async function crossoverSendAlert(index,direction,price,target){
     const time=crossoverNowText();
     const message=`Crossover ${arrow} • ${crossoverFormatPrice(price)} • Target ${crossoverFormatPrice(target)} • ${time}`;
     try{await sendDashboardNotification(title,message,getCryptoIconSrc(s.coin),"CROSSOVER");}catch(e){console.warn("Crossover notification failed",e);}
-    try{await sendEmailNotification(`Crossover ${directionText} • ${s.coin}/USD #${index}`,message);}catch(e){console.warn("Crossover email failed",e);}
+    /* Crossover email is sent exclusively by CROSSOVER_REMOTE_WORKER_URL. */
 }
 async function crossoverFetchOne(index,notify=true){
     const s=crossoverInstance(index);
