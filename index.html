@@ -10798,6 +10798,8 @@ initRFKJSignalMonitor();
    Uses the existing Signal Matrix worker for live USD price.
 ===================================================== */
 const CROSSOVER_WORKER_URL = "https://signalmatrix.rxw1.workers.dev/";
+/* Cloudflare Crossover monitor: independent 15-second server-side checking. */
+const CROSSOVER_REMOTE_WORKER_URL = "https://crossoverworker.rxw1.workers.dev/";
 const CROSSOVER_POLL_MS = 5000;
 const CROSSOVER_COUNT = 4;
 const CROSSOVER_STATE_KEY = "crossoverState-v2";
@@ -10809,6 +10811,32 @@ const crossoverInstances = Array.from({length:CROSSOVER_COUNT},(_,i)=>({
 }));
 function crossoverGet(id,index){return document.getElementById(`${id}${index}`);}
 function crossoverInstance(index){return crossoverInstances[index-1];}
+function crossoverClientId(){
+    try{
+        let id=localStorage.getItem("crossoverClientId-v1");
+        if(!id){id=(crypto?.randomUUID?crypto.randomUUID():"c_"+Date.now()+"_"+Math.random().toString(36).slice(2));localStorage.setItem("crossoverClientId-v1",id);}
+        return id;
+    }catch(e){return "anonymous";}
+}
+async function crossoverSyncRemote(){
+    try{
+        const grid=document.getElementById("crossoverGrid");
+        const count=Math.max(1,Math.min(4,Number(grid?.dataset.count||1)));
+        const items=crossoverInstances.slice(0,count).map(s=>({
+            index:s.index,coin:String(s.coin||"BTC").toUpperCase(),target:Number(s.target),running:!!s.running
+        })).filter(x=>x.running&&Number.isFinite(x.target)&&x.target>0);
+        const response=await fetch(CROSSOVER_REMOTE_WORKER_URL,{
+            method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({clientId:crossoverClientId(),active:items.length>0,items})
+        });
+        if(!response.ok)throw new Error("Remote Crossover Worker HTTP "+response.status);
+        console.log("Remote Crossover Worker synced",items);
+        return true;
+    }catch(e){
+        console.warn("Remote Crossover Worker sync failed:",e);
+        return false;
+    }
+}
 function crossoverFormatPrice(value){
     const n=Number(value);
     if(!Number.isFinite(n)||n<=0)return "-";
@@ -11011,6 +11039,7 @@ function crossoverStart(index,sendStart=true){
     crossoverFetchOne(index,false);
     s.timer=setInterval(()=>crossoverFetchOne(index,true),CROSSOVER_POLL_MS);
     crossoverSaveState();
+    crossoverSyncRemote();
 }
 async function crossoverSendStartNotification(index,price,target){
     const s=crossoverInstance(index);
@@ -11029,6 +11058,7 @@ function crossoverStop(index,sendStop=true){
     if(status)status.textContent=s.lastCrossAt?`Last cross • ${crossoverNowText(s.lastCrossAt)}`:"Crossover stopped.";
     crossoverUpdateUI(index);
     crossoverSaveState();
+    crossoverSyncRemote();
     if(sendStop){
         const title=`Crossover #${index} • ${s.coin}/USD`;
         sendDashboardNotification(title,`${s.coin}/USD • Crossover STOPPED`,getCryptoIconSrc(s.coin),"CROSSOVER").catch(()=>{});
@@ -11046,7 +11076,7 @@ function crossoverSetVisibleCount(count,restore=false){
         const i=Number(card.dataset.crossoverIndex);card.style.display=i<=n?"":"none";
     });
     document.querySelectorAll(".crossover-slot-btn").forEach(btn=>btn.classList.toggle("active",Number(btn.dataset.crossoverCount)<=n));
-    if(!restore)crossoverSaveState();
+    if(!restore){crossoverSaveState();crossoverSyncRemote();}
 }
 function crossoverApplyState(saved){
     if(!saved)return false;
@@ -11081,7 +11111,7 @@ function crossoverInit(){
             coin.dataset.userSelected="1";
             s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
             crossoverUpdateUI(i);crossoverSaveState();
-            if(s.running)crossoverFetchOne(i,false);
+            if(s.running){crossoverFetchOne(i,false);crossoverSyncRemote();}
         });
         input.addEventListener("input",()=>{
             const raw=String(input.value||"").replace(/,/g,"").replace(/[^0-9.]/g,"");
@@ -11092,6 +11122,7 @@ function crossoverInit(){
             input.value=clean?Number(clean).toLocaleString("en-US",{maximumFractionDigits:8}):"";
             s.previousPrice=null;s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
             crossoverUpdateUI(i);crossoverSaveState();
+            if(s.running&&Number.isFinite(s.target)&&s.target>0)crossoverSyncRemote();
         });
         input.addEventListener("blur",()=>{
             const n=Number(String(input.value||"").replace(/,/g,""));
@@ -11116,6 +11147,7 @@ function crossoverInit(){
         }
         crossoverSaveState();
     }
+    crossoverSyncRemote();
 }
 crossoverInit();
 
