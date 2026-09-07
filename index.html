@@ -3118,7 +3118,7 @@ h1 {
 .rfkj-slot-btn{
     width:100%;
     min-width:0;
-    height:14px;
+    height:1px;
     padding:0;
     border:1px solid rgba(148,163,184,.22);
     border-radius:5px;
@@ -3413,7 +3413,7 @@ h1 {
         font-size:11px;
     }
     .rfkj-slot-btn{
-        height:12px;
+        height:1px;
         padding:0;
     }
 }
@@ -3736,7 +3736,7 @@ h1 {
 }
 .crossover-slot-btn{
     width:100%;
-    height:14px;
+    height:1px;
     min-width:0;
     padding:0;
     border:1px solid rgba(148,163,184,.22);
@@ -3976,7 +3976,7 @@ h1 {
 @media (max-width:420px){
     .crossover-slot-bar{grid-template-columns:minmax(0,1fr) repeat(4,minmax(0,1fr));gap:3px;}
     .crossover-slot-label{padding:0 4px;font-size:10px;}
-    .crossover-slot-btn{height:12px;}
+    .crossover-slot-btn{height:1px;}
     .crossover-card{padding:7px 5px 6px !important;}
     .crossover-controls{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px;}
     .crossover-target,.crossover-coin{min-height:30px;font-size:10px;padding:0 5px;}
@@ -4120,6 +4120,43 @@ h1 {
 @media (max-width:420px){
     .crossover-action{grid-template-columns:1fr;}
     .crossover-action .crossover-status{text-align:center;}
+}
+</style>
+
+
+<style>
+/* Active/colored Signal Matrix and Crossover bars — thinner only */
+.rfkj-slot-btn.active,
+.rfkj-slot-btn.is-active,
+.rfkj-slot-btn.selected,
+.rfkj-slot-btn[aria-pressed="true"],
+.rfkj-slot-btn[style*="background"],
+.rfkj-slot-btn[style*="background-color"] {
+  height: 1px !important;
+  min-height: 1px !important;
+  max-height: 1px !important;
+}
+.crossover-slot-btn.active,
+.crossover-slot-btn.is-active,
+.crossover-slot-btn.selected,
+.crossover-slot-btn[aria-pressed="true"],
+.crossover-slot-btn[style*="background"],
+.crossover-slot-btn[style*="background-color"] {
+  height: 1px !important;
+  min-height: 1px !important;
+  max-height: 1px !important;
+}
+.rfkj-slot-btn.active::before,
+.rfkj-slot-btn.active::after,
+.rfkj-slot-btn.is-active::before,
+.rfkj-slot-btn.is-active::after,
+.crossover-slot-btn.active::before,
+.crossover-slot-btn.active::after,
+.crossover-slot-btn.is-active::before,
+.crossover-slot-btn.is-active::after {
+  height: 1px !important;
+  min-height: 1px !important;
+  max-height: 1px !important;
 }
 </style>
 
@@ -11577,7 +11614,7 @@ if (
 }
 .rfkj-slot-btn,
 .crossover-slot-btn{
-    height:2px !important;
+    height:1px;
     padding:0 !important;
     border:0 !important;
     border-radius:0 !important;
