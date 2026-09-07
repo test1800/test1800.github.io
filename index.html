@@ -11550,3 +11550,70 @@ if (
 </script>
 </body>
 </html>
+
+<!-- =====================================================
+     FINAL STYLE: MINIMAL COUNT LINES
+     Signal Matrix / Crossover count selectors
+===================================================== -->
+<style>
+.rfkj-slot-bar,
+.crossover-slot-bar{
+    background:transparent !important;
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    padding:0 !important;
+    gap:8px !important;
+    margin:0 0 7px !important;
+    min-height:16px !important;
+}
+.rfkj-slot-label,
+.crossover-slot-label{
+    color:#64748b !important;
+    font-size:11px !important;
+    font-weight:800 !important;
+    padding:0 4px !important;
+    opacity:.9;
+}
+.rfkj-slot-btn,
+.crossover-slot-btn{
+    height:2px !important;
+    padding:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    background:rgba(100,116,139,.28) !important;
+    box-shadow:none !important;
+    transition:height .16s ease, background .16s ease, opacity .16s ease !important;
+    opacity:.8;
+}
+.rfkj-slot-btn:hover,
+.crossover-slot-btn:hover{
+    height:3px !important;
+    background:rgba(148,163,184,.65) !important;
+    opacity:1;
+}
+.rfkj-slot-btn.active{
+    height:3px !important;
+    background:rgba(16,185,129,.82) !important;
+    box-shadow:0 0 7px rgba(16,185,129,.14) !important;
+    opacity:1;
+}
+.crossover-slot-btn.active{
+    height:3px !important;
+    background:rgba(245,158,11,.82) !important;
+    box-shadow:0 0 7px rgba(245,158,11,.14) !important;
+    opacity:1;
+}
+@media (max-width:420px){
+    .rfkj-slot-bar,
+    .crossover-slot-bar{
+        gap:5px !important;
+        margin-bottom:6px !important;
+    }
+    .rfkj-slot-label,
+    .crossover-slot-label{
+        font-size:10px !important;
+        padding:0 2px !important;
+    }
+}
+</style>
