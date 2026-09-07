@@ -4094,6 +4094,35 @@ h1 {
     .crossover-coin-option{font-size:12px !important;}
 }
 
+
+/* CROSSOVER START/STOP SIZE — match Signal Matrix */
+.crossover-action{
+    grid-template-columns:minmax(115px,180px) minmax(0,1fr);
+    gap:6px;
+    align-items:center;
+    margin-top:4px;
+}
+.crossover-action .crossover-start-stop{
+    width:100%;
+    min-width:0;
+    min-height:34px !important;
+    box-sizing:border-box;
+    font-size:11px !important;
+}
+.crossover-action .crossover-status{
+    min-width:0;
+    min-height:34px !important;
+    box-sizing:border-box;
+}
+@media (max-width:700px){
+    .crossover-action{grid-template-columns:minmax(110px,1fr) minmax(0,2fr);}
+    .crossover-action .crossover-start-stop{min-height:34px !important;font-size:11px !important;}
+    .crossover-action .crossover-status{min-height:34px !important;}
+}
+@media (max-width:420px){
+    .crossover-action{grid-template-columns:1fr;}
+    .crossover-action .crossover-status{text-align:center;}
+}
 </style>
 
 </head>
@@ -7127,6 +7156,14 @@ function pageIssueLabel(key, issue) {
     if (k === "market-connection") return "Market";
     if (k === "mexc-cache") return "MEXC Cache";
     if (k.startsWith("mexc:")) return `MEXC ${k.slice(5)}`;
+    if (k.startsWith("rfkj:")) {
+        const parts = k.split(":");
+        const index = parts[1] || "?";
+        const tf = parts[2] ? rfkjTimeframeLabel(parts[2]) : "";
+        return `Matrix #${index}${tf ? ` ${tf}` : ""}`;
+    }
+    if (k === "crossover-remote") return "Crossover Remote";
+    if (k.startsWith("crossover:")) return `Crossover #${k.split(":")[1] || "?"}`;
     if (k === "js") return "Page JavaScript";
     if (k === "promise") return "Background request";
     if (k.startsWith("img:")) return `${k.slice(4)} icon`;
@@ -7170,6 +7207,15 @@ function pageIssueDescription(key, issue) {
     }
     if (k.startsWith("mexc:")) {
         return `${k.slice(5)} live price is unavailable. The dashboard may be showing its last cached value or no current value for this asset.`;
+    }
+    if (k.startsWith("rfkj:")) {
+        return "The Signal Matrix worker did not return valid data for this matrix/timeframe; its signals may be stale or unavailable.";
+    }
+    if (k === "crossover-remote") {
+        return "The remote Crossover worker could not be synchronized; background Crossover monitoring may be unavailable while local monitoring continues.";
+    }
+    if (k.startsWith("crossover:")) {
+        return "The Crossover price source did not return a valid current price; crossing checks for this panel may be unavailable.";
     }
     if (k === "js") {
         return "A JavaScript error occurred and part of the dashboard may not have updated correctly.";
@@ -10415,6 +10461,9 @@ function rfkjSetStatus(index,message,error=false){
     el.textContent=message;
     el.style.color=error?"#fca5a5":"#cbd5e1";
 }
+function rfkjClearIssues(index){
+    RFKJ_TIMEFRAMES.forEach(tf=>clearPageIssue(`rfkj:${index}:${tf}`));
+}
 function rfkjUpdateHeaderPrice(index){
     const el=document.getElementById(`rfkjHeaderPrice${index}`);
     const s=rfkjInstance(index);
@@ -10592,6 +10641,7 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         const response=await fetch(url,{method:"GET",cache:"no-store"});
         if(!response.ok)throw new Error(`Worker HTTP ${response.status}`);
         const data=await response.json();
+        if(!data || typeof data!=="object")throw new Error("Invalid worker response");
         const rf=rfkjNormalizeSignal(data.RF??data.rf??data.rangeFilter??data.range_filter??0);
         const kj=rfkjNormalizeSignal(data.KJ??data.kj??data.kijunsen??0);
         const st=rfkjNormalizeSignal(data.ST??data.st??data.superTrend??data.supertrend??0);
@@ -10599,6 +10649,7 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         const kjPercent=data.KJPercent??data.kjPercent??data.KJ_PERCENT??data.kj_percent;
         const stPercent=data.STPercent??data.stPercent??data.ST_PERCENT??data.st_percent;
         state.latestTimeframe=timeframe;
+        clearPageIssue(`rfkj:${index}:${timeframe}`);
         rfkjApplySignal(rfkjSignalElement(index,timeframe,"RF"),rf);
         rfkjApplySignal(rfkjSignalElement(index,timeframe,"ST"),st);
         rfkjApplySignal(rfkjSignalElement(index,timeframe,"KJ"),kj);
@@ -10635,6 +10686,7 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         state.previousSignals[timeframe]={RF:rf,KJ:kj,ST:st};
     }catch(error){
         console.warn(`Signal Matrix ${index}/${timeframe} failed`,error);
+        setPageIssue(`rfkj:${index}:${timeframe}`,`Worker unavailable • ${error.message||"request failed"}`,"error");
         if(timeframe===state.latestTimeframe)rfkjSetStatus(index,`Worker unavailable • ${error.message||"request failed"}`,true);
     }
 }
@@ -10682,6 +10734,7 @@ function rfkjStop(index,sendStop=true){
     s.previousSignals={};
     s.priceDirection=0;
     s.latestDailyChangePercent=null;
+    rfkjClearIssues(index);
     rfkjSetStatus(index,"Signal stopped.");
     rfkjUpdateHeaderPrice(index);
     if(index===1)rfkjUpdateUltraMini(null,0,0,0,false);
@@ -10730,6 +10783,7 @@ function rfkjInitInstance(index){
             else delete coin.dataset.userSelected;
         }
         s.previousSignals={};
+        rfkjClearIssues(index);
         rfkjRenderSignalRows(index);
         s.latestPrice=null;
         s.latestUpdated=null;
@@ -10830,9 +10884,11 @@ async function crossoverSyncRemote(){
             body:JSON.stringify({clientId:crossoverClientId(),active:items.length>0,items})
         });
         if(!response.ok)throw new Error("Remote Crossover Worker HTTP "+response.status);
+        clearPageIssue("crossover-remote");
         console.log("Remote Crossover Worker synced",items);
         return true;
     }catch(e){
+        setPageIssue("crossover-remote",e?.message||"Remote Crossover Worker sync failed","warn");
         console.warn("Remote Crossover Worker sync failed:",e);
         return false;
     }
@@ -10981,9 +11037,11 @@ async function crossoverFetchOne(index,notify=true){
             const response=await fetch(url,{method:"GET",cache:"no-store"});
             if(!response.ok)throw new Error(`Worker HTTP ${response.status}`);
             data=await response.json();
+            if(!data || typeof data!=="object")throw new Error("Invalid worker response");
             price=Number(data.price);
         }
         if(!Number.isFinite(price)||price<=0)throw new Error("Invalid current price");
+        clearPageIssue(`crossover:${index}`);
         const old=Number(s.previousPrice);
         s.priceDirection=(Number.isFinite(old)&&Number.isFinite(price)&&price>0)
             ? (price>old?1:price<old?-1:0)
@@ -11006,6 +11064,7 @@ async function crossoverFetchOne(index,notify=true){
         crossoverUpdateUI(index);
         crossoverSaveState();
     }catch(error){
+        setPageIssue(`crossover:${index}`,`Worker unavailable • ${error.message||"request failed"}`,"error");
         console.warn(`Crossover ${index} failed`,error);
         const status=crossoverGet("crossoverStatus",index);
         if(status)status.textContent=`Worker unavailable • ${error.message||"request failed"}`;
@@ -11056,6 +11115,7 @@ function crossoverStop(index,sendStop=true){
     if(b){b.textContent="▶ Start Crossover";b.classList.remove("running");}
     const status=crossoverGet("crossoverStatus",index);
     if(status)status.textContent=s.lastCrossAt?`Last cross • ${crossoverNowText(s.lastCrossAt)}`:"Crossover stopped.";
+    clearPageIssue(`crossover:${index}`);
     crossoverUpdateUI(index);
     crossoverSaveState();
     crossoverSyncRemote();
@@ -11110,6 +11170,7 @@ function crossoverInit(){
             s.coin=String(coin.value||"BTC").toUpperCase();
             coin.dataset.userSelected="1";
             s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
+            clearPageIssue(`crossover:${i}`);
             crossoverUpdateUI(i);crossoverSaveState();
             if(s.running){crossoverFetchOne(i,false);crossoverSyncRemote();}
         });
