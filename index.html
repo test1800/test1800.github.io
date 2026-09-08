@@ -73,6 +73,68 @@ body {
         18px
         20px;
 }
+/* Large screens: let the dashboard use the full available viewport width.
+   Keep the existing fixed max-width behavior below desktop sizes. */
+@media (min-width: 1401px) {
+    .container {
+        max-width: none;
+        width: 100%;
+    }
+
+    /* Scale dashboard typography with large desktop/TV viewports.
+       Values are capped so text remains readable without colliding. */
+    .signal-header {
+        font-size: clamp(14px, 1vw, 24px);
+    }
+    .signal-header small {
+        font-size: clamp(11px, .7vw, 16px);
+    }
+    .signal-name {
+        font-size: clamp(11px, .82vw, 20px);
+    }
+    .signal-box img {
+        width: clamp(28px, 2.4vw, 52px);
+        height: clamp(28px, 2.4vw, 52px);
+    }
+
+    .crypto-label {
+        font-size: clamp(8px, .48vw, 13px);
+    }
+    .crypto-value {
+        font-size: clamp(19px, 1.15vw, 30px);
+    }
+
+    .crypto-portfolio-title {
+        font-size: clamp(17px, .95vw, 25px);
+    }
+    .crypto-portfolio-total-label {
+        font-size: clamp(9px, .48vw, 13px);
+    }
+    .crypto-portfolio-total-value {
+        font-size: clamp(18px, 1.05vw, 28px);
+    }
+    .crypto-portfolio-total-change {
+        font-size: clamp(10px, .55vw, 15px);
+    }
+    .crypto-portfolio-name {
+        font-size: clamp(14px, 1vw, 24px);
+    }
+    .crypto-portfolio-amount {
+        font-size: clamp(8px, .45vw, 12px);
+    }
+    .crypto-portfolio-change {
+        font-size: clamp(8px, .45vw, 12px);
+    }
+    .crypto-portfolio-price {
+        font-size: clamp(13px, .72vw, 19px);
+    }
+    .crypto-portfolio-value {
+        font-size: clamp(11px, .6vw, 16px);
+    }
+    .crypto-portfolio-status {
+        font-size: clamp(7px, .4vw, 11px);
+    }
+}
 /* =====================================================
    HEADER
 ===================================================== */
@@ -4176,6 +4238,30 @@ h1 {
   height: 1px !important;
   min-height: 1px !important;
   max-height: 1px !important;
+}
+</style>
+
+
+<style>
+/* CRYPTO SIGNAL — desktop/fullscreen: icon and symbol side by side */
+@media (min-width: 1401px){
+    .signal-grid .signal-box{
+        flex-direction:row;
+        gap:5px;
+        padding:0 5px;
+    }
+    .signal-grid .signal-box img{
+        width:clamp(22px, 1.25vw, 32px);
+        height:clamp(22px, 1.25vw, 32px);
+        margin-bottom:0;
+        flex:0 0 auto;
+    }
+    .signal-grid .signal-name{
+        display:block;
+        font-size:clamp(13.5px, .825vw, 21px);
+        line-height:1;
+        white-space:nowrap;
+    }
 }
 </style>
 
