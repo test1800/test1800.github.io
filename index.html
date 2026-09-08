@@ -4245,6 +4245,99 @@ h1 {
 <style>
 /* CRYPTO SIGNAL — desktop/fullscreen: icon and symbol side by side */
 @media (min-width: 1401px){
+    /* LIVE MARKET — desktop/fullscreen: prices and market info share one compact row */
+    .live-price{
+        display:grid !important;
+        grid-template-columns:minmax(0, 1fr) auto;
+        grid-template-rows:auto auto;
+        align-items:center;
+        column-gap:clamp(110px, 11vw, 240px);
+        row-gap:0;
+        padding:6px 10px !important;
+        gap:0 !important;
+    }
+    .live-market-header{
+        grid-column:2;
+        grid-row:1;
+        justify-content:flex-end !important;
+        gap:clamp(16px, 1.1vw, 28px) !important;
+        font-size:19px !important;
+        line-height:1 !important;
+        font-weight:850 !important;
+        white-space:nowrap !important;
+    }
+    .live-usd-value,
+    .live-market-title,
+    .live-market-separator,
+    .live-market-bank,
+    .live-market-bank span{
+        font-size:19px !important;
+        line-height:1 !important;
+        font-weight:850 !important;
+    }
+    .live-usd-value{
+        margin-right:0 !important;
+    }
+    .live-market-bank{
+        color:#94a3b8 !important;
+    }
+    @keyframes liveMarketValuePulse {
+        0%, 100% { text-shadow:0 0 0 rgba(255,255,255,0), 0 0 0 rgba(59,130,246,0); opacity:.92; }
+        50% { text-shadow:0 0 7px rgba(255,255,255,.22), 0 0 15px rgba(59,130,246,.16); opacity:1; }
+    }
+    .live-market-header #usdTxtPrice,
+    .live-market-header #yekusd{
+        animation:liveMarketValuePulse 2.8s ease-in-out infinite;
+    }
+    .live-price-values{
+        grid-column:1;
+        grid-row:1;
+        width:100% !important;
+        gap:clamp(12px, 1.35vw, 24px) !important;
+        column-gap:clamp(12px, 1.35vw, 24px) !important;
+        justify-content:flex-start !important;
+        align-items:center !important;
+    }
+    .live-price-left,
+    .live-price-center,
+    .live-price-right{
+        flex:0 0 auto !important;
+    }
+    .live-number{
+        font-size:28px !important;
+        line-height:1 !important;
+        font-weight:850 !important;
+    }
+    .price-arrow{
+        width:28px !important;
+        height:28px !important;
+        font-size:28px !important;
+        line-height:1 !important;
+    }
+    .live-price-item{
+        gap:5px !important;
+    }
+
+    /* Live prices: directional vertical transition on value changes. */
+    @keyframes livePriceFromBottom {
+        from { transform:translateY(14px); opacity:0; filter:blur(2px); }
+        to   { transform:translateY(0); opacity:1; filter:blur(0); }
+    }
+    @keyframes livePriceFromTop {
+        from { transform:translateY(-14px); opacity:0; filter:blur(2px); }
+        to   { transform:translateY(0); opacity:1; filter:blur(0); }
+    }
+    .live-number.live-price-from-bottom {
+        animation:livePriceFromBottom .0376s cubic-bezier(.22,.75,.25,1);
+    }
+    .live-number.live-price-from-top {
+        animation:livePriceFromTop .0376s cubic-bezier(.22,.75,.25,1);
+    }
+    .live-error-message{
+        grid-column:1 / -1;
+        grid-row:2;
+    }
+
     .signal-grid .signal-box{
         flex-direction:row;
         gap:5px;
@@ -6668,6 +6761,18 @@ function safeText(
             value;
     }
 }
+function animateLivePrice(id, value, previousValue) {
+    const element = $(id);
+    if (!element) return;
+    const nextText = formatNumber(value);
+    const previous = Number(previousValue);
+    element.classList.remove("live-price-from-bottom", "live-price-from-top");
+    if (Number.isFinite(previous) && Number(value) !== previous) {
+        void element.offsetWidth;
+        element.classList.add(Number(value) > previous ? "live-price-from-bottom" : "live-price-from-top");
+    }
+    element.textContent = nextText;
+}
 /* =====================================================
    BUY AGE
 ===================================================== */
@@ -9063,23 +9168,20 @@ async function loadDashboardData() {
             /* =================================================
                MARKET PRICES
             ================================================= */
-            safeText(
+            animateLivePrice(
                 "currentPrice",
-                formatNumber(
-                    currentPrice
-                )
+                currentPrice,
+                Number(sessionStorage.getItem("previousNobitexPrice"))
             );
-            safeText(
+            animateLivePrice(
                 "exirPrice",
-                formatNumber(
-                    exirPrice
-                )
+                exirPrice,
+                Number(sessionStorage.getItem("previousExirPrice"))
             );
-            safeText(
+            animateLivePrice(
                 "bitpinPrice",
-                formatNumber(
-                    bitpinPrice
-                )
+                bitpinPrice,
+                Number(sessionStorage.getItem("previousBitpinPrice"))
             );
             safeText(
                 "bankRate",
@@ -11718,6 +11820,7 @@ if (
 })();
 </script>
 </body>
+
 </html>
 
 <!-- =====================================================
@@ -11790,5 +11893,61 @@ if (
         font-size:10px !important;
         padding:0 2px !important;
     }
+}
+
+/* Fullscreen-only live market refinements */
+@media (min-width: 1401px) {
+  .live-price-values {
+    gap: clamp(32px, 3.2vw, 64px) !important;
+  }
+  .live-market-header {
+    font-size: 12px !important;
+    gap: 10px !important;
+  }
+  /* Keep the two right-side values as large as the arrowed numbers. */
+  .live-market-header .live-usd-value {
+    font-size: 28px !important;
+    line-height: 1 !important;
+    font-weight: 850 !important;
+  }
+  /* Keep only the Live Market / Bank Rate text small. */
+  .live-market-header .live-market-title,
+  .live-market-header .live-market-separator,
+  .live-market-header .live-market-bank,
+  .live-market-header .live-market-bank span {
+    font-size: 12px !important;
+    line-height: 1 !important;
+  }
+  @keyframes liveMarketRightValuePulse {
+    0%, 100% {
+      transform: translateY(0) scale(1);
+      text-shadow: 0 0 0 rgba(255,255,255,0), 0 0 0 rgba(59,130,246,0);
+      opacity: .92;
+    }
+    50% {
+      transform: translateY(-2px) scale(1.012);
+      text-shadow: 0 0 8px rgba(255,255,255,.20), 0 0 16px rgba(59,130,246,.16);
+      opacity: 1;
+    }
+  }
+  .live-market-header .live-usd-value {
+    animation: liveMarketRightValuePulse 2.8s ease-in-out infinite;
+  }
+  .live-number.live-price-from-bottom,
+  .live-number.live-price-from-top {
+    animation-duration: 3.2s !important;
+  }
+}
+
+/* Fullscreen-only spacing between right-side values and market label */
+@media (min-width: 1401px) {
+  /* Make the gap between the arrowed-price group and the right-side market info 5x larger. */
+  .live-price {
+    column-gap: clamp(550px, 55vw, 1200px) !important;
+  }
+  /* 5x the current 10px spacing between the last right-side value and Live Market text. */
+  .live-market-header .live-market-title {
+    margin-left: 40px !important;
+  }
 }
 </style>
