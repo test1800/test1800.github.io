@@ -11242,7 +11242,7 @@ function crossoverUpdateUI(index){
     }
     if(distance){
         distance.classList.remove("above","below","invalid");
-        if(Number.isFinite(price)&&price>0&&Number.isFinite(target)&&target>0){
+        if(s.running&&Number.isFinite(price)&&price>0&&Number.isFinite(target)&&target>0){
             const pct=((price-target)/target)*100;
             distance.textContent=`${pct>=0?"+":""}${pct.toFixed(2)}% • ${price>=target?"Above":"Below"} target • Target: ${s.coin} ${crossoverFormatPrice(target)}`;
             distance.classList.add(price>=target?"above":"below");
