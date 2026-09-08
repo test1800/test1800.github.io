@@ -11425,6 +11425,11 @@ function crossoverApplyState(saved){
         s.coin=CROSSOVER_COINS.includes(savedCoin)?savedCoin:"BTC";
         s.target=Number.isFinite(Number(m.target))?Number(m.target):null;
         s.activeTarget=Number.isFinite(Number(m.activeTarget))?Number(m.activeTarget):(m.running&&Number.isFinite(Number(m.target))?Number(m.target):null);
+        // If this crossover was running, restore the exact target that was registered
+        // with the worker. Ignore any pending Target Price edit made before refresh.
+        if(m.running&&Number.isFinite(Number(s.activeTarget))&&Number(s.activeTarget)>0){
+            s.target=Number(s.activeTarget);
+        }
         s.previousPrice=Number.isFinite(Number(m.previousPrice))?Number(m.previousPrice):null;
         s.latestPrice=Number.isFinite(Number(m.latestPrice))?Number(m.latestPrice):null;
         s.latestUpdated=m.latestUpdated||null;
