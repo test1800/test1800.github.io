@@ -10773,6 +10773,7 @@ function rfkjStart(index,sendStart=true){
     rfkjFetchSignal(index);
     s.timer=setInterval(()=>rfkjFetchSignal(index),RFKJ_POLL_MS);
     rfkjSaveState();
+    rfkjSyncCountLineStates();
 }
 function rfkjStop(index,sendStop=true){
     const s=rfkjInstance(index);
@@ -10802,6 +10803,7 @@ function rfkjStop(index,sendStop=true){
         rfkjSendNotification(index,`Signal Matrix #${index} • ${coin}`,`${coin} • Signal STOPPED`);
     }
     rfkjSaveState();
+    rfkjSyncCountLineStates();
 }
 function rfkjSelectTimeframe(index,button){
     const s=rfkjInstance(index);
@@ -10856,6 +10858,16 @@ function rfkjInitInstance(index){
     });
     btn.addEventListener("click",()=>s.running?rfkjStop(index):rfkjStart(index));
 }
+function rfkjSyncCountLineStates(){
+    const grid=document.getElementById("rfkjMatrixGrid");
+    const count=Math.max(1,Math.min(RFKJ_SLOT_COUNT,Number(grid?.dataset.count||1)));
+    document.querySelectorAll(".rfkj-slot-btn").forEach(btn=>{
+        const index=Number(btn.dataset.rfkjCount), state=rfkjInstance(index);
+        btn.classList.toggle("status-running",!!state?.running);
+        btn.classList.toggle("status-stopped",!state?.running);
+        btn.classList.toggle("active",index<=count);
+    });
+}
 function rfkjSetVisibleCount(count,restore=false){
     const n=Math.max(1,Math.min(4,Number(count)||1));
     const grid=document.getElementById("rfkjMatrixGrid");
@@ -10867,6 +10879,7 @@ function rfkjSetVisibleCount(count,restore=false){
     });
     document.querySelectorAll(".rfkj-slot-btn").forEach(btn=>btn.classList.toggle("active",Number(btn.dataset.rfkjCount)<=n));
     if(!restore)rfkjSaveState();
+    rfkjSyncCountLineStates();
 }
 function rfkjRestoreState(){
     const saved=rfkjReadSavedState();
@@ -11159,6 +11172,7 @@ function crossoverStart(index,sendStart=true){
     s.timer=setInterval(()=>crossoverFetchOne(index,true),CROSSOVER_POLL_MS);
     crossoverSaveState();
     crossoverSyncRemote();
+    crossoverSyncCountLineStates();
 }
 async function crossoverSendStartNotification(index,price,target){
     const s=crossoverInstance(index);
@@ -11179,10 +11193,21 @@ function crossoverStop(index,sendStop=true){
     crossoverUpdateUI(index);
     crossoverSaveState();
     crossoverSyncRemote();
+    crossoverSyncCountLineStates();
     if(sendStop){
         const title=`Crossover #${index} • ${s.coin}/USD`;
         sendDashboardNotification(title,`${s.coin}/USD • Crossover STOPPED`,getCryptoIconSrc(s.coin),"CROSSOVER").catch(()=>{});
     }
+}
+function crossoverSyncCountLineStates(){
+    const grid=document.getElementById("crossoverGrid");
+    const count=Math.max(1,Math.min(CROSSOVER_COUNT,Number(grid?.dataset.count||1)));
+    document.querySelectorAll(".crossover-slot-btn").forEach(btn=>{
+        const index=Number(btn.dataset.crossoverCount), state=crossoverInstance(index);
+        btn.classList.toggle("status-running",!!state?.running);
+        btn.classList.toggle("status-stopped",!state?.running);
+        btn.classList.toggle("active",index<=count);
+    });
 }
 function crossoverSetVisibleCount(count,restore=false){
     const n=Math.max(1,Math.min(4,Number(count)||1));
@@ -11197,6 +11222,7 @@ function crossoverSetVisibleCount(count,restore=false){
     });
     document.querySelectorAll(".crossover-slot-btn").forEach(btn=>btn.classList.toggle("active",Number(btn.dataset.crossoverCount)<=n));
     if(!restore){crossoverSaveState();crossoverSyncRemote();}
+    crossoverSyncCountLineStates();
 }
 function crossoverApplyState(saved){
     if(!saved)return false;
@@ -11292,6 +11318,7 @@ function crossoverInit(){
         crossoverSaveState();
     }
     crossoverSyncRemote();
+    crossoverSyncCountLineStates();
 }
 crossoverInit();
 
@@ -11650,16 +11677,22 @@ if (
 }
 .rfkj-slot-btn.active{
     height:3px !important;
-    background:rgba(16,185,129,.82) !important;
-    box-shadow:0 0 7px rgba(16,185,129,.14) !important;
     opacity:1;
 }
+/* Each count line mirrors its panel's Start/Stop state.
+   Unselected panels remain visible but dim; selected panels are bright. */
+.rfkj-slot-btn.status-stopped{background:rgba(16,185,129,.38) !important;box-shadow:0 0 6px rgba(16,185,129,.06) !important;}
+.rfkj-slot-btn.status-running{background:rgba(37,99,235,.38) !important;box-shadow:0 0 6px rgba(37,99,235,.06) !important;}
+.rfkj-slot-btn.status-stopped.active{background:rgba(16,185,129,.92) !important;box-shadow:0 0 7px rgba(16,185,129,.16) !important;}
+.rfkj-slot-btn.status-running.active{background:rgba(37,99,235,.92) !important;box-shadow:0 0 7px rgba(37,99,235,.16) !important;}
 .crossover-slot-btn.active{
     height:3px !important;
-    background:rgba(245,158,11,.82) !important;
-    box-shadow:0 0 7px rgba(245,158,11,.14) !important;
     opacity:1;
 }
+.crossover-slot-btn.status-stopped{background:rgba(245,158,11,.38) !important;box-shadow:0 0 6px rgba(245,158,11,.06) !important;}
+.crossover-slot-btn.status-running{background:rgba(168,85,247,.38) !important;box-shadow:0 0 6px rgba(168,85,247,.06) !important;}
+.crossover-slot-btn.status-stopped.active{background:rgba(245,158,11,.92) !important;box-shadow:0 0 7px rgba(245,158,11,.16) !important;}
+.crossover-slot-btn.status-running.active{background:rgba(168,85,247,.92) !important;box-shadow:0 0 7px rgba(168,85,247,.16) !important;}
 @media (max-width:420px){
     .rfkj-slot-bar,
     .crossover-slot-bar{
