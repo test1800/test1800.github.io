@@ -3971,7 +3971,7 @@ h1 {
     .crossover-controls{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px;}
     .crossover-distance{min-height:20px;font-size:9px;}
     .crossover-crossed{min-height:21px;font-size:8px;}
-    .crossover-start-stop,.crossover-status{font-size:7.5px;}
+    .crossover-start-stop,.crossover-status{min-height:24px;font-size:7.5px;}
 }
 @media (max-width:420px){
     .crossover-slot-bar{grid-template-columns:minmax(0,1fr) repeat(4,minmax(0,1fr));gap:3px;}
@@ -4093,7 +4093,7 @@ h1 {
 }
 
 
-/* CROSSOVER ACTION — exact same dimensions as Signal Matrix */
+/* CROSSOVER START/STOP — same dimensions/layout as Signal Matrix */
 .crossover-action{
     display:flex !important;
     flex-direction:row !important;
@@ -4103,32 +4103,34 @@ h1 {
     width:100% !important;
     min-width:0 !important;
     box-sizing:border-box !important;
-    margin-top:5px !important;
 }
-.crossover-action .crossover-start-stop,
+.crossover-action .crossover-start-stop{
+    flex:1 1 50% !important;
+    width:100% !important;
+    min-width:0 !important;
+    min-height:28px !important;
+    box-sizing:border-box !important;
+    font-size:11px !important;
+}
 .crossover-action .crossover-status{
     flex:1 1 50% !important;
-    width:auto !important;
+    width:100% !important;
     min-width:0 !important;
     height:28px !important;
     min-height:28px !important;
-    max-height:28px !important;
     box-sizing:border-box !important;
-}
-.crossover-action .crossover-start-stop{
-    padding:0 !important;
-    line-height:28px !important;
-    font-size:10.5px !important;
-}
-.crossover-action .crossover-status{
-    padding:0 6px !important;
     display:flex !important;
     align-items:center !important;
     justify-content:center !important;
-    line-height:1 !important;
+    margin:0 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    text-align:center !important;
 }
-@media (max-width:420px){
+@media (max-width:700px){
     .crossover-action{
+        display:flex !important;
         flex-direction:row !important;
         flex-wrap:nowrap !important;
         gap:5px !important;
@@ -4136,10 +4138,6 @@ h1 {
     .crossover-action .crossover-start-stop,
     .crossover-action .crossover-status{
         flex:1 1 50% !important;
-        width:auto !important;
-        height:28px !important;
-        min-height:28px !important;
-        max-height:28px !important;
     }
 }
 </style>
@@ -5110,6 +5108,8 @@ const WORKER_URLS = {
         "https://coin.rxw.workers.dev/",
         "https://api.cors.syrins.tech/?url=https%3A%2F%2Fcoin.rxw.workers.dev%2F"
     ],
+    email:
+        "https://email.rxw.workers.dev/",
     usd: [
         "https://usdd.rxw.workers.dev/",
         "https://api.cors.syrins.tech/?url=https%3A%2F%2Fusdd.rxw.workers.dev%2F"
@@ -6505,6 +6505,64 @@ if (
             `rgba(239,68,68,${0.15 + t * 0.55})`;
         card.style.boxShadow =
             `0 8px 30px rgba(239,68,68,${0.05 + t * 0.20})`;
+    }
+}
+/* =====================================================
+   EMAIL NOTIFICATION
+   Financial Dashboard → Cloudflare Worker
+===================================================== */
+/* =====================================================
+   SEND EMAIL NOTIFICATION
+===================================================== */
+async function sendEmailNotification(
+    title,
+    message
+) {
+    if (!WORKER_URLS.email) {
+        console.warn(
+            "Email notification skipped: Worker URL is not configured."
+        );
+        return false;
+    }
+    try {
+        const response =
+            await fetch(
+                WORKER_URLS.email,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body:
+                        JSON.stringify({
+                            title:
+                                String(title),
+                            message:
+                                String(message)
+                        })
+                }
+            );
+        if (!response.ok) {
+            console.warn(
+                "Email notification failed:",
+                response.status
+            );
+            return false;
+        }
+        console.log(
+            "Email notification sent:",
+            title,
+            message
+        );
+        return true;
+    }
+    catch (error) {
+        console.warn(
+            "Email notification error:",
+            error
+        );
+        return false;
     }
 }
 /* =====================================================
