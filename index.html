@@ -2685,6 +2685,14 @@ h1 {
         white-space:nowrap !important;
     }
 }
+
+@keyframes rfkjUltraSwitch{
+    0%{opacity:.15;transform:translateY(4px) scale(.98);filter:blur(1px);}
+    100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0);}
+}
+@media (max-height: 199px){
+    .rfkj-ultra-switch{animation:rfkjUltraSwitch .32s ease-out;}
+}
 /* Ultra Compact: final balanced spacing for both centered rows */
 @media (max-height: 199px) {
     .live-market-header {
@@ -10660,7 +10668,10 @@ const rfkjInstances = Array.from({length:RFKJ_SLOT_COUNT},(_,i)=>({
     latestPrice:null,
     latestUpdated:null,
     latestDailyChangePercent:null,
-    priceDirection:0
+    priceDirection:0,
+    ultraRF:0,
+    ultraST:0,
+    ultraKJ:0
 }));
 function rfkjGet(id,index){return document.getElementById(`${id}${index}`);}
 function rfkjInstance(index){return rfkjInstances[index-1];}
@@ -10847,6 +10858,48 @@ function rfkjUpdateUltraMini(price,rf,kj,st,valid=false){
     };
     set(rfEl,rf);set(stEl,st);set(kjEl,kj);
 }
+let rfkjUltraTimer=null;
+let rfkjUltraIndex=0;
+let rfkjUltraSignature="";
+function rfkjUltraCandidates(){
+    return rfkjInstances.filter(s=>{
+        const coin=rfkjGet("rfkjCoin",s.index);
+        return !!s.running && coin?.dataset.userSelected==="1" && !!String(coin.value||"").trim();
+    });
+}
+function rfkjRenderUltraCompact(animate=true){
+    const candidates=rfkjUltraCandidates();
+    const signature=candidates.map(s=>s.index).join(",");
+    if(signature!==rfkjUltraSignature){
+        rfkjUltraSignature=signature;
+        rfkjUltraIndex=0;
+    }
+    if(!candidates.length){
+        rfkjUpdateUltraMini(null,0,0,0,false);
+        rfkjUltraIndex=0;
+        return;
+    }
+    rfkjUltraIndex=rfkjUltraIndex%candidates.length;
+    const s=candidates[rfkjUltraIndex];
+    const valid=Number.isFinite(Number(s.latestPrice))&&Number(s.latestPrice)>0;
+    const mini=document.getElementById("rfkjUltraMini");
+    if(animate&&mini){
+        mini.classList.remove("rfkj-ultra-switch");
+        void mini.offsetWidth;
+        mini.classList.add("rfkj-ultra-switch");
+    }
+    rfkjUpdateUltraMini(s.latestPrice,s.ultraRF,s.ultraKJ,s.ultraST,valid);
+}
+function rfkjStartUltraRotation(){
+    if(rfkjUltraTimer)clearInterval(rfkjUltraTimer);
+    rfkjUltraTimer=setInterval(()=>{
+        const candidates=rfkjUltraCandidates();
+        if(candidates.length<=1){rfkjUltraIndex=0;rfkjRenderUltraCompact(false);return;}
+        rfkjUltraIndex=(rfkjUltraIndex+1)%candidates.length;
+        rfkjRenderUltraCompact(true);
+    },5000);
+    rfkjRenderUltraCompact(false);
+}
 function rfkjReadSavedState(){
     try{
         const raw=localStorage.getItem(RFKJ_STATE_KEY);
@@ -10915,9 +10968,10 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         state.latestUpdated=data.updated||new Date().toISOString();
         rfkjSetSelectionStatus(index);
         rfkjUpdateHeaderPrice(index);
-        /* Matrix #1 is the source for Ultra Compact. Always use the lowest selected timeframe. */
-        if(index===1 && String(timeframe)===String(rfkjLowestSelectedTimeframe(1))){
-            rfkjUpdateUltraMini(price,rf,kj,st,Number.isFinite(price)&&price>0);
+        /* Keep the latest display data for Ultra Compact rotation. */
+        if(String(timeframe)===String(rfkjLowestSelectedTimeframe(index))){
+            state.ultraRF=rf; state.ultraST=st; state.ultraKJ=kj;
+            rfkjRenderUltraCompact(false);
         }
         const old=state.previousSignals[timeframe];
         if(notify&&old){
@@ -11041,7 +11095,7 @@ function rfkjInitInstance(index){
         s.priceDirection=0;
         rfkjSetSelectionStatus(index);
         rfkjUpdateHeaderPrice(index);
-        if(index===1)rfkjUpdateUltraMini(null,0,0,0,false);
+        rfkjRenderUltraCompact(false);
         if(s.running)rfkjFetchSignal(index);
         rfkjSaveState();
     });
@@ -11121,7 +11175,7 @@ const CROSSOVER_COUNT = 4;
 const CROSSOVER_STATE_KEY = "crossoverState-v2";
 const CROSSOVER_COINS = ["BTC","BNB","ETH","DOGE","ADA","SOL","ONE","AVAX","POL","TRX","USD"];
 const crossoverInstances = Array.from({length:CROSSOVER_COUNT},(_,i)=>({
-    index:i+1, coin:"BTC", target:null, activeTarget:null, running:false, timer:null,
+    index:i+1, coin:"BTC", activeCoin:null, target:null, activeTarget:null, running:false, timer:null,
     requestInProgress:false, previousPrice:null, latestPrice:null,
     latestUpdated:null, lastCrossAt:null, lastCrossDirection:0, priceDirection:0
 }));
@@ -11147,7 +11201,7 @@ async function crossoverLoadRemoteStatus(){
             const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i),input=crossoverGet("crossoverTarget",i),btn=crossoverGet("crossoverStartStop",i),status=crossoverGet("crossoverStatus",i);
             if(!s)continue;
             if(s.timer){clearInterval(s.timer);s.timer=null;}
-            s.running=false;s.activeTarget=null;s.target=null;s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
+            s.running=false;s.activeCoin=null;s.activeTarget=null;s.target=null;s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
             s.coin="BTC";
             if(coin){coin.value="BTC";coin.dataset.userSelected="0";}
             if(input)input.value="";
@@ -11165,7 +11219,10 @@ async function crossoverLoadRemoteStatus(){
             const coin=String(item.coin||"BTC").toUpperCase();
             const target=Number(item.target);
             if(!CROSSOVER_COINS.includes(coin)||!Number.isFinite(target)||target<=0)continue;
-            s.coin=coin;s.target=target;s.activeTarget=target;s.running=true;
+            s.coin=coin;s.activeCoin=coin;s.target=target;s.activeTarget=target;s.running=true;
+            /* Keep the custom visual selector synchronized with the Worker coin. */
+            const coinSelect=crossoverGet("crossoverCoin",idx);
+            if(coinSelect){coinSelect.value=coin;coinSelect.dataset.userSelected="1";coinSelect.dispatchEvent(new Event("change",{bubbles:true}));}
             s.previousPrice=Number.isFinite(Number(item.previousPrice))?Number(item.previousPrice):null;
             s.latestPrice=Number.isFinite(Number(item.latestPrice))?Number(item.latestPrice):null;
             s.latestUpdated=item.latestUpdated||null;
@@ -11196,7 +11253,7 @@ async function crossoverSyncRemote(){
         const grid=document.getElementById("crossoverGrid");
         const count=Math.max(1,Math.min(4,Number(grid?.dataset.count||1)));
         const items=crossoverInstances.slice(0,count).map(s=>({
-            index:s.index,coin:String(s.coin||"BTC").toUpperCase(),target:Number(s.activeTarget),running:!!s.running
+            index:s.index,coin:String(s.running?(s.activeCoin||s.coin):s.coin||"BTC").toUpperCase(),target:Number(s.activeTarget),running:!!s.running
         })).filter(x=>x.running&&Number.isFinite(x.target)&&x.target>0);
         const response=await fetch(CROSSOVER_REMOTE_WORKER_URL,{
             method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},
@@ -11229,7 +11286,7 @@ function crossoverSaveState(){
         count:Number(document.getElementById("crossoverGrid")?.dataset.count||1),
         liveAverage:Number((document.getElementById("overallLive")?.textContent||"").replace(/,/g,""))||null,
         crossovers:crossoverInstances.map(s=>({
-            coin:s.coin,target:s.target,activeTarget:s.activeTarget,running:!!s.running,previousPrice:s.previousPrice,
+            coin:s.coin,activeCoin:s.activeCoin,target:s.target,activeTarget:s.activeTarget,running:!!s.running,previousPrice:s.previousPrice,
             latestPrice:s.latestPrice,latestUpdated:s.latestUpdated,
             lastCrossAt:s.lastCrossAt,lastCrossDirection:s.lastCrossDirection,
             priceDirection:s.priceDirection||0
@@ -11279,7 +11336,8 @@ function crossoverUpdateUI(index){
     const coinEl=live?.querySelector(".crossover-live-coin");
     const distance=crossoverGet("crossoverDistance",index);
     const status=crossoverGet("crossoverStatus",index);
-    const isUSD=s.coin==="USD";
+    const effectiveCoin=s.running?(s.activeCoin||s.coin):s.coin;
+    const isUSD=effectiveCoin==="USD";
     const coinSelect=crossoverGet("crossoverCoin",index);
     const hasUserSelection=coinSelect?.dataset.userSelected==="1";
     if(live) live.style.display=hasUserSelection?"flex":"none";
@@ -11287,9 +11345,9 @@ function crossoverUpdateUI(index){
     const liveSymbol=live?.querySelector(".crossover-live-symbol");
     if(coinEl){
         if(liveIcon){
-            liveIcon.innerHTML=isUSD?'<span class="crossover-usd-icon">$</span>':`<img src="${getCryptoIconSrc(s.coin)}" alt="${s.coin}">`;
+            liveIcon.innerHTML=isUSD?'<span class="crossover-usd-icon">$</span>':`<img src="${getCryptoIconSrc(effectiveCoin)}" alt="${effectiveCoin}">`;
         }
-        if(liveSymbol)liveSymbol.textContent=isUSD?"USD":s.coin;
+        if(liveSymbol)liveSymbol.textContent=isUSD?"USD":effectiveCoin;
     }
     const price=Number(s.latestPrice),target=Number(s.running?s.activeTarget:s.target);
     if(priceEl){
@@ -11302,10 +11360,10 @@ function crossoverUpdateUI(index){
         distance.classList.remove("above","below","invalid");
         if(s.running&&Number.isFinite(price)&&price>0&&Number.isFinite(target)&&target>0){
             const pct=((price-target)/target)*100;
-            distance.textContent=`${pct>=0?"+":""}${pct.toFixed(2)}% • ${price>=target?"Above":"Below"} target • Target: ${s.coin} ${crossoverFormatPrice(target)}`;
+            distance.textContent=`${pct>=0?"+":""}${pct.toFixed(2)}% • ${price>=target?"Above":"Below"} target • Target: ${effectiveCoin} ${crossoverFormatPrice(target)}`;
             distance.classList.add(price>=target?"above":"below");
         }else{
-            distance.textContent=`Current value ${Number.isFinite(price)?crossoverFormatPrice(price):"—"} • Target: ${s.coin} ${Number.isFinite(target)?crossoverFormatPrice(target):"—"}`;
+            distance.textContent=`Current value ${Number.isFinite(price)?crossoverFormatPrice(price):"—"} • Target: ${effectiveCoin} ${Number.isFinite(target)?crossoverFormatPrice(target):"—"}`;
             distance.classList.add("invalid");
         }
     }
@@ -11324,10 +11382,11 @@ async function crossoverSendAlert(index,direction,price,target){
     const s=crossoverInstance(index);
     const arrow=direction>0?"↑":"↓";
     const directionText=direction>0?"UP":"DOWN";
-    const title=`🔔 ${s.coin}/USD • Crossover #${index}`;
+    const effectiveCoin=s.running?(s.activeCoin||s.coin):s.coin;
+    const title=`🔔 ${effectiveCoin}/USD • Crossover #${index}`;
     const time=crossoverNowText();
     const message=`Crossover ${arrow} • ${crossoverFormatPrice(price)} • Target ${crossoverFormatPrice(target)} • ${time}`;
-    try{await sendDashboardNotification(title,message,getCryptoIconSrc(s.coin),"CROSSOVER");}catch(e){console.warn("Crossover notification failed",e);}
+    try{await sendDashboardNotification(title,message,getCryptoIconSrc(effectiveCoin),"CROSSOVER");}catch(e){console.warn("Crossover notification failed",e);}
     /* Crossover email is sent exclusively by CROSSOVER_REMOTE_WORKER_URL. */
 }
 async function crossoverFetchOne(index,notify=true){
@@ -11343,7 +11402,8 @@ async function crossoverFetchOne(index,notify=true){
     try{
         let price;
         let data={};
-        if(s.coin==="USD") {
+        const effectiveCoin=s.activeCoin||s.coin;
+        if(effectiveCoin==="USD") {
             const liveEl=document.getElementById("overallLive");
             price=Number(String(liveEl?.textContent||"").replace(/,/g,""));
             if(!Number.isFinite(price)||price<=0){
@@ -11352,7 +11412,7 @@ async function crossoverFetchOne(index,notify=true){
             if(!Number.isFinite(price)||price<=0)throw new Error("Live Average unavailable");
             data={updated:new Date().toISOString()};
         } else {
-            const url=CROSSOVER_WORKER_URL+`?coin=${encodeURIComponent(s.coin)}&timeframe=1&t=${Date.now()}`;
+            const url=CROSSOVER_WORKER_URL+`?coin=${encodeURIComponent(effectiveCoin)}&timeframe=1&t=${Date.now()}`;
             const response=await fetch(url,{method:"GET",cache:"no-store"});
             if(!response.ok)throw new Error(`Worker HTTP ${response.status}`);
             data=await response.json();
@@ -11400,6 +11460,7 @@ function crossoverStart(index,sendStart=true){
         if(status)status.textContent="Enter a valid target price";
         return;
     }
+    s.activeCoin=s.coin;
     s.activeTarget=target;
     s.running=true;
     /* Keep the last saved price so the first new quote can be compared to it. */
@@ -11423,15 +11484,22 @@ function crossoverStart(index,sendStart=true){
 }
 async function crossoverSendStartNotification(index,price,target){
     const s=crossoverInstance(index);
-    const title=`🔔 ${s.coin}/USD • Crossover #${index}`;
+    const effectiveCoin=s.activeCoin||s.coin;
+    const title=`🔔 ${effectiveCoin}/USD • Crossover #${index}`;
     const message=`Crossover started • Target ${crossoverFormatPrice(target)}`;
-    try{await sendDashboardNotification(title,message,getCryptoIconSrc(s.coin),"CROSSOVER");}catch(e){}
+    try{await sendDashboardNotification(title,message,getCryptoIconSrc(effectiveCoin),"CROSSOVER");}catch(e){}
 }
 function crossoverStop(index,sendStop=true){
     const s=crossoverInstance(index);
     if(!s)return;
     s.running=false;
+    const stoppedCoin=s.activeCoin||s.coin;
+    s.activeCoin=null;
     s.activeTarget=null;
+    if(s.coin!==stoppedCoin){
+        s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;
+        s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
+    }
     if(s.timer){clearInterval(s.timer);s.timer=null;}
     const b=crossoverGet("crossoverStartStop",index);
     if(b){b.textContent="▶ Start Crossover";b.classList.remove("running");}
@@ -11443,8 +11511,8 @@ function crossoverStop(index,sendStop=true){
     crossoverSyncRemote();
     crossoverSyncCountLineStates();
     if(sendStop){
-        const title=`Crossover #${index} • ${s.coin}/USD`;
-        sendDashboardNotification(title,`${s.coin}/USD • Crossover STOPPED`,getCryptoIconSrc(s.coin),"CROSSOVER").catch(()=>{});
+        const title=`Crossover #${index} • ${stoppedCoin}/USD`;
+        sendDashboardNotification(title,`${stoppedCoin}/USD • Crossover STOPPED`,getCryptoIconSrc(stoppedCoin),"CROSSOVER").catch(()=>{});
     }
 }
 function crossoverSyncCountLineStates(){
@@ -11481,6 +11549,7 @@ function crossoverApplyState(saved){
         let savedCoin=String(m.coin||"").toUpperCase();
         if(!savedCoin){try{savedCoin=String(localStorage.getItem(`crossoverSelectedCoin-${idx}`)||"").toUpperCase();}catch(e){}}
         s.coin=CROSSOVER_COINS.includes(savedCoin)?savedCoin:"BTC";
+        s.activeCoin=CROSSOVER_COINS.includes(String(m.activeCoin||"").toUpperCase())?String(m.activeCoin).toUpperCase():(m.running?s.coin:null);
         s.target=Number.isFinite(Number(m.target))?Number(m.target):null;
         s.activeTarget=Number.isFinite(Number(m.activeTarget))?Number(m.activeTarget):(m.running&&Number.isFinite(Number(m.target))?Number(m.target):null);
         // If this crossover was running, restore the exact target that was registered
@@ -11498,7 +11567,24 @@ function crossoverApplyState(saved){
         if(coin){coin.value=s.coin; coin.dataset.userSelected="1";}
         if(input)input.value=Number.isFinite(s.target)&&s.target>0?s.target.toLocaleString("en-US",{maximumFractionDigits:8}):"";
         crossoverUpdateUI(idx);
-        if(m.running)crossoverStart(idx,false);
+        if(m.running){
+            /* On refresh, the selector must show the same coin that is actually
+               registered as active. Any pending selector edit is not restored
+               while the crossover is running; it can be changed after refresh
+               and becomes active only after Stop → Start. */
+            const activeCoin=s.activeCoin||s.coin;
+            s.coin=activeCoin;
+            if(coin){
+                coin.value=activeCoin;
+                coin.dataset.userSelected="1";
+                /* The visible custom picker listens to change; without this,
+                   its label can remain on BTC after a refresh. */
+                coin.dispatchEvent(new Event("change",{bubbles:true}));
+            }
+            crossoverStart(idx,false);
+            s.coin=activeCoin;
+            crossoverUpdateUI(idx);
+        }
     });
     return true;
 }
@@ -11509,10 +11595,14 @@ function crossoverInit(){
         coin.addEventListener("change",()=>{
             s.coin=String(coin.value||"BTC").toUpperCase();
             coin.dataset.userSelected="1";
-            s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
+            /* While running, the selector is only a pending edit. The active
+               coin remains registered exactly like activeTarget. */
+            if(!s.running){
+                s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;
+                s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
+            }
             clearPageIssue(`crossover:${i}`);
             crossoverUpdateUI(i);crossoverSaveState();
-            if(s.running){crossoverFetchOne(i,false);crossoverSyncRemote();}
         });
         input.addEventListener("input",()=>{
             // Keep a decimal point while the user is typing (e.g. 125.5).
@@ -11581,6 +11671,7 @@ function crossoverInit(){
     });
 }
 crossoverInit();
+rfkjStartUltraRotation();
 
 /* =====================================================
    INIT
