@@ -11127,11 +11127,68 @@ const crossoverInstances = Array.from({length:CROSSOVER_COUNT},(_,i)=>({
 function crossoverGet(id,index){return document.getElementById(`${id}${index}`);}
 function crossoverInstance(index){return crossoverInstances[index-1];}
 function crossoverClientId(){
+    /* Crossover state is shared between devices through the default remote profile.
+       The latest device that opens the page reads/writes this same profile. */
+    return "default";
+}
+async function crossoverLoadRemoteStatus(){
     try{
-        let id=localStorage.getItem("crossoverClientId-v1");
-        if(!id){id=(crypto?.randomUUID?crypto.randomUUID():"c_"+Date.now()+"_"+Math.random().toString(36).slice(2));localStorage.setItem("crossoverClientId-v1",id);}
-        return id;
-    }catch(e){return "anonymous";}
+        const response=await fetch(`${CROSSOVER_REMOTE_WORKER_URL}status?clientId=${encodeURIComponent(crossoverClientId())}&t=${Date.now()}`,{
+            method:"GET",cache:"no-store"
+        });
+        if(!response.ok)throw new Error("Remote Crossover status HTTP "+response.status);
+        const data=await response.json();
+        if(!data||data.ok!==true||!Array.isArray(data.items))throw new Error("Invalid Remote Crossover status");
+
+        /* The remote worker is authoritative when the page opens.
+           Clear all four slots first so stale local values cannot survive. */
+        for(let i=1;i<=CROSSOVER_COUNT;i++){
+            const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i),input=crossoverGet("crossoverTarget",i),btn=crossoverGet("crossoverStartStop",i),status=crossoverGet("crossoverStatus",i);
+            if(!s)continue;
+            if(s.timer){clearInterval(s.timer);s.timer=null;}
+            s.running=false;s.activeTarget=null;s.target=null;s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
+            s.coin="BTC";
+            if(coin){coin.value="BTC";coin.dataset.userSelected="0";}
+            if(input)input.value="";
+            if(btn){btn.textContent="▶ Start Crossover";btn.classList.remove("running");}
+            if(status)status.textContent="";
+        }
+
+        /* Show all four slots so the server's complete configuration is visible. */
+        crossoverSetVisibleCount(CROSSOVER_COUNT,true);
+        for(const item of data.items){
+            const index=Math.max(1,Math.min(CROSSOVER_COUNT,Number(item.index)||0));
+            if(!index||!item.running)continue;
+            const s=crossoverInstance(index);
+            if(!s)continue;
+            const coin=String(item.coin||"BTC").toUpperCase();
+            const target=Number(item.target);
+            if(!CROSSOVER_COINS.includes(coin)||!Number.isFinite(target)||target<=0)continue;
+            s.coin=coin;s.target=target;s.activeTarget=target;s.running=true;
+            s.previousPrice=Number.isFinite(Number(item.previousPrice))?Number(item.previousPrice):null;
+            s.latestPrice=Number.isFinite(Number(item.latestPrice))?Number(item.latestPrice):null;
+            s.latestUpdated=item.latestUpdated||null;
+            s.lastCrossAt=item.lastCrossAt||null;
+            s.lastCrossDirection=Number(item.lastCrossDirection)||0;
+            s.priceDirection=0;
+            const coinEl=crossoverGet("crossoverCoin",index),input=crossoverGet("crossoverTarget",index),btn=crossoverGet("crossoverStartStop",index),status=crossoverGet("crossoverStatus",index);
+            if(coinEl){coinEl.value=coin;coinEl.dataset.userSelected="1";}
+            if(input)input.value=target.toLocaleString("en-US",{maximumFractionDigits:8});
+            if(btn){btn.textContent="■ Stop Crossover";btn.classList.add("running");}
+            if(status)status.textContent="Monitoring • Waiting for first price";
+            crossoverUpdateUI(index);
+            crossoverFetchOne(index,false);
+            s.timer=setInterval(()=>crossoverFetchOne(index,true),CROSSOVER_POLL_MS);
+        }
+        crossoverSaveState();
+        crossoverSyncCountLineStates();
+        clearPageIssue("crossover-remote-status");
+        return true;
+    }catch(e){
+        setPageIssue("crossover-remote-status",e?.message||"Remote Crossover status unavailable","warn");
+        console.warn("Remote Crossover status load failed:",e);
+        return false;
+    }
 }
 async function crossoverSyncRemote(){
     try{
@@ -11499,23 +11556,28 @@ function crossoverInit(){
         crossoverUpdateUI(i);
     }
     document.querySelectorAll(".crossover-slot-btn").forEach(btn=>btn.addEventListener("click",()=>crossoverSetVisibleCount(btn.dataset.crossoverCount)));
-    const restored=crossoverApplyState(crossoverReadState());
-    if(!restored){
-        crossoverSetVisibleCount(1,true);
-        for(let i=1;i<=4;i++){
-            const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i);
-            let savedCoin="";
-            try{savedCoin=String(localStorage.getItem(`crossoverSelectedCoin-${i}`)||"").toUpperCase();}catch(e){}
-            if(CROSSOVER_COINS.includes(savedCoin)){
-                s.coin=savedCoin;
-                if(coin){coin.value=savedCoin;coin.dataset.userSelected="1";}
+    /* Prefer the shared remote Crossover state. If it cannot be reached,
+       fall back to the last locally saved state so the UI still works offline. */
+    crossoverLoadRemoteStatus().then(remoteLoaded=>{
+        if(!remoteLoaded){
+            const restored=crossoverApplyState(crossoverReadState());
+            if(!restored){
+                crossoverSetVisibleCount(1,true);
+                for(let i=1;i<=4;i++){
+                    const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i);
+                    let savedCoin="";
+                    try{savedCoin=String(localStorage.getItem(`crossoverSelectedCoin-${i}`)||"").toUpperCase();}catch(e){}
+                    if(CROSSOVER_COINS.includes(savedCoin)){
+                        s.coin=savedCoin;
+                        if(coin){coin.value=savedCoin;coin.dataset.userSelected="1";}
+                    }
+                    crossoverUpdateUI(i);
+                }
+                crossoverSaveState();
             }
-            crossoverUpdateUI(i);
         }
-        crossoverSaveState();
-    }
-    crossoverSyncRemote();
-    crossoverSyncCountLineStates();
+        crossoverSyncCountLineStates();
+    });
 }
 crossoverInit();
 
