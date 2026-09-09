@@ -11231,7 +11231,7 @@ async function crossoverLoadRemoteStatus(){
             if(!CROSSOVER_COINS.includes(coin)||!Number.isFinite(target)||target<=0)continue;
             s.coin=coin;s.activeCoin=coin;s.target=target;s.activeTarget=target;s.running=true;
             /* Keep the custom visual selector synchronized with the Worker coin. */
-            const coinSelect=crossoverGet("crossoverCoin",idx);
+            const coinSelect=crossoverGet("crossoverCoin",index);
             if(coinSelect){coinSelect.value=coin;coinSelect.dataset.userSelected="1";coinSelect.dispatchEvent(new Event("change",{bubbles:true}));}
             s.previousPrice=Number.isFinite(Number(item.previousPrice))?Number(item.previousPrice):null;
             s.latestPrice=Number.isFinite(Number(item.latestPrice))?Number(item.latestPrice):null;
@@ -11547,7 +11547,7 @@ function crossoverSetVisibleCount(count,restore=false){
         const i=Number(card.dataset.crossoverIndex);card.style.display=i<=n?"":"none";
     });
     document.querySelectorAll(".crossover-slot-btn").forEach(btn=>btn.classList.toggle("active",Number(btn.dataset.crossoverCount)<=n));
-    if(!restore){crossoverSaveState();crossoverSyncRemote();}
+    if(!restore){crossoverSaveState();}
     crossoverSyncCountLineStates();
 }
 function crossoverApplyState(saved){
