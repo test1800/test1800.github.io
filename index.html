@@ -2655,6 +2655,16 @@ h1 {
         line-height:1;
         vertical-align:middle;
     }
+    /* Keep the Ultra Compact matrix number visually anchored even when
+       the number of digits changes. */
+    #rfkjUltraPrice{
+        display:inline-block;
+        width:8.2ch;
+        min-width:8.2ch;
+        text-align:right;
+        font-variant-numeric:tabular-nums;
+        font-feature-settings:"tnum" 1;
+    }
     .rfkj-ultra-arrows{
         display:inline-flex;
         align-items:center;
