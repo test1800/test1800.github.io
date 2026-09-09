@@ -4015,6 +4015,35 @@ h1 {
     background:linear-gradient(145deg,rgba(168,85,247,.24),rgba(126,34,206,.08));
     box-shadow:0 0 18px rgba(168,85,247,.11);
 }
+.crossover-notify{
+    flex:0 0 34px !important;
+    width:34px !important;
+    min-width:34px !important;
+    height:28px !important;
+    min-height:28px !important;
+    padding:0 !important;
+    border:1px solid rgba(148,163,184,.30);
+    border-radius:10px;
+    color:#94a3b8;
+    background:linear-gradient(145deg,rgba(51,65,85,.32),rgba(15,23,42,.18));
+    box-shadow:0 0 12px rgba(15,23,42,.12);
+    font-size:14px;
+    line-height:1;
+    cursor:pointer;
+    transition:.2s ease;
+}
+.crossover-notify:hover{transform:translateY(-1px);border-color:rgba(148,163,184,.55);}
+.crossover-notify.enabled{
+    color:#fef3c7;
+    border-color:rgba(251,191,36,.68);
+    background:linear-gradient(145deg,rgba(245,158,11,.28),rgba(217,119,6,.10));
+    box-shadow:0 0 16px rgba(245,158,11,.18),inset 0 1px 0 rgba(255,255,255,.08);
+}
+.crossover-notify:disabled{
+    opacity:.38;
+    cursor:not-allowed;
+    transform:none !important;
+}
 .crossover-status{
     flex:1 1 50%;
     min-width:0;
@@ -5252,7 +5281,7 @@ h1 {
                 <div class="crossover-coin-wrap"><select id="crossoverCoin1" class="crossover-coin" aria-label="Select asset"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option><option value="USD">USD</option></select></div>
             </div>
             <div class="crossover-distance invalid" id="crossoverDistance1">Current value — • Target —</div>
-            <div class="crossover-action"><button type="button" id="crossoverStartStop1" class="crossover-start-stop">▶ Start Crossover</button><div id="crossoverStatus1" class="crossover-status">Ready • Set a target price</div></div>
+            <div class="crossover-action"><button type="button" id="crossoverStartStop1" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify1" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><div id="crossoverStatus1" class="crossover-status">Ready • Set a target price</div></div>
         </div>
         <div class="card crossover-card" data-crossover-index="2" >
             <div class="crossover-header">
@@ -5264,7 +5293,7 @@ h1 {
                 <div class="crossover-coin-wrap"><select id="crossoverCoin2" class="crossover-coin" aria-label="Select asset"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option><option value="USD">USD</option></select></div>
             </div>
             <div class="crossover-distance invalid" id="crossoverDistance2">Current value — • Target —</div>
-            <div class="crossover-action"><button type="button" id="crossoverStartStop2" class="crossover-start-stop">▶ Start Crossover</button><div id="crossoverStatus2" class="crossover-status">Ready • Set a target price</div></div>
+            <div class="crossover-action"><button type="button" id="crossoverStartStop2" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify2" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><div id="crossoverStatus2" class="crossover-status">Ready • Set a target price</div></div>
         </div>
         <div class="card crossover-card" data-crossover-index="3" >
             <div class="crossover-header">
@@ -5276,7 +5305,7 @@ h1 {
                 <div class="crossover-coin-wrap"><select id="crossoverCoin3" class="crossover-coin" aria-label="Select asset"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option><option value="USD">USD</option></select></div>
             </div>
             <div class="crossover-distance invalid" id="crossoverDistance3">Current value — • Target —</div>
-            <div class="crossover-action"><button type="button" id="crossoverStartStop3" class="crossover-start-stop">▶ Start Crossover</button><div id="crossoverStatus3" class="crossover-status">Ready • Set a target price</div></div>
+            <div class="crossover-action"><button type="button" id="crossoverStartStop3" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify3" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><div id="crossoverStatus3" class="crossover-status">Ready • Set a target price</div></div>
         </div>
         <div class="card crossover-card" data-crossover-index="4" >
             <div class="crossover-header">
@@ -5288,7 +5317,7 @@ h1 {
                 <div class="crossover-coin-wrap"><select id="crossoverCoin4" class="crossover-coin" aria-label="Select asset"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option><option value="USD">USD</option></select></div>
             </div>
             <div class="crossover-distance invalid" id="crossoverDistance4">Current value — • Target —</div>
-            <div class="crossover-action"><button type="button" id="crossoverStartStop4" class="crossover-start-stop">▶ Start Crossover</button><div id="crossoverStatus4" class="crossover-status">Ready • Set a target price</div></div>
+            <div class="crossover-action"><button type="button" id="crossoverStartStop4" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify4" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><div id="crossoverStatus4" class="crossover-status">Ready • Set a target price</div></div>
         </div>
     </div>
 </div>
@@ -11186,6 +11215,7 @@ const CROSSOVER_STATE_KEY = "crossoverState-v2";
 const CROSSOVER_COINS = ["BTC","BNB","ETH","DOGE","ADA","SOL","ONE","AVAX","POL","TRX","USD"];
 const crossoverInstances = Array.from({length:CROSSOVER_COUNT},(_,i)=>({
     index:i+1, coin:"BTC", activeCoin:null, target:null, activeTarget:null, running:false, timer:null,
+    notificationEnabled:false, percentageAlertTimes:Object.create(null),
     requestInProgress:false, previousPrice:null, latestPrice:null,
     latestUpdated:null, lastCrossAt:null, lastCrossDirection:0, priceDirection:0
 }));
@@ -11195,6 +11225,86 @@ function crossoverClientId(){
     /* Crossover state is shared between devices through the default remote profile.
        The latest device that opens the page reads/writes this same profile. */
     return "default";
+}
+function crossoverNotificationPrefsKey(){return "crossoverNotificationPrefs-v1";}
+function crossoverReadNotificationPrefs(){
+    try{
+        const raw=localStorage.getItem(crossoverNotificationPrefsKey());
+        const data=raw?JSON.parse(raw):{};
+        return data&&typeof data==="object"?data:{};
+    }catch(e){return {};}
+}
+function crossoverSaveNotificationPrefs(){
+    try{
+        const data={};
+        crossoverInstances.forEach(s=>{data[String(s.index)]=!!s.notificationEnabled;});
+        localStorage.setItem(crossoverNotificationPrefsKey(),JSON.stringify(data));
+    }catch(e){}
+}
+function crossoverLoadNotificationPrefs(){
+    const data=crossoverReadNotificationPrefs();
+    crossoverInstances.forEach(s=>{s.notificationEnabled=data[String(s.index)]===true;});
+}
+function crossoverLoadLocalAlertHistory(){
+    try{
+        const raw=localStorage.getItem(CROSSOVER_STATE_KEY);
+        const data=raw?JSON.parse(raw):null;
+        (data?.crossovers||[]).slice(0,CROSSOVER_COUNT).forEach((m,i)=>{
+            const times=m?.percentageAlertTimes;
+            if(times&&typeof times==="object")crossoverInstance(i+1).percentageAlertTimes={...times};
+        });
+    }catch(e){}
+}
+function crossoverUpdateNotificationButton(index){
+    const s=crossoverInstance(index),btn=crossoverGet("crossoverNotify",index);
+    if(!s||!btn)return;
+    const enabled=!!s.notificationEnabled;
+    btn.disabled=!s.running;
+    btn.classList.toggle("enabled",enabled&&s.running);
+    btn.textContent=enabled?"🔔":"🔕";
+    btn.title=s.running?(enabled?"Percentage notifications are on":"Percentage notifications are off"):"Start Crossover first";
+    btn.setAttribute("aria-pressed",enabled?"true":"false");
+}
+function crossoverPercentageLevels(oldPrice,newPrice,target){
+    const oldPct=((oldPrice-target)/target)*100;
+    const newPct=((newPrice-target)/target)*100;
+    if(!Number.isFinite(oldPct)||!Number.isFinite(newPct)||oldPct===newPct)return [];
+    const levels=[];
+    if(newPct>oldPct){
+        const from=Math.ceil(oldPct),to=Math.floor(newPct);
+        for(let level=from;level<=to;level++)if(level!==0)levels.push(level);
+    }else{
+        const from=Math.floor(oldPct),to=Math.ceil(newPct);
+        for(let level=from;level>=to;level--)if(level!==0)levels.push(level);
+    }
+    return levels;
+}
+async function crossoverSendPercentageAlert(index,level,price,target){
+    const s=crossoverInstance(index);
+    if(!s||!s.running||!s.notificationEnabled)return false;
+    const now=Date.now(),key=String(level),last=Number(s.percentageAlertTimes?.[key]||0);
+    if(now-last<CROSSOVER_ALERT_COOLDOWN)return false;
+    s.percentageAlertTimes[key]=now;
+    const coin=s.activeCoin||s.coin;
+    const pctText=`${level>0?"+":""}${level.toFixed(0)}%`;
+    const title=`${level>0?"📈":"📉"} ${coin}/USD • Crossover #${index}`;
+    const relation=level>0?"above":"below";
+    const message=`${coin}/USD • ${pctText} ${relation} target • Price ${crossoverFormatPrice(price)} • Target ${crossoverFormatPrice(target)}`;
+    try{await sendDashboardNotification(title,message,getCryptoIconSrc(coin),"CROSSOVER");return true;}catch(e){console.warn("Crossover percentage notification failed",e);return false;}
+}
+async function crossoverToggleNotifications(index){
+    const s=crossoverInstance(index);
+    if(!s||!s.running)return;
+    s.notificationEnabled=!s.notificationEnabled;
+    crossoverSaveNotificationPrefs();
+    crossoverUpdateNotificationButton(index);
+    crossoverSaveState();
+    if(s.notificationEnabled){
+        const coin=s.activeCoin||s.coin,target=Number(s.activeTarget);
+        const title=`🔔 Crossover #${index} • ${coin}/USD`;
+        const message=`Percentage notifications activated for ${coin}/USD • Target ${crossoverFormatPrice(target)}`;
+        try{await sendDashboardNotification(title,message,getCryptoIconSrc(coin),"CROSSOVER");}catch(e){console.warn("Crossover notification activation failed",e);}
+    }
 }
 async function crossoverLoadRemoteStatus(){
     try{
@@ -11219,6 +11329,9 @@ async function crossoverLoadRemoteStatus(){
             if(status)status.textContent="";
         }
 
+        /* Notification switches are local preferences and never alter the Worker. */
+        crossoverLoadNotificationPrefs();
+        crossoverLoadLocalAlertHistory();
         /* Show all four slots so the server's complete configuration is visible. */
         crossoverSetVisibleCount(CROSSOVER_COUNT,true);
         for(const item of data.items){
@@ -11239,11 +11352,13 @@ async function crossoverLoadRemoteStatus(){
             s.lastCrossAt=item.lastCrossAt||null;
             s.lastCrossDirection=Number(item.lastCrossDirection)||0;
             s.priceDirection=0;
+            s.notificationEnabled=!!s.notificationEnabled;
             const coinEl=crossoverGet("crossoverCoin",index),input=crossoverGet("crossoverTarget",index),btn=crossoverGet("crossoverStartStop",index),status=crossoverGet("crossoverStatus",index);
             if(coinEl){coinEl.value=coin;coinEl.dataset.userSelected="1";}
             if(input)input.value=target.toLocaleString("en-US",{maximumFractionDigits:8});
             if(btn){btn.textContent="■ Stop Crossover";btn.classList.add("running");}
             if(status)status.textContent="Monitoring • Waiting for first price";
+            crossoverUpdateNotificationButton(index);
             crossoverUpdateUI(index);
             crossoverFetchOne(index,false);
             s.timer=setInterval(()=>crossoverFetchOne(index,true),CROSSOVER_POLL_MS);
@@ -11299,7 +11414,9 @@ function crossoverSaveState(){
             coin:s.coin,activeCoin:s.activeCoin,target:s.target,activeTarget:s.activeTarget,running:!!s.running,previousPrice:s.previousPrice,
             latestPrice:s.latestPrice,latestUpdated:s.latestUpdated,
             lastCrossAt:s.lastCrossAt,lastCrossDirection:s.lastCrossDirection,
-            priceDirection:s.priceDirection||0
+            priceDirection:s.priceDirection||0,
+            notificationEnabled:!!s.notificationEnabled,
+            percentageAlertTimes:s.percentageAlertTimes||{}
         }))
     };
     const raw=JSON.stringify(data);
@@ -11378,6 +11495,7 @@ function crossoverUpdateUI(index){
         }
     }
     if(status&&!s.running&&Number.isFinite(target)&&target>0)status.textContent="Ready • Waiting to start";
+    crossoverUpdateNotificationButton(index);
 }
 const CROSSOVER_ALERT_COOLDOWN = 5 * 60 * 1000;
 const crossoverAlertTimes = Object.create(null);
@@ -11446,7 +11564,10 @@ async function crossoverFetchOne(index,notify=true){
                 s.lastCrossDirection=direction;
                 const status=crossoverGet("crossoverStatus",index);
                 if(status)status.textContent=`Crossed ${direction>0?"UP ↑":"DOWN ↓"} • ${crossoverNowText(s.lastCrossAt)}`;
-                await crossoverSendAlert(index,direction,price,target);
+            }
+            if(s.notificationEnabled){
+                const levels=crossoverPercentageLevels(old,price,target);
+                for(const level of levels)await crossoverSendPercentageAlert(index,level,price,target);
             }
         }
         s.previousPrice=price;
@@ -11482,6 +11603,7 @@ function crossoverStart(index,sendStart=true){
     if(b){b.textContent="■ Stop Crossover";b.classList.add("running");}
     const status=crossoverGet("crossoverStatus",index);
     if(status)status.textContent="Monitoring • Waiting for first price";
+    crossoverUpdateNotificationButton(index);
     if(sendStart){
         const price=Number(s.latestPrice);
         crossoverSendStartNotification(index,price,target);
@@ -11515,6 +11637,7 @@ function crossoverStop(index,sendStop=true){
     if(b){b.textContent="▶ Start Crossover";b.classList.remove("running");}
     const status=crossoverGet("crossoverStatus",index);
     if(status)status.textContent=s.lastCrossAt?`Last cross • ${crossoverNowText(s.lastCrossAt)}`:"Crossover stopped.";
+    crossoverUpdateNotificationButton(index);
     clearPageIssue(`crossover:${index}`);
     crossoverUpdateUI(index);
     crossoverSaveState();
@@ -11573,6 +11696,8 @@ function crossoverApplyState(saved){
         s.lastCrossAt=m.lastCrossAt||null;
         s.lastCrossDirection=Number(m.lastCrossDirection)||0;
         s.priceDirection=Number(m.priceDirection)||0;
+        s.notificationEnabled=!!m.notificationEnabled;
+        s.percentageAlertTimes=(m.percentageAlertTimes&&typeof m.percentageAlertTimes==="object")?m.percentageAlertTimes:Object.create(null);
         const coin=crossoverGet("crossoverCoin",idx),input=crossoverGet("crossoverTarget",idx);
         if(coin){coin.value=s.coin; coin.dataset.userSelected="1";}
         if(input)input.value=Number.isFinite(s.target)&&s.target>0?s.target.toLocaleString("en-US",{maximumFractionDigits:8}):"";
@@ -11599,8 +11724,9 @@ function crossoverApplyState(saved){
     return true;
 }
 function crossoverInit(){
+    crossoverLoadNotificationPrefs();
     for(let i=1;i<=CROSSOVER_COUNT;i++){
-        const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i),input=crossoverGet("crossoverTarget",i),btn=crossoverGet("crossoverStartStop",i);
+        const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i),input=crossoverGet("crossoverTarget",i),btn=crossoverGet("crossoverStartStop",i),notifyBtn=crossoverGet("crossoverNotify",i);
         if(!s||!coin||!input||!btn)continue;
         coin.addEventListener("change",()=>{
             s.coin=String(coin.value||"BTC").toUpperCase();
@@ -11654,6 +11780,7 @@ function crossoverInit(){
             if(Number.isFinite(n)&&n>0) input.value=n.toLocaleString("en-US",{maximumFractionDigits:8});
         });
         btn.addEventListener("click",()=>s.running?crossoverStop(i):crossoverStart(i));
+        if(notifyBtn)notifyBtn.addEventListener("click",()=>crossoverToggleNotifications(i));
         crossoverUpdateUI(i);
     }
     document.querySelectorAll(".crossover-slot-btn").forEach(btn=>btn.addEventListener("click",()=>crossoverSetVisibleCount(btn.dataset.crossoverCount)));
@@ -12049,7 +12176,7 @@ if (
     });
 
     // Make the visible TV controls explicitly focusable.
-    document.querySelectorAll(".rfkj-slot-btn, .crossover-slot-btn, .rfkj-compact-coin-trigger, .crossover-coin-trigger, .crossover-start-stop")
+    document.querySelectorAll(".rfkj-slot-btn, .crossover-slot-btn, .rfkj-compact-coin-trigger, .crossover-coin-trigger, .crossover-start-stop, .crossover-notify")
         .forEach(el=>el.setAttribute("tabindex","0"));
 })();
 </script>
