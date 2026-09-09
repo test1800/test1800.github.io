@@ -1,4 +1,4 @@
-const CACHE_NAME = "financial-dashboard-v4";
+const CACHE_NAME = "financial-dashboard-v5";
 
 const STATIC_FILES = [
 
@@ -14,6 +14,13 @@ const STATIC_FILES = [
 
     "./icon-512.png",
 
+    "./file/Buy.mp3",
+    "./file/Sell.mp3",
+    "./file/Usd.mp3",
+    "./file/signal.mp3",
+    "./file/matrisabi.mp3",
+    "./file/matrissefid.mp3",
+    "./file/Crossover.mp3",
 
 ];
 

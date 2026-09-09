@@ -6395,7 +6395,7 @@ function unlockDashboardNotificationSound() {
                 dashboardAudioContext.resume().catch(() => {});
             }
         }
-        ["BUY", "SELL", "USD", "RFKJ", "CROSSOVER"].forEach(soundType => {
+        ["BUY", "SELL", "USD", "RFKJ", "RFKJ_BLUE", "RFKJ_WHITE", "CROSSOVER"].forEach(soundType => {
             const audio = dashboardNotificationSounds[soundType];
             if (!audio) return;
             try {
@@ -6461,7 +6461,7 @@ async function playDashboardNotificationSound(soundType = "USD") {
         return false;
     }
 }
-/* Cache all three sounds once. Later notifications use the cached copies. */
+/* Cache all notification sounds once. Later notifications use the cached copies. */
 prepareAllDashboardNotificationSounds();
 ["click", "touchstart", "keydown", "pointerdown"].forEach(eventName => {
     window.addEventListener(eventName, () => {
@@ -6563,7 +6563,8 @@ async function sendDashboardNotification(
                     vibrate: [220, 100, 220, 100, 220],
                     timestamp: Date.now(),
                     data: {
-                        notificationType: resolvedSoundType
+                        notificationType: resolvedSoundType,
+                        soundUrl: DASHBOARD_NOTIFICATION_SOUND_URLS[resolvedSoundType] || null
                     }
                 }
             );
@@ -11888,6 +11889,67 @@ if (
         select.style.position="absolute";select.style.width="1px";select.style.height="1px";select.style.opacity="0";select.style.pointerEvents="none";select.style.clipPath="inset(50%)";
         sync();
     });
+})();
+</script>
+<script id="lg-tv-input-compat">
+/* LG webOS TV only: keep the hidden native selects out of remote focus
+   and make the numeric target fields reliably editable with the TV remote.
+   Desktop / large-monitor browsers are intentionally untouched. */
+(function initLgTvInputCompat(){
+    const ua = String(navigator.userAgent || "");
+    const isLgWebOS = /Web0S|WebOS|webOS|LG Browser|SMART-TV/i.test(ua) ||
+        typeof window.webOS !== "undefined" || typeof window.PalmSystem !== "undefined";
+    if(!isLgWebOS) return;
+
+    document.documentElement.classList.add("lg-webos-tv");
+
+    // The real selects are data sources; the visible custom pickers handle TV focus.
+    document.querySelectorAll(".rfkj-instance-coin, .crossover-coin").forEach(select=>{
+        select.setAttribute("tabindex","-1");
+    });
+
+    // Use the TV-friendly numeric input control only on LG webOS.
+    document.querySelectorAll(".crossover-target").forEach(input=>{
+        try{ input.type="number"; }catch(e){}
+        input.setAttribute("inputmode","decimal");
+        input.setAttribute("step","any");
+        input.setAttribute("tabindex","0");
+
+        input.addEventListener("keydown", function(e){
+            let key = String(e.key || "");
+            const persian="۰۱۲۳۴۵۶۷۸۹", arabic="٠١٢٣٤٥٦٧٨٩";
+            if(persian.includes(key)) key=String(persian.indexOf(key));
+            else if(arabic.includes(key)) key=String(arabic.indexOf(key));
+
+            const allowed = /^[0-9]$/.test(key);
+            if(allowed || key === "." || key === "," || key === "-" || key === "Backspace" || key === "Delete") {
+                if(allowed || key === "." || key === "," || key === "-") {
+                    e.preventDefault();
+                    const ch = key === "," ? "." : key;
+                    const start = input.selectionStart ?? input.value.length;
+                    const end = input.selectionEnd ?? input.value.length;
+                    let value = input.value;
+                    if(ch === "." && value.includes(".")) return;
+                    if(ch === "-" && start !== 0) return;
+                    if(ch === "-" && value.includes("-")) return;
+                    input.value = value.slice(0,start) + ch + value.slice(end);
+                    const pos = start + ch.length;
+                    try{ input.setSelectionRange(pos,pos); }catch(_){}
+                    input.dispatchEvent(new Event("input",{bubbles:true}));
+                    return;
+                }
+                if(key === "Backspace" || key === "Delete") {
+                    // Let the browser perform deletion; webOS handles this reliably once
+                    // the native select is removed from the TV focus order.
+                    return;
+                }
+            }
+        });
+    });
+
+    // Make the visible TV controls explicitly focusable.
+    document.querySelectorAll(".rfkj-slot-btn, .crossover-slot-btn, .rfkj-compact-coin-trigger, .crossover-coin-trigger, .crossover-start-stop")
+        .forEach(el=>el.setAttribute("tabindex","0"));
 })();
 </script>
 </body>
