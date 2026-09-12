@@ -5042,6 +5042,190 @@ h1 {
 .global-pulse-sleep-toggle.active{color:#fbbf24;border-color:rgba(251,191,36,.55);box-shadow:0 0 10px rgba(251,191,36,.16);}
 @media(max-width:899px){.global-pulse-sleep-toggle{width:25px;height:25px;font-size:16px;}}
 </style>
+
+<style id="r28-global-mobile-session-two-columns">
+/* R28: Mobile GLOBAL layout — 4 market sessions always in 2 columns × 2 rows.
+   ECONOMIC stays below them on its own full row. */
+@media (max-width:899px){
+  .global-pulse-session-strip{
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    grid-auto-rows:minmax(0,auto) !important;
+    gap:5px 8px !important;
+    width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+    overflow:visible !important;
+  }
+  .global-pulse-session-strip > .global-pulse-session-mini:not(.global-pulse-economic){
+    width:100% !important;
+    min-width:0 !important;
+    max-width:none !important;
+    margin:0 !important;
+    padding:0 !important;
+    display:flex !important;
+    flex-direction:row !important;
+    flex-wrap:nowrap !important;
+    align-items:center !important;
+    gap:3px !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+  .global-pulse-session-name{
+    flex:0 0 auto !important;
+    min-width:0 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    word-break:keep-all !important;
+  }
+  .global-pulse-session-state{
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    width:auto !important;
+    max-width:none !important;
+    display:inline-flex !important;
+    flex-direction:row !important;
+    flex-wrap:nowrap !important;
+    align-items:center !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    word-break:keep-all !important;
+  }
+  .global-pulse-session-state > span:last-child{
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    width:auto !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+  }
+  /* ECONOMIC starts after the 4 sessions: full width, below the 2×2 grid. */
+  .global-pulse-session-strip > .global-pulse-economic{
+    grid-column:1 / -1 !important;
+    grid-row:3 !important;
+    width:100% !important;
+    min-width:0 !important;
+    max-width:none !important;
+    box-sizing:border-box !important;
+  }
+}
+@media (max-width:430px){
+  .global-pulse-session-strip{gap:4px 5px !important;}
+  .global-pulse-session-strip > .global-pulse-session-mini:not(.global-pulse-economic){gap:2px !important;}
+  .global-pulse-session-name{font-size:clamp(9px,2.85cqw,11px) !important;line-height:1 !important;}
+  .global-pulse-session-state{font-size:clamp(8.5px,2.8cqw,10.5px) !important;line-height:1 !important;letter-spacing:-.12px !important;font-family:Arial Narrow,Arial,sans-serif !important;}
+  .global-pulse-session-state > span:last-child{letter-spacing:-.12px !important;}
+}
+</style>
+
+
+<style id="r29-global-mobile-max-readable">
+/* R29: maximize mobile market-session text while preserving the 2×2 layout. */
+@media (max-width:899px){
+  .global-pulse-session-strip > .global-pulse-session-mini:not(.global-pulse-economic){
+    overflow:hidden !important;
+  }
+  .global-pulse-session-name{
+    font-size:clamp(9.5px,3cqw,12px) !important;
+    line-height:1 !important;
+  }
+  .global-pulse-session-state{
+    font-size:clamp(8.8px,2.85cqw,11px) !important;
+    line-height:1 !important;
+    letter-spacing:-.15px !important;
+    font-family:Arial Narrow,Arial,sans-serif !important;
+  }
+  .global-pulse-session-state > span:last-child{
+    letter-spacing:-.15px !important;
+  }
+}
+@media (max-width:430px){
+  .global-pulse-session-name{font-size:clamp(9px,2.95cqw,11px) !important;}
+  .global-pulse-session-state{font-size:clamp(8.4px,2.75cqw,10.5px) !important;}
+}
+</style>
+
+<style id="r21-global-clock-overflow-fix">
+/* R21: prevent UTC/TEHRAN clock values from ever escaping the Global header. */
+.global-pulse-head{
+    min-width:0 !important;
+}
+.global-pulse-head > div{
+    min-width:0 !important;
+}
+.global-pulse-clock-pair{
+    min-width:0 !important;
+    max-width:100% !important;
+    flex:1 1 auto !important;
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    column-gap:clamp(6px,1.2vw,14px) !important;
+    overflow:hidden !important;
+}
+.global-pulse-clock-pair > div{
+    min-width:0 !important;
+    width:100% !important;
+    max-width:100% !important;
+    flex:1 1 0 !important;
+    overflow:hidden !important;
+    display:flex !important;
+    align-items:baseline !important;
+    gap:4px !important;
+}
+.global-pulse-clock-label{
+    flex:0 0 auto !important;
+    white-space:nowrap !important;
+}
+#globalPulseUtcTime,#globalPulseTehranTime{
+    min-width:0 !important;
+    width:auto !important;
+    max-width:100% !important;
+    flex:1 1 auto !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:clip !important;
+    font-size:clamp(12px,1.55vw,17px) !important;
+    letter-spacing:0 !important;
+}
+
+/* On narrow screens, give the two clocks their own full-width row.
+   This prevents the title + clocks from competing for horizontal space. */
+@media (max-width:650px){
+    .global-pulse-head{
+        display:grid !important;
+        grid-template-columns:minmax(0,1fr) !important;
+        row-gap:6px !important;
+    }
+    .global-pulse-clock-pair{
+        width:100% !important;
+        flex:none !important;
+    }
+    .global-pulse-clock-pair > div{
+        width:100% !important;
+    }
+}
+
+/* Extra protection for very narrow phone widths. */
+@media (max-width:360px){
+    .global-pulse-clock-pair{
+        column-gap:4px !important;
+    }
+    .global-pulse-clock-pair > div{
+        gap:2px !important;
+    }
+    .global-pulse-clock-label{
+        font-size:8px !important;
+        letter-spacing:.35px !important;
+    }
+    #globalPulseUtcTime,#globalPulseTehranTime{
+        font-size:clamp(10px,3.5vw,13px) !important;
+    }
+}
+</style>
+
 </head>
 <body>
 <!--
@@ -13961,5 +14145,72 @@ if (
 }
 @media (max-width:430px){
   .global-pulse-session-mini{gap:1px !important;}
+}
+</style>
+
+<style id="r28-global-clock-clean-fix">
+/* R28: clean Global header clock layout. Never overlap, never move when digits change. */
+.global-pulse-section{container-type:inline-size;}
+.global-pulse-head{
+  min-width:0 !important;
+  width:100% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:4px !important;
+}
+.global-pulse-head > div:first-child{
+  min-width:0 !important;
+  flex:1 1 auto !important;
+}
+.global-pulse-clock-pair{
+  flex:0 1 62% !important;
+  min-width:0 !important;
+  width:auto !important;
+  max-width:62% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  gap:3px !important;
+  overflow:visible !important;
+}
+.global-pulse-clock-pair > div{
+  flex:1 1 0 !important;
+  width:0 !important;
+  min-width:0 !important;
+  max-width:none !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  gap:2px !important;
+  white-space:nowrap !important;
+  overflow:visible !important;
+}
+.global-pulse-clock-label{
+  flex:0 0 auto !important;
+  white-space:nowrap !important;
+  font-size:clamp(6px,2.15cqw,10px) !important;
+  letter-spacing:clamp(0px,.12cqw,.7px) !important;
+}
+#globalPulseUtcTime,#globalPulseTehranTime{
+  flex:0 0 8ch !important;
+  width:8ch !important;
+  min-width:8ch !important;
+  max-width:8ch !important;
+  text-align:left !important;
+  white-space:nowrap !important;
+  overflow:visible !important;
+  font-variant-numeric:tabular-nums !important;
+  font-feature-settings:"tnum" 1 !important;
+  font-size:clamp(7px,3.55cqw,17px) !important;
+  line-height:.95 !important;
+  letter-spacing:0 !important;
+}
+@media(max-width:430px){
+  .global-pulse-head{gap:2px !important;}
+  .global-pulse-clock-pair{gap:2px !important;max-width:64% !important;flex-basis:64% !important;}
+  .global-pulse-clock-pair > div{gap:1px !important;}
+  .global-pulse-clock-label{font-size:clamp(5.5px,1.95cqw,8.5px) !important;}
+  #globalPulseUtcTime,#globalPulseTehranTime{font-size:clamp(6.5px,3.25cqw,13px) !important;}
 }
 </style>
