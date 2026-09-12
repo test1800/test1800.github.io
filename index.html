@@ -5035,6 +5035,13 @@ h1 {
   }
 }
 </style>
+
+<style id="r28-global-night-mode">
+.global-pulse-title{display:flex;align-items:center;gap:7px;}
+.global-pulse-sleep-toggle{width:27px;height:27px;border:1px solid rgba(148,163,184,.28);border-radius:50%;background:rgba(15,23,42,.72);color:#cbd5e1;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:.2s ease;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+.global-pulse-sleep-toggle.active{color:#fbbf24;border-color:rgba(251,191,36,.55);box-shadow:0 0 10px rgba(251,191,36,.16);}
+@media(max-width:899px){.global-pulse-sleep-toggle{width:25px;height:25px;font-size:16px;}}
+</style>
 </head>
 <body>
 <!--
@@ -5958,7 +5965,7 @@ h1 {
 <section class="global-pulse-section" id="globalPulseSection" aria-label="Global Pulse">
     <div class="global-pulse-head">
         <div>
-            <div class="global-pulse-title">GLOBAL <span class="global-pulse-active-markets" id="globalPulseActiveMarkets">· —</span></div>
+            <div class="global-pulse-title">GLOBAL <span class="global-pulse-active-markets" id="globalPulseActiveMarkets">· —</span><button type="button" id="globalPulseSleepToggle" class="global-pulse-sleep-toggle" aria-label="Night mode notifications" title="Night mode notifications">☾</button></div>
             <div class="global-pulse-urgent" id="globalPulseUrgentTimer" aria-live="polite"></div>
         </div>
         <div class="global-pulse-clock-pair">
@@ -10531,6 +10538,7 @@ function globalPulseNotifyKey(date,event){
     return `iran_${p.year}${globalPulsePad(p.month)}${globalPulsePad(p.day)}_${event}`;
 }
 async function globalPulseCheckIranNotification(now){
+    if(!globalPulseNotificationAllowed(now)) return;
     const state=globalPulseIranState(now);
     if(state.open || !state.target) return;
     const p=globalPulseParts(now,GLOBAL_PULSE_IRAN_TZ);
@@ -10709,6 +10717,7 @@ function globalPulseEconomicUpdate(now=new Date()){
     if(country) country.textContent=c||"—";
     if(summary) summary.textContent=globalPulseEconomicSummary(event);
     timer.textContent=globalPulseCountdown(next.diff);
+    try { if(window.AndroidNotifications?.setGlobalEconomicState) window.AndroidNotifications.setGlobalEconomicState(c,title,next.date.getTime()); } catch(e){}
     state.title=`${c} • ${title} • ${next.date.toISOString()}`;
     state.classList.remove("open","closed");
     if(root){
@@ -10754,6 +10763,65 @@ async function loadGlobalPulseEconomicEvents(force=false){
     }
 }
 
+const GLOBAL_PULSE_SLEEP_KEY = "globalPulseNightMode-v1";
+function globalPulseSleepEnabled(){
+    try { return localStorage.getItem(GLOBAL_PULSE_SLEEP_KEY) === "1"; } catch(e){ return false; }
+}
+function globalPulseIsQuietHours(now=new Date()){
+    const h=now.getHours();
+    return h>=22 || h<8;
+}
+function globalPulseSetSleep(enabled){
+    try { localStorage.setItem(GLOBAL_PULSE_SLEEP_KEY, enabled ? "1" : "0"); } catch(e){}
+    try { if(window.AndroidNotifications?.setGlobalNightMode) window.AndroidNotifications.setGlobalNightMode(!!enabled); } catch(e){}
+    const btn=$("globalPulseSleepToggle");
+    if(btn){ btn.classList.toggle("active",!!enabled); btn.textContent=enabled?"☽":"☾"; btn.title=enabled?"Night mode ON · 22:00–08:00 notifications muted":"Night mode OFF · Global notifications enabled"; }
+}
+function globalPulseNotificationAllowed(now=new Date()){
+    return !(globalPulseSleepEnabled() && globalPulseIsQuietHours(now));
+}
+function initGlobalPulseSleepToggle(){
+    let enabled=false;
+    try { enabled=localStorage.getItem(GLOBAL_PULSE_SLEEP_KEY)==="1"; } catch(e){}
+    const btn=$("globalPulseSleepToggle");
+    if(btn) btn.addEventListener("click",()=>globalPulseSetSleep(!globalPulseSleepEnabled()));
+    globalPulseSetSleep(enabled);
+}
+
+async function globalPulseCheckEconomicNotification(now){
+    if(!globalPulseNotificationAllowed(now)) return;
+    const next=globalPulseEconomicFindNext(now);
+    if(!next || next.diff>5*60*1000 || next.diff<0) return;
+    const key=`economic_${next.date.getTime()}`;
+    try{
+        const sent=new Set((localStorage.getItem("globalPulseEconomicNotice-v1")||"").split("|"));
+        if(sent.has(key)) return;
+        const title=String(next.event?.title||next.event?.name||next.event?.event||"Economic Event").trim();
+        const country=String(next.event?.country||next.event?.currency||"").trim();
+        await sendDashboardNotification(`📅 ECONOMIC${country?" · "+country:""}`,`${title} starts in 5 minutes`,"./icon-192.png","GLOBAL_TIME");
+        sent.add(key); localStorage.setItem("globalPulseEconomicNotice-v1",Array.from(sent).slice(-30).join("|"));
+    }catch(e){}
+}
+
+async function globalPulseCheckSessionNotifications(now){
+    if(!globalPulseNotificationAllowed(now)) return;
+    for(const [name,def] of Object.entries(GLOBAL_PULSE_SESSION_DEFS)){
+        const state=globalPulseSessionBoundary(now,def);
+        if(!state.target || state.open) continue;
+        const diff=state.target.getTime()-now.getTime();
+        if(diff<0 || diff>5*60*1000) continue;
+        const p=globalPulseParts(state.target,def.tz);
+        const dayKey=`${p.year}${globalPulsePad(p.month)}${globalPulsePad(p.day)}`;
+        const key=`global_${name}_${dayKey}_open5`;
+        try{
+            const sent=new Set((localStorage.getItem("globalPulseSessionNotice-v1")||"").split("|"));
+            if(sent.has(key)) continue;
+            await sendDashboardNotification(`🌐 ${name.toUpperCase()} OPEN`,`${name} market opens in 5 minutes`,"./icon-192.png","GLOBAL_TIME");
+            sent.add(key); localStorage.setItem("globalPulseSessionNotice-v1",Array.from(sent).slice(-30).join("|"));
+        }catch(e){}
+    }
+}
+
 function globalPulseUpdateMarketClock(){
     const now=new Date();
     globalPulseEconomicUpdate(now);
@@ -10780,7 +10848,7 @@ function globalPulseUpdateMarketClock(){
             const boundaryDiff=state.target ? state.target.getTime()-now.getTime() : Infinity;
             el.classList.toggle("near-boundary",boundaryDiff>0 && boundaryDiff<=300000);
         }
-        if(timer) timer.textContent=state.open?`OPEN · ${state.timer.replace("CLOSE IN ","")}`:state.timer;
+        if(timer) timer.textContent=state.open ? state.timer : `CLOSED · ${state.timer.replace("OPEN IN ","OPEN IN ")}`;
         if(state.open) active.push(name.toUpperCase());
         upcoming.push({name:name.toUpperCase(),state});
     }
@@ -10807,9 +10875,12 @@ function globalPulseUpdateMarketClock(){
         }
     }
     globalPulseCheckIranNotification(now);
+    globalPulseCheckSessionNotifications(now);
+    globalPulseCheckEconomicNotification(now);
 }
 
 function startGlobalPulseMarketClock(){
+    initGlobalPulseSleepToggle();
     globalPulseUpdateMarketClock();
     clearInterval(window.globalPulseMarketClockTimer);
     clearInterval(window.globalPulseInfoRotateTimer);
@@ -13822,5 +13893,62 @@ if (
   .global-pulse-economic .global-pulse-economic-summary{
     flex:1 1 45% !important;
   }
+}
+</style>
+
+<style id="r27-mobile-global-session-final">
+/* R27: only fix the GLOBAL session fit on mobile and make the sleep icon smaller. */
+.global-pulse-sleep-toggle{
+  width:21px !important;
+  height:21px !important;
+  font-size:12px !important;
+  line-height:1 !important;
+}
+@media(max-width:899px){
+  .global-pulse-sleep-toggle{
+    width:19px !important;
+    height:19px !important;
+    font-size:11px !important;
+  }
+  .global-pulse-session-mini{
+    min-width:0 !important;
+    overflow:visible !important;
+    flex-wrap:wrap !important;
+    align-items:baseline !important;
+  }
+  .global-pulse-session-name{
+    flex:0 0 auto !important;
+    white-space:nowrap !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    font-size:clamp(7px,2.15cqw,10px) !important;
+  }
+  .global-pulse-session-state{
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    width:auto !important;
+    max-width:none !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    overflow-wrap:normal !important;
+    word-break:normal !important;
+    font-size:clamp(6px,1.85cqw,8.5px) !important;
+  }
+  .global-pulse-session-state > span:last-child{
+    display:inline !important;
+    width:auto !important;
+    min-width:0 !important;
+    flex:none !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+  }
+}
+@media(max-width:430px){
+  .global-pulse-session-strip{gap:5px 6px !important;}
+  .global-pulse-session-mini{gap:2px !important;}
+  .global-pulse-session-name{font-size:clamp(7px,2.05cqw,9px) !important;}
+  .global-pulse-session-state{font-size:clamp(6px,1.72cqw,7.8px) !important;}
 }
 </style>
