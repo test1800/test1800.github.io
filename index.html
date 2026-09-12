@@ -4789,6 +4789,95 @@ h1 {
   .global-pulse-session-state{font-size:clamp(4px,2cqw,6.8px) !important;}
 }
 </style>
+
+<style id="r22-economic-event">
+.global-pulse-economic .global-pulse-session-state{min-width:0 !important;flex:1 1 auto !important;overflow:hidden !important;}
+.global-pulse-economic .global-pulse-session-state > span:last-child{width:auto !important;flex:1 1 auto !important;min-width:0 !important;overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important;}
+.global-pulse-economic.event-high .global-pulse-session-state{color:#f87171 !important;}
+.global-pulse-economic.event-medium .global-pulse-session-state{color:#fbbf24 !important;}
+.global-pulse-economic.event-low .global-pulse-session-state{color:#93c5fd !important;}
+.global-pulse-economic.event-now .global-pulse-session-state{color:#34d399 !important;animation:globalPulseNearBoundary 1s ease-in-out infinite;}
+<style id="r22-economic-event-enhanced">
+.global-pulse-economic{display:flex !important;flex-direction:column !important;align-items:stretch !important;gap:2px !important;overflow:hidden !important;}
+.global-pulse-economic-head{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;}
+.global-pulse-economic-country{font-size:clamp(5px,1.9cqw,7.5px);font-weight:900;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.global-pulse-economic-event{font-size:clamp(6px,2.5cqw,9px);font-weight:950;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.global-pulse-economic-summary{font-size:clamp(4.7px,1.9cqw,7px);font-weight:800;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.8;}
+.global-pulse-economic-timer-row{display:flex;align-items:center;min-width:0;}
+.global-pulse-economic .global-pulse-session-state{font-size:clamp(6px,2.3cqw,8.5px) !important;line-height:1 !important;display:flex !important;align-items:center !important;gap:3px !important;}
+.global-pulse-economic.event-high .global-pulse-economic-event,.global-pulse-economic.event-high .global-pulse-economic-country,.global-pulse-economic.event-high .global-pulse-economic-summary,.global-pulse-economic.event-high .global-pulse-session-state{color:#f87171 !important;}
+.global-pulse-economic.event-medium .global-pulse-economic-event,.global-pulse-economic.event-medium .global-pulse-economic-country,.global-pulse-economic.event-medium .global-pulse-economic-summary,.global-pulse-economic.event-medium .global-pulse-session-state{color:#fbbf24 !important;}
+.global-pulse-economic.event-low .global-pulse-economic-event,.global-pulse-economic.event-low .global-pulse-economic-country,.global-pulse-economic.event-low .global-pulse-economic-summary,.global-pulse-economic.event-low .global-pulse-session-state{color:#f8fafc !important;}
+.global-pulse-economic.event-now .global-pulse-economic-event,.global-pulse-economic.event-now .global-pulse-session-state{animation:globalPulseNearBoundary 1s ease-in-out infinite;}
+@media(max-width:430px){.global-pulse-economic-event{font-size:clamp(5.5px,2.45cqw,8px) !important}.global-pulse-economic-summary{font-size:clamp(4.5px,1.8cqw,6.5px) !important}}
+</style>
+
+<style id="r23-mobile-economic-full-row">
+/* R23: on mobile, ECONOMIC gets the full row and may use two rows when its text is long. */
+@media (max-width:899px){
+  .global-pulse-session-strip .global-pulse-economic{
+    grid-column:1 / -1 !important;
+    grid-row:3 / span 2 !important;
+    width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+    white-space:normal !important;
+    overflow:visible !important;
+  }
+  .global-pulse-economic .global-pulse-economic-event,
+  .global-pulse-economic .global-pulse-economic-summary{
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    overflow-wrap:anywhere !important;
+    word-break:normal !important;
+  }
+}
+</style>
+
+<style id="r24-mobile-global-session-scale">
+/* R24: reduce Global Pulse session labels on mobile for a more balanced fit. */
+@media (max-width:899px){
+  .global-pulse-session-name{
+    font-size:clamp(7px,2.05cqw,8.5px) !important;
+    line-height:1 !important;
+    letter-spacing:.01em !important;
+  }
+  .global-pulse-session-state{
+    font-size:clamp(6px,1.7cqw,7.2px) !important;
+    line-height:1 !important;
+  }
+  .global-pulse-economic .global-pulse-economic-country{
+    font-size:clamp(5px,1.45cqw,6.5px) !important;
+  }
+  .global-pulse-economic .global-pulse-economic-event{
+    font-size:clamp(6px,1.9cqw,7.5px) !important;
+    line-height:1.08 !important;
+  }
+  .global-pulse-economic .global-pulse-economic-summary{
+    font-size:clamp(5px,1.45cqw,6.5px) !important;
+    line-height:1.08 !important;
+  }
+  .global-pulse-economic .global-pulse-session-state{
+    font-size:clamp(6px,1.65cqw,7px) !important;
+  }
+}
+@media (max-width:430px){
+  .global-pulse-session-name{
+    font-size:clamp(6.5px,1.95cqw,7.8px) !important;
+  }
+  .global-pulse-session-state{
+    font-size:clamp(5.5px,1.6cqw,6.6px) !important;
+  }
+  .global-pulse-economic .global-pulse-economic-event{
+    font-size:clamp(5.5px,1.8cqw,7px) !important;
+  }
+  .global-pulse-economic .global-pulse-economic-summary{
+    font-size:clamp(4.8px,1.4cqw,6px) !important;
+  }
+}
+</style>
+
 </head>
 <body>
 <!--
@@ -5766,6 +5855,17 @@ h1 {
         </div>
         <div class="global-pulse-session-mini">
             <span class="global-pulse-session-name">NEW YORK</span><span class="global-pulse-session-state closed" id="globalPulseNewYorkState"><span class="global-pulse-session-dot"></span><span id="globalPulseNewYorkTimer">--</span></span>
+        </div>
+        <div class="global-pulse-session-mini global-pulse-economic" title="Economic calendar">
+            <div class="global-pulse-economic-head">
+                <span class="global-pulse-session-name">ECONOMIC</span>
+                <span class="global-pulse-economic-country" id="globalPulseEconomicCountry">—</span>
+            </div>
+            <div class="global-pulse-economic-event" id="globalPulseEconomicEvent">No upcoming event</div>
+            <div class="global-pulse-economic-summary" id="globalPulseEconomicSummary">—</div>
+            <div class="global-pulse-economic-timer-row">
+                <span class="global-pulse-session-state closed" id="globalPulseEconomicState"><span class="global-pulse-session-dot"></span><span id="globalPulseEconomicTimer">--:--:--</span></span>
+            </div>
         </div>
     </div>
 </section>
@@ -10319,8 +10419,169 @@ function globalPulseSessionBoundary(now,def){
     }
     return {open:false,target,label:"CLOSED",timer:`OPEN IN ${globalPulseCountdown(target.getTime()-now.getTime())}`};
 }
+
+const GLOBAL_PULSE_ECONOMIC_URL = "https://www.economicium.com/data/economic-calendar.json";
+let globalPulseEconomicEvents = [];
+let globalPulseEconomicLoadedAt = 0;
+
+/*
+ * Economicium's public calendar is a JSON snapshot.  The current response is:
+ *   { data: { events: [...] } }
+ * but we also accept the flatter { events: [...] } form so a harmless API
+ * schema change cannot turn the dashboard into "No upcoming event".
+ * The feed explicitly says its release times are converted to UTC.
+ */
+function globalPulseEconomicDate(event){
+    if(!event || typeof event!=="object") return null;
+
+    const candidates = [
+        event.datetime,
+        event.datetime_utc,
+        event.eventUtc,
+        event.scheduled_at,
+        event.timestamp,
+        event.eventTimeUtc,
+        event.dateTime
+    ];
+    for(const value of candidates){
+        if(value==null || String(value).trim()==="") continue;
+        const ms=Date.parse(String(value).trim());
+        if(Number.isFinite(ms)) return new Date(ms);
+    }
+
+    const date=String(event.date||event.eventDate||event.releaseDate||"").trim();
+    const time=String(event.time||event.eventTime||event.releaseTime||"").trim();
+    if(!date) return null;
+
+    /* Economicium publishes date/time already converted to UTC. */
+    const normalizedTime=/^\d{1,2}:\d{2}(:\d{2})?$/.test(time)
+        ? time.split(":").map((v,i)=>i===0?String(v).padStart(2,"0"):v).join(":")
+        : "00:00:00";
+    const iso=`${date}T${normalizedTime.length===5?normalizedTime+":00":normalizedTime}Z`;
+    const ms=Date.parse(iso);
+    return Number.isFinite(ms)?new Date(ms):null;
+}
+function globalPulseEconomicImpact(event){
+    const impact=String(event?.impact||event?.importance||event?.impact_level||"").toLowerCase();
+    return impact==="high"||impact==="red"?3:impact==="medium"||impact==="orange"?2:1;
+}
+function globalPulseEconomicRelevance(event){
+    const text=`${event?.title||event?.name||event?.event||""} ${event?.country||event?.currency||""}`.toLowerCase();
+    let score=0;
+    const groups=[
+        {w:["fomc","federal reserve","fed rate","interest rate","rate decision","central bank","ecb","boe","bank of canada","bank of japan","rba","rbnz","snb"],s:5},
+        {w:["cpi","inflation","ppi","pce","consumer price","producer price"],s:5},
+        {w:["nonfarm","nfp","payroll","employment","unemployment","jobless","jobs report","labor force"],s:5},
+        {w:["gdp","retail sales","industrial production","pmi","ism","consumer confidence"],s:3},
+        {w:["oil","crude","petroleum","energy","inventory","inventories","opec"],s:5},
+        {w:["gold","precious metal","metals"],s:4},
+        {w:["bitcoin","crypto","digital asset"],s:4}
+    ];
+    for(const g of groups) if(g.w.some(k=>text.includes(k))) score=Math.max(score,g.s);
+    return score;
+}
+function globalPulseEconomicSummary(event){
+    const text=String(event?.title||event?.name||event?.event||"").toLowerCase();
+    if(/fomc|federal reserve|fed rate|rate decision|central bank|ecb|boe|bank of canada|bank of japan|rba|rbnz|snb/.test(text)) return "Rates → USD / Gold / Crypto";
+    if(/cpi|inflation|pce|consumer price|ppi|producer price/.test(text)) return "Inflation → USD / Gold / Crypto";
+    if(/nonfarm|nfp|payroll|employment|unemployment|jobless|jobs report|labor force/.test(text)) return "Jobs → USD / Gold / Crypto";
+    if(/retail sales|gdp|industrial production|pmi|ism|consumer confidence/.test(text)) return "Growth → USD / Risk";
+    if(/oil|crude|petroleum|energy|inventory|inventories|opec/.test(text)) return "Energy → Oil / Inflation";
+    if(/gold|precious metal|metals/.test(text)) return "Metals → Gold";
+    if(/bitcoin|crypto|digital asset/.test(text)) return "Crypto → Risk / USD";
+    return "Macro market event";
+}
+function globalPulseEconomicFindNext(now=new Date()){
+    let best=null;
+    for(const event of globalPulseEconomicEvents){
+        const date=globalPulseEconomicDate(event); if(!date) continue;
+        const diff=date.getTime()-now.getTime();
+        if(diff<=0) continue;
+        const hours=diff/3600000;
+        const impact=globalPulseEconomicImpact(event), relevance=globalPulseEconomicRelevance(event);
+        const priority=(hours<=24?relevance*1.8:0)+(impact*0.35);
+        const key={event,date,diff,priority,impact,relevance};
+        if(!best || (hours<=24 && priority>best.priority+0.15) || (hours>24 && best.diff>24*3600000 && diff<best.diff)) best=key;
+    }
+    if(!best){
+        for(const event of globalPulseEconomicEvents){
+            const date=globalPulseEconomicDate(event); if(!date) continue;
+            const diff=date.getTime()-now.getTime();
+            if(diff>0&&(!best||diff<best.diff)) best={event,date,diff,priority:0,impact:globalPulseEconomicImpact(event),relevance:globalPulseEconomicRelevance(event)};
+        }
+    }
+    return best;
+}
+function globalPulseEconomicUpdate(now=new Date()){
+    const root=$("globalPulseEconomicState")?.closest(".global-pulse-economic");
+    const state=$("globalPulseEconomicState"), timer=$("globalPulseEconomicTimer");
+    const country=$("globalPulseEconomicCountry"), eventEl=$("globalPulseEconomicEvent"), summary=$("globalPulseEconomicSummary");
+    if(!state||!timer) return;
+    const next=globalPulseEconomicFindNext(now);
+    if(!next){
+        if(eventEl) eventEl.textContent="No upcoming event";
+        if(country) country.textContent="—";
+        if(summary) summary.textContent="—";
+        timer.textContent="--:--:--";
+        state.classList.remove("open","closed");
+        if(root) root.classList.remove("event-high","event-medium","event-low","event-now");
+        return;
+    }
+    const event=next.event;
+    const impactText=String(event?.impact||event?.importance||event?.impact_level||"").toLowerCase();
+    const impact=next.impact;
+    const title=String(event?.title||event?.name||event?.event||"Economic Event").trim();
+    const c=String(event?.country||event?.currency||"").trim();
+    if(eventEl) eventEl.textContent=title;
+    if(country) country.textContent=c||"—";
+    if(summary) summary.textContent=globalPulseEconomicSummary(event);
+    timer.textContent=globalPulseCountdown(next.diff);
+    state.title=`${c} • ${title} • ${next.date.toISOString()}`;
+    state.classList.remove("open","closed");
+    if(root){
+        root.classList.remove("event-high","event-medium","event-low","event-now");
+        root.classList.add(impact===3?"event-high":impact===2?"event-medium":"event-low");
+        if(next.diff<=60000) root.classList.add("event-now");
+    }
+}
+function globalPulseEconomicExtractEvents(data){
+    const candidates=[
+        data?.data?.events,
+        data?.events,
+        data?.calendar?.events,
+        data?.data?.calendar?.events,
+        Array.isArray(data)?data:null
+    ];
+    for(const list of candidates){
+        if(Array.isArray(list)) return list;
+    }
+    return [];
+}
+async function loadGlobalPulseEconomicEvents(force=false){
+    if(!force&&globalPulseEconomicEvents.length&&Date.now()-globalPulseEconomicLoadedAt<600000) return;
+    try{
+        const separator=GLOBAL_PULSE_ECONOMIC_URL.includes("?")?"&":"?";
+        const url=`${GLOBAL_PULSE_ECONOMIC_URL}${separator}_=${Date.now()}`;
+        const response=await fetchWithTimeout(url,{method:"GET",cache:"no-store",mode:"cors",headers:{"Accept":"application/json"}},12000);
+        if(!response.ok) throw new Error(`Economic calendar HTTP ${response.status}`);
+        const data=await response.json();
+        const events=globalPulseEconomicExtractEvents(data);
+        const parsed=events.filter(e=>globalPulseEconomicDate(e));
+        if(!parsed.length) throw new Error("Economic calendar returned no valid events");
+        parsed.sort((a,b)=>globalPulseEconomicDate(a)-globalPulseEconomicDate(b));
+        globalPulseEconomicEvents=parsed;
+        globalPulseEconomicLoadedAt=Date.now();
+        globalPulseEconomicUpdate(new Date());
+    }catch(error){
+        console.warn("Economic calendar unavailable:",error);
+        /* Do not erase a previously valid calendar during a temporary failure. */
+        globalPulseEconomicUpdate(new Date());
+    }
+}
+
 function globalPulseUpdateMarketClock(){
     const now=new Date();
+    globalPulseEconomicUpdate(now);
     safeText("globalPulseUtcTime",globalPulseClockText(now,"UTC"));
     safeText("globalPulseTehranTime",globalPulseClockText(now,GLOBAL_PULSE_IRAN_TZ));
     const iran=globalPulseIranState(now);
@@ -10382,6 +10643,7 @@ function startGlobalPulseMarketClock(){
 }
 
 async function loadGlobalPulse(){
+    loadGlobalPulseEconomicEvents(true);
     const results = await Promise.allSettled([
         fetchGlobalPulseJson(GLOBAL_PULSE_GOLD_URL),
         fetchGlobalPulseJson(GLOBAL_PULSE_GOLD_INTRADAY_URL),
@@ -13309,3 +13571,4 @@ if (
   }
 }
 </style>
+
