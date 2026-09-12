@@ -9968,6 +9968,9 @@ async function fetchGlobalPulseJson(url){
 }
 async function loadGlobalPulse(){
     const updated = $("globalPulseUpdated");
+    if (updated){
+        updated.textContent = `LIVE · ${new Date().toLocaleTimeString("en-US", {hour:"2-digit", minute:"2-digit", hour12:false, timeZone:"UTC"})}`;
+    }
     const results = await Promise.allSettled([
         fetchGlobalPulseJson(GLOBAL_PULSE_GOLD_URL),
         fetchGlobalPulseJson(GLOBAL_PULSE_GOLD_INTRADAY_URL),
@@ -9980,10 +9983,6 @@ async function loadGlobalPulse(){
         const data = goldResult.value;
         const price = Number(data?.spot_usd_oz ?? data?.xau?.price);
         if (Number.isFinite(price)) safeText("globalGoldPrice", formatGlobalPulseNumber(price));
-        if (data?.updated_at && updated){
-            const stamp = new Date(data.updated_at);
-            if (Number.isFinite(stamp.getTime())) updated.textContent = `LIVE · ${stamp.toLocaleTimeString("en-US", {hour:"2-digit", minute:"2-digit"})}`;
-        }
     }
 
     if (goldIntradayResult.status === "fulfilled"){
@@ -10012,10 +10011,6 @@ async function loadGlobalPulse(){
         const price = Number(data?.priceUsd);
         if (Number.isFinite(price)) safeText("globalOilPrice", formatGlobalPulseNumber(price));
         setGlobalPulseChange("globalOilChange", data?.changePct);
-        if (data?.lastUpdated && updated){
-            const stamp = new Date(data.lastUpdated);
-            if (Number.isFinite(stamp.getTime())) updated.textContent = `LIVE · ${stamp.toLocaleTimeString("en-US", {hour:"2-digit", minute:"2-digit"})}`;
-        }
     }
 
     if (results.every(result => result.status === "rejected")) console.warn("Global Pulse APIs unavailable");
