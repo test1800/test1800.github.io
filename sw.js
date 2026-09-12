@@ -21,6 +21,7 @@ const STATIC_FILES = [
     "./file/matrisabi.mp3",
     "./file/matrissefid.mp3",
     "./file/Crossover.mp3",
+    "./file/global.mp3",
 
 ];
 
