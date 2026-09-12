@@ -4029,8 +4029,8 @@ h1 {
 }
 .global-pulse-session-name{color:#cbd5e1;font-size:9px;font-weight:900;letter-spacing:.15px;}
 .global-pulse-session-hours{color:#64748b;font-size:8px;font-weight:800;font-variant-numeric:tabular-nums;}
-.global-pulse-session-state{display:flex;align-items:center;gap:3px;color:#94a3b8;font-size:5.3px;font-weight:900;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;white-space:nowrap;min-width:64px;justify-content:flex-start;}
-.global-pulse-session-state > span:last-child{display:inline-block;width:57px;text-align:left;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-variant-numeric:tabular-nums;}
+.global-pulse-session-state{display:flex;align-items:center;gap:2px;color:#94a3b8;font-size:5.3px;font-weight:900;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;white-space:nowrap;min-width:0;justify-content:flex-start;flex:0 1 auto;}
+.global-pulse-session-state > span:last-child{display:inline-block;width:auto;min-width:0;text-align:left;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-variant-numeric:tabular-nums;}
 .global-pulse-session-state.open{color:#34d399;}
 .global-pulse-session-state.closed{color:#94a3b8;}
 .global-pulse-session-state.iran-alert,.global-pulse-session-state.near-boundary{color:#fbbf24;animation:globalPulseNearBoundary 1s ease-in-out infinite;}
@@ -4041,8 +4041,8 @@ h1 {
     .global-pulse-clock-label{font-size:8px;letter-spacing:.45px;}
     #globalPulseUtcTime,#globalPulseTehranTime{font-size:16px;letter-spacing:0;}
     .global-pulse-session-name{font-size:8.5px;}
-    .global-pulse-session-state{font-size:5px;min-width:58px;}
-    .global-pulse-session-state > span:last-child{width:51px;}
+    .global-pulse-session-state{font-size:5px;min-width:0;}
+    .global-pulse-session-state > span:last-child{width:auto;}
     .global-pulse-session-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 8px;}
 }
 @media (min-width:900px){
@@ -4052,8 +4052,8 @@ h1 {
     .global-pulse-clock-pair{column-gap:6px !important;}
     .global-pulse-clock-pair{gap:7px;}
     #globalPulseUtcTime,#globalPulseTehranTime{font-size:13.5px;}
-    .global-pulse-session-state{font-size:4.8px;min-width:52px;}
-    .global-pulse-session-state > span:last-child{width:45px;}
+    .global-pulse-session-state{font-size:4.8px;min-width:0;}
+    .global-pulse-session-state > span:last-child{width:auto;}
     .global-pulse-session-mini{font-size:6.2px;}
     .global-pulse-session-hours{font-size:6px;}
 }
@@ -5224,6 +5224,22 @@ h1 {
         font-size:clamp(10px,3.5vw,13px) !important;
     }
 }
+</style>
+
+
+<style id="r22-global-session-pin-feedback">
+/* Keep session status compact so countdown seconds remain visible. */
+.global-pulse-session-mini{gap:0 !important;overflow:visible !important;}
+.global-pulse-session-name{flex:0 0 auto !important;}
+.global-pulse-session-state{gap:1px !important;min-width:0 !important;flex:0 1 auto !important;}
+.global-pulse-session-state > span:last-child{width:auto !important;min-width:0 !important;flex:0 0 auto !important;}
+@media (max-width:430px){
+  .global-pulse-session-mini{gap:0 !important;}
+  .global-pulse-session-name{font-size:clamp(7.5px,2.45cqw,9px) !important;letter-spacing:0 !important;}
+  .global-pulse-session-state{font-size:clamp(4.3px,1.35cqw,5.3px) !important;}
+}
+.app-pin-key{transition:transform .06s ease, background .06s ease, filter .06s ease;}
+.app-pin-key.pin-pressed{transform:scale(.94);filter:brightness(1.18);}
 </style>
 
 </head>
@@ -10706,7 +10722,7 @@ function globalPulseIranState(now){
         if(minute<GLOBAL_PULSE_IRAN_CLOSE_MIN){
             const target=makeLocalTarget(0,GLOBAL_PULSE_IRAN_CLOSE_MIN);
             const diff=target.getTime()-now.getTime();
-            return {open:true,target,label:`OPEN · CLOSE IN ${globalPulseCountdown(diff)}`};
+            return {open:true,target,label:`OPEN·CLOSE IN ${globalPulseCountdown(diff)}`};
         }
     }
     let days=1;
@@ -11032,7 +11048,7 @@ function globalPulseUpdateMarketClock(){
             const boundaryDiff=state.target ? state.target.getTime()-now.getTime() : Infinity;
             el.classList.toggle("near-boundary",boundaryDiff>0 && boundaryDiff<=300000);
         }
-        if(timer) timer.textContent=state.open ? state.timer : `CLOSED · ${state.timer.replace("OPEN IN ","OPEN IN ")}`;
+        if(timer) timer.textContent=state.open ? state.timer : `CLOSED · ${state.timer}`;
         if(state.open) active.push(name.toUpperCase());
         upcoming.push({name:name.toUpperCase(),state});
     }
@@ -11072,6 +11088,21 @@ function startGlobalPulseMarketClock(){
     window.globalPulseMarketClockTimer=setInterval(globalPulseUpdateMarketClock,1000);
 }
 
+const GLOBAL_PULSE_FREEZE_KEY = "globalPulseCommodityFreeze-v1";
+function globalPulseCommodityIsOpen(now=new Date()){
+    const d=now.getUTCDay();
+    return d!==0 && d!==6;
+}
+function readGlobalPulseFreeze(){
+    try{
+        const v=JSON.parse(localStorage.getItem(GLOBAL_PULSE_FREEZE_KEY)||"{}");
+        return v&&typeof v==="object"?v:{};
+    }catch(e){ return {}; }
+}
+function saveGlobalPulseFreeze(v){
+    try{ localStorage.setItem(GLOBAL_PULSE_FREEZE_KEY,JSON.stringify(v)); }catch(e){}
+}
+
 async function loadGlobalPulse(){
     loadGlobalPulseEconomicEvents(true);
     const results = await Promise.allSettled([
@@ -11079,67 +11110,64 @@ async function loadGlobalPulse(){
         fetchGlobalPulseJson(GLOBAL_PULSE_GOLD_INTRADAY_URL),
         fetchGlobalPulseJson(GLOBAL_PULSE_OIL_URL)
     ]);
-
     const [goldResult, goldIntradayResult, oilResult] = results;
+    const commodityOpen=globalPulseCommodityIsOpen();
+    const frozen=readGlobalPulseFreeze();
+    let goldChange=null, oilChange=null;
 
     if (goldResult.status === "fulfilled"){
-        const data = goldResult.value;
-        const price = Number(data?.spot_usd_oz ?? data?.xau?.price);
-        if (Number.isFinite(price)){
-            safeText("globalGoldPrice", formatGlobalPulseNumber(price));
+        const data=goldResult.value;
+        const price=Number(data?.spot_usd_oz ?? data?.xau?.price);
+        if(Number.isFinite(price)){
+            safeText("globalGoldPrice",formatGlobalPulseNumber(price));
             clearPageIssue("global-gold");
-        } else {
-            setPageIssue("global-gold", "Global Gold returned an invalid price", "error");
-        }
-    } else {
-        setPageIssue("global-gold", goldResult.reason?.message || "Global Gold API unavailable", "error");
-    }
+        }else setPageIssue("global-gold","Global Gold returned an invalid price","error");
+    }else setPageIssue("global-gold",goldResult.reason?.message||"Global Gold API unavailable","error");
 
     if (goldIntradayResult.status === "fulfilled"){
-        const points = Array.isArray(goldIntradayResult.value?.points) ? goldIntradayResult.value.points : [];
-        const valid = points
-            .map(point => ({ t:Number(point?.t), p:Number(point?.p) }))
-            .filter(point => Number.isFinite(point.t) && Number.isFinite(point.p) && point.p > 0)
-            .sort((a,b) => a.t - b.t);
-        if (valid.length >= 2){
-            const latest = valid[valid.length - 1].p;
-            const cutoff = latest && valid[valid.length - 1].t - 86400000;
-            let base = valid[0].p;
-            for (let i = valid.length - 1; i >= 0; i--){
-                if (valid[i].t <= cutoff){ base = valid[i].p; break; }
-            }
-            if (Number.isFinite(base) && base > 0){
-                const goldChange=((latest - base) / base) * 100;
-                setGlobalPulseChange("globalGoldChange", goldChange);
-                clearPageIssue("global-gold-change");
-                globalPulseCheckNotification(goldChange);
-            } else {
-                setPageIssue("global-gold-change", "Global Gold intraday data is incomplete", "warn");
-            }
-        } else {
-            setPageIssue("global-gold-change", "Global Gold intraday data is unavailable", "warn");
+        const points=Array.isArray(goldIntradayResult.value?.points)?goldIntradayResult.value.points:[];
+        const valid=points.map(point=>({t:Number(point?.t),p:Number(point?.p)}))
+            .filter(point=>Number.isFinite(point.t)&&Number.isFinite(point.p)&&point.p>0)
+            .sort((a,b)=>a.t-b.t);
+        if(valid.length>=2){
+            const latest=valid[valid.length-1].p;
+            const cutoff=valid[valid.length-1].t-86400000;
+            let base=valid[0].p;
+            for(let i=valid.length-1;i>=0;i--){ if(valid[i].t<=cutoff){base=valid[i].p;break;} }
+            if(Number.isFinite(base)&&base>0) goldChange=((latest-base)/base)*100;
         }
-    } else {
-        setPageIssue("global-gold-change", goldIntradayResult.reason?.message || "Global Gold intraday API unavailable", "warn");
+    }
+    // Never blank the percentage merely because a newer baseline cannot be built.
+    if(Number.isFinite(goldChange)){
+        if(commodityOpen){ frozen.gold=goldChange; saveGlobalPulseFreeze(frozen); }
+        setGlobalPulseChange("globalGoldChange",commodityOpen?goldChange:(Number.isFinite(Number(frozen.gold))?frozen.gold:goldChange));
+        clearPageIssue("global-gold-change");
+        if(commodityOpen) globalPulseCheckNotification(goldChange);
+    }else if(Number.isFinite(Number(frozen.gold))){
+        setGlobalPulseChange("globalGoldChange",frozen.gold);
+    }else{
+        setPageIssue("global-gold-change","Global Gold intraday data is unavailable","warn");
     }
 
-    if (oilResult.status === "fulfilled"){
-        const data = oilResult.value;
-        const price = Number(data?.priceUsd);
-        if (Number.isFinite(price)){
-            safeText("globalOilPrice", formatGlobalPulseNumber(price));
+    if(oilResult.status === "fulfilled"){
+        const data=oilResult.value;
+        const price=Number(data?.priceUsd);
+        if(Number.isFinite(price)){
+            safeText("globalOilPrice",formatGlobalPulseNumber(price));
             clearPageIssue("global-oil");
-        } else {
-            setPageIssue("global-oil", "Global Oil returned an invalid price", "error");
-        }
-        setGlobalPulseChange("globalOilChange", data?.changePct);
-    } else {
-        setPageIssue("global-oil", oilResult.reason?.message || "Global Oil API unavailable", "error");
+        }else setPageIssue("global-oil","Global Oil returned an invalid price","error");
+        oilChange=Number(data?.changePct);
     }
-
-    if (results.every(result => result.status === "rejected")) console.warn("Global Pulse APIs unavailable");
+    if(Number.isFinite(oilChange)){
+        if(commodityOpen){ frozen.oil=oilChange; saveGlobalPulseFreeze(frozen); }
+        setGlobalPulseChange("globalOilChange",commodityOpen?oilChange:(Number.isFinite(Number(frozen.oil))?frozen.oil:oilChange));
+    }else if(Number.isFinite(Number(frozen.oil))){
+        setGlobalPulseChange("globalOilChange",frozen.oil);
+    }else if(oilResult.status === "rejected"){
+        setPageIssue("global-oil",oilResult.reason?.message||"Global Oil API unavailable","error");
+    }
+    if(results.every(result=>result.status==="rejected")) console.warn("Global Pulse APIs unavailable");
 }
-
 function startGlobalPulse(){
     globalPulseReadAlertState();
     startGlobalPulseMarketClock();
@@ -12141,6 +12169,28 @@ async function loadCryptoPortfolio(
         renderPin();
     }
 
+    let pinAudioContext = null;
+    function triggerPinTapSound() {
+        try {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            if (!pinAudioContext) pinAudioContext = new AC();
+            if (pinAudioContext.state === "suspended") pinAudioContext.resume();
+            const now = pinAudioContext.currentTime;
+            const osc = pinAudioContext.createOscillator();
+            const gain = pinAudioContext.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(920, now);
+            osc.frequency.exponentialRampToValueAtTime(680, now + 0.035);
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.045, now + 0.004);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+            osc.connect(gain).connect(pinAudioContext.destination);
+            osc.start(now);
+            osc.stop(now + 0.05);
+        } catch (error) {}
+    }
+
     function triggerPinHaptic() {
         // Native Android haptic is preferred because navigator.vibrate() is
         // inconsistent inside Android WebView.
@@ -12166,7 +12216,10 @@ async function loadCryptoPortfolio(
         const button = event.target.closest("button");
         if (!button || button.classList.contains("spacer")) return;
         if (button.dataset.pin !== undefined || button.dataset.pinDelete === "true") {
+            button.classList.add("pin-pressed");
+            window.setTimeout(() => button.classList.remove("pin-pressed"), 90);
             triggerPinHaptic();
+            triggerPinTapSound();
         }
     }, { passive: true });
 
@@ -12206,6 +12259,7 @@ async function loadCryptoPortfolio(
         if (button.dataset.pinDelete === "true") deleteDigit();
         else if (button.dataset.pin !== undefined) addDigit(button.dataset.pin);
         triggerPinHaptic();
+        triggerPinTapSound();
     }
 
     function movePinFocus(dx, dy) {
@@ -14144,7 +14198,7 @@ if (
   .global-pulse-session-mini{gap:2px !important;}
 }
 @media (max-width:430px){
-  .global-pulse-session-mini{gap:1px !important;}
+  .global-pulse-session-mini{gap:0 !important;}
 }
 </style>
 
