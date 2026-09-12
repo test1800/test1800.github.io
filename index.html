@@ -12687,14 +12687,14 @@ function crossoverPercentageLevels(oldPrice,newPrice,target){
     const levels=[];
     if(newPct>oldPct){
         const from=Math.ceil(oldPct),to=Math.floor(newPct);
-        for(let level=from;level<=to;level++)if(level!==0)levels.push(level);
+        for(let level=from;level<=to;level++)if(level!==0)levels.push({level,direction:1});
     }else{
         const from=Math.floor(oldPct),to=Math.ceil(newPct);
-        for(let level=from;level>=to;level--)if(level!==0)levels.push(level);
+        for(let level=from;level>=to;level--)if(level!==0)levels.push({level,direction:-1});
     }
     return levels;
 }
-async function crossoverSendPercentageAlert(index,level,price,target){
+async function crossoverSendPercentageAlert(index,level,price,target,direction){
     const s=crossoverInstance(index);
     if(!s||!s.running||!s.notificationEnabled)return false;
     const now=Date.now(),key=String(level),last=Number(s.percentageAlertTimes?.[key]||0);
@@ -12702,8 +12702,9 @@ async function crossoverSendPercentageAlert(index,level,price,target){
     s.percentageAlertTimes[key]=now;
     const coin=s.activeCoin||s.coin;
     const pctText=`${level>0?"+":""}${level.toFixed(0)}%`;
-    const title=`${level>0?"🟢 ↑":"🔴 ↓"} ${coin}/USD • Crossover #${index}`;
-    const relation=level>0?"above":"below";
+    const isUp=direction>0;
+    const title=`${isUp?"🟢 ↑":"🔴 ↓"} ${coin}/USD • Crossover #${index}`;
+    const relation=isUp?"crossed up":"crossed down";
     const message=`${coin}/USD • ${pctText} ${relation} target • Price ${crossoverFormatPrice(price)} • Target ${crossoverFormatPrice(target)}`;
     try{await sendDashboardNotification(title,message,getCryptoIconSrc(coin),"CROSSOVER");return true;}catch(e){console.warn("Crossover percentage notification failed",e);return false;}
 }
@@ -12994,7 +12995,7 @@ async function crossoverFetchOne(index,notify=true){
             }
             if(s.notificationEnabled){
                 const levels=crossoverPercentageLevels(old,price,target);
-                for(const level of levels)await crossoverSendPercentageAlert(index,level,price,target);
+                for(const item of levels)await crossoverSendPercentageAlert(index,item.level,price,target,item.direction);
             }
         }
         s.previousPrice=price;
