@@ -12171,23 +12171,39 @@ async function loadCryptoPortfolio(
 
     let pinAudioContext = null;
     function triggerPinTapSound() {
+        let nativeTriggered = false;
+        try {
+            if (window.AndroidNotifications && typeof window.AndroidNotifications.playPinKeySound === "function") {
+                window.AndroidNotifications.playPinKeySound();
+                nativeTriggered = true;
+            }
+        } catch (error) {}
+
+        // Browser/WebView fallback when the native bridge is unavailable.
+        if (nativeTriggered) return;
         try {
             const AC = window.AudioContext || window.webkitAudioContext;
             if (!AC) return;
             if (!pinAudioContext) pinAudioContext = new AC();
-            if (pinAudioContext.state === "suspended") pinAudioContext.resume();
-            const now = pinAudioContext.currentTime;
-            const osc = pinAudioContext.createOscillator();
-            const gain = pinAudioContext.createGain();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(920, now);
-            osc.frequency.exponentialRampToValueAtTime(680, now + 0.035);
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.045, now + 0.004);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
-            osc.connect(gain).connect(pinAudioContext.destination);
-            osc.start(now);
-            osc.stop(now + 0.05);
+            const resume = pinAudioContext.state === "suspended"
+                ? pinAudioContext.resume()
+                : Promise.resolve();
+            Promise.resolve(resume).then(() => {
+                try {
+                    const now = pinAudioContext.currentTime;
+                    const osc = pinAudioContext.createOscillator();
+                    const gain = pinAudioContext.createGain();
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(920, now);
+                    osc.frequency.exponentialRampToValueAtTime(680, now + 0.035);
+                    gain.gain.setValueAtTime(0.0001, now);
+                    gain.gain.exponentialRampToValueAtTime(0.045, now + 0.004);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+                    osc.connect(gain).connect(pinAudioContext.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } catch (error) {}
+            }).catch(() => {});
         } catch (error) {}
     }
 
