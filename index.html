@@ -14148,6 +14148,13 @@ if (
 }
 </style>
 
+<style id="r29-global-bottom-spacing">
+/* R29: minimize the space below GLOBAL while preserving the Android safe area. */
+.container{
+    padding-bottom:max(4px, env(safe-area-inset-bottom, 0px)) !important;
+}
+</style>
+
 <style id="r28-global-clock-clean-fix">
 /* R28: clean Global header clock layout. Never overlap, never move when digits change. */
 .global-pulse-section{container-type:inline-size;}
