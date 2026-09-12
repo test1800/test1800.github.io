@@ -8009,6 +8009,10 @@ function pageIssueLabel(key, issue) {
     }
     if (k === "crossover-remote") return "Crossover Remote";
     if (k.startsWith("crossover:")) return `Crossover #${k.split(":")[1] || "?"}`;
+    if (k === "global-gold") return "Global Gold";
+    if (k === "global-gold-change") return "Global Gold Change";
+    if (k === "global-oil") return "Global Oil";
+    if (k === "global-economic") return "Economic Calendar";
     if (k === "js") return "Page JavaScript";
     if (k === "promise") return "Background request";
     if (k.startsWith("img:")) return `${k.slice(4)} icon`;
@@ -8061,6 +8065,18 @@ function pageIssueDescription(key, issue) {
     }
     if (k.startsWith("crossover:")) {
         return "The Crossover price source did not return a valid current price; crossing checks for this panel may be unavailable.";
+    }
+    if (k === "global-gold") {
+        return "The live Global Gold price source is unavailable; the displayed gold price may be stale or unavailable.";
+    }
+    if (k === "global-gold-change") {
+        return "The 24-hour Global Gold change could not be calculated because intraday gold data is unavailable or incomplete.";
+    }
+    if (k === "global-oil") {
+        return "The live Global Oil (WTI) price source is unavailable; the displayed oil price may be stale or unavailable.";
+    }
+    if (k === "global-economic") {
+        return "The Economic Calendar feed is unavailable or returned no valid upcoming events; the last valid calendar data is retained when available.";
     }
     if (k === "js") {
         return "A JavaScript error occurred and part of the dashboard may not have updated correctly.";
@@ -10571,9 +10587,11 @@ async function loadGlobalPulseEconomicEvents(force=false){
         parsed.sort((a,b)=>globalPulseEconomicDate(a)-globalPulseEconomicDate(b));
         globalPulseEconomicEvents=parsed;
         globalPulseEconomicLoadedAt=Date.now();
+        clearPageIssue("global-economic");
         globalPulseEconomicUpdate(new Date());
     }catch(error){
         console.warn("Economic calendar unavailable:",error);
+        setPageIssue("global-economic", error?.message || "Economic calendar unavailable", "error");
         /* Do not erase a previously valid calendar during a temporary failure. */
         globalPulseEconomicUpdate(new Date());
     }
@@ -10655,7 +10673,14 @@ async function loadGlobalPulse(){
     if (goldResult.status === "fulfilled"){
         const data = goldResult.value;
         const price = Number(data?.spot_usd_oz ?? data?.xau?.price);
-        if (Number.isFinite(price)) safeText("globalGoldPrice", formatGlobalPulseNumber(price));
+        if (Number.isFinite(price)){
+            safeText("globalGoldPrice", formatGlobalPulseNumber(price));
+            clearPageIssue("global-gold");
+        } else {
+            setPageIssue("global-gold", "Global Gold returned an invalid price", "error");
+        }
+    } else {
+        setPageIssue("global-gold", goldResult.reason?.message || "Global Gold API unavailable", "error");
     }
 
     if (goldIntradayResult.status === "fulfilled"){
@@ -10674,16 +10699,30 @@ async function loadGlobalPulse(){
             if (Number.isFinite(base) && base > 0){
                 const goldChange=((latest - base) / base) * 100;
                 setGlobalPulseChange("globalGoldChange", goldChange);
+                clearPageIssue("global-gold-change");
                 globalPulseCheckNotification(goldChange);
+            } else {
+                setPageIssue("global-gold-change", "Global Gold intraday data is incomplete", "warn");
             }
+        } else {
+            setPageIssue("global-gold-change", "Global Gold intraday data is unavailable", "warn");
         }
+    } else {
+        setPageIssue("global-gold-change", goldIntradayResult.reason?.message || "Global Gold intraday API unavailable", "warn");
     }
 
     if (oilResult.status === "fulfilled"){
         const data = oilResult.value;
         const price = Number(data?.priceUsd);
-        if (Number.isFinite(price)) safeText("globalOilPrice", formatGlobalPulseNumber(price));
+        if (Number.isFinite(price)){
+            safeText("globalOilPrice", formatGlobalPulseNumber(price));
+            clearPageIssue("global-oil");
+        } else {
+            setPageIssue("global-oil", "Global Oil returned an invalid price", "error");
+        }
         setGlobalPulseChange("globalOilChange", data?.changePct);
+    } else {
+        setPageIssue("global-oil", oilResult.reason?.message || "Global Oil API unavailable", "error");
     }
 
     if (results.every(result => result.status === "rejected")) console.warn("Global Pulse APIs unavailable");
