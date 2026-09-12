@@ -4878,6 +4878,163 @@ h1 {
 }
 </style>
 
+
+<style id="r25-global-pulse-readable">
+/* R25: slightly enlarge Global Pulse timing/economic text only. */
+.global-pulse-session-mini{gap:6px !important;}
+.global-pulse-session-name{
+  font-size:13.5px !important;
+  line-height:1.05 !important;
+}
+.global-pulse-session-state{
+  font-size:11px !important;
+  line-height:1.05 !important;
+}
+.global-pulse-session-state > span:last-child{
+  width:auto !important;
+  min-width:0 !important;
+}
+.global-pulse-economic-country{
+  font-size:11px !important;
+}
+.global-pulse-economic-event{
+  font-size:14px !important;
+  line-height:1.08 !important;
+}
+.global-pulse-economic-summary{
+  font-size:10.5px !important;
+  line-height:1.08 !important;
+}
+@media (max-width:899px){
+  .global-pulse-session-mini{gap:4px !important;}
+  .global-pulse-session-name{
+    font-size:clamp(8px,3.05cqw,12px) !important;
+  }
+  .global-pulse-session-state{
+    font-size:clamp(7px,2.65cqw,10.5px) !important;
+  }
+  .global-pulse-economic-country{
+    font-size:clamp(6px,2.05cqw,9px) !important;
+  }
+  .global-pulse-economic-event{
+    font-size:clamp(7px,2.75cqw,12px) !important;
+  }
+  .global-pulse-economic-summary{
+    font-size:clamp(6px,2.05cqw,9.5px) !important;
+  }
+}
+@media (max-width:430px){
+  .global-pulse-session-name{
+    font-size:clamp(7px,2.9cqw,10px) !important;
+  }
+  .global-pulse-session-state{
+    font-size:clamp(6.5px,2.5cqw,9px) !important;
+  }
+  .global-pulse-economic-country{
+    font-size:clamp(5.5px,1.9cqw,8px) !important;
+  }
+  .global-pulse-economic-event{
+    font-size:clamp(6.5px,2.55cqw,10.5px) !important;
+  }
+  .global-pulse-economic-summary{
+    font-size:clamp(5.5px,1.9cqw,8.5px) !important;
+  }
+}
+</style>
+
+<style id="r26-economic-full-width-no-truncate">
+/* R26: ECONOMIC uses the full Global section width; never truncate its content. */
+.global-pulse-session-strip .global-pulse-economic{
+  grid-column:1 / -1 !important;
+  width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:stretch !important;
+  gap:4px !important;
+  white-space:normal !important;
+  overflow:visible !important;
+}
+.global-pulse-economic .global-pulse-economic-head{
+  width:100% !important;
+  min-width:0 !important;
+  flex-wrap:wrap !important;
+  white-space:normal !important;
+}
+.global-pulse-economic .global-pulse-economic-country,
+.global-pulse-economic .global-pulse-economic-event,
+.global-pulse-economic .global-pulse-economic-summary{
+  width:100% !important;
+  min-width:0 !important;
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  overflow-wrap:anywhere !important;
+  word-break:normal !important;
+}
+.global-pulse-economic .global-pulse-economic-country{
+  flex:1 1 auto !important;
+  width:auto !important;
+  text-align:right !important;
+  font-size:clamp(10px,1.15vw,15px) !important;
+  line-height:1.1 !important;
+}
+.global-pulse-economic .global-pulse-economic-event{
+  font-size:clamp(13px,1.45vw,20px) !important;
+  line-height:1.15 !important;
+}
+.global-pulse-economic .global-pulse-economic-summary{
+  font-size:clamp(10px,1.1vw,15px) !important;
+  line-height:1.15 !important;
+  opacity:.9 !important;
+}
+.global-pulse-economic .global-pulse-economic-timer-row{
+  width:100% !important;
+  min-width:0 !important;
+}
+.global-pulse-economic .global-pulse-session-state{
+  width:auto !important;
+  min-width:0 !important;
+  flex:0 0 auto !important;
+  font-size:clamp(10px,1.1vw,15px) !important;
+}
+@media (max-width:899px){
+  .global-pulse-session-strip .global-pulse-economic{
+    grid-column:1 / -1 !important;
+    grid-row:auto !important;
+    gap:4px !important;
+  }
+  .global-pulse-economic .global-pulse-economic-country{
+    font-size:clamp(9px,2.7cqw,13px) !important;
+  }
+  .global-pulse-economic .global-pulse-economic-event{
+    font-size:clamp(11px,3.35cqw,17px) !important;
+    line-height:1.16 !important;
+  }
+  .global-pulse-economic .global-pulse-economic-summary{
+    font-size:clamp(9px,2.7cqw,13px) !important;
+    line-height:1.16 !important;
+  }
+  .global-pulse-economic .global-pulse-session-state{
+    font-size:clamp(9px,2.7cqw,13px) !important;
+  }
+}
+@media (max-width:430px){
+  .global-pulse-economic .global-pulse-economic-country{
+    font-size:clamp(8px,2.8cqw,11px) !important;
+  }
+  .global-pulse-economic .global-pulse-economic-event{
+    font-size:clamp(10px,3.5cqw,15px) !important;
+  }
+  .global-pulse-economic .global-pulse-economic-summary{
+    font-size:clamp(8px,2.8cqw,11px) !important;
+  }
+  .global-pulse-economic .global-pulse-session-state{
+    font-size:clamp(8px,2.8cqw,11px) !important;
+  }
+}
+</style>
 </head>
 <body>
 <!--
@@ -13611,3 +13768,59 @@ if (
 }
 </style>
 
+
+
+
+<style id="r27-economic-one-row-when-possible">
+/* R27: ECONOMIC stays on one desktop row whenever the full content fits; wraps only when necessary. */
+.global-pulse-session-strip .global-pulse-economic{
+  grid-column:1 / -1 !important;
+  width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  gap:8px !important;
+  flex-wrap:wrap !important;
+  overflow:visible !important;
+}
+.global-pulse-economic .global-pulse-economic-head{
+  display:contents !important;
+}
+.global-pulse-economic .global-pulse-economic-country,
+.global-pulse-economic .global-pulse-economic-event,
+.global-pulse-economic .global-pulse-economic-summary,
+.global-pulse-economic .global-pulse-economic-timer-row{
+  width:auto !important;
+  flex:0 1 auto !important;
+  min-width:0 !important;
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  overflow-wrap:normal !important;
+  word-break:normal !important;
+}
+.global-pulse-economic .global-pulse-economic-event{
+  flex:1 1 auto !important;
+}
+.global-pulse-economic .global-pulse-economic-summary{
+  flex:1 1 auto !important;
+}
+.global-pulse-economic .global-pulse-economic-timer-row{
+  flex:0 0 auto !important;
+}
+@media (max-width:899px){
+  .global-pulse-session-strip .global-pulse-economic{
+    grid-column:1 / -1 !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    flex-wrap:wrap !important;
+    gap:5px !important;
+  }
+  .global-pulse-economic .global-pulse-economic-event,
+  .global-pulse-economic .global-pulse-economic-summary{
+    flex:1 1 45% !important;
+  }
+}
+</style>
