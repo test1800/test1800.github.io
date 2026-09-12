@@ -3820,10 +3820,13 @@ h1 {
     display:flex;
     align-items:center;
     gap:5px;
-    color:#64748b;
+    color:#34d399;
     font-size:8px;
     font-weight:800;
     white-space:nowrap;
+}
+.global-pulse-live.is-closed{
+    color:#f87171;
 }
 .global-pulse-live-dot{
     width:6px;
@@ -3831,6 +3834,10 @@ h1 {
     border-radius:50%;
     background:#34d399;
     box-shadow:0 0 8px rgba(52,211,153,.45);
+}
+.global-pulse-live.is-closed .global-pulse-live-dot{
+    background:#f87171;
+    box-shadow:0 0 8px rgba(248,113,113,.45);
 }
 .global-pulse-grid{
     display:grid;
@@ -9966,11 +9973,59 @@ async function fetchGlobalPulseJson(url){
     if (!response.ok) throw new Error(`Global Pulse API HTTP ${response.status}`);
     return await response.json();
 }
-async function loadGlobalPulse(){
+async function isGlobalPulseMarketClosed(now = new Date()){
+    const day = now.getUTCDay();
+    const totalMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+    // Global precious-metals/energy market: closes Friday 21:00 UTC
+    // and reopens Sunday 22:00 UTC (current DST schedule).
+    return day === 6 || day === 0 || (day === 5 && totalMinutes >= 21 * 60);
+}
+function getGlobalPulseNextOpen(now){
+    const openAt = new Date(now);
+    const day = now.getUTCDay();
+    const totalMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+    let daysUntilSunday = (7 - day) % 7;
+    if (day === 5 && totalMinutes >= 21 * 60) daysUntilSunday = 2;
+    else if (day === 6) daysUntilSunday = 1;
+    else if (day === 0) daysUntilSunday = 0;
+    openAt.setUTCDate(openAt.getUTCDate() + daysUntilSunday);
+    openAt.setUTCHours(22,0,0,0);
+    if (openAt.getTime() <= now.getTime()) openAt.setUTCDate(openAt.getUTCDate() + 7);
+    return openAt;
+}
+function formatGlobalPulseCountdown(ms){
+    const remaining = Math.max(0, ms);
+    const hours = Math.floor(remaining / 3600000);
+    const minutes = Math.floor((remaining % 3600000) / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+    return `${String(hours).padStart(2,"0")}:${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`;
+}
+function updateGlobalPulseMarketStatus(){
     const updated = $("globalPulseUpdated");
-    if (updated){
-        updated.textContent = `LIVE · ${new Date().toLocaleTimeString("en-US", {hour:"2-digit", minute:"2-digit", hour12:false, timeZone:"UTC"})}`;
+    const live = updated?.closest?.(".global-pulse-live");
+    if (!updated) return;
+    const now = new Date();
+    const time = now.toLocaleTimeString("en-US", {hour:"2-digit", minute:"2-digit", hour12:false, timeZone:"UTC"});
+    const closed = isGlobalPulseMarketClosed(now);
+    const day = now.getUTCDay();
+    const totalMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const isLastMarketDay = day === 5 && totalMinutes < 21 * 60;
+    let label;
+    if (isLastMarketDay){
+        const closeAt = new Date(now);
+        closeAt.setUTCHours(21,0,0,0);
+        label = `LIVE · CLOSE IN ${formatGlobalPulseCountdown(closeAt.getTime() - now.getTime())}`;
+    } else if (closed){
+        const openAt = getGlobalPulseNextOpen(now);
+        label = `CLOSED · OPEN IN ${formatGlobalPulseCountdown(openAt.getTime() - now.getTime())}`;
+    } else {
+        label = `LIVE · ${time}`;
     }
+    updated.textContent = label;
+    if (live) live.classList.toggle("is-closed", closed);
+}
+function loadGlobalPulse(){
+    updateGlobalPulseMarketStatus();
     const results = await Promise.allSettled([
         fetchGlobalPulseJson(GLOBAL_PULSE_GOLD_URL),
         fetchGlobalPulseJson(GLOBAL_PULSE_GOLD_INTRADAY_URL),
@@ -10021,6 +10076,7 @@ function startGlobalPulse(){
     if (globalPulseTimer) clearInterval(globalPulseTimer);
     loadGlobalPulse();
     globalPulseTimer = setInterval(loadGlobalPulse, GLOBAL_PULSE_REFRESH_MS);
+    setInterval(updateGlobalPulseMarketStatus, 1000);
 }
 
 /* =====================================================
