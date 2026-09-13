@@ -10935,6 +10935,9 @@ function globalPulseEconomicUpdate(now=new Date()){
     if(country) country.textContent=c||"—";
     if(summary) summary.textContent=globalPulseEconomicSummary(event);
     timer.textContent=globalPulseCountdown(next.diff);
+    // Persist the currently displayed next event to native SharedPreferences as well.
+    // This is the hand-off that lets the native notification engine keep the ECONOMIC
+    // 5-minute alert working after the app is closed or the network disappears.
     try { if(window.AndroidNotifications?.setGlobalEconomicState) window.AndroidNotifications.setGlobalEconomicState(c,title,next.date.getTime()); } catch(e){}
     state.title=`${c} • ${title} • ${next.date.toISOString()}`;
     state.classList.remove("open","closed");
@@ -11052,17 +11055,20 @@ async function globalPulseCheckSessionNotifications(now){
     if(!globalPulseNotificationAllowed(now)) return;
     for(const [name,def] of Object.entries(GLOBAL_PULSE_SESSION_DEFS)){
         const state=globalPulseSessionBoundary(now,def);
-        if(!state.target || state.open) continue;
+        if(!state.target) continue;
         const diff=state.target.getTime()-now.getTime();
         if(diff<0 || diff>5*60*1000) continue;
         const p=globalPulseParts(state.target,def.tz);
         const dayKey=`${p.year}${globalPulsePad(p.month)}${globalPulsePad(p.day)}`;
-        const key=`global_${name}_${dayKey}_open5`;
+        const boundaryType=state.open ? "close5" : "open5";
+        const key=`global_${name}_${dayKey}_${boundaryType}`;
         try{
             const sent=new Set((localStorage.getItem("globalPulseSessionNotice-v1")||"").split("|"));
             if(sent.has(key)) continue;
-            await sendDashboardNotification(`🌐 ${name.toUpperCase()} OPEN`,`${name} market opens in 5 minutes`,"./icon-192.png","GLOBAL_TIME");
-            sent.add(key); localStorage.setItem("globalPulseSessionNotice-v1",Array.from(sent).slice(-30).join("|"));
+            const title=state.open ? `🌐 ${name.toUpperCase()} CLOSE` : `🌐 ${name.toUpperCase()} OPEN`;
+            const message=state.open ? `${name} market closes in 5 minutes` : `${name} market opens in 5 minutes`;
+            await sendDashboardNotification(title,message,"./icon-192.png","GLOBAL_TIME");
+            sent.add(key); localStorage.setItem("globalPulseSessionNotice-v1",Array.from(sent).slice(-60).join("|"));
         }catch(e){}
     }
 }
