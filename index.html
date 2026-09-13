@@ -2221,6 +2221,17 @@ h1 {
 .app-pin-key:active {
     background: #26344c;
 }
+/* LG webOS / Magic Remote: make the focused key unmistakable and keyboard-focusable. */
+.app-pin-key:focus {
+    outline: none;
+    border-color: #4696ff;
+    box-shadow: 0 0 0 3px rgba(70,150,255,.30), 0 8px 22px rgba(0,0,0,.20);
+}
+.app-pin-key:focus-visible {
+    outline: none;
+}
+.app-pin-key.pin-nav-focus{outline:none;border-color:rgba(255,255,255,.72);box-shadow:0 0 0 2px rgba(255,255,255,.16),0 0 18px rgba(255,255,255,.08);transform:translateY(-1px);}
+
 .app-pin-key.spacer {
     visibility: hidden;
     pointer-events: none;
@@ -4790,6 +4801,13 @@ h1 {
 }
 </style>
 
+<style id="r01-economic-cache">
+/* R01: cached ECONOMIC data is visibly grey so it is never mistaken for live data. */
+.global-pulse-economic.cache-mode,
+.global-pulse-economic.cache-mode *{color:#7c8798 !important;}
+.global-pulse-economic.cache-mode{filter:saturate(.15);}
+.global-pulse-economic.cache-mode .global-pulse-session-dot{background:#7c8798 !important;box-shadow:none !important;}
+</style>
 <style id="r22-economic-event">
 .global-pulse-economic .global-pulse-session-state{min-width:0 !important;flex:1 1 auto !important;overflow:hidden !important;}
 .global-pulse-economic .global-pulse-session-state > span:last-child{width:auto !important;flex:1 1 auto !important;min-width:0 !important;overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important;}
@@ -5263,24 +5281,24 @@ h1 {
         <div class="app-pin-error" id="appPinError"></div>
         <div class="app-pin-keypad" id="appPinKeypad">
             <div class="app-pin-row">
-                <button class="app-pin-key" type="button" data-pin="1">1</button>
-                <button class="app-pin-key" type="button" data-pin="2">2</button>
-                <button class="app-pin-key" type="button" data-pin="3">3</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="1">1</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="2">2</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="3">3</button>
             </div>
             <div class="app-pin-row">
-                <button class="app-pin-key" type="button" data-pin="4">4</button>
-                <button class="app-pin-key" type="button" data-pin="5">5</button>
-                <button class="app-pin-key" type="button" data-pin="6">6</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="4">4</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="5">5</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="6">6</button>
             </div>
             <div class="app-pin-row">
-                <button class="app-pin-key" type="button" data-pin="7">7</button>
-                <button class="app-pin-key" type="button" data-pin="8">8</button>
-                <button class="app-pin-key" type="button" data-pin="9">9</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="7">7</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="8">8</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="9">9</button>
             </div>
             <div class="app-pin-row">
                 <button class="app-pin-key spacer" type="button" tabindex="-1" aria-hidden="true">0</button>
-                <button class="app-pin-key" type="button" data-pin="0">0</button>
-                <button class="app-pin-key" type="button" data-pin-delete="true" aria-label="Delete">⌫</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="0">0</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin-delete="true" aria-label="Delete">⌫</button>
             </div>
         </div>
     </div>
@@ -10566,12 +10584,16 @@ for (
 /* =====================================================
    GLOBAL PULSE • GOLD + WTI
 ===================================================== */
-const GLOBAL_PULSE_GOLD_URL =
-    "https://xaus.com/api/v1/spot";
-const GLOBAL_PULSE_GOLD_INTRADAY_URL =
-    "https://xaus.com/api/v1/intraday?symbol=xau&hours=24";
-const GLOBAL_PULSE_OIL_URL =
-    "https://americasoilwatch.com/api/v1/wti";
+/* R01: public, browser-safe market feed. Biquote exposes XAUUSD and USOIL
+ * without an API key and provides daily OHLC candles for a stable
+ * previous-day reference. */
+const GLOBAL_PULSE_COMMODITY_BATCH_URL =
+    "https://biquote.io/api/latest?symbols=XAUUSD&symbols=USOIL";
+const GLOBAL_PULSE_GOLD_OHLC_URL =
+    "https://biquote.io/api/XAUUSD/ohlc?interval=1d&limit=3";
+const GLOBAL_PULSE_OIL_OHLC_URL =
+    "https://biquote.io/api/USOIL/ohlc?interval=1d&limit=3";
+const GLOBAL_PULSE_COMMODITY_CACHE_KEY = "globalPulseCommodityCache-v2";
 const GLOBAL_PULSE_REFRESH_MS =
     60 * 1000;
 let globalPulseTimer = null;
@@ -10597,62 +10619,58 @@ function setGlobalPulseChange(id, value){
     element.textContent = `${sign}${number.toFixed(2)}%`;
     element.classList.add(number > 0 ? "positive" : number < 0 ? "negative" : "flat");
 }
-const GLOBAL_PULSE_ALERT_LEVELS = [-10,-8,-6,-4,-2,2,4,6,8,10];
+const GLOBAL_PULSE_ALERT_LEVELS = [-5,-4,-3,-2,-1,1,2,3,4,5];
 const GLOBAL_PULSE_ALERT_COOLDOWN = 5 * 60 * 1000;
-const GLOBAL_PULSE_ALERT_STATE_KEY = "globalPulseAlertState-v1";
-let globalPulsePreviousPercent = null;
-const globalPulseAlertTimes = Object.create(null);
+const GLOBAL_PULSE_ALERT_STATE_KEY = "globalPulseAlertState-v2";
+let globalPulseAlertState = { gold: {previousPercent:null,alertTimes:{}}, oil: {previousPercent:null,alertTimes:{}} };
 
 function globalPulseReadAlertState(){
     try{
         const raw=localStorage.getItem(GLOBAL_PULSE_ALERT_STATE_KEY);
         const data=raw?JSON.parse(raw):{};
-        if(data&&typeof data==="object"){
-            globalPulsePreviousPercent=Number.isFinite(Number(data.previousPercent))
-                ? Number(data.previousPercent) : null;
-            Object.assign(globalPulseAlertTimes,data.alertTimes||{});
+        for(const commodity of ["gold","oil"]){
+            if(data&&data[commodity]){
+                globalPulseAlertState[commodity].previousPercent=Number.isFinite(Number(data[commodity].previousPercent))
+                    ? Number(data[commodity].previousPercent) : null;
+                Object.assign(globalPulseAlertState[commodity].alertTimes,data[commodity].alertTimes||{});
+            }
         }
     }catch(e){}
 }
 function globalPulseSaveAlertState(){
-    try{
-        localStorage.setItem(GLOBAL_PULSE_ALERT_STATE_KEY,JSON.stringify({
-            previousPercent:globalPulsePreviousPercent,
-            alertTimes:globalPulseAlertTimes
-        }));
-    }catch(e){}
+    try{ localStorage.setItem(GLOBAL_PULSE_ALERT_STATE_KEY,JSON.stringify(globalPulseAlertState)); }catch(e){}
 }
-async function globalPulseCheckNotification(percent){
+async function globalPulseCheckNotification(commodity, percent){
     const current=Number(percent);
     if(!Number.isFinite(current))return;
-    if(!Number.isFinite(globalPulsePreviousPercent)){
-        globalPulsePreviousPercent=current;
+    const state=globalPulseAlertState[commodity] || (globalPulseAlertState[commodity]={previousPercent:null,alertTimes:{}});
+    if(!Number.isFinite(state.previousPercent)){
+        state.previousPercent=current;
         globalPulseSaveAlertState();
         return;
     }
-    const old=globalPulsePreviousPercent;
+    const old=state.previousPercent;
     if(old===current)return;
     const crossed=GLOBAL_PULSE_ALERT_LEVELS.filter(level =>
         (old<level && current>=level) || (old>level && current<=level)
     );
-    globalPulsePreviousPercent=current;
+    state.previousPercent=current;
     for(const level of crossed){
-        const key=String(level),now=Date.now(),last=Number(globalPulseAlertTimes[key]||0);
+        const key=String(level),now=Date.now(),last=Number(state.alertTimes[key]||0);
         if(now-last<GLOBAL_PULSE_ALERT_COOLDOWN)continue;
-        globalPulseAlertTimes[key]=now;
+        state.alertTimes[key]=now;
         const up=level>0;
         const arrow=up?"↑":"↓";
         const color=up?"🟢":"🔴";
         const pctText=`${level>0?"+":""}${level.toFixed(0)}%`;
+        const label=commodity==="oil"?"Oil":"Gold";
         const title=`${color} ${arrow} GLOBAL PULSE`;
-        const message=`GLOBAL PULSE • ${pctText} • Gold`;
-        try{
-            await sendDashboardNotification(title,message,"./icon-192.png","GLOBAL_PULSE");
-        }catch(e){console.warn("Global Pulse notification failed",e);}
+        const message=`GLOBAL PULSE • ${label} • ${pctText}`;
+        try{ await sendDashboardNotification(title,message,"./icon-192.png","GLOBAL_PULSE"); }
+        catch(e){ console.warn("Global Pulse notification failed",e); }
     }
     globalPulseSaveAlertState();
 }
-
 async function fetchGlobalPulseJson(url){
     const freshUrl = url + (url.includes("?") ? "&" : "?") + "fresh=" + Date.now();
     // Keep this request a simple CORS GET. Custom headers such as
@@ -10717,12 +10735,12 @@ function globalPulseIranState(now){
         if(minute<GLOBAL_PULSE_IRAN_OPEN_MIN){
             const target=makeLocalTarget(0,GLOBAL_PULSE_IRAN_OPEN_MIN);
             const diff=target.getTime()-now.getTime();
-            return {open:false,target,label:diff<=3600000?`OPEN IN ${globalPulseCountdown(diff)}`:"OPENS 08:45"};
+            return {open:false,target,label:`OPEN IN ${globalPulseCountdown(diff)}`};
         }
         if(minute<GLOBAL_PULSE_IRAN_CLOSE_MIN){
             const target=makeLocalTarget(0,GLOBAL_PULSE_IRAN_CLOSE_MIN);
             const diff=target.getTime()-now.getTime();
-            return {open:true,target,label:`OPEN·CLOSE IN ${globalPulseCountdown(diff)}`};
+            return {open:true,target,label:`CLOSE IN ${globalPulseCountdown(diff)}`};
         }
     }
     let days=1;
@@ -10731,7 +10749,7 @@ function globalPulseIranState(now){
         if(activeDays.includes(candidate)){days=i;break;}
     }
     const target=makeLocalTarget(days,GLOBAL_PULSE_IRAN_OPEN_MIN);
-    return {open:false,target,label:"CLOSED · OPEN IN "+globalPulseCountdown(target.getTime()-now.getTime())};
+    return {open:false,target,label:`OPEN IN ${globalPulseCountdown(target.getTime()-now.getTime())}`};
 }
 function globalPulseNotifyKey(date,event){
     const p=globalPulseParts(date,GLOBAL_PULSE_IRAN_TZ);
@@ -10779,7 +10797,7 @@ function globalPulseSessionBoundary(now,def){
     if(weekday && localMinutes>=openMin && localMinutes<closeMin){
         const ms=((closeMin-localMinutes)*60000);
         const target=new Date(now.getTime()+ms);
-        return {open:true,target,label:"OPEN",timer:`CLOSE IN ${globalPulseCountdown(ms)}`};
+        return {open:true,target,label:`CLOSE IN ${globalPulseCountdown(ms)}`};
     }
     // Countdown to the next weekday open, preserving the city's local clock and DST.
     let days=1;
@@ -10798,7 +10816,7 @@ function globalPulseSessionBoundary(now,def){
         const delta=(desired-actualMin)*60000;
         target=new Date(target.getTime()+delta);
     }
-    return {open:false,target,label:"CLOSED",timer:`OPEN IN ${globalPulseCountdown(target.getTime()-now.getTime())}`};
+    return {open:false,target,label:`OPEN IN ${globalPulseCountdown(target.getTime()-now.getTime())}`};
 }
 
 const GLOBAL_PULSE_ECONOMIC_URL = "https://www.economicium.com/data/economic-calendar.json";
@@ -10939,6 +10957,20 @@ function globalPulseEconomicExtractEvents(data){
     }
     return [];
 }
+const GLOBAL_PULSE_ECONOMIC_CACHE_KEY = "globalPulseEconomicCache-v2";
+function globalPulseReadEconomicCache(){
+    try{
+        const data=JSON.parse(localStorage.getItem(GLOBAL_PULSE_ECONOMIC_CACHE_KEY)||"{}");
+        return Array.isArray(data?.events)?data:{};
+    }catch(e){return {};}
+}
+function globalPulseSaveEconomicCache(events){
+    try{localStorage.setItem(GLOBAL_PULSE_ECONOMIC_CACHE_KEY,JSON.stringify({events,savedAt:Date.now()}));}catch(e){}
+}
+function globalPulseSetEconomicCacheMode(enabled){
+    const root=$("globalPulseEconomicState")?.closest(".global-pulse-economic");
+    if(root) root.classList.toggle("cache-mode",!!enabled);
+}
 async function loadGlobalPulseEconomicEvents(force=false){
     if(!force&&globalPulseEconomicEvents.length&&Date.now()-globalPulseEconomicLoadedAt<600000) return;
     try{
@@ -10953,12 +10985,25 @@ async function loadGlobalPulseEconomicEvents(force=false){
         parsed.sort((a,b)=>globalPulseEconomicDate(a)-globalPulseEconomicDate(b));
         globalPulseEconomicEvents=parsed;
         globalPulseEconomicLoadedAt=Date.now();
+        globalPulseSaveEconomicCache(parsed);
+        globalPulseSetEconomicCacheMode(false);
         clearPageIssue("global-economic");
         globalPulseEconomicUpdate(new Date());
     }catch(error){
         console.warn("Economic calendar unavailable:",error);
-        setPageIssue("global-economic", error?.message || "Economic calendar unavailable", "error");
-        /* Do not erase a previously valid calendar during a temporary failure. */
+        const cached=globalPulseReadEconomicCache();
+        const cachedEvents=Array.isArray(cached.events)?cached.events.filter(e=>globalPulseEconomicDate(e)):[];
+        if(cachedEvents.length){
+            cachedEvents.sort((a,b)=>globalPulseEconomicDate(a)-globalPulseEconomicDate(b));
+            globalPulseEconomicEvents=cachedEvents;
+            globalPulseEconomicLoadedAt=Date.now();
+            globalPulseSetEconomicCacheMode(true);
+            setPageIssue("global-economic", `ECONOMIC is offline — showing cached calendar${cached.savedAt?` · cached ${new Date(cached.savedAt).toISOString()}`:""}`, "cache");
+        }else{
+            globalPulseSetEconomicCacheMode(false);
+            setPageIssue("global-economic", `ECONOMIC API error: ${error?.message || "Economic calendar unavailable"}`, "error");
+        }
+        /* Keep the last valid live/cache calendar so its countdown continues. */
         globalPulseEconomicUpdate(new Date());
     }
 }
@@ -11033,7 +11078,7 @@ function globalPulseUpdateMarketClock(){
         iranState.classList.toggle("open",iran.open);
         iranState.classList.toggle("closed",!iran.open);
         iranState.classList.toggle("iran-alert",!!iran.target && iran.target.getTime()-now.getTime()>0 && iran.target.getTime()-now.getTime()<=300000);
-        iranState.classList.toggle("near-boundary",!!iran.target && iran.target.getTime()-now.getTime()>0 && iran.target.getTime()-now.getTime()<=300000);
+        iranState.classList.toggle("near-boundary",!iran.open && !!iran.target && iran.target.getTime()-now.getTime()>0 && iran.target.getTime()-now.getTime()<=300000);
     }
     if(iranTimer) iranTimer.textContent=iran.label;
     const active=[];
@@ -11046,9 +11091,9 @@ function globalPulseUpdateMarketClock(){
             el.classList.toggle("open",state.open);
             el.classList.toggle("closed",!state.open);
             const boundaryDiff=state.target ? state.target.getTime()-now.getTime() : Infinity;
-            el.classList.toggle("near-boundary",boundaryDiff>0 && boundaryDiff<=300000);
+            el.classList.toggle("near-boundary",!state.open && boundaryDiff>0 && boundaryDiff<=300000);
         }
-        if(timer) timer.textContent=state.open ? state.timer : `CLOSED · ${state.timer}`;
+        if(timer) timer.textContent=state.label;
         if(state.open) active.push(name.toUpperCase());
         upcoming.push({name:name.toUpperCase(),state});
     }
@@ -11103,70 +11148,102 @@ function saveGlobalPulseFreeze(v){
     try{ localStorage.setItem(GLOBAL_PULSE_FREEZE_KEY,JSON.stringify(v)); }catch(e){}
 }
 
+function readGlobalPulseCommodityCache(){
+    try{
+        const data=JSON.parse(localStorage.getItem(GLOBAL_PULSE_COMMODITY_CACHE_KEY)||"{}");
+        return data&&typeof data==="object"?data:{};
+    }catch(e){return {};}
+}
+function saveGlobalPulseCommodityCache(data){
+    try{localStorage.setItem(GLOBAL_PULSE_COMMODITY_CACHE_KEY,JSON.stringify(data));}catch(e){}
+}
+function globalPulseCommodityValue(data,symbol){
+    const row=data?.[symbol] || data?.symbols?.[symbol];
+    return row && Number.isFinite(Number(row.mid)) ? Number(row.mid) : null;
+}
+function globalPulseCommodityBars(data){
+    const bars=Array.isArray(data?.bars)?data.bars:Array.isArray(data)?data:[];
+    return bars.map(b=>({
+        t:Date.parse(String(b?.openTime||b?.timestamp||b?.time||"")),
+        close:Number(b?.close),
+        open:Number(b?.open),
+        isOpen:Boolean(b?.isOpen)
+    })).filter(b=>Number.isFinite(b.t)&&Number.isFinite(b.close)&&b.close>0)
+      .sort((a,b)=>a.t-b.t);
+}
+function globalPulsePreviousDailyClose(data){
+    const bars=globalPulseCommodityBars(data);
+    if(bars.length<2)return null;
+    const latest=bars[bars.length-1];
+    const completed=bars.filter(b=>b.t<latest.t || !latest.isOpen);
+    if(completed.length<2)return null;
+    const previous=completed[completed.length-2];
+    return Number.isFinite(previous.close)&&previous.close>0?previous.close:null;
+}
+function globalPulseApplyCommodity(idPrice,idChange,price,change,cacheKey){
+    if(Number.isFinite(price)) safeText(idPrice,formatGlobalPulseNumber(price));
+    if(Number.isFinite(change)) setGlobalPulseChange(idChange,change);
+    else if(cacheKey){
+        const cached=readGlobalPulseCommodityCache()[cacheKey];
+        if(Number.isFinite(Number(cached?.price))) safeText(idPrice,formatGlobalPulseNumber(cached.price));
+        if(Number.isFinite(Number(cached?.change))) setGlobalPulseChange(idChange,cached.change);
+    }
+}
 async function loadGlobalPulse(){
     loadGlobalPulseEconomicEvents(true);
-    const results = await Promise.allSettled([
-        fetchGlobalPulseJson(GLOBAL_PULSE_GOLD_URL),
-        fetchGlobalPulseJson(GLOBAL_PULSE_GOLD_INTRADAY_URL),
-        fetchGlobalPulseJson(GLOBAL_PULSE_OIL_URL)
-    ]);
-    const [goldResult, goldIntradayResult, oilResult] = results;
-    const commodityOpen=globalPulseCommodityIsOpen();
-    const frozen=readGlobalPulseFreeze();
-    let goldChange=null, oilChange=null;
-
-    if (goldResult.status === "fulfilled"){
-        const data=goldResult.value;
-        const price=Number(data?.spot_usd_oz ?? data?.xau?.price);
-        if(Number.isFinite(price)){
-            safeText("globalGoldPrice",formatGlobalPulseNumber(price));
-            clearPageIssue("global-gold");
-        }else setPageIssue("global-gold","Global Gold returned an invalid price","error");
-    }else setPageIssue("global-gold",goldResult.reason?.message||"Global Gold API unavailable","error");
-
-    if (goldIntradayResult.status === "fulfilled"){
-        const points=Array.isArray(goldIntradayResult.value?.points)?goldIntradayResult.value.points:[];
-        const valid=points.map(point=>({t:Number(point?.t),p:Number(point?.p)}))
-            .filter(point=>Number.isFinite(point.t)&&Number.isFinite(point.p)&&point.p>0)
-            .sort((a,b)=>a.t-b.t);
-        if(valid.length>=2){
-            const latest=valid[valid.length-1].p;
-            const cutoff=valid[valid.length-1].t-86400000;
-            let base=valid[0].p;
-            for(let i=valid.length-1;i>=0;i--){ if(valid[i].t<=cutoff){base=valid[i].p;break;} }
-            if(Number.isFinite(base)&&base>0) goldChange=((latest-base)/base)*100;
-        }
+    const cached=readGlobalPulseCommodityCache();
+    let live=false;
+    let batch=null,goldBars=null,oilBars=null;
+    try{
+        [batch,goldBars,oilBars]=await Promise.all([
+            fetchGlobalPulseJson(GLOBAL_PULSE_COMMODITY_BATCH_URL),
+            fetchGlobalPulseJson(GLOBAL_PULSE_GOLD_OHLC_URL),
+            fetchGlobalPulseJson(GLOBAL_PULSE_OIL_OHLC_URL)
+        ]);
+        live=true;
+    }catch(error){
+        console.warn("Global Pulse commodity APIs unavailable:",error);
     }
-    // Never blank the percentage merely because a newer baseline cannot be built.
-    if(Number.isFinite(goldChange)){
-        if(commodityOpen){ frozen.gold=goldChange; saveGlobalPulseFreeze(frozen); }
-        setGlobalPulseChange("globalGoldChange",commodityOpen?goldChange:(Number.isFinite(Number(frozen.gold))?frozen.gold:goldChange));
+
+    const goldPrice=globalPulseCommodityValue(batch,"XAUUSD");
+    const oilPrice=globalPulseCommodityValue(batch,"USOIL");
+    const goldPrev=globalPulsePreviousDailyClose(goldBars);
+    const oilPrev=globalPulsePreviousDailyClose(oilBars);
+    const goldChange=Number.isFinite(goldPrice)&&Number.isFinite(goldPrev)?((goldPrice-goldPrev)/goldPrev)*100:null;
+    const oilChange=Number.isFinite(oilPrice)&&Number.isFinite(oilPrev)?((oilPrice-oilPrev)/oilPrev)*100:null;
+
+    if(Number.isFinite(goldPrice)&&Number.isFinite(goldChange)){
+        cached.gold={price:goldPrice,change:goldChange,updatedAt:Date.now()};
+        saveGlobalPulseCommodityCache(cached);
+        globalPulseApplyCommodity("globalGoldPrice","globalGoldChange",goldPrice,goldChange,"gold");
+        clearPageIssue("global-gold");
         clearPageIssue("global-gold-change");
-        if(commodityOpen) globalPulseCheckNotification(goldChange);
-    }else if(Number.isFinite(Number(frozen.gold))){
-        setGlobalPulseChange("globalGoldChange",frozen.gold);
+        globalPulseCheckNotification("gold",goldChange);
+    }else if(Number.isFinite(Number(cached?.gold?.price))){
+        globalPulseApplyCommodity("globalGoldPrice","globalGoldChange",null,null,"gold");
+        setPageIssue("global-gold",`Gold is using cached data${cached.gold.updatedAt?` · ${new Date(cached.gold.updatedAt).toISOString()}`:""}`,"cache");
+        clearPageIssue("global-gold-change");
     }else{
-        setPageIssue("global-gold-change","Global Gold intraday data is unavailable","warn");
+        setPageIssue("global-gold","Gold live price unavailable and no cached value exists","error");
     }
 
-    if(oilResult.status === "fulfilled"){
-        const data=oilResult.value;
-        const price=Number(data?.priceUsd);
-        if(Number.isFinite(price)){
-            safeText("globalOilPrice",formatGlobalPulseNumber(price));
-            clearPageIssue("global-oil");
-        }else setPageIssue("global-oil","Global Oil returned an invalid price","error");
-        oilChange=Number(data?.changePct);
+    if(Number.isFinite(oilPrice)&&Number.isFinite(oilChange)){
+        cached.oil={price:oilPrice,change:oilChange,updatedAt:Date.now()};
+        saveGlobalPulseCommodityCache(cached);
+        globalPulseApplyCommodity("globalOilPrice","globalOilChange",oilPrice,oilChange,"oil");
+        clearPageIssue("global-oil");
+        globalPulseCheckNotification("oil",oilChange);
+    }else if(Number.isFinite(Number(cached?.oil?.price))){
+        globalPulseApplyCommodity("globalOilPrice","globalOilChange",null,null,"oil");
+        setPageIssue("global-oil",`Oil is using cached data${cached.oil.updatedAt?` · ${new Date(cached.oil.updatedAt).toISOString()}`:""}`,"cache");
+    }else{
+        setPageIssue("global-oil","Oil live price unavailable and no cached value exists","error");
     }
-    if(Number.isFinite(oilChange)){
-        if(commodityOpen){ frozen.oil=oilChange; saveGlobalPulseFreeze(frozen); }
-        setGlobalPulseChange("globalOilChange",commodityOpen?oilChange:(Number.isFinite(Number(frozen.oil))?frozen.oil:oilChange));
-    }else if(Number.isFinite(Number(frozen.oil))){
-        setGlobalPulseChange("globalOilChange",frozen.oil);
-    }else if(oilResult.status === "rejected"){
-        setPageIssue("global-oil",oilResult.reason?.message||"Global Oil API unavailable","error");
+
+    if(live){
+        clearPageIssue("global-gold");
+        clearPageIssue("global-oil");
     }
-    if(results.every(result=>result.status==="rejected")) console.warn("Global Pulse APIs unavailable");
 }
 function startGlobalPulse(){
     globalPulseReadAlertState();
@@ -12053,9 +12130,7 @@ async function loadCryptoPortfolio(
    New Activity after closing/reopening: native state starts locked => PIN.
 ===================================================== */
 (function initializeAppPinLock() {
-    const APP_PIN = [52, 49, 56, 49]
-        .map(c => String.fromCharCode(c))
-        .join("");
+    const APP_PIN = "4181";
     const PIN_SESSION_KEY = "financialAppPinUnlocked";
     const pinOverlay = document.getElementById("appPinLock");
     const pinBoxes = Array.from(
@@ -12067,6 +12142,8 @@ async function loadCryptoPortfolio(
     if (!pinOverlay || !pinKeypad || pinBoxes.length !== 4) return;
 
     let enteredPin = "";
+    let focusedPinIndex = 0;
+    let suppressNextPinClickUntil = 0;
 
     function nativeAvailable() {
         return !!(
@@ -12081,34 +12158,25 @@ async function loadCryptoPortfolio(
             return nativeAvailable()
                 ? !!window.AndroidNotifications.isAppLocked()
                 : true;
-        } catch (error) {
-            return true;
-        }
+        } catch (error) { return true; }
     }
 
     function setNativeLockState(locked) {
         try {
-            if (
-                window.AndroidNotifications &&
-                typeof window.AndroidNotifications.setAppLocked === "function"
-            ) {
+            if (window.AndroidNotifications && typeof window.AndroidNotifications.setAppLocked === "function") {
                 window.AndroidNotifications.setAppLocked(locked);
             }
         } catch (error) {}
     }
 
     function isSessionUnlocked() {
-        try {
-            return sessionStorage.getItem(PIN_SESSION_KEY) === "1";
-        } catch (error) {
-            return false;
-        }
+        try { return sessionStorage.getItem(PIN_SESSION_KEY) === "1"; }
+        catch (error) { return false; }
     }
 
     function markSessionUnlocked() {
-        try {
-            sessionStorage.setItem(PIN_SESSION_KEY, "1");
-        } catch (error) {}
+        try { sessionStorage.setItem(PIN_SESSION_KEY, "1"); }
+        catch (error) {}
     }
 
     function renderPin() {
@@ -12119,6 +12187,15 @@ async function loadCryptoPortfolio(
         });
     }
 
+    function renderPinFocus() {
+        const cells = Array.from(pinKeypad.querySelectorAll("button.app-pin-key"));
+        cells.forEach((button) => button.classList.remove("pin-nav-focus"));
+        const selected = cells[focusedPinIndex];
+        if (selected && !selected.classList.contains("spacer")) {
+            selected.classList.add("pin-nav-focus");
+        }
+    }
+
     function resetPin() {
         enteredPin = "";
         renderPin();
@@ -12126,10 +12203,12 @@ async function loadCryptoPortfolio(
 
     function showPin() {
         resetPin();
+        focusedPinIndex = 0;
+        renderPinFocus();
         if (pinError) pinError.textContent = "";
         pinOverlay.classList.remove("pin-unlocked");
         pinOverlay.setAttribute("aria-hidden", "false");
-        window.setTimeout(() => focusPinKey(0), 0);
+        try { pinOverlay.focus({ preventScroll: true }); } catch (error) { try { pinOverlay.focus(); } catch (_) {} }
     }
 
     function hidePin() {
@@ -12143,22 +12222,27 @@ async function loadCryptoPortfolio(
         if (enteredPin === APP_PIN) {
             if (pinError) pinError.textContent = "";
             hidePin();
-            return;
+            return true;
         }
-
         if (pinError) pinError.textContent = "Incorrect PIN";
         resetPin();
-        window.setTimeout(() => {
-            if (pinError) pinError.textContent = "";
-        }, 1800);
+        focusedPinIndex = 0;
+        renderPinFocus();
+        window.setTimeout(() => { if (pinError) pinError.textContent = ""; }, 1800);
+        return false;
     }
 
     function addDigit(digit) {
         if (enteredPin.length >= 4) return;
         enteredPin += digit;
         renderPin();
+        // Unlock immediately after the fourth digit, just like the original PIN flow.
         if (enteredPin.length === 4) {
-            window.setTimeout(checkPin, 120);
+            window.setTimeout(() => {
+                if (!pinOverlay.classList.contains("pin-unlocked") && enteredPin.length === 4) {
+                    checkPin();
+                }
+            }, 120);
         }
     }
 
@@ -12170,8 +12254,6 @@ async function loadCryptoPortfolio(
     }
 
     function triggerPinHaptic() {
-        // Native Android haptic is preferred because navigator.vibrate() is
-        // inconsistent inside Android WebView.
         let nativeTriggered = false;
         try {
             if (window.AndroidNotifications && typeof window.AndroidNotifications.vibratePinKey === "function") {
@@ -12179,142 +12261,193 @@ async function loadCryptoPortfolio(
                 nativeTriggered = true;
             }
         } catch (error) {}
-
-        // WebView/browser fallback.
         if (!nativeTriggered) {
-            try {
-                if (navigator.vibrate) navigator.vibrate(28);
-            } catch (error) {}
+            try { if (navigator.vibrate) navigator.vibrate(28); } catch (error) {}
         }
     }
 
-    // Trigger on the actual touch so the haptic is immediate, not delayed until
-    // the click event is dispatched after the finger is released.
-    pinKeypad.addEventListener("pointerdown", event => {
-        const button = event.target.closest("button");
-        if (!button || button.classList.contains("spacer")) return;
-        if (button.dataset.pin !== undefined || button.dataset.pinDelete === "true") {
-            button.classList.add("pin-pressed");
-            window.setTimeout(() => button.classList.remove("pin-pressed"), 90);
-            triggerPinHaptic();
-        }
-    }, { passive: true });
-
-    pinKeypad.addEventListener("click", event => {
-        const button = event.target.closest("button");
-        if (!button) return;
-
-        if (button.dataset.pinDelete === "true") {
-            deleteDigit();
-            return;
-        }
-
-        if (button.dataset.pin !== undefined) {
-            addDigit(button.dataset.pin);
+    // Use the browser's native 5-way focus for LG/webOS.
+    // This is intentional: old LG browsers are much more reliable when the
+    // actual <button> receives focus and Enter/OK triggers its native click.
+    // We only keep track of which real button is focused; arrows themselves
+    // are left to the browser so they cannot fight with its spatial navigation.
+    const pinCells = Array.from(pinKeypad.querySelectorAll("button.app-pin-key"));
+    pinCells.forEach((button) => {
+        if (button.classList.contains("spacer")) {
+            button.setAttribute("tabindex", "-1");
+            button.setAttribute("focusable", "false");
+        } else {
+            button.setAttribute("tabindex", "0");
+            button.setAttribute("type", "button");
+            button.setAttribute("focusable", "true");
         }
     });
+    pinKeypad.setAttribute("tabindex", "-1");
+    pinOverlay.setAttribute("tabindex", "-1");
 
-    /*
-       TV / D-pad support: Android TV remotes do not reliably generate a
-       pointer/click event for the on-screen keypad. Keep this isolated to the
-       PIN overlay so the rest of the dashboard keyboard behavior is untouched.
-    */
-    const pinKeys = Array.from(pinKeypad.querySelectorAll("button[data-pin], button[data-pin-delete]"));
-    let focusedPinIndex = 0;
-
-    function focusPinKey(index) {
-        if (!pinKeys.length) return;
-        focusedPinIndex = (index + pinKeys.length) % pinKeys.length;
-        const button = pinKeys[focusedPinIndex];
-        try { button.focus({ preventScroll: true }); }
-        catch (error) { try { button.focus(); } catch (ignored) {} }
+    function syncNativePinFocus(button) {
+        const index = pinCells.indexOf(button);
+        if (index >= 0 && !button.classList.contains("spacer")) {
+            focusedPinIndex = index;
+            renderPinFocus();
+        }
     }
 
-    function activateFocusedPinKey() {
-        const button = pinKeys[focusedPinIndex];
-        if (!button) return;
+    pinCells.forEach((button) => {
+        button.addEventListener("focus", () => syncNativePinFocus(button), false);
+        button.addEventListener("focusin", () => syncNativePinFocus(button), false);
+        button.addEventListener("mousedown", () => syncNativePinFocus(button), false);
+        button.addEventListener("pointerdown", () => syncNativePinFocus(button), false);
+    });
+
+    pinKeypad.addEventListener("click", event => {
+        const button = event.target.closest("button.app-pin-key");
+        if (!button || button.classList.contains("spacer")) return;
+        syncNativePinFocus(button);
         if (button.dataset.pinDelete === "true") deleteDigit();
         else if (button.dataset.pin !== undefined) addDigit(button.dataset.pin);
         triggerPinHaptic();
+    }, false);
+
+    // Logical 5-way layout is retained only as a fallback for browsers that
+    // expose remote arrow key events. Native LG spatial navigation remains the
+    // primary path, so we do not call focus() from arrow handlers.
+    const pinGrid = [
+        pinCells.findIndex(b => b.dataset.pin === "1"),
+        pinCells.findIndex(b => b.dataset.pin === "2"),
+        pinCells.findIndex(b => b.dataset.pin === "3"),
+        pinCells.findIndex(b => b.dataset.pin === "4"),
+        pinCells.findIndex(b => b.dataset.pin === "5"),
+        pinCells.findIndex(b => b.dataset.pin === "6"),
+        pinCells.findIndex(b => b.dataset.pin === "7"),
+        pinCells.findIndex(b => b.dataset.pin === "8"),
+        pinCells.findIndex(b => b.dataset.pin === "9"),
+        null,
+        pinCells.findIndex(b => b.dataset.pin === "0"),
+        pinCells.findIndex(b => b.dataset.pinDelete === "true")
+    ];
+
+    function movePinFocusFallback(dx, dy) {
+        const current = pinGrid.indexOf(focusedPinIndex);
+        if (current < 0) return;
+        const row = Math.floor(current / 3);
+        const col = current % 3;
+        let r = Math.max(0, Math.min(3, row + dy));
+        let c = Math.max(0, Math.min(2, col + dx));
+        let target = r * 3 + c;
+        if (pinGrid[target] === null) {
+            if (dx > 0) target = 10;
+            else if (dy < 0) target = 6;
+            else target = 10;
+        }
+        const index = pinGrid[target];
+        const button = index != null && index >= 0 ? pinCells[index] : null;
+        if (button) {
+            focusedPinIndex = index;
+            renderPinFocus();
+            try { button.focus(); } catch (error) {}
+        }
     }
 
-    function movePinFocus(dx, dy) {
-        const row = Math.floor(focusedPinIndex / 3);
-        const col = focusedPinIndex % 3;
-        const nextRow = Math.max(0, Math.min(3, row + dy));
-        const nextCol = Math.max(0, Math.min(2, col + dx));
-        let next = nextRow * 3 + nextCol;
-        // Bottom-left is the visual spacer, not a real key.
-        if (next === 9) next = 10;
-        if (next >= pinKeys.length) next = pinKeys.length - 1;
-        focusPinKey(next);
+    function activateFocusedPinKey() {
+        const button = pinCells[focusedPinIndex];
+        if (!button || button.classList.contains("spacer")) return;
+        syncNativePinFocus(button);
+        if (enteredPin.length >= 4) {
+            checkPin();
+            triggerPinHaptic();
+            return;
+        }
+        if (button.dataset.pinDelete === "true") deleteDigit();
+        else if (button.dataset.pin !== undefined) addDigit(button.dataset.pin);
+        triggerPinHaptic();
     }
 
     function tvKeyDigit(event) {
         const key = String(event.key || "");
         if (/^[0-9]$/.test(key)) return key;
         const code = Number(event.keyCode || event.which || 0);
-        // Android KEYCODE_0..9 = 7..16 in some WebView/TV combinations.
         if (code >= 48 && code <= 57) return String(code - 48);
         if (code >= 7 && code <= 16) return String(code - 7);
         return null;
     }
 
-    document.addEventListener("keydown", event => {
+    // Numeric keyboard input is handled explicitly. Arrow/Enter navigation is
+    // intentionally allowed to reach the real buttons so old LG webOS can do
+    // its native 5-way spatial navigation and native click activation.
+    function handlePinKeyboardDigits(event) {
         if (pinOverlay.classList.contains("pin-unlocked")) return;
-
         const digit = tvKeyDigit(event);
         if (digit !== null) {
             event.preventDefault();
             event.stopPropagation();
             addDigit(digit);
+            const target = pinCells.findIndex(button => button.dataset.pin === digit);
+            if (target >= 0) {
+                focusedPinIndex = target;
+                renderPinFocus();
+            }
             triggerPinHaptic();
-            const target = pinKeys.findIndex(button => button.dataset.pin === digit);
-            if (target >= 0) focusPinKey(target);
-            return;
         }
+    }
 
+    window.addEventListener("keydown", handlePinKeyboardDigits, true);
+
+    // Keep a conservative fallback for environments that send remote arrow
+    // keycodes to JavaScript instead of using native spatial navigation.
+    window.addEventListener("keydown", event => {
+        if (pinOverlay.classList.contains("pin-unlocked")) return;
         const key = String(event.key || "");
         const code = Number(event.keyCode || event.which || 0);
-        if (key === "ArrowUp" || code === 19) {
-            event.preventDefault(); event.stopPropagation(); movePinFocus(0, -1);
-        } else if (key === "ArrowDown" || code === 20) {
-            event.preventDefault(); event.stopPropagation(); movePinFocus(0, 1);
-        } else if (key === "ArrowLeft" || code === 21) {
-            event.preventDefault(); event.stopPropagation(); movePinFocus(-1, 0);
-        } else if (key === "ArrowRight" || code === 22) {
-            event.preventDefault(); event.stopPropagation(); movePinFocus(1, 0);
-        } else if (key === "Enter" || key === "NumpadEnter" || code === 13 || code === 23) {
-            event.preventDefault(); event.stopPropagation(); activateFocusedPinKey();
-        } else if (key === "Backspace" || key === "Delete" || code === 67) {
-            event.preventDefault(); event.stopPropagation(); deleteDigit(); triggerPinHaptic();
+        const isArrow = key === "ArrowUp" || key === "ArrowDown" || key === "ArrowLeft" || key === "ArrowRight"
+            || code === 37 || code === 38 || code === 39 || code === 40;
+        if (!isArrow) return;
+        // Do not preventDefault: native LG spatial navigation must remain active.
+        // If JS receives the event, keep our visual state synchronized after the
+        // browser moves focus.
+        window.setTimeout(() => {
+            const active = document.activeElement;
+            if (active && active.classList && active.classList.contains("app-pin-key")) {
+                syncNativePinFocus(active);
+            }
+        }, 0);
+    }, false);
+
+    window.addEventListener("keydown", event => {
+        if (pinOverlay.classList.contains("pin-unlocked")) return;
+        const key = String(event.key || "");
+        const code = Number(event.keyCode || event.which || 0);
+        if (key === "Backspace" || key === "Delete" || code === 8 || code === 67) {
+            event.preventDefault();
+            event.stopPropagation();
+            deleteDigit();
+            triggerPinHaptic();
         }
     }, true);
 
-    /*
-       Native state is authoritative:
-       - New Activity: MainActivity.onCreate() sets app_locked=true -> show PIN.
-       - Same Activity + manual refresh: app_locked=false -> stay unlocked.
-       sessionStorage is only a secondary indication and is not required for
-       refresh behavior, because some WebView versions may recreate it.
-    */
+    // Start on the first real key. This gives LG a genuine focus target and
+    // therefore lets Arrow + OK/Enter use its native 5-way implementation.
+    window.setTimeout(() => {
+        if (!pinOverlay.classList.contains("pin-unlocked")) {
+            const first = pinCells.find(button => !button.classList.contains("spacer"));
+            if (first) {
+                focusedPinIndex = pinCells.indexOf(first);
+                renderPinFocus();
+                try { first.focus(); } catch (error) {}
+            }
+        }
+    }, 80);
+
     const unlockedForSession = isSessionUnlocked();
     const lockedByNative = nativeLocked();
-
     if (nativeAvailable() && !lockedByNative) {
-        // Same native Activity/session, including a manual WebView refresh.
         hidePin();
     } else if (!nativeAvailable() && unlockedForSession) {
-        // Browser-only fallback: preserve the original WebView session behavior.
         pinOverlay.classList.add("pin-unlocked");
         pinOverlay.setAttribute("aria-hidden", "true");
     } else {
         setNativeLockState(true);
         showPin();
-    }
-
-    if (!pinOverlay.classList.contains("pin-unlocked")) {
-        window.setTimeout(() => focusPinKey(0), 80);
     }
 })();
 /* =====================================================
