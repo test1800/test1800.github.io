@@ -7207,6 +7207,8 @@ function evaluateDashboardNotification(
     }
     const state =
         notificationStates[cardId];
+    /* Reset the per-notification crossing direction. */
+    state.lastNotificationDirection = null;
     const currentColor =
         getCardColorFromPercent(
             numericPercent
@@ -7717,7 +7719,10 @@ if (
         notificationTitle,
         notificationMessage,
         "./icon-192.png",
-        "USD"
+        "USD",
+        cardId === "overallMainPrice"
+            ? (notificationStates[cardId]?.lastNotificationDirection || null)
+            : null
     );
     /* =============================================
        EMAIL NOTIFICATION
