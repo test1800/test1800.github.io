@@ -14665,71 +14665,78 @@ if (
 }
 
 /* =====================================================
-   CRYPTO PORTFOLIO - FEAR & GREED REFINEMENT
-   R18: slimmer 3D gauge + compact mobile second row.
+   CRYPTO PORTFOLIO - CLEAN HEADER ALIGNMENT
+   R26: left title / centered Fear & Greed / right Total Value.
 ===================================================== */
-.fear-greed-value{
-    font-size:11px;
-    min-width:18px;
-    letter-spacing:.25px;
-    opacity:.95;
+.crypto-portfolio-header{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) auto auto minmax(0,1fr) !important;
+    align-items:center !important;
+    column-gap:8px !important;
+    width:100%;
+}
+.crypto-portfolio-title{
+    display:contents !important;
+}
+.crypto-portfolio-title > span:first-child{
+    grid-column:1;
+    grid-row:1;
+    min-width:0;
+    font-size:17px;
+    line-height:1;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    text-align:left;
+}
+.crypto-portfolio-title .fear-greed-value{
+    grid-column:2;
+    grid-row:1;
+    font-size:14px;
+    min-width:22px;
+    line-height:1;
     text-align:right;
-    text-shadow:0 1px 0 rgba(255,255,255,.16),0 1px 2px rgba(0,0,0,.28);
 }
-.fear-greed-mini{
-    width:68px;
-    height:6px;
-    flex-basis:68px;
-    border-radius:999px;
-    background:linear-gradient(180deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.04) 38%,rgba(0,0,0,.16) 100%),linear-gradient(90deg,#ef4444 0%,#f97316 25%,#facc15 50%,#84cc16 75%,#22c55e 100%);
-    box-shadow:inset 0 1px 1px rgba(255,255,255,.30),inset 0 -1px 1px rgba(0,0,0,.24),0 1px 3px rgba(0,0,0,.18);
+.crypto-portfolio-title .fear-greed-mini{
+    grid-column:3;
+    grid-row:1;
+    width:90px;
+    height:7px;
+    flex-basis:90px;
+    align-self:center;
 }
-.fear-greed-mini::after{
-    width:3px;
-    height:10px;
-    background:#111827;
-    box-shadow:0 0 0 1px rgba(255,255,255,.42),0 1px 2px rgba(0,0,0,.42);
+.crypto-portfolio-total{
+    grid-column:4;
+    grid-row:1;
+    justify-self:end;
+    min-width:0;
+    max-width:100%;
+    display:flex;
+    align-items:baseline;
+    justify-content:flex-end;
+    flex-wrap:nowrap;
+    white-space:nowrap;
+    gap:7px;
 }
-.fear-greed-mini::before{
-    top:-2px;
-    border-left-width:2.5px;
-    border-right-width:2.5px;
-    border-top-width:3px;
-    border-top-color:#111827;
-    filter:drop-shadow(0 1px 1px rgba(255,255,255,.35));
-}
+
 @media (max-width:650px){
     .crypto-portfolio-header{
-        margin-bottom:1px;
-    }
-    .crypto-portfolio-title{
-        flex-wrap:wrap;
-        align-content:flex-start;
-        justify-content:center;
-        column-gap:4px;
-        row-gap:1px;
-        white-space:normal;
-        overflow:visible;
-        text-overflow:clip;
+        grid-template-columns:minmax(0,1fr) auto auto minmax(0,1fr) !important;
+        column-gap:4px !important;
+        align-items:center !important;
     }
     .crypto-portfolio-title > span:first-child{
-        flex:0 0 100%;
-        font-size:12px;
-        line-height:13px;
-        white-space:nowrap;
-        text-align:center;
-        overflow:hidden;
-        text-overflow:ellipsis;
+        font-size:11px;
+        line-height:1;
     }
     .crypto-portfolio-title .fear-greed-value{
         font-size:7px;
         min-width:10px;
-        line-height:7px;
     }
     .crypto-portfolio-title .fear-greed-mini{
-        width:38px;
+        width:42px;
         height:4px;
-        flex-basis:38px;
+        flex-basis:42px;
     }
     .crypto-portfolio-title .fear-greed-mini::after{
         width:2px;
@@ -14740,6 +14747,50 @@ if (
         border-left-width:2px;
         border-right-width:2px;
         border-top-width:3px;
+    }
+    .crypto-portfolio-total{
+        gap:3px;
+    }
+    .crypto-portfolio-total-label{
+        font-size:8px;
+    }
+    .crypto-portfolio-total-value{
+        font-size:14px;
+    }
+    .crypto-portfolio-total-change{
+        font-size:8px;
+    }
+}
+
+/* On exceptionally narrow phones, keep Total Value on the right and
+   place the compact Fear & Greed row directly under Crypto Portfolio. */
+@media (max-width:380px){
+    .crypto-portfolio-header{
+        grid-template-columns:minmax(0,1fr) minmax(0,auto) !important;
+        column-gap:4px !important;
+        row-gap:2px !important;
+    }
+    .crypto-portfolio-title > span:first-child{
+        grid-column:1;
+        grid-row:1;
+        font-size:10px;
+    }
+    .crypto-portfolio-title .fear-greed-value{
+        grid-column:1;
+        grid-row:2;
+        justify-self:start;
+        margin-left:1px;
+    }
+    .crypto-portfolio-title .fear-greed-mini{
+        grid-column:1;
+        grid-row:2;
+        justify-self:start;
+        margin-left:15px;
+    }
+    .crypto-portfolio-total{
+        grid-column:2;
+        grid-row:1 / span 2;
+        align-self:center;
     }
 }
 </style>
