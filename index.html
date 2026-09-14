@@ -12583,11 +12583,37 @@ async function loadCryptoPortfolio(
     pinKeypad.addEventListener("click", event => {
         const button = event.target.closest("button.app-pin-key");
         if (!button || button.classList.contains("spacer")) return;
+        // LG webOS can dispatch a synthetic click after the remote OK/Enter
+        // key has already been handled by the explicit keyboard path below.
+        // Consume that one duplicate click so one remote press = one digit.
+        if (Date.now() < suppressNextPinClickUntil) {
+            suppressNextPinClickUntil = 0;
+            return;
+        }
         syncNativePinFocus(button);
         if (button.dataset.pinDelete === "true") deleteDigit();
         else if (button.dataset.pin !== undefined) addDigit(button.dataset.pin);
         triggerPinHaptic();
     }, false);
+
+    // Some LG webOS WebViews move the remote cursor/focus to a <button>, but
+    // do not reliably synthesize the button's click event for the OK/Enter
+    // key. Handle OK/Enter directly on the focused PIN button as a fallback.
+    // This is limited to the PIN keypad and does not affect the dashboard.
+    window.addEventListener("keydown", event => {
+        if (pinOverlay.classList.contains("pin-unlocked")) return;
+        const active = document.activeElement;
+        if (!active || !active.classList || !active.classList.contains("app-pin-key")) return;
+        const key = String(event.key || "");
+        const code = Number(event.keyCode || event.which || 0);
+        const isOkEnter = key === "Enter" || key === "OK" || code === 13;
+        if (!isOkEnter || active.classList.contains("spacer")) return;
+        event.preventDefault();
+        event.stopPropagation();
+        syncNativePinFocus(active);
+        suppressNextPinClickUntil = Date.now() + 500;
+        activateFocusedPinKey();
+    }, true);
 
     // Logical 5-way layout is retained only as a fallback for browsers that
     // expose remote arrow key events. Native LG spatial navigation remains the
