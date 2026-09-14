@@ -7160,6 +7160,11 @@ function evaluateDashboardNotification(
                 crossedThreshold,
                 numericPercent
             );
+        if (cardId === "overallMainPrice" && thresholdMessage) {
+            state.lastNotificationDirection =
+                numericPercent > state.lastPercent ? "up" :
+                numericPercent < state.lastPercent ? "down" : null;
+        }
     }
     let notificationMessage =
         null;
@@ -7233,7 +7238,7 @@ NOTIFICATION ICON
    🔴
    No image file is required.
 */
-function getNotificationIconEmoji(message) {
+function getNotificationIconEmoji(message, crossingDirection = null) {
     const text =
         String(message || "");
     /*
@@ -7257,20 +7262,14 @@ function getNotificationIconEmoji(message) {
         return "🔴";
     }
     /*
-       Positive threshold notification
+       Overall threshold notification: the icon follows the
+       direction in which the percentage crossed the threshold,
+       not the sign of the percentage itself.
     */
-    if (
-        text.includes("Price +")
-    ) {
-        return "🟢";
-    }
-    /*
-       Negative threshold notification
-    */
-    if (
-        text.includes("Price -")
-    ) {
-        return "🔴";
+    if (text.includes("Price +") || text.includes("Price -")) {
+        if (crossingDirection === "up") return "🟢";
+        if (crossingDirection === "down") return "🔴";
+        return text.includes("Price +") ? "🟢" : "🔴";
     }
     /*
        Default
@@ -7472,7 +7471,8 @@ async function sendDashboardNotification(
     title,
     message,
     notificationImage = "./icon-192.png",
-    soundType = "USD"
+    soundType = "USD",
+    crossingDirection = null
 ) {
     if (
         window.AndroidNotifications &&
@@ -7485,9 +7485,11 @@ async function sendDashboardNotification(
                     message,
                     soundType
                 );
+            const nativeIcon = getNotificationIconEmoji(message, crossingDirection);
+            const nativeTitle = nativeIcon ? `${nativeIcon} ${title}` : title;
             window.AndroidNotifications.showNotification(
                 resolvedType,
-                title,
+                nativeTitle,
                 message
             );
             return true;
@@ -7518,7 +7520,7 @@ async function sendDashboardNotification(
                 soundType
             );
         const notificationIcon =
-            getNotificationIconEmoji(message);
+            getNotificationIconEmoji(message, crossingDirection);
         const notificationTitle =
             notificationIcon +
             (notificationIcon ? " " : "") +
