@@ -10724,7 +10724,7 @@ function globalPulseReadAlertState(){
 function globalPulseSaveAlertState(){
     try{ localStorage.setItem(GLOBAL_PULSE_ALERT_STATE_KEY,JSON.stringify(globalPulseAlertState)); }catch(e){}
 }
-async function globalPulseCheckNotification(commodity, percent){
+async function globalPulseCheckNotification(commodity, percent, currentPrice=null){
     const current=Number(percent);
     if(!Number.isFinite(current))return;
     const state=globalPulseAlertState[commodity] || (globalPulseAlertState[commodity]={previousPercent:null,alertTimes:{}});
@@ -10749,7 +10749,8 @@ async function globalPulseCheckNotification(commodity, percent){
         const pctText=`${level>0?"+":""}${level.toFixed(0)}%`;
         const label=commodity==="oil"?"Oil":"Gold";
         const title=`${color} ${arrow} GLOBAL PULSE`;
-        const message=`GLOBAL PULSE • ${label} • ${pctText}`;
+        const priceText=Number.isFinite(Number(currentPrice)) ? ` • Price ${formatGlobalPulseNumber(Number(currentPrice))}` : "";
+        const message=`GLOBAL PULSE • ${label} • ${pctText}${priceText}`;
         try{ await sendDashboardNotification(title,message,"./icon-192.png","GLOBAL_PULSE"); }
         catch(e){ console.warn("Global Pulse notification failed",e); }
     }
@@ -11309,7 +11310,7 @@ async function loadGlobalPulse(){
         globalPulseApplyCommodity("globalGoldPrice","globalGoldChange",goldPrice,goldChange,"gold");
         clearPageIssue("global-gold");
         clearPageIssue("global-gold-change");
-        globalPulseCheckNotification("gold",goldChange);
+        globalPulseCheckNotification("gold",goldChange,goldPrice);
     }else if(Number.isFinite(Number(cached?.gold?.price))){
         globalPulseApplyCommodity("globalGoldPrice","globalGoldChange",null,null,"gold");
         setPageIssue("global-gold",`Gold is using cached data${cached.gold.updatedAt?` · ${new Date(cached.gold.updatedAt).toISOString()}`:""}`,"cache");
@@ -11323,7 +11324,7 @@ async function loadGlobalPulse(){
         saveGlobalPulseCommodityCache(cached);
         globalPulseApplyCommodity("globalOilPrice","globalOilChange",oilPrice,oilChange,"oil");
         clearPageIssue("global-oil");
-        globalPulseCheckNotification("oil",oilChange);
+        globalPulseCheckNotification("oil",oilChange,oilPrice);
     }else if(Number.isFinite(Number(cached?.oil?.price))){
         globalPulseApplyCommodity("globalOilPrice","globalOilChange",null,null,"oil");
         setPageIssue("global-oil",`Oil is using cached data${cached.oil.updatedAt?` · ${new Date(cached.oil.updatedAt).toISOString()}`:""}`,"cache");
@@ -12600,19 +12601,41 @@ async function loadCryptoPortfolio(
     // do not reliably synthesize the button's click event for the OK/Enter
     // key. Handle OK/Enter directly on the focused PIN button as a fallback.
     // This is limited to the PIN keypad and does not affect the dashboard.
-    window.addEventListener("keydown", event => {
-        if (pinOverlay.classList.contains("pin-unlocked")) return;
+    let pinOkHandledAt = 0;
+
+    function handlePinOkEvent(event) {
+        if (pinOverlay.classList.contains("pin-unlocked")) return false;
         const active = document.activeElement;
-        if (!active || !active.classList || !active.classList.contains("app-pin-key")) return;
+        if (!active || !active.classList || !active.classList.contains("app-pin-key")) return false;
+        if (active.classList.contains("spacer")) return false;
         const key = String(event.key || "");
         const code = Number(event.keyCode || event.which || 0);
         const isOkEnter = key === "Enter" || key === "OK" || code === 13;
-        if (!isOkEnter || active.classList.contains("spacer")) return;
+        if (!isOkEnter) return false;
+
+        // Some older LG webOS WebViews expose OK on keyup rather than keydown.
+        // Handle either phase, but never activate twice for one physical press.
+        const now = Date.now();
+        if (now - pinOkHandledAt < 700) {
+            event.preventDefault();
+            event.stopPropagation();
+            return true;
+        }
         event.preventDefault();
         event.stopPropagation();
         syncNativePinFocus(active);
-        suppressNextPinClickUntil = Date.now() + 500;
+        pinOkHandledAt = now;
+        suppressNextPinClickUntil = now + 700;
         activateFocusedPinKey();
+        return true;
+    }
+
+    window.addEventListener("keydown", event => {
+        handlePinOkEvent(event);
+    }, true);
+
+    window.addEventListener("keyup", event => {
+        handlePinOkEvent(event);
     }, true);
 
     // Logical 5-way layout is retained only as a fallback for browsers that
