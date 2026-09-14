@@ -226,6 +226,40 @@ self.addEventListener(
 
         /*
 
+            Fear & Greed API
+
+            Network first
+            Offline => last cached response
+
+        */
+        if (
+
+            url.origin === "https://api.alternative.me"
+
+            &&
+
+            url.pathname === "/fng/"
+
+        ) {
+
+            event.respondWith(
+
+                networkFirst(
+
+                    request
+
+                )
+
+            );
+
+            return;
+
+        }
+
+
+
+        /*
+
             External APIs
 
             Network first
