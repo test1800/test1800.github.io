@@ -7242,9 +7242,11 @@ function evaluateDashboardNotification(
                 numericPercent
             );
         if (cardId === "overallMainPrice" && thresholdMessage) {
+            const previousAbs = Math.abs(state.lastPercent);
+            const currentAbs = Math.abs(numericPercent);
             state.lastNotificationDirection =
-                numericPercent > state.lastPercent ? "up" :
-                numericPercent < state.lastPercent ? "down" : null;
+                currentAbs > previousAbs ? "up" :
+                currentAbs < previousAbs ? "down" : null;
         }
     }
     let notificationMessage =
