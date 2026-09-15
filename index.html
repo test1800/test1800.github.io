@@ -2299,6 +2299,90 @@ h1 {
 }
 .app-pin-key.pin-nav-focus{outline:none;border-color:rgba(255,255,255,.72);box-shadow:0 0 0 2px rgba(255,255,255,.16),0 0 18px rgba(255,255,255,.08);transform:translateY(-1px);}
 
+.app-pin-input-trigger {
+    font-size: 24px !important;
+}
+.app-pin-entry-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483648;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4,8,16,.72);
+    padding: 18px;
+}
+.app-pin-entry-modal.open { display: flex; }
+.app-pin-entry-card {
+    width: min(92vw, 340px);
+    padding: 20px 18px 18px;
+    border: 1px solid #34445b;
+    border-radius: 18px;
+    background: #101a2a;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45);
+}
+.app-pin-entry-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 14px;
+}
+.app-pin-entry-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    height: 54px;
+    border: 1px solid #465a74;
+    border-radius: 12px;
+    background: #0b1320;
+    color: #f5f8fc;
+    text-align: center;
+    font: inherit;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: .42em;
+    padding: 0 10px 0 18px;
+    outline: none;
+    -webkit-user-select: text;
+    user-select: text;
+}
+.app-pin-entry-input:focus {
+    border-color: #4696ff;
+    box-shadow: 0 0 0 3px rgba(70,150,255,.22);
+}
+.app-pin-entry-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 14px;
+}
+.app-pin-entry-button {
+    min-width: 108px;
+    height: 46px;
+    border: 1px solid #3a4b63;
+    border-radius: 11px;
+    background: #18263b;
+    color: #f5f8fc;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.app-pin-entry-button.primary {
+    background: #4696ff;
+    border-color: #4696ff;
+}
+.app-pin-entry-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(70,150,255,.28);
+}
+.app-pin-entry-hint {
+    min-height: 18px;
+    margin-top: 8px;
+    color: #ff6a6a;
+    font-size: 12px;
+    text-align: center;
+}
 .app-pin-key.spacer {
     visibility: hidden;
     pointer-events: none;
@@ -5363,9 +5447,20 @@ h1 {
                 <button class="app-pin-key" type="button" tabindex="0" data-pin="9">9</button>
             </div>
             <div class="app-pin-row">
-                <button class="app-pin-key spacer" type="button" tabindex="-1" aria-hidden="true">0</button>
+                <button class="app-pin-key app-pin-input-trigger" type="button" tabindex="0" data-pin-input-open="true" aria-label="Enter PIN">⌨</button>
                 <button class="app-pin-key" type="button" tabindex="0" data-pin="0">0</button>
                 <button class="app-pin-key" type="button" tabindex="0" data-pin-delete="true" aria-label="Delete">⌫</button>
+            </div>
+        </div>
+        <div class="app-pin-entry-modal" id="appPinEntryModal" aria-hidden="true">
+            <div class="app-pin-entry-card" role="dialog" aria-modal="true" aria-label="Enter PIN">
+                <div class="app-pin-entry-title">Enter PIN</div>
+                <input id="appPinEntryInput" class="app-pin-entry-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="4-digit PIN">
+                <div class="app-pin-entry-actions">
+                    <button id="appPinEntryCancel" class="app-pin-entry-button" type="button">CANCEL</button>
+                    <button id="appPinEntrySubmit" class="app-pin-entry-button primary" type="button">ENTER</button>
+                </div>
+                <div id="appPinEntryHint" class="app-pin-entry-hint"></div>
             </div>
         </div>
     </div>
@@ -12426,6 +12521,11 @@ async function loadCryptoPortfolio(
     );
     const pinError = document.getElementById("appPinError");
     const pinKeypad = document.getElementById("appPinKeypad");
+    const pinEntryModal = document.getElementById("appPinEntryModal");
+    const pinEntryInput = document.getElementById("appPinEntryInput");
+    const pinEntryCancel = document.getElementById("appPinEntryCancel");
+    const pinEntrySubmit = document.getElementById("appPinEntrySubmit");
+    const pinEntryHint = document.getElementById("appPinEntryHint");
 
     if (!pinOverlay || !pinKeypad || pinBoxes.length !== 4) return;
 
@@ -12541,6 +12641,37 @@ async function loadCryptoPortfolio(
         renderPin();
     }
 
+    function openPinEntryModal() {
+        if (!pinEntryModal || !pinEntryInput) return;
+        pinEntryInput.value = "";
+        if (pinEntryHint) pinEntryHint.textContent = "";
+        pinEntryModal.classList.add("open");
+        pinEntryModal.setAttribute("aria-hidden", "false");
+        window.setTimeout(() => {
+            try { pinEntryInput.focus(); } catch (error) {}
+        }, 40);
+    }
+
+    function closePinEntryModal() {
+        if (!pinEntryModal) return;
+        pinEntryModal.classList.remove("open");
+        pinEntryModal.setAttribute("aria-hidden", "true");
+    }
+
+    function submitPinEntryModal() {
+        if (!pinEntryInput) return false;
+        const value = String(pinEntryInput.value || "").replace(/\D/g, "").slice(0, 4);
+        pinEntryInput.value = value;
+        if (value.length !== 4) {
+            if (pinEntryHint) pinEntryHint.textContent = "Enter 4 digits";
+            return false;
+        }
+        closePinEntryModal();
+        enteredPin = value;
+        renderPin();
+        return checkPin();
+    }
+
     function triggerPinHaptic() {
         let nativeTriggered = false;
         try {
@@ -12599,7 +12730,9 @@ async function loadCryptoPortfolio(
             return;
         }
         syncNativePinFocus(button);
-        if (button.dataset.pinDelete === "true") deleteDigit();
+        if (button.dataset.pinInputOpen === "true") {
+            openPinEntryModal();
+        } else if (button.dataset.pinDelete === "true") deleteDigit();
         else if (button.dataset.pin !== undefined) addDigit(button.dataset.pin);
         triggerPinHaptic();
     }, false);
@@ -12689,6 +12822,11 @@ async function loadCryptoPortfolio(
         const button = pinCells[focusedPinIndex];
         if (!button || button.classList.contains("spacer")) return;
         syncNativePinFocus(button);
+        if (button.dataset.pinInputOpen === "true") {
+            openPinEntryModal();
+            triggerPinHaptic();
+            return;
+        }
         if (enteredPin.length >= 4) {
             checkPin();
             triggerPinHaptic();
@@ -12714,6 +12852,18 @@ async function loadCryptoPortfolio(
     function handlePinKeyboardDigits(event) {
         if (pinOverlay.classList.contains("pin-unlocked")) return;
         const digit = tvKeyDigit(event);
+        if (pinEntryModal && pinEntryModal.classList.contains("open")) {
+            if (digit !== null) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (pinEntryInput) {
+                    const value = String(pinEntryInput.value || "").replace(/\D/g, "");
+                    if (value.length < 4) pinEntryInput.value = value + digit;
+                }
+                triggerPinHaptic();
+            }
+            return;
+        }
         if (digit !== null) {
             event.preventDefault();
             event.stopPropagation();
@@ -12758,6 +12908,32 @@ async function loadCryptoPortfolio(
             event.stopPropagation();
             deleteDigit();
             triggerPinHaptic();
+        }
+    }, true);
+
+    if (pinEntryCancel) pinEntryCancel.addEventListener("click", () => { closePinEntryModal(); });
+    if (pinEntrySubmit) pinEntrySubmit.addEventListener("click", () => { submitPinEntryModal(); });
+    if (pinEntryInput) pinEntryInput.addEventListener("keydown", (event) => {
+        const key = String(event.key || "");
+        const code = Number(event.keyCode || event.which || 0);
+        if (key === "Enter" || key === "OK" || code === 13) {
+            event.preventDefault();
+            event.stopPropagation();
+            submitPinEntryModal();
+        }
+    }, true);
+    window.addEventListener("keydown", (event) => {
+        if (!pinEntryModal || !pinEntryModal.classList.contains("open")) return;
+        const key = String(event.key || "");
+        const code = Number(event.keyCode || event.which || 0);
+        if (key === "Enter" || key === "OK" || code === 13) {
+            event.preventDefault();
+            event.stopPropagation();
+            submitPinEntryModal();
+        } else if (key === "Escape" || code === 27) {
+            event.preventDefault();
+            event.stopPropagation();
+            closePinEntryModal();
         }
     }, true);
 
@@ -14763,29 +14939,29 @@ if (
         align-content:flex-start;
         justify-content:center;
         column-gap:4px;
-        row-gap:1px;
+        row-gap:5px;
         white-space:normal;
         overflow:visible;
         text-overflow:clip;
     }
     .crypto-portfolio-title > span:first-child{
         flex:0 0 100%;
-        font-size:12px;
-        line-height:13px;
+        font-size:11px;
+        line-height:11px;
         white-space:nowrap;
         text-align:center;
         overflow:hidden;
         text-overflow:ellipsis;
     }
     .crypto-portfolio-title .fear-greed-value{
-        font-size:7px;
+        font-size:8px;
         min-width:10px;
-        line-height:7px;
+        line-height:8px;
     }
     .crypto-portfolio-title .fear-greed-mini{
-        width:38px;
-        height:4px;
-        flex-basis:38px;
+        width:50px;
+        height:5px;
+        flex-basis:50px;
     }
     .crypto-portfolio-title .fear-greed-mini::after{
         width:2px;
