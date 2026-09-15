@@ -10883,7 +10883,7 @@ function setGlobalPulseChange(id, value){
     element.textContent = `${sign}${number.toFixed(2)}%`;
     element.classList.add(number > 0 ? "positive" : number < 0 ? "negative" : "flat");
 }
-const GLOBAL_PULSE_ALERT_LEVELS = [-5,-4,-3,-2,-1,1,2,3,4,5];
+const GLOBAL_PULSE_ALERT_LEVELS = [-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7,8,9,10];
 const GLOBAL_PULSE_ALERT_COOLDOWN = 5 * 60 * 1000;
 const GLOBAL_PULSE_ALERT_STATE_KEY = "globalPulseAlertState-v2";
 let globalPulseAlertState = { gold: {previousPercent:null,alertTimes:{}}, oil: {previousPercent:null,alertTimes:{}} };
