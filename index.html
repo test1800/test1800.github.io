@@ -4000,6 +4000,83 @@ h1 {
     grid-template-columns:repeat(2,minmax(0,1fr));
     gap:7px;
 }
+.global-pulse-tsetmc-cards{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+    min-width:0;
+    grid-column:3 / 5;
+}
+.global-pulse-tsetmc-card{
+    min-width:0;
+    height:100%;
+    box-sizing:border-box;
+}
+.global-pulse-tsetmc-card .global-pulse-symbol{color:#94a3b8;}
+.global-pulse-tsetmc-card .global-pulse-card-top{gap:5px;}
+.global-pulse-tsetmc-card .global-pulse-asset{gap:7px;}
+.global-pulse-tsetmc-card .global-pulse-icon{
+    width:24px;
+    height:24px;
+    flex-basis:24px;
+    color:#bfdbfe;
+    background:linear-gradient(145deg,rgba(37,99,235,.42),rgba(30,64,175,.22));
+    border:1px solid rgba(96,165,250,.42);
+    box-shadow:inset 0 1px 0 rgba(191,219,254,.10),0 0 10px rgba(37,99,235,.12);
+}
+.global-pulse-tsetmc-card .global-pulse-name{font-size:11px;}
+.global-pulse-tsetmc-card .global-pulse-symbol{font-size:6.5px;margin-top:1px;}
+.global-pulse-tsetmc-card .global-pulse-badge{font-size:6.5px;padding:2px 5px;}
+.global-pulse-tsetmc-values{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    align-items:center;
+    gap:8px;
+    margin-top:7px;
+    min-width:0;
+}
+.global-pulse-tsetmc-group{
+    min-width:0;
+    display:flex;
+    align-items:baseline;
+    justify-content:center;
+    gap:2px;
+    white-space:nowrap;
+}
+.global-pulse-tsetmc-label{
+    color:#64748b;
+    font-size:6px;
+    font-weight:900;
+    letter-spacing:.4px;
+    white-space:nowrap;
+}
+.global-pulse-tsetmc-price{
+    color:#f8fafc;
+    font-size:clamp(13px,1.5vw,20px);
+    line-height:1;
+    font-weight:900;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:-.5px;
+    white-space:nowrap;
+}
+.global-pulse-tsetmc-percent{
+    font-size:clamp(9px,1vw,13px);
+    font-weight:900;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+}
+.global-pulse-tsetmc-percent.positive{color:#34d399;}
+.global-pulse-tsetmc-percent.negative{color:#fb7185;}
+.global-pulse-tsetmc-percent.flat{color:#94a3b8;}
+@media (min-width:900px){
+    .global-pulse-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
+    #globalTsetmcCards{grid-column:3 / 5;grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width:899px){
+    .global-pulse-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+    #globalTsetmcCards{grid-column:1 / -1;grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+
 @media (min-width:900px){
     .global-pulse-section{
         display:grid;
@@ -6398,6 +6475,7 @@ h1 {
                 <span id="globalOilChange" class="global-pulse-change global-pulse-change-inline flat">--</span>
             </div>
         </article>
+        <div id="globalTsetmcCards" class="global-pulse-tsetmc-cards" aria-label="TSETMC symbols"></div>
     </div>
     <div class="global-pulse-session-strip" aria-label="Market session times">
         <div class="global-pulse-session-mini global-pulse-iran">
@@ -10859,12 +10937,14 @@ async function globalPulseCheckNotification(commodity, percent, currentPrice=nul
     globalPulseSaveAlertState();
 }
 async function fetchGlobalPulseJson(url){
-    const freshUrl = url + (url.includes("?") ? "&" : "?") + "fresh=" + Date.now();
-    // Keep this request a simple CORS GET. Custom headers such as
-    // Cache-Control can trigger a preflight on some Android WebViews.
+    const freshUrl = url + (url.includes("?") ? "&" : "?") + "fresh=" + Date.now() + "&r=" + Math.random().toString(36).slice(2);
+    // TSETMC must always read a fresh response. The unique query string plus
+    // cache:"no-store" prevents browser/WebView and service-worker caching
+    // from serving an older Worker response. No custom headers are used so
+    // the request remains a simple CORS GET on older Android WebViews.
     const response = await fetchWithTimeout(
         freshUrl,
-        { method:"GET" },
+        { method:"GET", cache:"no-store" },
         PRICE_REQUEST_TIMEOUT
     );
     if (!response.ok) throw new Error(`Global Pulse API HTTP ${response.status}`);
@@ -11326,6 +11406,158 @@ function startGlobalPulseMarketClock(){
     window.globalPulseMarketClockTimer=setInterval(globalPulseUpdateMarketClock,1000);
 }
 
+const GLOBAL_PULSE_TSE_WORKER_URL = "https://tsetmc.rxw1.workers.dev/";
+const GLOBAL_PULSE_TSE_CACHE_KEY = "globalPulseTsetmcCache-v1";
+const GLOBAL_PULSE_TSE_ALERT_STATE_KEY = "globalPulseTsetmcAlertState-v1";
+const GLOBAL_PULSE_TSE_REFRESH_MS = 10 * 1000;
+const GLOBAL_PULSE_TSE_START_MIN = 8 * 60 + 45;
+const GLOBAL_PULSE_TSE_END_MIN = 18 * 60;
+const GLOBAL_PULSE_TSE_ACTIVE_DAYS = new Set([0,1,2,3,6]); // Sat-Wed in Tehran
+const GLOBAL_PULSE_TSE_DEFAULT_RESULTS = [
+    {symbol:"رانیز",ok:true,lastPrice:191400,lastPricePercent:1.59,closingPrice:191500,closingPricePercent:1.65},
+    {symbol:"عیار",ok:true,lastPrice:6420210,lastPricePercent:0.28,closingPrice:6432340,closingPricePercent:0.47}
+];
+let globalPulseTsetmcTimer = null;
+let globalPulseTsetmcLastFetchAt = 0;
+let globalPulseTsetmcAlertState = {};
+
+function globalPulseTsetmcIsLiveWindow(now=new Date()){
+    const p=globalPulseParts(now,GLOBAL_PULSE_IRAN_TZ);
+    const day=(new Date(Date.UTC(p.year,p.month-1,p.day))).getUTCDay();
+    const minute=p.hour*60+p.minute;
+    return GLOBAL_PULSE_TSE_ACTIVE_DAYS.has(day) && minute>=GLOBAL_PULSE_TSE_START_MIN && minute<GLOBAL_PULSE_TSE_END_MIN;
+}
+function readGlobalPulseTsetmcCache(){
+    try{
+        const data=JSON.parse(localStorage.getItem(GLOBAL_PULSE_TSE_CACHE_KEY)||"{}");
+        if(data&&typeof data==="object"&&Array.isArray(data.results)&&data.results.length) return data;
+    }catch(e){}
+    return {results:[],updatedAt:0,fallback:true};
+}
+function saveGlobalPulseTsetmcCache(data){
+    try{localStorage.setItem(GLOBAL_PULSE_TSE_CACHE_KEY,JSON.stringify(data));}catch(e){}
+}
+function readGlobalPulseTsetmcAlertState(){
+    try{
+        const data=JSON.parse(localStorage.getItem(GLOBAL_PULSE_TSE_ALERT_STATE_KEY)||"{}");
+        globalPulseTsetmcAlertState=data&&typeof data==="object"?data:{};
+    }catch(e){globalPulseTsetmcAlertState={};}
+}
+function saveGlobalPulseTsetmcAlertState(){
+    try{localStorage.setItem(GLOBAL_PULSE_TSE_ALERT_STATE_KEY,JSON.stringify(globalPulseTsetmcAlertState));}catch(e){}
+}
+function globalPulseTsetmcPercentText(value){
+    const n=Number(value);
+    if(!Number.isFinite(n))return "--";
+    return `${n>0?"+":""}${n.toFixed(2)}%`;
+}
+function globalPulseTsetmcPercentClass(value){
+    const n=Number(value);
+    return !Number.isFinite(n)?"flat":n>0?"positive":n<0?"negative":"flat";
+}
+function globalPulseRenderTsetmc(results){
+    const host=$("globalTsetmcCards");
+    if(!host)return;
+    const rows=Array.isArray(results)?results.filter(row=>row&&String(row.symbol||"").trim()):[];
+
+    // Always keep visible TSE boxes, even before the first Worker response.
+    // Once data arrives, replace the placeholders with every symbol returned
+    // by the Worker (1, 2, 3, 4, ...). No symbol name is hard-coded.
+    const displayRows=rows.length?rows:[{},{}];
+    host.innerHTML=displayRows.map((row,index)=>{
+        const symbol=String(row.symbol||"").trim();
+        const lastPrice=Number(row.lastPrice), lastPct=Number(row.lastPricePercent);
+        const closePrice=Number(row.closingPrice), closePct=Number(row.closingPricePercent);
+        const iconText=symbol?symbol.slice(0,2):"TSE";
+        const iconClass=index%2===0?"gold":"oil";
+        const name=symbol||"TSE";
+        const sourceLabel=symbol?"TSETMC · LIVE":"TSETMC · WAITING";
+        return `<article class="global-pulse-card global-pulse-tsetmc-card"${symbol?` data-tsetmc-symbol="${symbol.replace(/\"/g,"&quot;")}"`:""}>
+            <div class="global-pulse-card-top">
+                <div class="global-pulse-asset">
+                    <span class="global-pulse-icon ${iconClass}">${iconText}</span>
+                    <div>
+                        <div class="global-pulse-name">${name}</div>
+                        <div class="global-pulse-symbol">${sourceLabel}</div>
+                    </div>
+                </div>
+                <span class="global-pulse-badge">TSE</span>
+            </div>
+            <div class="global-pulse-tsetmc-values">
+                <div class="global-pulse-tsetmc-group"><span class="global-pulse-tsetmc-label">LAST</span><span class="global-pulse-tsetmc-price">${Number.isFinite(lastPrice)?formatGlobalPulseNumber(lastPrice,0):"-"}</span><span class="global-pulse-tsetmc-percent ${globalPulseTsetmcPercentClass(lastPct)}">${globalPulseTsetmcPercentText(lastPct)}</span></div>
+                <div class="global-pulse-tsetmc-group"><span class="global-pulse-tsetmc-label">CLOSE</span><span class="global-pulse-tsetmc-price">${Number.isFinite(closePrice)?formatGlobalPulseNumber(closePrice,0):"-"}</span><span class="global-pulse-tsetmc-percent ${globalPulseTsetmcPercentClass(closePct)}">${globalPulseTsetmcPercentText(closePct)}</span></div>
+            </div>
+        </article>`;
+    }).join("");
+}
+
+async function globalPulseCheckTsetmcNotification(row){
+    const symbol=String(row?.symbol||"").trim();
+    const current=Number(row?.lastPricePercent);
+    if(!symbol||!Number.isFinite(current)||!globalPulseTsetmcIsLiveWindow())return;
+    const state=globalPulseTsetmcAlertState[symbol] || (globalPulseTsetmcAlertState[symbol]={previousPercent:null,alertTimes:{}});
+    if(!Number.isFinite(state.previousPercent)){state.previousPercent=current;return;}
+    const old=Number(state.previousPercent);
+    if(old===current)return;
+    const crossed=GLOBAL_PULSE_ALERT_LEVELS.filter(level => (old<level&&current>=level)||(old>level&&current<=level));
+    state.previousPercent=current;
+    for(const level of crossed){
+        const key=String(level),now=Date.now(),last=Number(state.alertTimes?.[key]||0);
+        if(now-last<GLOBAL_PULSE_ALERT_COOLDOWN)continue;
+        state.alertTimes[key]=now;
+        const up=current>old, arrow=up?"↑":"↓", color=up?"🟢":"🔴";
+        const pctText=`${level>0?"+":""}${level}%`;
+        const price=Number(row?.lastPrice);
+        const priceText=Number.isFinite(price)?` • Price ${formatGlobalPulseNumber(price,0)}`:"";
+        const title=`${color} ${arrow} GLOBAL PULSE`;
+        const message=`GLOBAL PULSE • ${symbol} • ${pctText}${priceText}`;
+        try{await sendDashboardNotification(title,message,"./icon-192.png","GLOBAL_PULSE");}catch(e){}
+    }
+    saveGlobalPulseTsetmcAlertState();
+}
+async function loadGlobalPulseTsetmc(force=false){
+    readGlobalPulseTsetmcAlertState();
+    const cached=readGlobalPulseTsetmcCache();
+    if(Array.isArray(cached.results)&&cached.results.length)globalPulseRenderTsetmc(cached.results);
+    const now=Date.now();
+    if(!force && now-globalPulseTsetmcLastFetchAt<GLOBAL_PULSE_TSE_REFRESH_MS-2000)return;
+
+    try{
+        const requestStartedAt=Date.now();
+        let data=null;
+
+        // The page itself polls the same Worker used elsewhere in the app.
+        // Use the project's existing fetch/proxy helper so the values in the
+        // GLOBAL TSE cards are replaced by the newest Worker JSON every 10s.
+        const freshUrl=`${GLOBAL_PULSE_TSE_WORKER_URL}?t=${requestStartedAt}&fresh=${requestStartedAt}`;
+        const response=await fetchApiWithProxyFallback(
+            freshUrl,
+            {method:"GET",headers:{"Accept":"application/json"},cache:"no-store"},
+            PRICE_REQUEST_TIMEOUT
+        );
+        data=await response.json();
+
+        const results=Array.isArray(data?.results)
+            ? data.results.filter(row=>row&&row.symbol)
+            : [];
+        if(!data?.ok || !results.length)throw new Error("TSETMC worker returned no valid results");
+
+        globalPulseTsetmcLastFetchAt=requestStartedAt;
+        saveGlobalPulseTsetmcCache({results,updatedAt:Date.now()});
+        globalPulseRenderTsetmc(results);
+        for(const row of results)await globalPulseCheckTsetmcNotification(row);
+        clearPageIssue("global-tsetmc");
+    }catch(error){
+        console.warn("TSETMC worker unavailable:",error);
+        if(Array.isArray(cached.results)&&cached.results.length)globalPulseRenderTsetmc(cached.results);
+    }
+}
+function startGlobalPulseTsetmc(){
+    if(globalPulseTsetmcTimer)clearInterval(globalPulseTsetmcTimer);
+    loadGlobalPulseTsetmc(true);
+    globalPulseTsetmcTimer=setInterval(()=>loadGlobalPulseTsetmc(true),GLOBAL_PULSE_TSE_REFRESH_MS);
+}
+
 const GLOBAL_PULSE_FREEZE_KEY = "globalPulseCommodityFreeze-v1";
 function globalPulseCommodityIsOpen(now=new Date()){
     const d=now.getUTCDay();
@@ -11442,6 +11674,7 @@ async function loadGlobalPulse(){
 function startGlobalPulse(){
     globalPulseReadAlertState();
     startGlobalPulseMarketClock();
+    startGlobalPulseTsetmc();
     if (globalPulseTimer) clearInterval(globalPulseTimer);
     loadGlobalPulse();
     globalPulseTimer = setInterval(loadGlobalPulse, GLOBAL_PULSE_REFRESH_MS);
@@ -14973,5 +15206,15 @@ if (
         border-right-width:2px;
         border-top-width:3px;
     }
+}
+</style>
+<style>
+/* R47: softer blue symbol boxes for TSETMC cards */
+.global-pulse-tsetmc-card .global-pulse-icon.gold,
+.global-pulse-tsetmc-card .global-pulse-icon.oil{
+    color:#bfdbfe;
+    background:linear-gradient(145deg,rgba(37,99,235,.38),rgba(30,64,175,.22));
+    border:1px solid rgba(96,165,250,.38);
+    box-shadow:inset 0 1px 0 rgba(219,234,254,.10),0 2px 8px rgba(37,99,235,.10);
 }
 </style>
