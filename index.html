@@ -4085,86 +4085,125 @@ h1 {
     .global-pulse-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
     #globalTsetmcCards{grid-column:3 / 5;grid-template-columns:repeat(2,minmax(0,1fr));}
 }
+
+/* TSE card arrangement: same structure on desktop and mobile.
+   Right side = icon + symbol. Left side = LAST stacked in 3 lines.
+   CLOSE stays as one full-width row underneath. */
+#globalTsetmcCards .global-pulse-tsetmc-card{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    grid-template-areas:
+        "last asset"
+        "close close";
+    align-items:center;
+    column-gap:clamp(8px,1.1vw,14px);
+    row-gap:clamp(5px,.8vw,9px);
+    direction:ltr;
+}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-card-top,
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-values{
+    display:contents;
+}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-badge{display:none;}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-asset{
+    grid-area:asset;
+    min-width:0;
+    width:100%;
+    direction:rtl;
+    justify-self:stretch;
+    align-items:center;
+    gap:clamp(6px,.8vw,9px);
+}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-name{
+    font-size:clamp(9px,1.05vw,12px);
+    transform:scaleX(1.06);
+    margin-right:clamp(2px,.3vw,4px);
+}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-symbol{
+    font-size:clamp(5.5px,.6vw,7px);
+    margin-top:1px;
+}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-icon{
+    flex:0 0 clamp(20px,2.1vw,26px);
+    width:clamp(20px,2.1vw,26px);
+    height:clamp(20px,2.1vw,26px);
+}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group{
+    min-width:0;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:first-child{
+    grid-area:last;
+    display:flex;
+    flex-direction:column;
+    gap:clamp(1px,.15vw,2px);
+}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:nth-child(2){
+    grid-area:close;
+    display:flex;
+    flex-direction:row;
+    gap:clamp(4px,.55vw,7px);
+    padding-top:1px;
+    white-space:nowrap;
+}
+#globalTsetmcCards .global-pulse-tsetmc-label{
+    font-size:clamp(6px,.65vw,8px);
+    font-weight:900;
+    letter-spacing:.35px;
+    margin-top:1px;
+    white-space:nowrap;
+}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:first-child .global-pulse-tsetmc-label{order:3;}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:first-child .global-pulse-tsetmc-price{order:1;}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:first-child .global-pulse-tsetmc-percent{order:2;}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:nth-child(2) .global-pulse-tsetmc-label{order:1;}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:nth-child(2) .global-pulse-tsetmc-price{order:2;}
+#globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:nth-child(2) .global-pulse-tsetmc-percent{order:3;}
+#globalTsetmcCards .global-pulse-tsetmc-price{
+    font-size:clamp(12px,1.55vw,20px);
+    letter-spacing:-.45px;
+}
+#globalTsetmcCards .global-pulse-tsetmc-percent{
+    font-size:clamp(8px,1.0vw,13px);
+}
+
+@media (min-width:900px){
+    /* Desktop TSE: one compact row with three columns: CLOSE | LAST | icon+symbol. */
+    #globalTsetmcCards .global-pulse-tsetmc-card{
+        grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr);
+        grid-template-areas:
+            "close last asset";
+        column-gap:clamp(8px,1vw,13px);
+        row-gap:0;
+    }
+    #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-asset{
+        grid-area:asset;
+    }
+    #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:first-child{
+        grid-area:last;
+    }
+    #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:nth-child(2){
+        grid-area:close;
+        padding-top:0;
+        display:flex;
+        flex-direction:column;
+        gap:clamp(1px,.15vw,2px);
+    }
+    #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:nth-child(2) .global-pulse-tsetmc-price{order:1;}
+    #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:nth-child(2) .global-pulse-tsetmc-percent{order:2;}
+    #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:nth-child(2) .global-pulse-tsetmc-label{order:3;}
+}
+
 @media (max-width:899px){
     .global-pulse-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
     #globalTsetmcCards{grid-column:1 / -1;grid-template-columns:repeat(2,minmax(0,1fr));}
-
-    /* TSE mobile: keep the R67 card shape, but move LAST above CLOSE.
-       Right side = icon + symbol; left side = LAST stacked in 3 lines.
-       CLOSE stays as one full-width row underneath. */
-    .global-pulse-tsetmc-card{
-        display:grid;
-        grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-        grid-template-areas:
-            "last asset"
-            "close close";
-        align-items:center;
-        column-gap:10px;
-        row-gap:7px;
-        direction:ltr;
-    }
-    .global-pulse-tsetmc-card .global-pulse-card-top,
-    .global-pulse-tsetmc-card .global-pulse-tsetmc-values{
-        display:contents;
-    }
-    .global-pulse-tsetmc-card .global-pulse-badge{display:none;}
-    .global-pulse-tsetmc-card .global-pulse-asset{
-        grid-area:asset;
-        min-width:0;
-        width:100%;
-        direction:rtl;
-        justify-self:stretch;
-        align-items:center;
-        gap:7px;
-    }
-    .global-pulse-tsetmc-card .global-pulse-name{
-        font-size:10px;
-        transform:scaleX(1.06);
-        margin-right:3px;
-    }
-    .global-pulse-tsetmc-card .global-pulse-symbol{font-size:6px;margin-top:1px;}
-    .global-pulse-tsetmc-card .global-pulse-icon{flex:0 0 24px;}
-
-    .global-pulse-tsetmc-card .global-pulse-tsetmc-group{
-        min-width:0;
-        align-items:center;
-        justify-content:center;
-        line-height:1;
-    }
-    .global-pulse-tsetmc-card .global-pulse-tsetmc-group:first-child{
-        grid-area:last;
-        display:flex;
-        flex-direction:column;
-        gap:1px;
-    }
-    .global-pulse-tsetmc-card .global-pulse-tsetmc-group:nth-child(2){
-        grid-area:close;
-        display:flex;
-        flex-direction:row;
-        gap:5px;
-        padding-top:1px;
-        white-space:nowrap;
-    }
-    .global-pulse-tsetmc-label{
-        font-size:7px;
-        font-weight:900;
-        letter-spacing:.35px;
-        margin-top:1px;
-        white-space:nowrap;
-    }
-    .global-pulse-tsetmc-card .global-pulse-tsetmc-group:first-child .global-pulse-tsetmc-label{order:3;}
-    .global-pulse-tsetmc-card .global-pulse-tsetmc-group:first-child .global-pulse-tsetmc-price{order:1;}
-    .global-pulse-tsetmc-card .global-pulse-tsetmc-group:first-child .global-pulse-tsetmc-percent{order:2;}
-    .global-pulse-tsetmc-card .global-pulse-tsetmc-group:nth-child(2) .global-pulse-tsetmc-label{order:1;}
-    .global-pulse-tsetmc-card .global-pulse-tsetmc-group:nth-child(2) .global-pulse-tsetmc-price{order:2;}
-    .global-pulse-tsetmc-card .global-pulse-tsetmc-group:nth-child(2) .global-pulse-tsetmc-percent{order:3;}
-    .global-pulse-tsetmc-price{
-        font-size:clamp(13px,3.8vw,18px);
-        letter-spacing:-.45px;
-    }
-    .global-pulse-tsetmc-percent{
-        font-size:clamp(9px,2.7vw,12px);
-    }
+    #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-name{font-size:clamp(8.5px,2.4vw,10px);}
+    #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-symbol{font-size:clamp(5px,1.5vw,6px);}
+    #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-label{font-size:clamp(6px,1.7vw,7px);}
+    #globalTsetmcCards .global-pulse-tsetmc-price{font-size:clamp(13px,3.8vw,18px);}
+    #globalTsetmcCards .global-pulse-tsetmc-percent{font-size:clamp(9px,2.7vw,12px);}
 }
 
 @media (min-width:900px){
