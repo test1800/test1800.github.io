@@ -12928,6 +12928,9 @@ async function loadCryptoPortfolio(
     let enteredPin = "";
     let focusedPinIndex = 0;
     let suppressNextPinClickUntil = 0;
+    const isLgWebOsTv = /web0s|webos|netcast|lg browser|lg tv/i.test(String(navigator.userAgent || ""));
+    let tvPinKeyAt = 0;
+    let tvPinKeyType = "";
 
     function nativeAvailable() {
         return !!(
@@ -12992,7 +12995,9 @@ async function loadCryptoPortfolio(
         if (pinError) pinError.textContent = "";
         pinOverlay.classList.remove("pin-unlocked");
         pinOverlay.setAttribute("aria-hidden", "false");
-        try { pinOverlay.focus({ preventScroll: true }); } catch (error) { try { pinOverlay.focus(); } catch (_) {} }
+        if (!isLgWebOsTv) {
+            try { pinOverlay.focus({ preventScroll: true }); } catch (error) { try { pinOverlay.focus(); } catch (_) {} }
+        }
     }
 
     function hidePin() {
@@ -13040,12 +13045,14 @@ async function loadCryptoPortfolio(
     function openPinEntryModal() {
         if (!pinEntryModal || !pinEntryInput) return;
         pinEntryInput.value = "";
-        if (pinEntryHint) pinEntryHint.textContent = "";
+        if (pinEntryHint) pinEntryHint.textContent = isLgWebOsTv ? "Use number keys or the remote. System keyboard is not required." : "";
         pinEntryModal.classList.add("open");
         pinEntryModal.setAttribute("aria-hidden", "false");
-        window.setTimeout(() => {
-            try { pinEntryInput.focus(); } catch (error) {}
-        }, 40);
+        if (!isLgWebOsTv) {
+            window.setTimeout(() => {
+                try { pinEntryInput.focus(); } catch (error) {}
+            }, 40);
+        }
     }
 
     function closePinEntryModal() {
@@ -13141,18 +13148,35 @@ async function loadCryptoPortfolio(
 
     function handlePinOkEvent(event) {
         if (pinOverlay.classList.contains("pin-unlocked")) return false;
-        const active = document.activeElement;
-        if (!active || !active.classList || !active.classList.contains("app-pin-key")) return false;
-        if (active.classList.contains("spacer")) return false;
         const key = String(event.key || "");
         const code = Number(event.keyCode || event.which || 0);
         const isOkEnter = key === "Enter" || key === "OK" || code === 13;
         if (!isOkEnter) return false;
 
-        // Some older LG webOS WebViews expose OK on keyup rather than keydown.
-        // Handle either phase, but never activate twice for one physical press.
+        // LG webOS TV: do not depend on native focus/click at all.  The PIN
+        // controller owns Arrow/OK while the overlay is visible.
+        if (isLgWebOsTv) {
+            event.preventDefault();
+            event.stopPropagation();
+            const now = Date.now();
+            if (tvPinKeyType === "ok" && now - tvPinKeyAt < 650) return true;
+            tvPinKeyAt = now;
+            tvPinKeyType = "ok";
+            if (pinEntryModal && pinEntryModal.classList.contains("open")) {
+                submitPinEntryModal();
+            } else {
+                activateFocusedPinKey();
+            }
+            suppressNextPinClickUntil = now + 650;
+            return true;
+        }
+
+        const active = document.activeElement;
+        if (!active || !active.classList || !active.classList.contains("app-pin-key")) return false;
+        if (active.classList.contains("spacer")) return false;
+
         const now = Date.now();
-        if (now - pinOkHandledAt < 700) {
+        if (now - tvPinKeyAt < 650 && tvPinKeyType === "ok") {
             event.preventDefault();
             event.stopPropagation();
             return true;
@@ -13160,7 +13184,8 @@ async function loadCryptoPortfolio(
         event.preventDefault();
         event.stopPropagation();
         syncNativePinFocus(active);
-        pinOkHandledAt = now;
+        tvPinKeyAt = now;
+        tvPinKeyType = "ok";
         suppressNextPinClickUntil = now + 700;
         activateFocusedPinKey();
         return true;
@@ -13174,9 +13199,8 @@ async function loadCryptoPortfolio(
         handlePinOkEvent(event);
     }, true);
 
-    // Logical 5-way layout is retained only as a fallback for browsers that
-    // expose remote arrow key events. Native LG spatial navigation remains the
-    // primary path, so we do not call focus() from arrow handlers.
+    // LG webOS TV gets a fully deterministic 5-way controller while the PIN
+    // overlay is open. Mobile/desktop keep the existing native focus behavior.
     const pinGrid = [
         pinCells.findIndex(b => b.dataset.pin === "1"),
         pinCells.findIndex(b => b.dataset.pin === "2"),
@@ -13187,7 +13211,7 @@ async function loadCryptoPortfolio(
         pinCells.findIndex(b => b.dataset.pin === "7"),
         pinCells.findIndex(b => b.dataset.pin === "8"),
         pinCells.findIndex(b => b.dataset.pin === "9"),
-        null,
+        pinCells.findIndex(b => b.dataset.pinInputOpen === "true"),
         pinCells.findIndex(b => b.dataset.pin === "0"),
         pinCells.findIndex(b => b.dataset.pinDelete === "true")
     ];
@@ -13200,17 +13224,14 @@ async function loadCryptoPortfolio(
         let r = Math.max(0, Math.min(3, row + dy));
         let c = Math.max(0, Math.min(2, col + dx));
         let target = r * 3 + c;
-        if (pinGrid[target] === null) {
-            if (dx > 0) target = 10;
-            else if (dy < 0) target = 6;
-            else target = 10;
-        }
         const index = pinGrid[target];
         const button = index != null && index >= 0 ? pinCells[index] : null;
         if (button) {
             focusedPinIndex = index;
             renderPinFocus();
-            try { button.focus(); } catch (error) {}
+            if (!isLgWebOsTv) {
+                try { button.focus(); } catch (error) {}
+            }
         }
     }
 
@@ -13233,65 +13254,103 @@ async function loadCryptoPortfolio(
         triggerPinHaptic();
     }
 
-    function tvKeyDigit(event) {
-        const key = String(event.key || "");
-        if (/^[0-9]$/.test(key)) return key;
-        const code = Number(event.keyCode || event.which || 0);
-        if (code >= 48 && code <= 57) return String(code - 48);
-        if (code >= 7 && code <= 16) return String(code - 7);
-        return null;
-    }
-
-    // Numeric keyboard input is handled explicitly. Arrow/Enter navigation is
-    // intentionally allowed to reach the real buttons so old LG webOS can do
-    // its native 5-way spatial navigation and native click activation.
-    function handlePinKeyboardDigits(event) {
-        if (pinOverlay.classList.contains("pin-unlocked")) return;
-        const digit = tvKeyDigit(event);
-        if (pinEntryModal && pinEntryModal.classList.contains("open")) {
-            if (digit !== null) {
-                event.preventDefault();
-                event.stopPropagation();
-                if (pinEntryInput) {
-                    const value = String(pinEntryInput.value || "").replace(/\D/g, "");
-                    if (value.length < 4) pinEntryInput.value = value + digit;
-                }
-                triggerPinHaptic();
-            }
-            return;
-        }
-        if (digit !== null) {
-            event.preventDefault();
-            event.stopPropagation();
-            addDigit(digit);
-            const target = pinCells.findIndex(button => button.dataset.pin === digit);
-            if (target >= 0) {
-                focusedPinIndex = target;
-                renderPinFocus();
-            }
-            triggerPinHaptic();
-        }
-    }
-
-    window.addEventListener("keydown", handlePinKeyboardDigits, true);
-
-    // Keep a conservative fallback for environments that send remote arrow
-    // keycodes to JavaScript instead of using native spatial navigation.
     window.addEventListener("keydown", event => {
-        if (pinOverlay.classList.contains("pin-unlocked")) return;
+        if (!isLgWebOsTv || pinOverlay.classList.contains("pin-unlocked")) return;
+        if (pinEntryModal && pinEntryModal.classList.contains("open")) return;
+        const key = String(event.key || "");
+        const code = Number(event.keyCode || event.which || 0);
+        const digitMatch = key.match(/^[0-9]$/);
+        let digit = digitMatch ? digitMatch[0] : null;
+        if (digit == null && code >= 48 && code <= 57) digit = String(code - 48);
+        if (digit == null && code >= 96 && code <= 105) digit = String(code - 96);
+        // Older LG/webOS TV remote browsers expose numeric remote buttons
+        // with keycodes 7..16 instead of 48..57. Keep this mapping for
+        // compatibility with the original TV PIN flow.
+        if (digit == null && code >= 7 && code <= 16) digit = String(code - 7);
+        if (digit == null) return;
+        event.preventDefault();
+        event.stopPropagation();
+        addDigit(digit);
+        const target = pinCells.findIndex(button => button.dataset.pin === digit);
+        if (target >= 0) {
+            focusedPinIndex = target;
+            renderPinFocus();
+        }
+        triggerPinHaptic();
+    }, true);
+
+    // Desktop/laptop physical keyboard: enter PIN digits directly without Enter.
+    // Keep this limited to the PIN overlay so normal dashboard typing is untouched.
+    window.addEventListener("keydown", event => {
+        if (isLgWebOsTv || pinOverlay.classList.contains("pin-unlocked")) return;
+        if (pinEntryModal && pinEntryModal.classList.contains("open")) return;
+        const key = String(event.key || "");
+        const code = Number(event.keyCode || event.which || 0);
+        let digit = /^[0-9]$/.test(key) ? key : null;
+        if (digit == null && code >= 48 && code <= 57) digit = String(code - 48);
+        if (digit == null && code >= 96 && code <= 105) digit = String(code - 96);
+        if (digit == null) return;
+        event.preventDefault();
+        event.stopPropagation();
+        addDigit(digit);
+        const target = pinCells.findIndex(button => button.dataset.pin === digit);
+        if (target >= 0) {
+            focusedPinIndex = target;
+            renderPinFocus();
+        }
+    }, true);
+
+    // Some older TV browsers expose remote numeric input through keypress
+    // rather than keydown. Reuse the same decoder without double-entering a digit.
+    let lastTvDigitAt = 0;
+    let lastTvDigit = "";
+    window.addEventListener("keypress", event => {
+        if (!isLgWebOsTv || pinOverlay.classList.contains("pin-unlocked")) return;
+        if (pinEntryModal && pinEntryModal.classList.contains("open")) return;
+        const key = String(event.key || "");
+        const code = Number(event.keyCode || event.which || 0);
+        let digit = /^[0-9]$/.test(key) ? key : null;
+        if (digit == null && code >= 48 && code <= 57) digit = String(code - 48);
+        if (digit == null && code >= 7 && code <= 16) digit = String(code - 7);
+        if (digit == null) return;
+        const now = Date.now();
+        if (lastTvDigit === digit && now - lastTvDigitAt < 120) return;
+        lastTvDigit = digit;
+        lastTvDigitAt = now;
+        event.preventDefault();
+        event.stopPropagation();
+        addDigit(digit);
+        triggerPinHaptic();
+    }, true);
+
+    window.addEventListener("keydown", event => {
+        if (!isLgWebOsTv || pinOverlay.classList.contains("pin-unlocked")) return;
         const key = String(event.key || "");
         const code = Number(event.keyCode || event.which || 0);
         const isArrow = key === "ArrowUp" || key === "ArrowDown" || key === "ArrowLeft" || key === "ArrowRight"
             || code === 37 || code === 38 || code === 39 || code === 40;
         if (!isArrow) return;
-        // Do not preventDefault: native LG spatial navigation must remain active.
-        // If JS receives the event, keep our visual state synchronized after the
-        // browser moves focus.
+        event.preventDefault();
+        event.stopPropagation();
+        let dx = 0, dy = 0;
+        if (key === "ArrowUp" || code === 38) dy = -1;
+        else if (key === "ArrowDown" || code === 40) dy = 1;
+        else if (key === "ArrowLeft" || code === 37) dx = -1;
+        else if (key === "ArrowRight" || code === 39) dx = 1;
+        movePinFocusFallback(dx, dy);
+    }, true);
+
+    // Non-TV fallback: keep visual state synchronized with native spatial focus.
+    window.addEventListener("keydown", event => {
+        if (isLgWebOsTv || pinOverlay.classList.contains("pin-unlocked")) return;
+        const key = String(event.key || "");
+        const code = Number(event.keyCode || event.which || 0);
+        const isArrow = key === "ArrowUp" || key === "ArrowDown" || key === "ArrowLeft" || key === "ArrowRight"
+            || code === 37 || code === 38 || code === 39 || code === 40;
+        if (!isArrow) return;
         window.setTimeout(() => {
             const active = document.activeElement;
-            if (active && active.classList && active.classList.contains("app-pin-key")) {
-                syncNativePinFocus(active);
-            }
+            if (active && active.classList && active.classList.contains("app-pin-key")) syncNativePinFocus(active);
         }, 0);
     }, false);
 
@@ -13309,15 +13368,24 @@ async function loadCryptoPortfolio(
 
     if (pinEntryCancel) pinEntryCancel.addEventListener("click", () => { closePinEntryModal(); });
     if (pinEntrySubmit) pinEntrySubmit.addEventListener("click", () => { submitPinEntryModal(); });
-    if (pinEntryInput) pinEntryInput.addEventListener("keydown", (event) => {
-        const key = String(event.key || "");
-        const code = Number(event.keyCode || event.which || 0);
-        if (key === "Enter" || key === "OK" || code === 13) {
-            event.preventDefault();
-            event.stopPropagation();
-            submitPinEntryModal();
-        }
-    }, true);
+    if (pinEntryInput) {
+        pinEntryInput.addEventListener("input", () => {
+            const value = String(pinEntryInput.value || "").replace(/\D/g, "").slice(0, 4);
+            pinEntryInput.value = value;
+            if (value.length === 4) {
+                window.setTimeout(() => submitPinEntryModal(), 60);
+            }
+        }, false);
+        pinEntryInput.addEventListener("keydown", (event) => {
+            const key = String(event.key || "");
+            const code = Number(event.keyCode || event.which || 0);
+            if (key === "Enter" || key === "OK" || code === 13) {
+                event.preventDefault();
+                event.stopPropagation();
+                submitPinEntryModal();
+            }
+        }, true);
+    }
     window.addEventListener("keydown", (event) => {
         if (!pinEntryModal || !pinEntryModal.classList.contains("open")) return;
         const key = String(event.key || "");
@@ -13341,7 +13409,9 @@ async function loadCryptoPortfolio(
             if (first) {
                 focusedPinIndex = pinCells.indexOf(first);
                 renderPinFocus();
-                try { first.focus(); } catch (error) {}
+                if (!isLgWebOsTv) {
+                    try { first.focus(); } catch (error) {}
+                }
             }
         }
     }, 80);
