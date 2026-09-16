@@ -4607,6 +4607,10 @@ h1 {
 .crossover-coin-current-icon img{filter:grayscale(1) saturate(0);opacity:.72;transition:filter .2s ease,opacity .2s ease;}
 .crossover-coin-picker.has-user-selection .crossover-coin-current-icon img{filter:none;opacity:1;}
 .crossover-usd-icon{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#f59e0b,#ea580c);color:#fff;font-family:Arial,"Segoe UI",sans-serif;font-size:13px;font-weight:950;line-height:18px;text-align:center;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:0 0 8px rgba(245,158,11,.25);}
+.crossover-special-icon{width:22px;height:22px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-family:Arial,"Segoe UI",sans-serif;font-size:9.5px;font-weight:950;line-height:22px;text-align:center;letter-spacing:-.25px;flex:0 0 22px;box-sizing:border-box;}
+.crossover-special-icon.gold{color:#fde68a;background:linear-gradient(145deg,rgba(245,158,11,.24),rgba(180,83,9,.12));border:1px solid rgba(251,191,36,.28);}
+.crossover-special-icon.oil{color:#cbd5e1;background:linear-gradient(145deg,rgba(71,85,105,.38),rgba(15,23,42,.55));border:1px solid rgba(148,163,184,.20);}
+.crossover-special-icon.tse{color:#bfdbfe;background:linear-gradient(145deg,rgba(59,130,246,.34),rgba(30,64,175,.22));border:1px solid rgba(96,165,250,.42);box-shadow:0 0 9px rgba(59,130,246,.16);}
 .crossover-coin-chevron{color:#94a3b8;font-size:9px;}
 .crossover-coin-menu{position:absolute;z-index:2147483647;top:calc(100% + 5px);left:50%;width:min(360px,calc(100vw - 20px));min-width:180px;max-height:none;overflow:visible;padding:5px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;background:rgba(7,11,20,.98);border:1px solid rgba(255,255,255,.12);border-radius:11px;box-shadow:0 16px 38px rgba(0,0,0,.42);backdrop-filter:blur(16px);opacity:0;visibility:hidden;transform:translate(-50%,-4px);pointer-events:none;transition:.16s ease;}
 .crossover-coin-picker.open .crossover-coin-menu{opacity:1;visibility:visible;transform:translate(-50%,0);pointer-events:auto;}
@@ -4615,9 +4619,9 @@ h1 {
 .crossover-coin-menu.crossover-coin-menu-portal.is-open{opacity:1;visibility:visible;pointer-events:auto;}
 .crossover-coin-option{min-width:0;min-height:32px;padding:4px 3px;display:flex;align-items:center;justify-content:center;gap:4px;border:1px solid transparent;border-radius:8px;background:rgba(15,23,42,.55);color:#cbd5e1;font:800 10px/1 Inter,"Segoe UI",Arial,sans-serif;cursor:pointer;}
 .crossover-coin-option img{width:18px;height:18px;flex:0 0 18px;display:block;border-radius:50%;object-fit:contain;}
-/* Compact selector: when the Crossover selector becomes narrow, keep only the icons. */
-.crossover-coin-picker.is-compact .crossover-coin-current-name{display:none;}
-.crossover-coin-menu.crossover-coin-menu-portal.is-compact .crossover-coin-option span:not(.crossover-usd-icon){display:none;}
+/* Keep the selected asset icon + name visible in the selector at every width.
+   Compact mode applies only to the opened option menu, not the current selection. */
+.crossover-coin-menu.crossover-coin-menu-portal.is-compact .crossover-coin-option > span:not(.crossover-usd-icon):not(.crossover-special-icon){display:none;}
 .crossover-coin-menu.crossover-coin-menu-portal.is-compact .crossover-coin-option{gap:0;padding:4px 2px;}
 @media (max-width:899px){
     .crossover-coin-picker{z-index:60;}
@@ -4843,6 +4847,10 @@ h1 {
     padding:6px !important;
 }
 @media (max-width:899px){
+    /* Keep the currently selected asset visible on mobile, including GOLD/OIL/TSE. */
+    .crossover-coin-current{display:flex !important;align-items:center !important;min-width:0 !important;visibility:visible !important;opacity:1 !important;}
+    .crossover-coin-current-icon{display:inline-flex !important;visibility:visible !important;opacity:1 !important;flex:0 0 19px !important;}
+    .crossover-coin-current-name{display:inline-block !important;visibility:visible !important;opacity:1 !important;max-width:100% !important;overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important;}
     .crossover-title{font-size:clamp(15px,4.8vw,20px) !important;}
     .crossover-title-num{font-size:clamp(14px,4.1vw,18px) !important;}
     .crossover-target{font-size:clamp(14px,4.2vw,18px) !important;}
@@ -7860,6 +7868,46 @@ document.addEventListener("visibilitychange", () => {
 /* =====================================================
 SEND BROWSER NOTIFICATION
 ===================================================== */
+const DASHBOARD_NOTIFICATION_BURST_DB = "financial-dashboard-notification-guard-v1";
+const DASHBOARD_NOTIFICATION_BURST_STORE = "guard";
+const DASHBOARD_NOTIFICATION_BURST_KEY = "last";
+const DASHBOARD_NOTIFICATION_BURST_MS = 1500;
+
+function acquireDashboardNotificationBurstSlot() {
+    return new Promise(resolve => {
+        try {
+            const request = indexedDB.open(DASHBOARD_NOTIFICATION_BURST_DB, 1);
+            request.onupgradeneeded = () => {
+                try { request.result.createObjectStore(DASHBOARD_NOTIFICATION_BURST_STORE); } catch (e) {}
+            };
+            request.onerror = () => resolve(true);
+            request.onsuccess = () => {
+                try {
+                    const db = request.result;
+                    const tx = db.transaction(DASHBOARD_NOTIFICATION_BURST_STORE, "readwrite");
+                    const store = tx.objectStore(DASHBOARD_NOTIFICATION_BURST_STORE);
+                    const getReq = store.get(DASHBOARD_NOTIFICATION_BURST_KEY);
+                    getReq.onsuccess = () => {
+                        const now = Date.now();
+                        const last = Number(getReq.result || 0);
+                        if (last > 0 && now - last < DASHBOARD_NOTIFICATION_BURST_MS) {
+                            resolve(false);
+                            return;
+                        }
+                        store.put(now, DASHBOARD_NOTIFICATION_BURST_KEY);
+                        resolve(true);
+                    };
+                    getReq.onerror = () => resolve(true);
+                } catch (e) {
+                    resolve(true);
+                }
+            };
+        } catch (e) {
+            resolve(true);
+        }
+    });
+}
+
 async function sendDashboardNotification(
     title,
     message,
@@ -7867,6 +7915,10 @@ async function sendDashboardNotification(
     soundType = "USD",
     crossingDirection = null
 ) {
+    // Global browser/PWA burst guard: first notification wins for the moment;
+    // later notifications from any section are intentionally ignored. If the
+    // guard storage is unavailable, allow the notification so alerts do not die.
+    if (!(await acquireDashboardNotificationBurstSlot())) return false;
     if (
         window.AndroidNotifications &&
         typeof window.AndroidNotifications.showNotification === "function"
@@ -11633,6 +11685,7 @@ function globalPulseRenderTsetmc(results){
             </div>
         </article>`;
     }).join("");
+    try{window.dispatchEvent(new Event("crossover-assets-updated"));}catch(e){}
 }
 
 async function globalPulseCheckTsetmcNotification(row){
@@ -11829,6 +11882,7 @@ async function loadGlobalPulse(){
         setPageIssue("global-oil","Oil live price unavailable and no cached value exists","error");
     }
 
+    try{window.dispatchEvent(new Event("crossover-assets-updated"));}catch(e){}
     if(live){
         clearPageIssue("global-gold");
         clearPageIssue("global-oil");
@@ -13953,6 +14007,112 @@ const CROSSOVER_POLL_MS = 5000;
 const CROSSOVER_COUNT = 4;
 const CROSSOVER_STATE_KEY = "crossoverState-v2";
 const CROSSOVER_COINS = ["BTC","BNB","ETH","DOGE","ADA","SOL","ONE","AVAX","POL","TRX","USD"];
+const CROSSOVER_COMMODITY_ASSETS = {
+    GOLD:{label:"GOLD", apiSymbol:"XAUUSD", iconClass:"gold", iconText:"Au"},
+    OIL:{label:"OIL", apiSymbol:"USOIL", iconClass:"oil", iconText:"WTI"}
+};
+function crossoverIsSpecialAsset(value){
+    const v=String(value||"").toUpperCase();
+    return v==="GOLD"||v==="OIL"||v.startsWith("TSE|");
+}
+function crossoverAssetSymbol(value){
+    const v=String(value||"").toUpperCase();
+    if(v==="GOLD")return "Gold";
+    if(v==="OIL")return "Crude Oil";
+    if(v.startsWith("TSE|"))return v.slice(4);
+    return v;
+}
+function crossoverTseSymbol(value){
+    const v=String(value||"").toUpperCase();
+    return v.startsWith("TSE|")?v.slice(4):"";
+}
+function crossoverAssetIconHTML(value){
+    const v=String(value||"").toUpperCase();
+    if(v==="USD")return '<span class="crossover-usd-icon">$</span>';
+    if(CROSSOVER_COMMODITY_ASSETS[v]){
+        const a=CROSSOVER_COMMODITY_ASSETS[v];
+        return `<span class="crossover-special-icon ${a.iconClass}">${a.iconText}</span>`;
+    }
+    if(v.startsWith("TSE|")){
+        const symbol=crossoverTseSymbol(v);
+        const text=String(symbol||"TSE").slice(0,2);
+        return `<span class="crossover-special-icon tse">${text}</span>`;
+    }
+    return `<img src="${getCryptoIconSrc(v)}" alt="${v}">`;
+}
+function crossoverAssetLabel(value){
+    const v=String(value||"").toUpperCase();
+    if(v==="GOLD")return "GOLD";
+    if(v==="OIL")return "OIL";
+    if(v.startsWith("TSE|"))return crossoverTseSymbol(v);
+    return v;
+}
+function crossoverNotificationAssetLabel(value){
+    const v=String(value||"").toUpperCase();
+    if(v.startsWith("TSE|")){
+        const symbol=crossoverTseSymbol(v);
+        return symbol ? `${symbol} / IR` : "TSE / IR";
+    }
+    return v;
+}
+function crossoverIsTseAsset(value){
+    return String(value||"").toUpperCase().startsWith("TSE|");
+}
+function crossoverPriceText(value,asset){
+    const n=Number(value);
+    if(!Number.isFinite(n)||n<=0)return "-";
+    if(crossoverIsTseAsset(asset))return Math.round(n).toLocaleString("en-US");
+    return crossoverFormatPrice(n);
+}
+function crossoverAssetOptions(){
+    const matrixCoinSelect=document.querySelector(".rfkj-instance-coin");
+    const matrixCoins=matrixCoinSelect?Array.from(matrixCoinSelect.options).map(o=>o.value).filter(Boolean):CROSSOVER_COINS.filter(v=>v!=="USD");
+    const out=[...new Set([...matrixCoins,"USD","GOLD","OIL"])];
+    try{
+        const cached=readGlobalPulseTsetmcCache();
+        (cached.results||[]).forEach(row=>{
+            const symbol=String(row?.symbol||"").trim();
+            if(symbol)out.push(`TSE|${symbol}`);
+        });
+        (GLOBAL_PULSE_TSE_DEFAULT_RESULTS||[]).forEach(row=>{
+            const symbol=String(row?.symbol||"").trim();
+            if(symbol)out.push(`TSE|${symbol}`);
+        });
+        for(let i=1;i<=4;i++){
+            const saved=String(localStorage.getItem(`crossoverSelectedCoin-${i}`)||"").toUpperCase();
+            if(crossoverIsSpecialAsset(saved))out.push(saved);
+        }
+    }catch(e){}
+    return [...new Set(out)];
+}
+async function crossoverFetchSpecialPrice(asset){
+    const v=String(asset||"").toUpperCase();
+    if(v==="GOLD"||v==="OIL"){
+        const data=await fetchGlobalPulseJson(GLOBAL_PULSE_COMMODITY_BATCH_URL);
+        const row=data?.[CROSSOVER_COMMODITY_ASSETS[v].apiSymbol]||data?.symbols?.[CROSSOVER_COMMODITY_ASSETS[v].apiSymbol];
+        const price=Number(row?.mid);
+        if(!Number.isFinite(price)||price<=0)throw new Error(`${v} price unavailable`);
+        return {price,updated:new Date().toISOString()};
+    }
+    if(v.startsWith("TSE|")){
+        const symbol=crossoverTseSymbol(v);
+        const url=`${GLOBAL_PULSE_TSE_WORKER_URL}?t=${Date.now()}&fresh=${Date.now()}`;
+        const response=await fetchApiWithProxyFallback(url,{method:"GET",headers:{"Accept":"application/json"},cache:"no-store"},PRICE_REQUEST_TIMEOUT);
+        const data=await response.json();
+        const row=(Array.isArray(data?.results)?data.results:[]).find(r=>String(r?.symbol||"").trim().toUpperCase()===symbol);
+        const price=Number(row?.lastPrice);
+        if(!data?.ok||!Number.isFinite(price)||price<=0)throw new Error(`TSETMC ${symbol} price unavailable`);
+        return {price,updated:new Date().toISOString()};
+    }
+    return null;
+}
+function crossoverNotifyAssetIcon(value){
+    const v=String(value||"").toUpperCase();
+    if(v==="GOLD")return "./icon-192.png";
+    if(v==="OIL")return "./icon-192.png";
+    if(v.startsWith("TSE|"))return "./icon-192.png";
+    return getCryptoIconSrc(v);
+}
 const crossoverInstances = Array.from({length:CROSSOVER_COUNT},(_,i)=>({
     index:i+1, coin:"BTC", activeCoin:null, target:null, activeTarget:null, running:false, timer:null,
     notificationEnabled:false, percentageAlertTimes:Object.create(null),
@@ -14028,10 +14188,11 @@ async function crossoverSendPercentageAlert(index,level,price,target,direction){
     const coin=s.activeCoin||s.coin;
     const pctText=`${level>0?"+":""}${level.toFixed(0)}%`;
     const isUp=direction>0;
-    const title=`${isUp?"🟢 ↑":"🔴 ↓"} ${coin}/USD • Crossover #${index}`;
+    const assetLabel=crossoverNotificationAssetLabel(coin);
+    const title=`${isUp?"🟢 ↑":"🔴 ↓"} ${assetLabel} • Crossover #${index}`;
     const relation=isUp?"crossed up":"crossed down";
-    const message=`${coin}/USD • ${pctText} ${relation} target • Price ${crossoverFormatPrice(price)} • Target ${crossoverFormatPrice(target)}`;
-    try{await sendDashboardNotification(title,message,getCryptoIconSrc(coin),"CROSSOVER");return true;}catch(e){console.warn("Crossover percentage notification failed",e);return false;}
+    const message=`${assetLabel} • ${pctText} ${relation} target • Price ${crossoverPriceText(price,coin)} • Target ${crossoverPriceText(target,coin)}`;
+    try{await sendDashboardNotification(title,message,crossoverNotifyAssetIcon(coin),"CROSSOVER");return true;}catch(e){console.warn("Crossover percentage notification failed",e);return false;}
 }
 async function crossoverToggleNotifications(index){
     const s=crossoverInstance(index);
@@ -14042,15 +14203,17 @@ async function crossoverToggleNotifications(index){
     crossoverSaveState();
     if(s.notificationEnabled){
         const coin=s.activeCoin||s.coin,target=Number(s.activeTarget);
-        const title=`🔔 Crossover #${index} • ${coin}/USD`;
-        const message=`Percentage notifications activated for ${coin}/USD • Target ${crossoverFormatPrice(target)}`;
-        try{await sendDashboardNotification(title,message,getCryptoIconSrc(coin),"CROSSOVER");}catch(e){console.warn("Crossover notification activation failed",e);}
+        const assetLabel=crossoverNotificationAssetLabel(coin);
+        const title=`🔔 Crossover #${index} • ${assetLabel}`;
+        const message=`Percentage notifications activated for ${assetLabel} • Target ${crossoverPriceText(target,coin)}`;
+        try{await sendDashboardNotification(title,message,crossoverNotifyAssetIcon(coin),"CROSSOVER");}catch(e){console.warn("Crossover notification activation failed",e);}
     }
 }
 async function crossoverLoadRemoteStatus(){
     try{
         const localState=crossoverReadState();
         const localCount=Number(localState?.count);
+        const localCrossovers=Array.isArray(localState?.crossovers)?localState.crossovers:[];
         const response=await fetch(`${CROSSOVER_REMOTE_WORKER_URL}status?clientId=${encodeURIComponent(crossoverClientId())}&t=${Date.now()}`,{
             method:"GET",cache:"no-store"
         });
@@ -14058,12 +14221,63 @@ async function crossoverLoadRemoteStatus(){
         const data=await response.json();
         if(!data||data.ok!==true||!Array.isArray(data.items))throw new Error("Invalid Remote Crossover status");
 
-        /* The remote worker is authoritative when the page opens.
-           Clear all four slots first so stale local values cannot survive. */
+        /*
+         * Remote worker owns Crypto crossover state only.
+         * GOLD / OIL / TSE are intentionally local and are never posted to the
+         * worker, so a missing worker item must NOT clear a locally configured
+         * special crossover.
+         */
+        const localSpecialByIndex=new Map();
+        for(let i=0;i<Math.min(CROSSOVER_COUNT,localCrossovers.length);i++){
+            const saved=localCrossovers[i];
+            const coin=String(saved?.activeCoin||saved?.coin||"").toUpperCase();
+            if(crossoverIsSpecialAsset(coin)) localSpecialByIndex.set(i+1,{...saved,coin,activeCoin:coin});
+        }
+        const remoteByIndex=new Map();
+        for(const item of data.items){
+            const index=Math.max(1,Math.min(CROSSOVER_COUNT,Number(item.index)||0));
+            if(!index||!item.running)continue;
+            const coin=String(item.coin||"BTC").toUpperCase();
+            /* Special assets are local-only even if an old Worker response contains one. */
+            if(crossoverIsSpecialAsset(coin))continue;
+            remoteByIndex.set(index,item);
+        }
+
         for(let i=1;i<=CROSSOVER_COUNT;i++){
             const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i),input=crossoverGet("crossoverTarget",i),btn=crossoverGet("crossoverStartStop",i),status=crossoverGet("crossoverStatus",i);
             if(!s)continue;
             if(s.timer){clearInterval(s.timer);s.timer=null;}
+
+            const localSpecial=localSpecialByIndex.get(i);
+            if(localSpecial){
+                /* Preserve the complete local GOLD/OIL/TSE slot exactly as saved. */
+                s.running=!!localSpecial.running;
+                s.activeCoin=String(localSpecial.activeCoin||localSpecial.coin||"").toUpperCase()||null;
+                s.coin=String(localSpecial.coin||s.activeCoin||"").toUpperCase()||"BTC";
+                s.target=Number.isFinite(Number(localSpecial.target))?Number(localSpecial.target):null;
+                s.activeTarget=Number.isFinite(Number(localSpecial.activeTarget))?Number(localSpecial.activeTarget):(s.running?s.target:null);
+                s.previousPrice=Number.isFinite(Number(localSpecial.previousPrice))?Number(localSpecial.previousPrice):null;
+                s.latestPrice=Number.isFinite(Number(localSpecial.latestPrice))?Number(localSpecial.latestPrice):null;
+                s.latestUpdated=localSpecial.latestUpdated||null;
+                s.lastCrossAt=localSpecial.lastCrossAt||null;
+                s.lastCrossDirection=Number(localSpecial.lastCrossDirection)||0;
+                s.priceDirection=Number(localSpecial.priceDirection)||0;
+                s.notificationEnabled=!!localSpecial.notificationEnabled;
+                s.percentageAlertTimes=(localSpecial.percentageAlertTimes&&typeof localSpecial.percentageAlertTimes==="object")?localSpecial.percentageAlertTimes:Object.create(null);
+                if(coin){coin.value=s.coin;coin.dataset.userSelected="1";}
+                if(input)input.value=Number.isFinite(s.target)&&s.target>0?s.target.toLocaleString("en-US",{maximumFractionDigits:8}):"";
+                if(btn){btn.textContent=s.running?"■ Stop Crossover":"▶ Start Crossover";btn.classList.toggle("running",s.running);}
+                if(status)status.textContent=s.running?"Monitoring • Waiting for first price":"Ready • Waiting to start";
+                crossoverUpdateNotificationButton(i);
+                crossoverUpdateUI(i);
+                if(s.running){
+                    crossoverFetchOne(i,false);
+                    s.timer=setInterval(()=>crossoverFetchOne(i,true),CROSSOVER_POLL_MS);
+                }
+                continue;
+            }
+
+            /* No local special asset in this slot: restore normal Worker-owned state. */
             s.running=false;s.activeCoin=null;s.activeTarget=null;s.target=null;s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
             s.coin="BTC";
             if(coin){coin.value="BTC";coin.dataset.userSelected="0";}
@@ -14075,23 +14289,18 @@ async function crossoverLoadRemoteStatus(){
         /* Notification switches are local preferences and never alter the Worker. */
         crossoverLoadNotificationPrefs();
         crossoverLoadLocalAlertHistory();
-        /* Preserve the user's selected Crossover count. Older versions forced all
-           four slots visible after every remote refresh, so a saved 2 became 4. */
-        const remoteCount=Number(data.count||data.crossoverCount);
-        const selectedCount=(remoteCount>=1&&remoteCount<=4)
-            ? remoteCount
-            : (localCount>=1&&localCount<=4?localCount:1);
+        /* The visible slot count is local UI state. Remote status must never
+           replace the user's selected number of Crossover panels. */
+        const selectedCount=(localCount>=1&&localCount<=4)?localCount:1;
         crossoverSetVisibleCount(selectedCount,true);
-        for(const item of data.items){
-            const index=Math.max(1,Math.min(CROSSOVER_COUNT,Number(item.index)||0));
-            if(!index||!item.running)continue;
+
+        for(const [index,item] of remoteByIndex.entries()){
             const s=crossoverInstance(index);
             if(!s)continue;
             const coin=String(item.coin||"BTC").toUpperCase();
             const target=Number(item.target);
             if(!CROSSOVER_COINS.includes(coin)||!Number.isFinite(target)||target<=0)continue;
             s.coin=coin;s.activeCoin=coin;s.target=target;s.activeTarget=target;s.running=true;
-            /* Keep the custom visual selector synchronized with the Worker coin. */
             const coinSelect=crossoverGet("crossoverCoin",index);
             if(coinSelect){coinSelect.value=coin;coinSelect.dataset.userSelected="1";coinSelect.dispatchEvent(new Event("change",{bubbles:true}));}
             s.previousPrice=Number.isFinite(Number(item.previousPrice))?Number(item.previousPrice):null;
@@ -14111,6 +14320,8 @@ async function crossoverLoadRemoteStatus(){
             crossoverFetchOne(index,false);
             s.timer=setInterval(()=>crossoverFetchOne(index,true),CROSSOVER_POLL_MS);
         }
+
+        /* Persist the merged state so special assets survive the next refresh too. */
         crossoverSaveState();
         crossoverSyncCountLineStates();
         clearPageIssue("crossover-remote-status");
@@ -14127,7 +14338,7 @@ async function crossoverSyncRemote(){
         const count=Math.max(1,Math.min(4,Number(grid?.dataset.count||1)));
         const items=crossoverInstances.slice(0,count).map(s=>({
             index:s.index,coin:String(s.running?(s.activeCoin||s.coin):s.coin||"BTC").toUpperCase(),target:Number(s.activeTarget),running:!!s.running
-        })).filter(x=>x.running&&Number.isFinite(x.target)&&x.target>0);
+        })).filter(x=>x.running&&Number.isFinite(x.target)&&x.target>0&&!crossoverIsSpecialAsset(x.coin));
         const response=await fetch(CROSSOVER_REMOTE_WORKER_URL,{
             method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},
             body:JSON.stringify({clientId:crossoverClientId(),active:items.length>0,count,items})
@@ -14213,6 +14424,7 @@ function crossoverUpdateUI(index){
     const status=crossoverGet("crossoverStatus",index);
     const effectiveCoin=s.running?(s.activeCoin||s.coin):s.coin;
     const isUSD=effectiveCoin==="USD";
+    const assetLabel=crossoverAssetLabel(effectiveCoin);
     const coinSelect=crossoverGet("crossoverCoin",index);
     const hasUserSelection=coinSelect?.dataset.userSelected==="1";
     if(live) live.style.display=hasUserSelection?"flex":"none";
@@ -14220,13 +14432,13 @@ function crossoverUpdateUI(index){
     const liveSymbol=live?.querySelector(".crossover-live-symbol");
     if(coinEl){
         if(liveIcon){
-            liveIcon.innerHTML=isUSD?'<span class="crossover-usd-icon">$</span>':`<img src="${getCryptoIconSrc(effectiveCoin)}" alt="${effectiveCoin}">`;
+            liveIcon.innerHTML=crossoverAssetIconHTML(effectiveCoin);
         }
-        if(liveSymbol)liveSymbol.textContent=isUSD?"USD":effectiveCoin;
+        if(liveSymbol)liveSymbol.textContent=assetLabel;
     }
     const price=Number(s.latestPrice),target=Number(s.running?s.activeTarget:s.target);
     if(priceEl){
-        priceEl.textContent=Number.isFinite(price)&&price>0?crossoverFormatPrice(price):"-";
+        priceEl.textContent=Number.isFinite(price)&&price>0?crossoverPriceText(price,effectiveCoin):"-";
         priceEl.classList.remove("price-up","price-down");
         if(s.priceDirection>0)priceEl.classList.add("price-up");
         else if(s.priceDirection<0)priceEl.classList.add("price-down");
@@ -14235,10 +14447,10 @@ function crossoverUpdateUI(index){
         distance.classList.remove("above","below","invalid");
         if(s.running&&Number.isFinite(price)&&price>0&&Number.isFinite(target)&&target>0){
             const pct=((price-target)/target)*100;
-            distance.textContent=`${pct>=0?"+":""}${pct.toFixed(2)}% • ${price>=target?"Above":"Below"} target • Target: ${effectiveCoin} ${crossoverFormatPrice(target)}`;
+            distance.textContent=`${pct>=0?"+":""}${pct.toFixed(2)}% • ${price>=target?"Above":"Below"} target • Target: ${effectiveCoin} ${crossoverPriceText(target,effectiveCoin)}`;
             distance.classList.add(price>=target?"above":"below");
         }else{
-            distance.textContent=`Current value ${Number.isFinite(price)?crossoverFormatPrice(price):"—"} • Target: ${effectiveCoin} ${Number.isFinite(target)?crossoverFormatPrice(target):"—"}`;
+            distance.textContent=`Current value ${Number.isFinite(price)?crossoverPriceText(price,effectiveCoin):"—"} • Target: ${effectiveCoin} ${Number.isFinite(target)?crossoverPriceText(target,effectiveCoin):"—"}`;
             distance.classList.add("invalid");
         }
     }
@@ -14259,10 +14471,11 @@ async function crossoverSendAlert(index,direction,price,target){
     const arrow=direction>0?"↑":"↓";
     const color=direction>0?"🟢":"🔴";
     const effectiveCoin=s.running?(s.activeCoin||s.coin):s.coin;
-    const title=`${color} ${arrow} ${effectiveCoin}/USD • Crossover #${index}`;
+    const assetLabel=crossoverNotificationAssetLabel(effectiveCoin);
+    const title=`${color} ${arrow} ${assetLabel} • Crossover #${index}`;
     const time=crossoverNowText();
-    const message=`Crossover ${arrow} • ${crossoverFormatPrice(price)} • Target ${crossoverFormatPrice(target)} • ${time}`;
-    try{await sendDashboardNotification(title,message,getCryptoIconSrc(effectiveCoin),"CROSSOVER");}catch(e){console.warn("Crossover notification failed",e);}
+    const message=`Crossover ${arrow} • ${crossoverPriceText(price,effectiveCoin)} • Target ${crossoverPriceText(target,effectiveCoin)} • ${time}`;
+    try{await sendDashboardNotification(title,message,crossoverNotifyAssetIcon(effectiveCoin),"CROSSOVER");}catch(e){console.warn("Crossover notification failed",e);}
     /* Crossover email is sent exclusively by CROSSOVER_REMOTE_WORKER_URL. */
 }
 async function crossoverFetchOne(index,notify=true){
@@ -14287,6 +14500,10 @@ async function crossoverFetchOne(index,notify=true){
             }
             if(!Number.isFinite(price)||price<=0)throw new Error("Live Average unavailable");
             data={updated:new Date().toISOString()};
+        } else if(crossoverIsSpecialAsset(effectiveCoin)) {
+            const special=await crossoverFetchSpecialPrice(effectiveCoin);
+            data=special||{};
+            price=Number(special?.price);
         } else {
             const url=CROSSOVER_WORKER_URL+`?coin=${encodeURIComponent(effectiveCoin)}&timeframe=1&t=${Date.now()}`;
             const response=await fetch(url,{method:"GET",cache:"no-store"});
@@ -14371,9 +14588,10 @@ function crossoverStart(index,sendStart=true){
 async function crossoverSendStartNotification(index,price,target){
     const s=crossoverInstance(index);
     const effectiveCoin=s.activeCoin||s.coin;
-    const title=`🔔 ${effectiveCoin}/USD • Crossover #${index}`;
-    const message=`Crossover started • Target ${crossoverFormatPrice(target)}`;
-    try{await sendDashboardNotification(title,message,getCryptoIconSrc(effectiveCoin),"CROSSOVER");}catch(e){}
+    const assetLabel=crossoverNotificationAssetLabel(effectiveCoin);
+    const title=`🔔 ${assetLabel} • Crossover #${index}`;
+    const message=`Crossover started • Target ${crossoverPriceText(target,effectiveCoin)}`;
+    try{await sendDashboardNotification(title,message,crossoverNotifyAssetIcon(effectiveCoin),"CROSSOVER");}catch(e){}
 }
 function crossoverStop(index,sendStop=true){
     const s=crossoverInstance(index);
@@ -14398,8 +14616,9 @@ function crossoverStop(index,sendStop=true){
     crossoverSyncRemote();
     crossoverSyncCountLineStates();
     if(sendStop){
-        const title=`Crossover #${index} • ${stoppedCoin}/USD`;
-        sendDashboardNotification(title,`${stoppedCoin}/USD • Crossover STOPPED`,getCryptoIconSrc(stoppedCoin),"CROSSOVER").catch(()=>{});
+        const stoppedLabel=crossoverNotificationAssetLabel(stoppedCoin);
+        const title=`Crossover #${index} • ${stoppedLabel}`;
+        sendDashboardNotification(title,`${stoppedLabel} • Crossover STOPPED`,crossoverNotifyAssetIcon(stoppedCoin),"CROSSOVER").catch(()=>{});
     }
 }
 function crossoverSyncCountLineStates(){
@@ -14435,8 +14654,9 @@ function crossoverApplyState(saved){
         if(!s)return;
         let savedCoin=String(m.coin||"").toUpperCase();
         if(!savedCoin){try{savedCoin=String(localStorage.getItem(`crossoverSelectedCoin-${idx}`)||"").toUpperCase();}catch(e){}}
-        s.coin=CROSSOVER_COINS.includes(savedCoin)?savedCoin:"BTC";
-        s.activeCoin=CROSSOVER_COINS.includes(String(m.activeCoin||"").toUpperCase())?String(m.activeCoin).toUpperCase():(m.running?s.coin:null);
+        s.coin=(CROSSOVER_COINS.includes(savedCoin)||crossoverIsSpecialAsset(savedCoin))?savedCoin:"BTC";
+        const savedActive=String(m.activeCoin||"").toUpperCase();
+        s.activeCoin=(CROSSOVER_COINS.includes(savedActive)||crossoverIsSpecialAsset(savedActive))?savedActive:(m.running?s.coin:null);
         s.target=Number.isFinite(Number(m.target))?Number(m.target):null;
         s.activeTarget=Number.isFinite(Number(m.activeTarget))?Number(m.activeTarget):(m.running&&Number.isFinite(Number(m.target))?Number(m.target):null);
         // If this crossover was running, restore the exact target that was registered
@@ -14549,7 +14769,7 @@ function crossoverInit(){
                     const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i);
                     let savedCoin="";
                     try{savedCoin=String(localStorage.getItem(`crossoverSelectedCoin-${i}`)||"").toUpperCase();}catch(e){}
-                    if(CROSSOVER_COINS.includes(savedCoin)){
+                    if(CROSSOVER_COINS.includes(savedCoin)||crossoverIsSpecialAsset(savedCoin)){
                         s.coin=savedCoin;
                         if(coin){coin.value=savedCoin;coin.dataset.userSelected="1";}
                     }
@@ -14757,7 +14977,7 @@ if (
 
 <script id="crossover-compact-selector-script">
 (function initCrossoverSelectors(){
-    document.querySelectorAll(".crossover-coin").forEach(select=>{
+    function setup(select){
         if(!select||select.dataset.compactPickerReady==="1")return;
         select.dataset.compactPickerReady="1";
         const picker=document.createElement("div");picker.className="crossover-coin-picker";
@@ -14768,113 +14988,88 @@ if (
         const chev=document.createElement("span");chev.className="crossover-coin-chevron";chev.textContent="▼";
         current.append(icon,name);trigger.append(current,chev);
         const menu=document.createElement("div");menu.className="crossover-coin-menu crossover-coin-menu-portal";menu.setAttribute("role","listbox");
-        function iconHTML(v){return v==="USD"?'<span class="crossover-usd-icon">$</span>':`<img src="${getCryptoIconSrc(v)}" alt="${v}">`;}
-        const matrixCoinSelect=document.querySelector(".rfkj-instance-coin");
-        const matrixCoins=matrixCoinSelect?Array.from(matrixCoinSelect.options).map(o=>o.value).filter(Boolean):["BTC","BNB","ETH","DOGE","ADA","SOL","ONE","AVAX","POL","TRX"];
-        const crossoverCoins=[...new Set([...matrixCoins,"USD"])];
-        // Preserve the value restored by crossoverInit()/localStorage before rebuilding options.
         const selectorIndex=(select.id.match(/(\d+)$/)||[])[1]||"1";
+        let hasUserSelection=select.dataset.userSelected==="1";
         let preservedValue=String(select.value||"").toUpperCase();
         if(!preservedValue){try{preservedValue=String(localStorage.getItem(`crossoverSelectedCoin-${selectorIndex}`)||"").toUpperCase();}catch(e){}}
-        select.innerHTML="";
-        crossoverCoins.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;select.appendChild(o);});
-        if(crossoverCoins.includes(preservedValue)){
-            select.value=preservedValue;
-            select.dataset.userSelected="1";
-        }else if(!crossoverCoins.includes(select.value)){
-            select.value="BTC";
+        /* A persisted selection is still a real selection after refresh.
+           Do not hide its icon/name merely because the custom picker itself
+           was recreated after the page reload. */
+        if(preservedValue && (CROSSOVER_COINS.includes(preservedValue)||crossoverIsSpecialAsset(preservedValue))){
+            hasUserSelection=true;
         }
-        let hasUserSelection=select.dataset.userSelected==="1";
+        function rebuild(){
+            const options=crossoverAssetOptions();
+            if(!options.includes(preservedValue) && !options.includes(String(select.value||"").toUpperCase())){
+                select.value="BTC";
+            }
+            if(preservedValue&&options.includes(preservedValue)){select.value=preservedValue;}
+            select.innerHTML="";
+            options.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=crossoverAssetLabel(v);select.appendChild(o);});
+            if(options.includes(preservedValue)){select.value=preservedValue;}
+            else if(!options.includes(String(select.value||"").toUpperCase()))select.value="BTC";
+            menu.innerHTML="";
+            options.forEach(v=>{
+                const item=document.createElement("button");item.type="button";item.className="crossover-coin-option";item.dataset.value=v;
+                item.innerHTML=crossoverAssetIconHTML(v)+`<span>${crossoverAssetLabel(v)}</span>`;item.setAttribute("role","option");
+                item.addEventListener("click",()=>{
+                    select.value=v;select.dataset.userSelected="1";hasUserSelection=true;preservedValue=v;
+                    picker.classList.add("has-user-selection");
+                    try{localStorage.setItem(`crossoverSelectedCoin-${selectorIndex}`,v);}catch(e){}
+                    select.dispatchEvent(new Event("change",{bubbles:true}));sync();close();
+                });
+                menu.appendChild(item);
+            });
+            sync();
+        }
         function sync(){
-            const v=select.value||"BTC";
-            /* Before the user selects a Coin, show only a neutral dash — never BTC by default. */
-            if(hasUserSelection){
-                icon.innerHTML=iconHTML(v);name.textContent=v;
+            let v=String(select.value||"").toUpperCase();
+            const state=crossoverInstances[Number(selectorIndex)-1];
+            /* While a Crossover is running, the registered active asset is the
+               authoritative value shown in the selector. This also survives
+               remote status refreshes and picker recreation. */
+            const active=String(state?.running?(state.activeCoin||state.coin):state?.coin||"").toUpperCase();
+            if(active && (CROSSOVER_COINS.includes(active)||crossoverIsSpecialAsset(active)) &&
+               (!v || (state?.running && crossoverIsSpecialAsset(active)))){
+                v=active;
+                select.value=active;
+            }
+            const shouldShow=hasUserSelection || !!(v && (CROSSOVER_COINS.includes(v)||crossoverIsSpecialAsset(v)) && (active===v || localStorage.getItem(`crossoverSelectedCoin-${selectorIndex}`)));
+            if(shouldShow){
+                icon.innerHTML=crossoverAssetIconHTML(v);
+                name.textContent=crossoverAssetLabel(v);
                 picker.classList.add("has-user-selection");
             }else{
-                icon.innerHTML="";name.textContent="—";
+                icon.innerHTML="";
+                name.textContent="—";
                 picker.classList.remove("has-user-selection");
             }
-            menu.querySelectorAll(".crossover-coin-option").forEach(o=>{
-                const a=hasUserSelection && o.dataset.value===v;o.classList.toggle("active",a);o.setAttribute("aria-selected",a?"true":"false");
-            });
+            menu.querySelectorAll(".crossover-coin-option").forEach(o=>{const a=shouldShow&&o.dataset.value===v;o.classList.toggle("active",a);o.setAttribute("aria-selected",a?"true":"false");});
         }
-        Array.from(select.options).forEach(o=>{
-            const item=document.createElement("button");item.type="button";item.className="crossover-coin-option";item.dataset.value=o.value;
-            item.innerHTML=iconHTML(o.value)+`<span>${o.value}</span>`;item.setAttribute("role","option");
-            item.addEventListener("click",()=>{
-                select.value=o.value;
-                select.dataset.userSelected="1";
-                hasUserSelection=true;
-                picker.classList.add("has-user-selection");
-                try{localStorage.setItem(`crossoverSelectedCoin-${selectorIndex}`,String(o.value||"BTC").toUpperCase());}catch(e){}
-                select.dispatchEvent(new Event("change",{bubbles:true}));
-                sync();close();
-            });
-            menu.appendChild(item);
-        });
-        // Portal the menu to <body> so it cannot be clipped by the Crossover card.
         document.body.appendChild(menu);
         function positionMenu(){
             if(!menu.classList.contains("is-open"))return;
-            const r=trigger.getBoundingClientRect();
-            const card=trigger.closest(".crossover-card");
-            const cr=card?card.getBoundingClientRect():r;
-            const vw=document.documentElement.clientWidth||window.innerWidth;
-            const vh=document.documentElement.clientHeight||window.innerHeight;
-            const margin=10;
-            const available=Math.max(180,vw-margin*2);
-            // Open the menu at the full width of this Crossover card, not just the selector.
-            const desired=cr.width;
-            const w=Math.min(Math.max(180,desired),available);
-            const compact=r.width<230;
-            picker.classList.toggle("is-compact",compact);
-            menu.classList.toggle("is-compact",compact);
-            menu.style.width=w+"px";
-            menu.style.setProperty("--crossover-selector-width",w+"px");
-            menu.style.setProperty("--crossover-card-width",w+"px");
-            menu.style.maxWidth=available+"px";
-            const cardLeft=Math.max(margin,Math.min(vw-w-margin,cr.left));
-            const left=cardLeft;
-            menu.style.left=left+"px";
-            menu.style.right="auto";
-            menu.style.top="0px";
-            menu.style.maxHeight=Math.max(120,vh-20)+"px";
-            // Measure after width is applied, then choose below or above.
-            const mh=menu.offsetHeight;
-            let top=r.bottom+6;
-            if(top+mh>vh-margin && r.top-mh-6>=margin)top=r.top-mh-6;
-            else if(top+mh>vh-margin)top=Math.max(margin,vh-mh-margin);
-            menu.style.top=top+"px";
+            const r=trigger.getBoundingClientRect(),card=trigger.closest(".crossover-card"),cr=card?card.getBoundingClientRect():r;
+            const vw=document.documentElement.clientWidth||window.innerWidth,vh=document.documentElement.clientHeight||window.innerHeight,margin=10,available=Math.max(180,vw-margin*2),w=Math.min(Math.max(180,cr.width),available);
+            const compact=r.width<230;picker.classList.toggle("is-compact",compact);menu.classList.toggle("is-compact",compact);
+            menu.style.width=w+"px";menu.style.setProperty("--crossover-selector-width",w+"px");menu.style.setProperty("--crossover-card-width",w+"px");menu.style.maxWidth=available+"px";
+            menu.style.left=Math.max(margin,Math.min(vw-w-margin,cr.left))+"px";menu.style.right="auto";menu.style.top="0px";menu.style.maxHeight=Math.max(120,vh-20)+"px";
+            const mh=menu.offsetHeight;let top=r.bottom+6;if(top+mh>vh-margin&&r.top-mh-6>=margin)top=r.top-mh-6;else if(top+mh>vh-margin)top=Math.max(margin,vh-mh-margin);menu.style.top=top+"px";
         }
-        function close(){
-            menu.classList.remove("is-open");
-            picker.classList.remove("open");
-            trigger.classList.remove("open");
-            trigger.setAttribute("aria-expanded","false");
-        }
+        function close(){menu.classList.remove("is-open");picker.classList.remove("open");trigger.classList.remove("open");trigger.setAttribute("aria-expanded","false");}
         select.addEventListener("change",()=>{
-            try{localStorage.setItem(`crossoverSelectedCoin-${selectorIndex}`,String(select.value||"BTC").toUpperCase());}catch(e){}
+            preservedValue=String(select.value||"BTC").toUpperCase();
+            try{localStorage.setItem(`crossoverSelectedCoin-${selectorIndex}`,preservedValue);}catch(e){}
+            sync();
         });
-        trigger.addEventListener("click",e=>{
-            e.stopPropagation();
-            const open=!menu.classList.contains("is-open");
-            if(open){
-                document.querySelectorAll(".crossover-coin-menu.is-open").forEach(m=>m.classList.remove("is-open"));
-                document.querySelectorAll(".crossover-coin-picker.open").forEach(p=>p.classList.remove("open"));
-                menu.classList.add("is-open");picker.classList.add("open");trigger.classList.add("open");trigger.setAttribute("aria-expanded","true");
-                requestAnimationFrame(positionMenu);
-            }else close();
-        });
-        window.addEventListener("resize",positionMenu,{passive:true});
-        window.addEventListener("scroll",positionMenu,{passive:true,capture:true});
-        document.addEventListener("click",e=>{if(e.target!==menu&&!menu.contains(e.target)&&e.target!==trigger&&!trigger.contains(e.target))close();});
-        select.addEventListener("change",sync);
-        picker.appendChild(trigger);
-        select.parentNode.insertBefore(picker,select);
-        select.style.position="absolute";select.style.width="1px";select.style.height="1px";select.style.opacity="0";select.style.pointerEvents="none";select.style.clipPath="inset(50%)";
-        sync();
-    });
+        trigger.addEventListener("click",e=>{e.stopPropagation();const open=!menu.classList.contains("is-open");if(open){document.querySelectorAll(".crossover-coin-menu.is-open").forEach(m=>m.classList.remove("is-open"));document.querySelectorAll(".crossover-coin-picker.open").forEach(p=>p.classList.remove("open"));menu.classList.add("is-open");picker.classList.add("open");trigger.classList.add("open");trigger.setAttribute("aria-expanded","true");requestAnimationFrame(positionMenu);}else close();});
+        window.addEventListener("resize",positionMenu,{passive:true});window.addEventListener("scroll",positionMenu,{passive:true,capture:true});document.addEventListener("click",e=>{if(e.target!==menu&&!menu.contains(e.target)&&e.target!==trigger&&!trigger.contains(e.target))close();});
+        picker.appendChild(trigger);select.parentNode.insertBefore(picker,select);select.style.position="absolute";select.style.width="1px";select.style.height="1px";select.style.opacity="0";select.style.pointerEvents="none";select.style.clipPath="inset(50%)";
+        select._rebuildCrossoverPicker=rebuild;rebuild();
+    }
+    document.querySelectorAll(".crossover-coin").forEach(setup);
+    window.refreshCrossoverAssetPickers=function(){document.querySelectorAll(".crossover-coin").forEach(s=>s._rebuildCrossoverPicker&&s._rebuildCrossoverPicker());};
+    window.addEventListener("crossover-assets-updated",()=>window.refreshCrossoverAssetPickers());
 })();
 </script>
 <script id="lg-tv-input-compat">

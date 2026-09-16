@@ -477,6 +477,53 @@ async function cacheFirst(
 
 
 /* =====================================================
+   GLOBAL NOTIFICATION BURST GUARD
+   Shared with the page through IndexedDB so the first
+   notification wins even when page and service worker
+   producers race each other. If storage fails, alerts
+   continue normally rather than being disabled.
+===================================================== */
+const NOTIFICATION_BURST_DB = "financial-dashboard-notification-guard-v1";
+const NOTIFICATION_BURST_STORE = "guard";
+const NOTIFICATION_BURST_KEY = "last";
+const NOTIFICATION_BURST_MS = 1500;
+
+function acquireNotificationBurstSlot() {
+    return new Promise(resolve => {
+        try {
+            const request = indexedDB.open(NOTIFICATION_BURST_DB, 1);
+            request.onupgradeneeded = () => {
+                try { request.result.createObjectStore(NOTIFICATION_BURST_STORE); } catch (e) {}
+            };
+            request.onerror = () => resolve(true);
+            request.onsuccess = () => {
+                try {
+                    const db = request.result;
+                    const tx = db.transaction(NOTIFICATION_BURST_STORE, "readwrite");
+                    const store = tx.objectStore(NOTIFICATION_BURST_STORE);
+                    const getReq = store.get(NOTIFICATION_BURST_KEY);
+                    getReq.onsuccess = () => {
+                        const now = Date.now();
+                        const last = Number(getReq.result || 0);
+                        if (last > 0 && now - last < NOTIFICATION_BURST_MS) {
+                            resolve(false);
+                            return;
+                        }
+                        store.put(now, NOTIFICATION_BURST_KEY);
+                        resolve(true);
+                    };
+                    getReq.onerror = () => resolve(true);
+                } catch (e) {
+                    resolve(true);
+                }
+            };
+        } catch (e) {
+            resolve(true);
+        }
+    });
+}
+
+/* =====================================================
    PUSH NOTIFICATION
    Background / PWA / Mobile
 ===================================================== */
@@ -625,15 +672,13 @@ self.addEventListener(
 
 
         event.waitUntil(
-
-            self.registration.showNotification(
-
-                title,
-
-                notificationOptions
-
-            )
-
+            acquireNotificationBurstSlot().then(allowed => {
+                if (!allowed) return;
+                return self.registration.showNotification(
+                    title,
+                    notificationOptions
+                );
+            })
         );
 
     }
