@@ -4197,13 +4197,19 @@ h1 {
 }
 
 @media (max-width:899px){
+    /* Mobile TSE: hide the LAST label; keep the price/percent compact and slightly lower. */
+    #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:first-child .global-pulse-tsetmc-label{display:none;}
+    #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-tsetmc-group:first-child{
+        gap:0;
+        padding-top:clamp(2px,.6vw,4px);
+    }
     .global-pulse-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
     #globalTsetmcCards{grid-column:1 / -1;grid-template-columns:repeat(2,minmax(0,1fr));}
     #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-name{font-size:clamp(8.5px,2.4vw,10px);}
     #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-symbol{font-size:clamp(5px,1.5vw,6px);}
     #globalTsetmcCards .global-pulse-tsetmc-card .global-pulse-label{font-size:clamp(6px,1.7vw,7px);}
-    #globalTsetmcCards .global-pulse-tsetmc-price{font-size:clamp(13px,3.8vw,18px);}
-    #globalTsetmcCards .global-pulse-tsetmc-percent{font-size:clamp(9px,2.7vw,12px);}
+    #globalTsetmcCards .global-pulse-tsetmc-price{font-size:clamp(12px,3.45vw,17px);}
+    #globalTsetmcCards .global-pulse-tsetmc-percent{font-size:clamp(8px,2.45vw,11px);}
 }
 
 @media (min-width:900px){
@@ -8788,6 +8794,8 @@ function pageIssueLabel(key, issue) {
     if (k === "global-gold-change") return "Global Gold Change";
     if (k === "global-oil") return "Global Oil";
     if (k === "global-economic") return "Economic Calendar";
+    if (k === "global-tsetmc") return "TSETMC";
+    if (k.startsWith("global-tsetmc:")) return `TSETMC ${k.slice(15)}`;
     if (k === "js") return "Page JavaScript";
     if (k === "promise") return "Background request";
     if (k.startsWith("img:")) return `${k.slice(4)} icon`;
@@ -8852,6 +8860,12 @@ function pageIssueDescription(key, issue) {
     }
     if (k === "global-economic") {
         return "The Economic Calendar feed is unavailable or returned no valid upcoming events; the last valid calendar data is retained when available.";
+    }
+    if (k === "global-tsetmc") {
+        return "The TSETMC Worker could not provide valid current data; cached TSE values may be shown instead.";
+    }
+    if (k.startsWith("global-tsetmc:")) {
+        return `${k.slice(15)} returned incomplete or invalid TSETMC data; its displayed values may be unavailable.`;
     }
     if (k === "js") {
         return "A JavaScript error occurred and part of the dashboard may not have updated correctly.";
@@ -11601,7 +11615,7 @@ function globalPulseRenderTsetmc(results){
         const iconText=symbol?symbol.slice(0,2):"TSE";
         const iconClass=index%2===0?"gold":"oil";
         const name=symbol||"TSE";
-        const sourceLabel=symbol?"TSETMC · LIVE":"TSETMC · WAITING";
+        const sourceLabel="TSETMC";
         return `<article class="global-pulse-card global-pulse-tsetmc-card"${symbol?` data-tsetmc-symbol="${symbol.replace(/\"/g,"&quot;")}"`:""}>
             <div class="global-pulse-card-top">
                 <div class="global-pulse-asset">
@@ -11668,9 +11682,23 @@ async function loadGlobalPulseTsetmc(force=false){
         data=await response.json();
 
         const results=Array.isArray(data?.results)
-            ? data.results.filter(row=>row&&row.symbol)
+            ? data.results.filter(row=>row&&String(row.symbol||"").trim())
             : [];
-        if(!data?.ok || !results.length)throw new Error("TSETMC worker returned no valid results");
+        if(!data?.ok || !results.length)throw new Error("TSETMC Worker returned no valid results");
+
+        const invalidRows=[];
+        for(const row of results){
+            const symbol=String(row.symbol||"").trim();
+            const required=[row.lastPrice,row.lastPricePercent,row.closingPrice,row.closingPricePercent];
+            if(required.some(value=>!Number.isFinite(Number(value)))) invalidRows.push(symbol);
+        }
+        for(const key of Array.from(pageIssues.keys())) {
+            if(key.startsWith("global-tsetmc:")) clearPageIssue(key);
+        }
+        invalidRows.forEach(symbol=>{
+            setPageIssue(`global-tsetmc:${symbol}`, `${symbol} TSETMC data is incomplete`, "error");
+        });
+        if(invalidRows.length === results.length)throw new Error("TSETMC Worker returned only invalid symbol data");
 
         globalPulseTsetmcLastFetchAt=requestStartedAt;
         saveGlobalPulseTsetmcCache({results,updatedAt:Date.now()});
@@ -11679,7 +11707,12 @@ async function loadGlobalPulseTsetmc(force=false){
         clearPageIssue("global-tsetmc");
     }catch(error){
         console.warn("TSETMC worker unavailable:",error);
-        if(Array.isArray(cached.results)&&cached.results.length)globalPulseRenderTsetmc(cached.results);
+        if(Array.isArray(cached.results)&&cached.results.length){
+            globalPulseRenderTsetmc(cached.results);
+            setPageIssue("global-tsetmc", `TSETMC Worker unavailable; cached data from ${cached.updatedAt ? new Date(cached.updatedAt).toLocaleString() : "an earlier response"} is being shown`, "cache");
+        } else {
+            setPageIssue("global-tsetmc", `TSETMC Worker error: ${error?.message || "current data unavailable"}`, "error");
+        }
     }
 }
 function startGlobalPulseTsetmc(){
