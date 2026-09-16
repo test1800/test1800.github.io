@@ -14448,10 +14448,10 @@ function crossoverUpdateUI(index){
         distance.classList.remove("above","below","invalid");
         if(s.running&&Number.isFinite(price)&&price>0&&Number.isFinite(target)&&target>0){
             const pct=((price-target)/target)*100;
-            distance.textContent=`${pct>=0?"+":""}${pct.toFixed(2)}% • ${price>=target?"Above":"Below"} target • Target: ${effectiveCoin} ${crossoverPriceText(target,effectiveCoin)}`;
+            distance.textContent=`${pct>=0?"+":""}${pct.toFixed(2)}% • ${price>=target?"Above":"Below"} target • Target: ${assetLabel} ${crossoverPriceText(target,effectiveCoin)}`;
             distance.classList.add(price>=target?"above":"below");
         }else{
-            distance.textContent=`Current value ${Number.isFinite(price)?crossoverPriceText(price,effectiveCoin):"—"} • Target: ${effectiveCoin} ${Number.isFinite(target)?crossoverPriceText(target,effectiveCoin):"—"}`;
+            distance.textContent=`Current value ${Number.isFinite(price)?crossoverPriceText(price,effectiveCoin):"—"} • Target: ${assetLabel} ${Number.isFinite(target)?crossoverPriceText(target,effectiveCoin):"—"}`;
             distance.classList.add("invalid");
         }
     }
