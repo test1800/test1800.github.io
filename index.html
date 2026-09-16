@@ -6448,6 +6448,81 @@ h1 {
     </div>
 </div>
 <!-- =================================================
+     GLOBAL PULSE • PRECIOUS METALS & ENERGY
+===================================================== -->
+<section class="global-pulse-section" id="globalPulseSection" aria-label="Global Pulse">
+    <div class="global-pulse-head">
+        <div>
+            <div class="global-pulse-title">GLOBAL <span class="global-pulse-active-markets" id="globalPulseActiveMarkets">· —</span><button type="button" id="globalPulseSleepToggle" class="global-pulse-sleep-toggle" aria-label="Night mode notifications" title="Night mode notifications">☾</button></div>
+            <div class="global-pulse-urgent" id="globalPulseUrgentTimer" aria-live="polite"></div>
+        </div>
+        <div class="global-pulse-clock-pair">
+            <div><span class="global-pulse-clock-label">UTC</span><span id="globalPulseUtcTime">--:--:--</span></div>
+            <div><span class="global-pulse-clock-label">TEHRAN</span><span id="globalPulseTehranTime">--:--:--</span></div>
+        </div>
+    </div>
+    <div class="global-pulse-grid">
+        <article class="global-pulse-card global-pulse-gold">
+            <div class="global-pulse-card-top">
+                <div class="global-pulse-asset">
+                    <span class="global-pulse-icon gold">Au</span>
+                    <div>
+                        <div class="global-pulse-name">Gold</div>
+                        <div class="global-pulse-symbol">XAU / USD · Spot</div>
+                    </div>
+                </div>
+                <span class="global-pulse-badge">METAL</span>
+            </div>
+            <div class="global-pulse-price-row">
+                <span id="globalGoldPrice" class="global-pulse-price">-</span>
+                <span id="globalGoldChange" class="global-pulse-change global-pulse-change-inline flat">--</span>
+            </div>
+        </article>
+        <article class="global-pulse-card global-pulse-oil">
+            <div class="global-pulse-card-top">
+                <div class="global-pulse-asset">
+                    <span class="global-pulse-icon oil">WTI</span>
+                    <div>
+                        <div class="global-pulse-name">Crude Oil</div>
+                        <div class="global-pulse-symbol">WTI · USD / Barrel</div>
+                    </div>
+                </div>
+                <span class="global-pulse-badge">ENERGY</span>
+            </div>
+            <div class="global-pulse-price-row">
+                <span id="globalOilPrice" class="global-pulse-price">-</span>
+                <span id="globalOilChange" class="global-pulse-change global-pulse-change-inline flat">--</span>
+            </div>
+        </article>
+        <div id="globalTsetmcCards" class="global-pulse-tsetmc-cards" aria-label="TSETMC symbols"></div>
+    </div>
+    <div class="global-pulse-session-strip" aria-label="Market session times">
+        <div class="global-pulse-session-mini global-pulse-iran">
+            <span class="global-pulse-session-name">IRAN</span><span class="global-pulse-session-state closed" id="globalPulseIranState"><span class="global-pulse-session-dot"></span><span id="globalPulseIranTimer">--</span></span>
+        </div>
+        <div class="global-pulse-session-mini">
+            <span class="global-pulse-session-name">SYDNEY</span><span class="global-pulse-session-state closed" id="globalPulseSydneyState"><span class="global-pulse-session-dot"></span><span id="globalPulseSydneyTimer">--</span></span>
+        </div>
+        <div class="global-pulse-session-mini">
+            <span class="global-pulse-session-name">LONDON</span><span class="global-pulse-session-state closed" id="globalPulseLondonState"><span class="global-pulse-session-dot"></span><span id="globalPulseLondonTimer">--</span></span>
+        </div>
+        <div class="global-pulse-session-mini">
+            <span class="global-pulse-session-name">NEW YORK</span><span class="global-pulse-session-state closed" id="globalPulseNewYorkState"><span class="global-pulse-session-dot"></span><span id="globalPulseNewYorkTimer">--</span></span>
+        </div>
+        <div class="global-pulse-session-mini global-pulse-economic" title="Economic calendar">
+            <div class="global-pulse-economic-head">
+                <span class="global-pulse-session-name">ECONOMIC</span>
+                <span class="global-pulse-economic-country" id="globalPulseEconomicCountry">—</span>
+            </div>
+            <div class="global-pulse-economic-event" id="globalPulseEconomicEvent">No upcoming event</div>
+            <div class="global-pulse-economic-summary" id="globalPulseEconomicSummary">—</div>
+            <div class="global-pulse-economic-timer-row">
+                <span class="global-pulse-session-state closed" id="globalPulseEconomicState"><span class="global-pulse-session-dot"></span><span id="globalPulseEconomicTimer">--:--:--</span></span>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- =================================================
      RF / KJ SIGNAL MONITOR
 ================================================= -->
 <div class="rfkj-matrix-section" id="rfkjMatrixSection">
@@ -6571,81 +6646,7 @@ h1 {
     </div>
 </div>
 
-<!-- =================================================
-     GLOBAL PULSE • PRECIOUS METALS & ENERGY
-===================================================== -->
-<section class="global-pulse-section" id="globalPulseSection" aria-label="Global Pulse">
-    <div class="global-pulse-head">
-        <div>
-            <div class="global-pulse-title">GLOBAL <span class="global-pulse-active-markets" id="globalPulseActiveMarkets">· —</span><button type="button" id="globalPulseSleepToggle" class="global-pulse-sleep-toggle" aria-label="Night mode notifications" title="Night mode notifications">☾</button></div>
-            <div class="global-pulse-urgent" id="globalPulseUrgentTimer" aria-live="polite"></div>
-        </div>
-        <div class="global-pulse-clock-pair">
-            <div><span class="global-pulse-clock-label">UTC</span><span id="globalPulseUtcTime">--:--:--</span></div>
-            <div><span class="global-pulse-clock-label">TEHRAN</span><span id="globalPulseTehranTime">--:--:--</span></div>
-        </div>
-    </div>
-    <div class="global-pulse-grid">
-        <article class="global-pulse-card global-pulse-gold">
-            <div class="global-pulse-card-top">
-                <div class="global-pulse-asset">
-                    <span class="global-pulse-icon gold">Au</span>
-                    <div>
-                        <div class="global-pulse-name">Gold</div>
-                        <div class="global-pulse-symbol">XAU / USD · Spot</div>
-                    </div>
-                </div>
-                <span class="global-pulse-badge">METAL</span>
-            </div>
-            <div class="global-pulse-price-row">
-                <span id="globalGoldPrice" class="global-pulse-price">-</span>
-                <span id="globalGoldChange" class="global-pulse-change global-pulse-change-inline flat">--</span>
-            </div>
-        </article>
-        <article class="global-pulse-card global-pulse-oil">
-            <div class="global-pulse-card-top">
-                <div class="global-pulse-asset">
-                    <span class="global-pulse-icon oil">WTI</span>
-                    <div>
-                        <div class="global-pulse-name">Crude Oil</div>
-                        <div class="global-pulse-symbol">WTI · USD / Barrel</div>
-                    </div>
-                </div>
-                <span class="global-pulse-badge">ENERGY</span>
-            </div>
-            <div class="global-pulse-price-row">
-                <span id="globalOilPrice" class="global-pulse-price">-</span>
-                <span id="globalOilChange" class="global-pulse-change global-pulse-change-inline flat">--</span>
-            </div>
-        </article>
-        <div id="globalTsetmcCards" class="global-pulse-tsetmc-cards" aria-label="TSETMC symbols"></div>
-    </div>
-    <div class="global-pulse-session-strip" aria-label="Market session times">
-        <div class="global-pulse-session-mini global-pulse-iran">
-            <span class="global-pulse-session-name">IRAN</span><span class="global-pulse-session-state closed" id="globalPulseIranState"><span class="global-pulse-session-dot"></span><span id="globalPulseIranTimer">--</span></span>
-        </div>
-        <div class="global-pulse-session-mini">
-            <span class="global-pulse-session-name">SYDNEY</span><span class="global-pulse-session-state closed" id="globalPulseSydneyState"><span class="global-pulse-session-dot"></span><span id="globalPulseSydneyTimer">--</span></span>
-        </div>
-        <div class="global-pulse-session-mini">
-            <span class="global-pulse-session-name">LONDON</span><span class="global-pulse-session-state closed" id="globalPulseLondonState"><span class="global-pulse-session-dot"></span><span id="globalPulseLondonTimer">--</span></span>
-        </div>
-        <div class="global-pulse-session-mini">
-            <span class="global-pulse-session-name">NEW YORK</span><span class="global-pulse-session-state closed" id="globalPulseNewYorkState"><span class="global-pulse-session-dot"></span><span id="globalPulseNewYorkTimer">--</span></span>
-        </div>
-        <div class="global-pulse-session-mini global-pulse-economic" title="Economic calendar">
-            <div class="global-pulse-economic-head">
-                <span class="global-pulse-session-name">ECONOMIC</span>
-                <span class="global-pulse-economic-country" id="globalPulseEconomicCountry">—</span>
-            </div>
-            <div class="global-pulse-economic-event" id="globalPulseEconomicEvent">No upcoming event</div>
-            <div class="global-pulse-economic-summary" id="globalPulseEconomicSummary">—</div>
-            <div class="global-pulse-economic-timer-row">
-                <span class="global-pulse-session-state closed" id="globalPulseEconomicState"><span class="global-pulse-session-dot"></span><span id="globalPulseEconomicTimer">--:--:--</span></span>
-            </div>
-        </div>
-    </div>
-</section>
+
 
 <div id="errorBox"></div>
 </div>
