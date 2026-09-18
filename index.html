@@ -2192,6 +2192,10 @@ h1 {
 #appPinLock.pin-unlocked {
     display: none;
 }
+/* R13: LG TV bypasses the PIN overlay entirely. Desktop behavior is unchanged. */
+html.lg-tv-no-pin #appPinLock {
+    display: none !important;
+}
 .app-pin-card {
     width: min(100%, 520px);
     display: flex;
@@ -5719,6 +5723,17 @@ h1 {
 
 </head>
 <body>
+<!-- R13: detect LG TV before the PIN overlay paints. Desktop/Chrome stays unchanged. -->
+<script id="r13-lg-tv-pin-bypass">
+(function(){
+    var ua = String((window.navigator && window.navigator.userAgent) || "");
+    var isLgTv = /Web0S|WebOS|webOS|LG Browser|SMART-TV|SmartTV|NETCAST|NetCast|LGE/i.test(ua) ||
+        typeof window.webOS !== "undefined" || typeof window.PalmSystem !== "undefined";
+    if (isLgTv) {
+        document.documentElement.className += " lg-tv-no-pin";
+    }
+})();
+</script>
 <!--
     PIN stays inside the same WebView as the dashboard.
     It is only a visual/interaction lock: the dashboard JS remains
@@ -13270,6 +13285,16 @@ async function loadCryptoPortfolio(
         markSessionUnlocked();
         setNativeLockState(false);
         try { pinInput.blur(); } catch (error) {}
+    }
+
+    // R13: LG TVs bypass the app PIN completely. This branch runs before any
+    // keyboard/remote PIN handlers are attached. Desktop behavior is unchanged.
+    const isLgTv = /Web0S|WebOS|webOS|LG Browser|SMART-TV|SmartTV|NETCAST|NetCast|LGE/i.test(
+        String((window.navigator && window.navigator.userAgent) || "")
+    ) || typeof window.webOS !== "undefined" || typeof window.PalmSystem !== "undefined";
+    if (isLgTv) {
+        hidePin();
+        return;
     }
 
     let lastCheckedValue = "";
