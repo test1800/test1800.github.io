@@ -2258,6 +2258,60 @@ h1 {
     font-size: 13px;
     text-align: center;
 }
+
+/* R09: simple TV/keyboard PIN field. No custom keypad or TV keyboard hack is required. */
+.app-pin-simple-entry {
+    width: min(100%, 360px);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 8px auto 0;
+}
+.app-pin-simple-input {
+    width: 100%;
+    height: 64px;
+    box-sizing: border-box;
+    border: 2px solid #37465c;
+    border-radius: 12px;
+    background: #121b2b;
+    color: #f5f8fc;
+    text-align: center;
+    font: inherit;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: .35em;
+    padding: 0 14px 0 22px;
+    outline: none;
+    -webkit-user-select: text;
+    user-select: text;
+}
+.app-pin-simple-input:focus {
+    border-color: #4696ff;
+    box-shadow: 0 0 0 3px rgba(70,150,255,.22);
+}
+.app-pin-simple-submit {
+    width: 100%;
+    height: 52px;
+    margin-top: 12px;
+    border: 0;
+    border-radius: 12px;
+    background: #4696ff;
+    color: #fff;
+    font: inherit;
+    font-size: 17px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.app-pin-simple-submit:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(70,150,255,.28);
+}
+.app-pin-simple-help {
+    margin-top: 9px;
+    color: #919eb2;
+    font-size: 12px;
+    text-align: center;
+}
 .app-pin-keypad {
     display: flex;
     flex-direction: column;
@@ -5682,38 +5736,21 @@ h1 {
             <div class="app-pin-box"></div>
         </div>
         <div class="app-pin-error" id="appPinError"></div>
-        <div class="app-pin-keypad" id="appPinKeypad">
-            <div class="app-pin-row">
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="1" onclick="return window.__financialPinPress(this);">1</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="2" onclick="return window.__financialPinPress(this);">2</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="3" onclick="return window.__financialPinPress(this);">3</button>
-            </div>
-            <div class="app-pin-row">
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="4" onclick="return window.__financialPinPress(this);">4</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="5" onclick="return window.__financialPinPress(this);">5</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="6" onclick="return window.__financialPinPress(this);">6</button>
-            </div>
-            <div class="app-pin-row">
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="7" onclick="return window.__financialPinPress(this);">7</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="8" onclick="return window.__financialPinPress(this);">8</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="9" onclick="return window.__financialPinPress(this);">9</button>
-            </div>
-            <div class="app-pin-row">
-                <button class="app-pin-key spacer" type="button" tabindex="-1" aria-hidden="true"> </button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="0" onclick="return window.__financialPinPress(this);">0</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin-delete="true" aria-label="Delete" onclick="return window.__financialPinPress(this);">⌫</button>
-            </div>
-        </div>
-        <div class="app-pin-entry-modal" id="appPinEntryModal" aria-hidden="true">
-            <div class="app-pin-entry-card" role="dialog" aria-modal="true" aria-label="Enter PIN">
-                <div class="app-pin-entry-title">Enter PIN</div>
-                <input id="appPinEntryInput" class="app-pin-entry-input" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="4" min="0" max="9999" step="1" autocomplete="off" aria-label="4-digit PIN">
-                <div class="app-pin-entry-actions">
-                    <button id="appPinEntryCancel" class="app-pin-entry-button" type="button" onclick="return window.__financialPinCancel();">CANCEL</button>
-                    <button id="appPinEntrySubmit" class="app-pin-entry-button primary" type="button" onclick="return window.__financialPinSubmit();">ENTER</button>
-                </div>
-                <div id="appPinEntryHint" class="app-pin-entry-hint"></div>
-            </div>
+        <div class="app-pin-simple-entry" id="appPinSimpleEntry">
+            <input
+                id="appPinSimpleInput"
+                class="app-pin-simple-input"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="4"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                aria-label="4 digit PIN"
+            >
+            <button id="appPinSimpleSubmit" class="app-pin-simple-submit" type="button">ENTER</button>
+            <div class="app-pin-simple-help">Enter the 4 digit PIN with the TV keyboard or remote number keys.</div>
         </div>
     </div>
 </div>
@@ -13146,27 +13183,12 @@ async function loadCryptoPortfolio(
     const APP_PIN = "4181";
     const PIN_SESSION_KEY = "financialAppPinUnlocked";
     const pinOverlay = document.getElementById("appPinLock");
-    const pinBoxes = Array.from(
-        document.querySelectorAll("#appPinBoxes .app-pin-box")
-    );
+    const pinBoxes = Array.from(document.querySelectorAll("#appPinBoxes .app-pin-box"));
     const pinError = document.getElementById("appPinError");
-    const pinKeypad = document.getElementById("appPinKeypad");
-    const pinEntryModal = document.getElementById("appPinEntryModal");
-    const pinEntryInput = document.getElementById("appPinEntryInput");
-    const pinEntryCancel = document.getElementById("appPinEntryCancel");
-    const pinEntrySubmit = document.getElementById("appPinEntrySubmit");
-    const pinEntryHint = document.getElementById("appPinEntryHint");
+    const pinInput = document.getElementById("appPinSimpleInput");
+    const pinSubmit = document.getElementById("appPinSimpleSubmit");
 
-    if (!pinOverlay || !pinKeypad || pinBoxes.length !== 4) return;
-
-    let enteredPin = "";
-    let focusedPinIndex = 0;
-    let suppressNextPinClickUntil = 0;
-    const isLgWebOsTv = /web0s|webos|netcast|lg browser|lg tv/i.test(String(navigator.userAgent || ""));
-    let tvPinKeyAt = 0;
-    let tvPinKeyType = "";
-    // R06: always use the on-screen keypad on old/unknown TV browsers.
-    pinOverlay.classList.add("tv-pin-mode");
+    if (!pinOverlay || !pinInput || pinBoxes.length !== 4) return;
 
     function nativeAvailable() {
         return !!(
@@ -13178,9 +13200,7 @@ async function loadCryptoPortfolio(
 
     function nativeLocked() {
         try {
-            return nativeAvailable()
-                ? !!window.AndroidNotifications.isAppLocked()
-                : true;
+            return nativeAvailable() ? !!window.AndroidNotifications.isAppLocked() : true;
         } catch (error) { return true; }
     }
 
@@ -13203,37 +13223,29 @@ async function loadCryptoPortfolio(
     }
 
     function renderPin() {
+        const value = String(pinInput.value || "").replace(/\D/g, "").slice(0, 4);
+        if (pinInput.value !== value) pinInput.value = value;
         pinBoxes.forEach((box, index) => {
-            const active = index < enteredPin.length;
-            box.textContent = active ? "●" : "";
-            box.classList.toggle("active", active);
+            box.textContent = index < value.length ? "●" : "";
+            box.classList.toggle("active", index < value.length);
         });
     }
 
-    function renderPinFocus() {
-        const cells = Array.from(pinKeypad.querySelectorAll("button.app-pin-key"));
-        cells.forEach((button) => button.classList.remove("pin-nav-focus"));
-        const selected = cells[focusedPinIndex];
-        if (selected && !selected.classList.contains("spacer")) {
-            selected.classList.add("pin-nav-focus");
-        }
-    }
-
-    function resetPin() {
-        enteredPin = "";
-        renderPin();
-    }
-
     function showPin() {
-        resetPin();
-        focusedPinIndex = 0;
-        renderPinFocus();
-        if (pinError) pinError.textContent = "";
         pinOverlay.classList.remove("pin-unlocked");
         pinOverlay.setAttribute("aria-hidden", "false");
-        if (!isLgWebOsTv) {
-            try { pinOverlay.focus({ preventScroll: true }); } catch (error) { try { pinOverlay.focus(); } catch (_) {} }
-        }
+        pinInput.value = "";
+        if (pinError) pinError.textContent = "";
+        renderPin();
+        // Let the TV/browser open its native keyboard by focusing a real input.
+        window.setTimeout(() => {
+            try {
+                pinInput.focus();
+                if (typeof pinInput.setSelectionRange === "function") {
+                    pinInput.setSelectionRange(pinInput.value.length, pinInput.value.length);
+                }
+            } catch (error) {}
+        }, 80);
     }
 
     function hidePin() {
@@ -13241,305 +13253,72 @@ async function loadCryptoPortfolio(
         pinOverlay.setAttribute("aria-hidden", "true");
         markSessionUnlocked();
         setNativeLockState(false);
+        try { pinInput.blur(); } catch (error) {}
     }
 
     function checkPin() {
-        if (enteredPin === APP_PIN) {
+        const value = String(pinInput.value || "").replace(/\D/g, "").slice(0, 4);
+        pinInput.value = value;
+        renderPin();
+        if (value === APP_PIN) {
             if (pinError) pinError.textContent = "";
             hidePin();
             return true;
         }
         if (pinError) pinError.textContent = "Incorrect PIN";
-        resetPin();
-        focusedPinIndex = 0;
-        renderPinFocus();
+        pinInput.value = "";
+        renderPin();
         window.setTimeout(() => { if (pinError) pinError.textContent = ""; }, 1800);
+        window.setTimeout(() => { try { pinInput.focus(); } catch (error) {} }, 80);
         return false;
     }
 
-    function addDigit(digit) {
-        if (enteredPin.length >= 4) return;
-        enteredPin += digit;
+    function submitIfComplete() {
+        const value = String(pinInput.value || "").replace(/\D/g, "").slice(0, 4);
+        pinInput.value = value;
         renderPin();
-        // Unlock immediately after the fourth digit, just like the original PIN flow.
-        if (enteredPin.length === 4) {
-            window.setTimeout(() => {
-                if (!pinOverlay.classList.contains("pin-unlocked") && enteredPin.length === 4) {
-                    checkPin();
-                }
-            }, 120);
-        }
+        if (value.length === 4) checkPin();
     }
 
-    function deleteDigit() {
-        if (!enteredPin.length) return;
-        enteredPin = enteredPin.slice(0, -1);
+    // This is intentionally the only PIN input path. No custom keypad, no
+    // keypress/keyup listeners, no synthetic clicks, and no Arrow-navigation
+    // logic. That keeps old LG/webOS browsers from duplicating digits.
+    pinInput.addEventListener("input", function () {
+        const raw = String(pinInput.value || "");
+        const value = raw.replace(/\D/g, "").slice(0, 4);
+        if (raw !== value) pinInput.value = value;
         if (pinError) pinError.textContent = "";
         renderPin();
-    }
-
-    function openPinEntryModal() {
-        if (!pinEntryModal || !pinEntryInput || isLgWebOsTv) return;
-        pinEntryInput.value = "";
-        if (pinEntryHint) pinEntryHint.textContent = isLgWebOsTv ? "Use the TV keyboard or the remote number keys." : "";
-        pinEntryModal.classList.add("open");
-        pinEntryModal.setAttribute("aria-hidden", "false");
-
-        // LG webOS opens its system virtual keyboard only after a real input
-        // receives focus. Do this inside the same user action and retry once
-        // for older TV browser engines.
-        try { pinEntryInput.focus(); } catch (error) {}
-        window.setTimeout(() => {
-            try { pinEntryInput.focus(); } catch (error) {}
-        }, isLgWebOsTv ? 60 : 40);
-    }
-
-    function closePinEntryModal() {
-        if (!pinEntryModal) return;
-        pinEntryModal.classList.remove("open");
-        pinEntryModal.setAttribute("aria-hidden", "true");
-    }
-
-    function submitPinEntryModal() {
-        if (!pinEntryInput) return false;
-        const value = String(pinEntryInput.value || "").replace(/\D/g, "").slice(0, 4);
-        pinEntryInput.value = value;
-        if (value.length !== 4) {
-            if (pinEntryHint) pinEntryHint.textContent = "Enter 4 digits";
-            return false;
+        if (value.length === 4) {
+            // Small delay allows the last character from a hardware/TV keyboard
+            // to finish committing before validation.
+            window.setTimeout(submitIfComplete, 50);
         }
-        closePinEntryModal();
-        enteredPin = value;
-        renderPin();
-        return checkPin();
-    }
-
-    function triggerPinHaptic() {
-        let nativeTriggered = false;
-        try {
-            if (window.AndroidNotifications && typeof window.AndroidNotifications.vibratePinKey === "function") {
-                window.AndroidNotifications.vibratePinKey();
-                nativeTriggered = true;
-            }
-        } catch (error) {}
-        if (!nativeTriggered) {
-            try { if (navigator.vibrate) navigator.vibrate(28); } catch (error) {}
-        }
-    }
-
-    // R08: single-source PIN controller.
-    // Older LG/webOS browsers can emit keydown + keypress + synthetic click for
-    // one remote/keyboard action. The previous implementation listened to all
-    // three paths, which caused duplicate/triple PIN digits. Keep exactly one
-    // keyboard path and one optional real-click path.
-    const pinCells = Array.from(pinKeypad.querySelectorAll("button.app-pin-key"));
-    pinCells.forEach((button) => {
-        const spacer = button.classList.contains("spacer");
-        button.setAttribute("type", "button");
-        button.setAttribute("tabindex", spacer ? "-1" : "0");
-        if (spacer) button.setAttribute("focusable", "false");
-        else button.setAttribute("focusable", "true");
-        // Remove inline handlers from R06/R07 if this HTML is opened after an
-        // update. The controller below is the only activation path.
-        button.removeAttribute("onclick");
-    });
-    pinKeypad.setAttribute("tabindex", "-1");
-    pinOverlay.setAttribute("tabindex", "-1");
-
-    function syncNativePinFocus(button) {
-        const index = pinCells.indexOf(button);
-        if (index >= 0 && !button.classList.contains("spacer")) {
-            focusedPinIndex = index;
-            renderPinFocus();
-        }
-    }
-
-    pinCells.forEach((button) => {
-        button.addEventListener("focus", () => syncNativePinFocus(button), false);
-        button.addEventListener("focusin", () => syncNativePinFocus(button), false);
-    });
-
-    function activatePinButton(button) {
-        if (!button || button.classList.contains("spacer")) return false;
-        syncNativePinFocus(button);
-        if (button.dataset.pinDelete === "true") {
-            deleteDigit();
-        } else if (button.dataset.pin !== undefined) {
-            addDigit(String(button.dataset.pin));
-        }
-        triggerPinHaptic();
-        return true;
-    }
-
-    // Physical mouse/touch activation remains supported. A synthetic click
-    // generated by a TV/keyboard OK event is ignored for a short window.
-    let suppressPinClickUntil = 0;
-    pinKeypad.addEventListener("click", (event) => {
-        let button = event.target;
-        while (button && button !== pinKeypad && !(button.classList && button.classList.contains("app-pin-key"))) {
-            button = button.parentNode;
-        }
-        if (!button || button.classList.contains("spacer")) return;
-        if (Date.now() < suppressPinClickUntil) {
-            event.preventDefault();
-            event.stopPropagation();
-            return;
-        }
-        activatePinButton(button);
     }, false);
 
-    const pinGrid = [
-        pinCells.findIndex(b => b.dataset.pin === "1"),
-        pinCells.findIndex(b => b.dataset.pin === "2"),
-        pinCells.findIndex(b => b.dataset.pin === "3"),
-        pinCells.findIndex(b => b.dataset.pin === "4"),
-        pinCells.findIndex(b => b.dataset.pin === "5"),
-        pinCells.findIndex(b => b.dataset.pin === "6"),
-        pinCells.findIndex(b => b.dataset.pin === "7"),
-        pinCells.findIndex(b => b.dataset.pin === "8"),
-        pinCells.findIndex(b => b.dataset.pin === "9"),
-        -1,
-        pinCells.findIndex(b => b.dataset.pin === "0"),
-        pinCells.findIndex(b => b.dataset.pinDelete === "true")
-    ];
-
-    function movePinFocusFallback(dx, dy) {
-        const current = pinGrid.indexOf(focusedPinIndex);
-        if (current < 0) return;
-        const row = Math.floor(current / 3);
-        const col = current % 3;
-        const r = Math.max(0, Math.min(3, row + dy));
-        const c = Math.max(0, Math.min(2, col + dx));
-        const target = r * 3 + c;
-        const index = pinGrid[target];
-        const button = index != null && index >= 0 ? pinCells[index] : null;
-        if (button) {
-            focusedPinIndex = index;
-            renderPinFocus();
-            try { button.focus(); } catch (error) {}
-        }
-    }
-
-    // ONE keyboard/remote handler only. No keypress, keyup, second keydown,
-    // or inline onclick handlers are used for PIN entry.
-    let lastPinKey = "";
-    let lastPinKeyAt = 0;
-    window.addEventListener("keydown", (event) => {
-        if (pinOverlay.classList.contains("pin-unlocked")) return;
-        if (pinEntryModal && pinEntryModal.classList.contains("open")) return;
-
-        const key = String(event.key || "");
-        const code = Number(event.keyCode || event.which || 0);
-        const now = Date.now();
-
-        const isArrow = key === "ArrowUp" || key === "ArrowDown" || key === "ArrowLeft" || key === "ArrowRight"
-            || code === 37 || code === 38 || code === 39 || code === 40;
-        if (isArrow) {
-            event.preventDefault();
-            event.stopPropagation();
-            let dx = 0, dy = 0;
-            if (key === "ArrowUp" || code === 38) dy = -1;
-            else if (key === "ArrowDown" || code === 40) dy = 1;
-            else if (key === "ArrowLeft" || code === 37) dx = -1;
-            else if (key === "ArrowRight" || code === 39) dx = 1;
-            movePinFocusFallback(dx, dy);
-            return;
-        }
-
-        const isOk = key === "Enter" || key === "OK" || code === 13;
-        if (isOk) {
-            event.preventDefault();
-            event.stopPropagation();
-            // One physical press may occasionally be reported twice by legacy
-            // TV firmware. Suppress an immediate duplicate, then suppress the
-            // synthetic click that can follow the keydown event.
-            if (lastPinKey === "OK" && now - lastPinKeyAt < 280) return;
-            lastPinKey = "OK";
-            lastPinKeyAt = now;
-            suppressPinClickUntil = now + 450;
-            activatePinButton(pinCells[focusedPinIndex]);
-            return;
-        }
-
-        let digit = /^[0-9]$/.test(key) ? key : null;
-        if (digit == null && code >= 48 && code <= 57) digit = String(code - 48);
-        if (digit == null && code >= 96 && code <= 105) digit = String(code - 96);
-        if (digit == null && code >= 7 && code <= 16) digit = String(code - 7);
-        if (digit != null) {
-            event.preventDefault();
-            event.stopPropagation();
-            // Ignore a duplicate key report from the same physical action.
-            if (lastPinKey === digit && now - lastPinKeyAt < 140) return;
-            lastPinKey = digit;
-            lastPinKeyAt = now;
-            suppressPinClickUntil = now + 300;
-            addDigit(digit);
-            const target = pinCells.findIndex(button => button.dataset.pin === digit);
-            if (target >= 0) {
-                focusedPinIndex = target;
-                renderPinFocus();
-            }
-            triggerPinHaptic();
-            return;
-        }
-
-        if (key === "Backspace" || key === "Delete" || code === 8 || code === 46 || code === 67) {
-            event.preventDefault();
-            event.stopPropagation();
-            if (lastPinKey === "DEL" && now - lastPinKeyAt < 140) return;
-            lastPinKey = "DEL";
-            lastPinKeyAt = now;
-            suppressPinClickUntil = now + 300;
-            deleteDigit();
-            triggerPinHaptic();
-        }
-    }, true);
-
-    if (pinEntryCancel) pinEntryCancel.addEventListener("click", () => { closePinEntryModal(); });
-    if (pinEntrySubmit) pinEntrySubmit.addEventListener("click", () => { submitPinEntryModal(); });
-    if (pinEntryInput) {
-        pinEntryInput.addEventListener("input", () => {
-            const value = String(pinEntryInput.value || "").replace(/\D/g, "").slice(0, 4);
-            pinEntryInput.value = value;
-            if (value.length === 4) {
-                window.setTimeout(() => submitPinEntryModal(), 60);
-            }
-        }, false);
-        pinEntryInput.addEventListener("keydown", (event) => {
-            const key = String(event.key || "");
-            const code = Number(event.keyCode || event.which || 0);
-            if (key === "Enter" || key === "OK" || code === 13) {
-                event.preventDefault();
-                event.stopPropagation();
-                submitPinEntryModal();
-            }
-        }, true);
-    }
-    window.addEventListener("keydown", (event) => {
-        if (!pinEntryModal || !pinEntryModal.classList.contains("open")) return;
+    pinInput.addEventListener("keydown", function (event) {
         const key = String(event.key || "");
         const code = Number(event.keyCode || event.which || 0);
         if (key === "Enter" || key === "OK" || code === 13) {
             event.preventDefault();
             event.stopPropagation();
-            submitPinEntryModal();
-        } else if (key === "Escape" || code === 27) {
-            event.preventDefault();
-            event.stopPropagation();
-            closePinEntryModal();
+            submitIfComplete();
         }
     }, true);
 
-    window.setTimeout(() => {
-        if (!pinOverlay.classList.contains("pin-unlocked")) {
-            const first = pinCells.find(button => !button.classList.contains("spacer"));
-            if (first) {
-                focusedPinIndex = pinCells.indexOf(first);
-                renderPinFocus();
-                try { first.focus(); } catch (error) {}
-            }
-        }
-    }, 80);
+    if (pinSubmit) {
+        pinSubmit.addEventListener("click", function () {
+            submitIfComplete();
+        }, false);
+    }
+
+    // Do not intercept keyboard events while the real PIN input is focused.
+    // This is essential for legacy LG TV keyboard input.
+    window.addEventListener("keydown", function (event) {
+        if (pinOverlay.classList.contains("pin-unlocked")) return;
+        const target = event.target;
+        if (target === pinInput || (target && target.closest && target.closest("#appPinSimpleEntry"))) return;
+    }, true);
 
     const unlockedForSession = isSessionUnlocked();
     const lockedByNative = nativeLocked();
@@ -13549,7 +13328,6 @@ async function loadCryptoPortfolio(
         pinOverlay.classList.add("pin-unlocked");
         pinOverlay.setAttribute("aria-hidden", "true");
     } else {
-        setNativeLockState(true);
         showPin();
     }
 })();
