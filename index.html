@@ -13407,12 +13407,49 @@ async function loadCryptoPortfolio(
             if (lastPolled.length === 4) submitTVPin();
         }, false);
 
-        // Make the real input the only focusable control for the PIN. The LG TV
-        // keyboard opens normally and there is no custom keypad or fake click.
+        // IMPORTANT for older LG TV browsers:
+        // Do not leave the PIN field inside a native HTML <form>. Some legacy
+        // WebKit/webOS versions submit the form outside the normal DOM event
+        // flow when the remote keyboard sends OK/Enter, causing the page to
+        // navigate/reload back to the PIN screen. Replacing the form with a
+        // plain container removes that browser-level submission path while
+        // keeping the exact same input for the TV keyboard. Desktop is untouched.
+        const tvPinForm = document.getElementById("appPinSimpleForm");
+        if (tvPinForm && tvPinForm.parentNode) {
+            const tvPinContainer = document.createElement("div");
+            tvPinContainer.id = "appPinSimpleFormTV";
+            tvPinContainer.className = tvPinForm.className || "";
+            while (tvPinForm.firstChild) {
+                tvPinContainer.appendChild(tvPinForm.firstChild);
+            }
+            tvPinForm.parentNode.replaceChild(tvPinContainer, tvPinForm);
+        }
+
+        // Keep only the real input focusable on the TV. The ENTER button is not
+        // needed because the remote's OK/Enter is handled by handleLegacyKey.
         if (pinSubmit) {
             pinSubmit.style.display = "none";
             pinSubmit.setAttribute("tabindex", "-1");
+            pinSubmit.setAttribute("type", "button");
+            pinSubmit.removeAttribute("name");
+            pinSubmit.removeAttribute("value");
         }
+
+        // A few legacy LG WebKit builds expose Enter only as keyup. Handle that
+        // event as a submit fallback, but de-duplicate it against keydown/keypress.
+        pinInput.addEventListener("keyup", function(event) {
+            if (pinOverlay.classList.contains("pin-unlocked")) return;
+            const code = getKeyCode(event);
+            const key = String(event.key || "").toLowerCase();
+            const isEnter = key === "enter" || key === "return" || key === "ok" || code === 13 || code === 10 || code === 108;
+            if (!isEnter) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const now = Date.now();
+            if (now < ignoreUntil) return;
+            ignoreUntil = now + 180;
+            submitTVPin();
+        }, true);
 
         showPin();
     } else {
