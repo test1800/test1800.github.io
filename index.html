@@ -13290,13 +13290,25 @@ async function loadCryptoPortfolio(
         let lastAcceptedAt = 0;
         let ignoreUntil = 0;
 
+        function normalizeTVDigits(value) {
+            return String(value || "")
+                // Arabic-Indic digits: ٠١٢٣٤٥٦٧٨٩
+                .replace(/[٠-٩]/g, function (ch) { return String(ch.charCodeAt(0) - 0x0660); })
+                // Persian digits: ۰۱۲۳۴۵۶۷۸۹
+                .replace(/[۰-۹]/g, function (ch) { return String(ch.charCodeAt(0) - 0x06F0); })
+                // Full-width digits used by some TV keyboards: ０１２３４５６７８９
+                .replace(/[０-９]/g, function (ch) { return String(ch.charCodeAt(0) - 0xFF10); });
+        }
+
         function currentValue() {
-            return String(pinInput.value || "").replace(/\D/g, "").slice(0, 4);
+            return normalizeTVDigits(pinInput.value).replace(/[^0-9]/g, "").slice(0, 4);
         }
 
         function setValue(value) {
-            const clean = String(value || "").replace(/\D/g, "").slice(0, 4);
-            pinInput.value = clean;
+            const clean = normalizeTVDigits(value).replace(/[^0-9]/g, "").slice(0, 4);
+            if (String(pinInput.value || "") !== clean) {
+                pinInput.value = clean;
+            }
             renderPinValue(clean);
             if (pinError) pinError.textContent = "";
             return clean;
@@ -13307,7 +13319,7 @@ async function loadCryptoPortfolio(
         }
 
         function digitFromEvent(event) {
-            const key = String(event.key || "");
+            const key = normalizeTVDigits(String(event.key || ""));
             if (/^[0-9]$/.test(key)) return key;
             const code = getKeyCode(event);
             if (code >= 48 && code <= 57) return String(code - 48);
@@ -13377,6 +13389,8 @@ async function loadCryptoPortfolio(
             }
         }
 
+        // Some LG on-screen keyboards emit localized numerals (Arabic/Persian)
+        // instead of ASCII 0-9. Normalize them before every PIN comparison.
         // Legacy LG browsers have different keyboard event behaviour; listening
         // to both is safe because handleLegacyKey de-duplicates them.
         pinInput.addEventListener("keydown", handleLegacyKey, true);
