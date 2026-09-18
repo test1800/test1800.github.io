@@ -5737,7 +5737,7 @@ h1 {
         </div>
         <div class="app-pin-error" id="appPinError"></div>
         <div class="app-pin-simple-entry" id="appPinSimpleEntry">
-            <form id="appPinSimpleForm" novalidate>
+            <div id="appPinSimpleForm" role="group" aria-label="PIN entry">
                 <input
                     id="appPinSimpleInput"
                     class="app-pin-simple-input"
@@ -5750,8 +5750,8 @@ h1 {
                     spellcheck="false"
                     aria-label="4 digit PIN"
                 >
-                <button id="appPinSimpleSubmit" class="app-pin-simple-submit" type="submit">ENTER</button>
-            </form>
+                <button id="appPinSimpleSubmit" class="app-pin-simple-submit" type="button">ENTER</button>
+            </div>
             <div class="app-pin-simple-help">Enter the 4 digit PIN with the TV keyboard or press ENTER/OK.</div>
         </div>
     </div>
@@ -13224,10 +13224,23 @@ async function loadCryptoPortfolio(
         catch (error) {}
     }
 
+    // Old LG browsers can expose localized digits. Keep the normalization
+    // independent of keyboard locale and independent of key events.
+    function normalizeDigits(value) {
+        return String(value || "")
+            .replace(/[٠-٩]/g, function (ch) { return String(ch.charCodeAt(0) - 0x0660); })
+            .replace(/[۰-۹]/g, function (ch) { return String(ch.charCodeAt(0) - 0x06F0); })
+            .replace(/[０-９]/g, function (ch) { return String(ch.charCodeAt(0) - 0xFF10); })
+            .replace(/[^0-9]/g, "")
+            .slice(0, 4);
+    }
+
     function renderPinValue(value) {
-        const clean = String(value || "").replace(/\D/g, "").slice(0, 4);
-        if (String(pinInput.value || "") !== clean) pinInput.value = clean;
-        pinBoxes.forEach((box, index) => {
+        const clean = normalizeDigits(value);
+        if (String(pinInput.value || "") !== clean) {
+            try { pinInput.value = clean; } catch (error) {}
+        }
+        pinBoxes.forEach(function (box, index) {
             box.textContent = index < clean.length ? "●" : "";
             box.classList.toggle("active", index < clean.length);
         });
@@ -13237,17 +13250,18 @@ async function loadCryptoPortfolio(
     function showPin() {
         pinOverlay.classList.remove("pin-unlocked");
         pinOverlay.setAttribute("aria-hidden", "false");
-        pinInput.value = "";
+        try { pinInput.value = ""; } catch (error) {}
         if (pinError) pinError.textContent = "";
         renderPinValue("");
-        window.setTimeout(() => {
+        try { pinInput.setAttribute("autocomplete", "off"); } catch (error) {}
+        window.setTimeout(function () {
             try {
                 pinInput.focus();
                 if (typeof pinInput.setSelectionRange === "function") {
                     pinInput.setSelectionRange(pinInput.value.length, pinInput.value.length);
                 }
             } catch (error) {}
-        }, 80);
+        }, 100);
     }
 
     function hidePin() {
@@ -13258,324 +13272,110 @@ async function loadCryptoPortfolio(
         try { pinInput.blur(); } catch (error) {}
     }
 
-    function checkPin() {
-        const value = renderPinValue(pinInput.value);
-        if (value === APP_PIN) {
+    let lastCheckedValue = "";
+    let lastWrongValue = "";
+    let unlockGuard = false;
+
+    function checkPin(value) {
+        const clean = normalizeDigits(value);
+        renderPinValue(clean);
+        if (clean.length !== 4 || unlockGuard) return false;
+
+        // Prevent repeated checks caused by old TV WebKit generating multiple
+        // keyboard events for a single physical key.
+        if (clean === lastCheckedValue) return clean === APP_PIN;
+        lastCheckedValue = clean;
+
+        if (clean === APP_PIN) {
+            unlockGuard = true;
             if (pinError) pinError.textContent = "";
             hidePin();
             return true;
         }
-        if (pinError) pinError.textContent = "Incorrect PIN";
-        pinInput.value = "";
-        renderPinValue("");
-        window.setTimeout(() => { if (pinError) pinError.textContent = ""; }, 1800);
-        window.setTimeout(() => { try { pinInput.focus(); } catch (error) {} }, 80);
+
+        if (clean !== lastWrongValue) {
+            lastWrongValue = clean;
+            if (pinError) pinError.textContent = "Incorrect PIN";
+            try { pinInput.value = ""; } catch (error) {}
+            renderPinValue("");
+            window.setTimeout(function () {
+                lastCheckedValue = "";
+                lastWrongValue = "";
+                if (pinError) pinError.textContent = "";
+                try { pinInput.focus(); } catch (error) {}
+            }, 900);
+        }
         return false;
     }
 
-    /*
-       Keep the desktop/browser path exactly like R10.
-       Only old LG/webOS/NetCast/SmartTV browsers use the legacy path below.
-    */
-    function isLegacyLGTV() {
-        const ua = String(navigator.userAgent || "");
-        return /web0s|webos|netcast|smarttv|smart-tv|lg browser|lg\s*smarttv/i.test(ua);
+    function syncInput(autoCheck) {
+        if (pinOverlay.classList.contains("pin-unlocked") || unlockGuard) return "";
+        const clean = normalizeDigits(pinInput.value);
+        renderPinValue(clean);
+        if (pinError && clean.length < 4) pinError.textContent = "";
+        if (clean.length < 4) {
+            lastCheckedValue = "";
+            lastWrongValue = "";
+        }
+        if (autoCheck && clean.length === 4) checkPin(clean);
+        return clean;
     }
 
-    if (isLegacyLGTV()) {
-        // LG legacy TV: use one event pipeline for digits. The TV's on-screen
-        // keyboard may emit both keydown and keypress for one OK action, so a
-        // tiny time/code guard prevents the same digit from being accepted twice.
-        let lastAcceptedCode = null;
-        let lastAcceptedAt = 0;
-        let ignoreUntil = 0;
-
-        function normalizeTVDigits(value) {
-            return String(value || "")
-                // Arabic-Indic digits: ٠١٢٣٤٥٦٧٨٩
-                .replace(/[٠-٩]/g, function (ch) { return String(ch.charCodeAt(0) - 0x0660); })
-                // Persian digits: ۰۱۲۳۴۵۶۷۸۹
-                .replace(/[۰-۹]/g, function (ch) { return String(ch.charCodeAt(0) - 0x06F0); })
-                // Full-width digits used by some TV keyboards: ０１２３４５６７８９
-                .replace(/[０-９]/g, function (ch) { return String(ch.charCodeAt(0) - 0xFF10); });
+    // The TV path deliberately uses the actual input value as the source of
+    // truth. No custom numeric keypad and no synthetic click/keypress is used.
+    // This is much more reliable on old LG WebKit implementations.
+    pinInput.addEventListener("input", function () { syncInput(true); }, false);
+    pinInput.addEventListener("change", function () { syncInput(true); }, false);
+    pinInput.addEventListener("keyup", function (event) {
+        const code = Number(event.keyCode || event.which || 0);
+        const key = String(event.key || "").toLowerCase();
+        const isEnter = key === "enter" || key === "return" || key === "ok" || code === 13 || code === 10 || code === 108;
+        if (isEnter) {
+            try { event.preventDefault(); event.stopPropagation(); } catch (error) {}
+            syncInput(true);
+        } else {
+            syncInput(true);
         }
+    }, true);
 
-        function currentValue() {
-            return normalizeTVDigits(pinInput.value).replace(/[^0-9]/g, "").slice(0, 4);
+    // Prevent old browsers from performing their own implicit submit/navigation.
+    pinInput.addEventListener("keydown", function (event) {
+        const code = Number(event.keyCode || event.which || 0);
+        const key = String(event.key || "").toLowerCase();
+        const isEnter = key === "enter" || key === "return" || key === "ok" || code === 13 || code === 10 || code === 108;
+        if (isEnter) {
+            try { event.preventDefault(); event.stopPropagation(); } catch (error) {}
+            window.setTimeout(function () { syncInput(true); }, 0);
         }
+    }, true);
 
-        function setValue(value) {
-            const clean = normalizeTVDigits(value).replace(/[^0-9]/g, "").slice(0, 4);
-            if (String(pinInput.value || "") !== clean) {
-                pinInput.value = clean;
-            }
-            renderPinValue(clean);
-            if (pinError) pinError.textContent = "";
-            return clean;
-        }
-
-        function getKeyCode(event) {
-            return Number(event.keyCode || event.which || 0);
-        }
-
-        function digitFromEvent(event) {
-            const key = normalizeTVDigits(String(event.key || ""));
-            if (/^[0-9]$/.test(key)) return key;
-            const code = getKeyCode(event);
-            if (code >= 48 && code <= 57) return String(code - 48);
-            if (code >= 96 && code <= 105) return String(code - 96);
-            return null;
-        }
-
-        function shouldIgnoreDuplicate(code) {
-            const now = Date.now();
-            if (code && code === lastAcceptedCode && now - lastAcceptedAt < 180) {
-                return true;
-            }
-            lastAcceptedCode = code;
-            lastAcceptedAt = now;
+    pinInput.addEventListener("keypress", function (event) {
+        const code = Number(event.keyCode || event.which || 0);
+        const key = String(event.key || "").toLowerCase();
+        const isEnter = key === "enter" || key === "return" || key === "ok" || code === 13 || code === 10 || code === 108;
+        if (isEnter) {
+            try { event.preventDefault(); event.stopPropagation(); } catch (error) {}
+            syncInput(true);
             return false;
         }
+        return true;
+    }, true);
 
-        function submitTVPin() {
-            const value = setValue(currentValue());
-            if (value.length === 4) checkPin();
-        }
-
-        function handleLegacyKey(event) {
-            if (pinOverlay.classList.contains("pin-unlocked")) return;
-
-            const code = getKeyCode(event);
-            const key = String(event.key || "").toLowerCase();
-            const digit = digitFromEvent(event);
-            const isEnter = key === "enter" || key === "return" || key === "ok" || code === 13 || code === 10 || code === 108;
-            const isBackspace = key === "backspace" || code === 8;
-            const isDelete = key === "delete" || code === 46;
-
-            if (!digit && !isEnter && !isBackspace && !isDelete) return;
-
-            event.preventDefault();
-            event.stopPropagation();
-            const now = Date.now();
-            if (now < ignoreUntil) return;
-
-            // keydown + keypress for the same physical key must count once.
-            if (shouldIgnoreDuplicate(code || digit)) return;
-
-            if (digit) {
-                const value = currentValue();
-                if (value.length < 4) {
-                    setValue(value + digit);
-                    if (pinInput && typeof pinInput.setSelectionRange === "function") {
-                        try { pinInput.setSelectionRange(pinInput.value.length, pinInput.value.length); } catch (error) {}
-                    }
-                    if (pinInput.value.length === 4) {
-                        ignoreUntil = now + 180;
-                        window.setTimeout(submitTVPin, 0);
-                    }
-                }
-                return;
-            }
-
-            if (isBackspace || isDelete) {
-                const value = currentValue();
-                setValue(value.slice(0, -1));
-                return;
-            }
-
-            if (isEnter) {
-                ignoreUntil = now + 180;
-                submitTVPin();
-            }
-        }
-
-        // Some LG on-screen keyboards emit localized numerals (Arabic/Persian)
-        // instead of ASCII 0-9. Normalize them before every PIN comparison.
-        // Legacy LG browsers have different keyboard event behaviour; listening
-        // to both is safe because handleLegacyKey de-duplicates them.
-        pinInput.addEventListener("keydown", handleLegacyKey, true);
-        pinInput.addEventListener("keypress", handleLegacyKey, true);
-
-        // Some old LG TV keyboards update value without keyboard events.
-        // Poll only this tiny field as a fallback and mirror it into the dots.
-        let lastPolled = "";
-        window.setInterval(function () {
-            if (pinOverlay.classList.contains("pin-unlocked")) return;
-            const value = currentValue();
-            if (value !== lastPolled) {
-                lastPolled = value;
-                renderPinValue(value);
-                if (value.length < 4 && pinError) pinError.textContent = "";
-            }
-            if (value.length === 4) submitTVPin();
-        }, 140);
-
-        pinInput.addEventListener("input", function () {
-            if (pinOverlay.classList.contains("pin-unlocked")) return;
-            lastPolled = setValue(currentValue());
-            if (lastPolled.length === 4) submitTVPin();
+    if (pinSubmit) {
+        pinSubmit.addEventListener("click", function (event) {
+            try { event.preventDefault(); event.stopPropagation(); } catch (error) {}
+            syncInput(true);
         }, false);
-        pinInput.addEventListener("change", function () {
-            if (pinOverlay.classList.contains("pin-unlocked")) return;
-            lastPolled = setValue(currentValue());
-            if (lastPolled.length === 4) submitTVPin();
-        }, false);
-
-        // IMPORTANT for older LG TV browsers:
-        // Do not leave the PIN field inside a native HTML <form>. Some legacy
-        // WebKit/webOS versions submit the form outside the normal DOM event
-        // flow when the remote keyboard sends OK/Enter, causing the page to
-        // navigate/reload back to the PIN screen. Replacing the form with a
-        // plain container removes that browser-level submission path while
-        // keeping the exact same input for the TV keyboard. Desktop is untouched.
-        const tvPinForm = document.getElementById("appPinSimpleForm");
-        if (tvPinForm && tvPinForm.parentNode) {
-            const tvPinContainer = document.createElement("div");
-            tvPinContainer.id = "appPinSimpleFormTV";
-            tvPinContainer.className = tvPinForm.className || "";
-            while (tvPinForm.firstChild) {
-                tvPinContainer.appendChild(tvPinForm.firstChild);
-            }
-            tvPinForm.parentNode.replaceChild(tvPinContainer, tvPinForm);
-        }
-
-        // Keep only the real input focusable on the TV. The ENTER button is not
-        // needed because the remote's OK/Enter is handled by handleLegacyKey.
-        if (pinSubmit) {
-            pinSubmit.style.display = "none";
-            pinSubmit.setAttribute("tabindex", "-1");
-            pinSubmit.setAttribute("type", "button");
-            pinSubmit.removeAttribute("name");
-            pinSubmit.removeAttribute("value");
-        }
-
-        // A few legacy LG WebKit builds expose Enter only as keyup. Handle that
-        // event as a submit fallback, but de-duplicate it against keydown/keypress.
-        pinInput.addEventListener("keyup", function(event) {
-            if (pinOverlay.classList.contains("pin-unlocked")) return;
-            const code = getKeyCode(event);
-            const key = String(event.key || "").toLowerCase();
-            const isEnter = key === "enter" || key === "return" || key === "ok" || code === 13 || code === 10 || code === 108;
-            if (!isEnter) return;
-            event.preventDefault();
-            event.stopPropagation();
-            const now = Date.now();
-            if (now < ignoreUntil) return;
-            ignoreUntil = now + 180;
-            submitTVPin();
-        }, true);
-
-        showPin();
-    } else {
-        // R10 desktop / modern browser path: unchanged behaviour.
-        let lastRenderedPinValue = "";
-        let lastSubmittedPinValue = "";
-
-        function renderPin() {
-            renderPinValue(pinInput.value);
-        }
-
-        function submitIfComplete() {
-            const value = renderPinValue(pinInput.value);
-            if (value.length === 4 && value !== lastSubmittedPinValue) {
-                lastSubmittedPinValue = value;
-                checkPin();
-            }
-        }
-
-        function syncPinField(allowSubmit) {
-            const raw = String(pinInput.value || "");
-            const value = raw.replace(/\D/g, "").slice(0, 4);
-            if (raw !== value) pinInput.value = value;
-
-            if (value !== lastRenderedPinValue) {
-                lastRenderedPinValue = value;
-                if (pinError) pinError.textContent = "";
-                renderPinValue(value);
-                if (value.length < 4) lastSubmittedPinValue = "";
-            } else {
-                renderPinValue(value);
-            }
-
-            if (allowSubmit && value.length === 4 && value !== lastSubmittedPinValue) {
-                lastSubmittedPinValue = value;
-                checkPin();
-            }
-            return value;
-        }
-
-        function desktopShowPin() {
-            pinOverlay.classList.remove("pin-unlocked");
-            pinOverlay.setAttribute("aria-hidden", "false");
-            pinInput.value = "";
-            lastRenderedPinValue = "";
-            lastSubmittedPinValue = "";
-            if (pinError) pinError.textContent = "";
-            renderPin();
-            window.setTimeout(() => {
-                try {
-                    pinInput.focus();
-                    if (typeof pinInput.setSelectionRange === "function") {
-                        pinInput.setSelectionRange(pinInput.value.length, pinInput.value.length);
-                    }
-                } catch (error) {}
-            }, 80);
-        }
-
-        pinInput.addEventListener("input", function () { syncPinField(false); }, false);
-        pinInput.addEventListener("change", function () { syncPinField(false); }, false);
-        pinInput.addEventListener("keydown", function (event) {
-            const key = String(event.key || "").toLowerCase();
-            const code = Number(event.keyCode || event.which || 0);
-            if (key === "enter" || key === "ok" || key === "return" || code === 13 || code === 10 || code === 108) {
-                event.preventDefault();
-                event.stopPropagation();
-                submitIfComplete();
-            }
-        }, true);
-
-        const pinForm = document.getElementById("appPinSimpleForm");
-        if (pinForm) {
-            pinForm.addEventListener("submit", function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                submitIfComplete();
-            }, false);
-        }
-
-        if (pinSubmit) {
-            pinSubmit.addEventListener("click", function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                submitIfComplete();
-            }, false);
-        }
-
-        window.setInterval(function () {
-            if (pinOverlay.classList.contains("pin-unlocked")) return;
-            syncPinField(true);
-        }, 120);
-
-        window.addEventListener("keydown", function (event) {
-            if (pinOverlay.classList.contains("pin-unlocked")) return;
-            const target = event.target;
-            if (target === pinInput || (target && target.closest && target.closest("#appPinSimpleEntry"))) return;
-        }, true);
-
-        const unlockedForSession = isSessionUnlocked();
-        const lockedByNative = nativeLocked();
-        if (nativeAvailable() && !lockedByNative) {
-            hidePin();
-        } else if (!nativeAvailable() && unlockedForSession) {
-            pinOverlay.classList.add("pin-unlocked");
-            pinOverlay.setAttribute("aria-hidden", "true");
-        } else {
-            desktopShowPin();
-        }
-        return;
     }
 
-    // TV still honors native/session lock state, matching the desktop path.
+    // Critical legacy-TV fallback: some old LG browsers update the input's
+    // .value without firing input/change reliably. Polling the one PIN field
+    // means 4 entered digits are still mirrored to the boxes and auto-checked.
+    window.setInterval(function () {
+        if (pinOverlay.classList.contains("pin-unlocked") || unlockGuard) return;
+        syncInput(true);
+    }, 100);
+
     const unlockedForSession = isSessionUnlocked();
     const lockedByNative = nativeLocked();
     if (nativeAvailable() && !lockedByNative) {
@@ -13583,8 +13383,10 @@ async function loadCryptoPortfolio(
     } else if (!nativeAvailable() && unlockedForSession) {
         pinOverlay.classList.add("pin-unlocked");
         pinOverlay.setAttribute("aria-hidden", "true");
+    } else {
+        showPin();
     }
-})();;
+})();;;
 /* =====================================================
    RF / KJ SIGNAL MATRIX MONITOR
 ===================================================== */
