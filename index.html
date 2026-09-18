@@ -2388,6 +2388,15 @@ h1 {
     visibility: hidden;
     pointer-events: none;
 }
+/* R03: legacy LG/webOS viewport fallback for the PIN screen only. */
+@media screen and (max-width: 1280px) {
+    #appPinLock {
+        width: 100%;
+        height: 100%;
+        min-height: 100%;
+        box-sizing: border-box;
+    }
+}
 @media (max-width: 420px) {
     #appPinLock {
         padding: 14px;
@@ -5652,33 +5661,33 @@ h1 {
         <div class="app-pin-error" id="appPinError"></div>
         <div class="app-pin-keypad" id="appPinKeypad">
             <div class="app-pin-row">
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="1">1</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="2">2</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="3">3</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="1" onclick="return window.__financialPinPress(this);">1</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="2" onclick="return window.__financialPinPress(this);">2</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="3" onclick="return window.__financialPinPress(this);">3</button>
             </div>
             <div class="app-pin-row">
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="4">4</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="5">5</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="6">6</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="4" onclick="return window.__financialPinPress(this);">4</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="5" onclick="return window.__financialPinPress(this);">5</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="6" onclick="return window.__financialPinPress(this);">6</button>
             </div>
             <div class="app-pin-row">
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="7">7</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="8">8</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="9">9</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="7" onclick="return window.__financialPinPress(this);">7</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="8" onclick="return window.__financialPinPress(this);">8</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="9" onclick="return window.__financialPinPress(this);">9</button>
             </div>
             <div class="app-pin-row">
-                <button class="app-pin-key app-pin-input-trigger" type="button" tabindex="0" data-pin-input-open="true" aria-label="Enter PIN">⌨</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin="0">0</button>
-                <button class="app-pin-key" type="button" tabindex="0" data-pin-delete="true" aria-label="Delete">⌫</button>
+                <button class="app-pin-key app-pin-input-trigger" type="button" tabindex="0" data-pin-input-open="true" aria-label="Enter PIN" onclick="return window.__financialPinPress(this);">⌨</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin="0" onclick="return window.__financialPinPress(this);">0</button>
+                <button class="app-pin-key" type="button" tabindex="0" data-pin-delete="true" aria-label="Delete" onclick="return window.__financialPinPress(this);">⌫</button>
             </div>
         </div>
         <div class="app-pin-entry-modal" id="appPinEntryModal" aria-hidden="true">
             <div class="app-pin-entry-card" role="dialog" aria-modal="true" aria-label="Enter PIN">
                 <div class="app-pin-entry-title">Enter PIN</div>
-                <input id="appPinEntryInput" class="app-pin-entry-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="4-digit PIN">
+                <input id="appPinEntryInput" class="app-pin-entry-input" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="4" min="0" max="9999" step="1" autocomplete="off" aria-label="4-digit PIN">
                 <div class="app-pin-entry-actions">
-                    <button id="appPinEntryCancel" class="app-pin-entry-button" type="button">CANCEL</button>
-                    <button id="appPinEntrySubmit" class="app-pin-entry-button primary" type="button">ENTER</button>
+                    <button id="appPinEntryCancel" class="app-pin-entry-button" type="button" onclick="return window.__financialPinCancel();">CANCEL</button>
+                    <button id="appPinEntrySubmit" class="app-pin-entry-button primary" type="button" onclick="return window.__financialPinSubmit();">ENTER</button>
                 </div>
                 <div id="appPinEntryHint" class="app-pin-entry-hint"></div>
             </div>
@@ -12093,6 +12102,8 @@ window.addEventListener("DOMContentLoaded", () => {
 ===================================================== */
 const MEXC_KLINE_BASE =
     "https://api.mexc.com/api/v1/contract/kline/";
+const MEXC_SPOT_TICKER =
+    "https://api.mexc.com/api/v3/ticker/price";
 const MEXC_CORS_PROXY =
     "https://api.cors.syrins.tech/?url=";
 const MEXC_CORS_PROXY_2 =
@@ -12107,6 +12118,7 @@ const CRYPTO_PORTFOLIO_ICONS =
     CRYPTO_ICON_FILES;
 let cryptoPortfolioLoadInProgress = null;
 let cryptoPortfolioLastLoadTime = 0;
+let cryptoPortfolioRefreshTimer = null;
 let lastPortfolioRenderSignature = "";
 function cryptoPortfolioCacheKey(symbol) {
     return "financialDashboardMexc_" + symbol;
@@ -12383,71 +12395,214 @@ async function fetchMexcKlines(
 async function getMexcCryptoData(
     symbol
 ) {
-    const now =
-        Math.floor(
-            Date.now() / 1000
-        );
-    const currentCloses =
-        await fetchMexcKlines(
-            symbol,
-            "Min1",
-            now - 180,
-            now + 5
-        );
-    const price =
-        currentCloses[
-            currentCloses.length - 1
+    /*
+       R04: Crypto Portfolio uses the live daily percentage supplied by the
+       same Signal Matrix worker used by Crossover. It no longer restores a
+       stale/zero percentage from the local price cache when a live price is
+       available. If the worker does not include the daily percentage, the
+       MEXC 24hr ticker is queried before falling back to the existing Kline
+       calculation.
+    */
+    const coin = String(symbol || "")
+        .replace(/[-_\/]/g, "")
+        .replace(/USDT$/i, "")
+        .toUpperCase();
+    const spotSymbol = coin + "USDT";
+
+    function readLiveChangePct(payload, price) {
+        const candidates = [
+            payload?.dailyChangePercent,
+            payload?.changePercent,
+            payload?.priceChangePercent,
+            payload?.changePct,
+            payload?.daily_change_percent,
+            payload?.data?.dailyChangePercent,
+            payload?.data?.changePercent,
+            payload?.data?.priceChangePercent,
+            payload?.data?.changePct,
+            payload?.data?.daily_change_percent
         ];
-    if (
-        !Number.isFinite(price) ||
-        price <= 0
-    ) {
-        throw new Error(
-            "Current MEXC price unavailable"
+        for (const candidate of candidates) {
+            const value = Number(candidate);
+            if (Number.isFinite(value)) return value;
+        }
+
+        const directPrevious = Number(
+            payload?.previousClose ??
+            payload?.prevClosePrice ??
+            payload?.data?.previousClose ??
+            payload?.data?.prevClosePrice
         );
+        if (
+            Number.isFinite(price) && price > 0 &&
+            Number.isFinite(directPrevious) && directPrevious > 0
+        ) {
+            return ((price - directPrevious) / directPrevious) * 100;
+        }
+        return null;
     }
-    const dayStart =
-        now -
-        (3 * 86400);
-    const dailyCloses =
-        await fetchMexcKlines(
-            symbol,
-            "Day1",
-            dayStart,
-            now + 5
+
+    function normalizePreviousClose(payload, price, changePct) {
+        const explicit = Number(
+            payload?.previousClose ??
+            payload?.prevClosePrice ??
+            payload?.data?.previousClose ??
+            payload?.data?.prevClosePrice
         );
+        if (Number.isFinite(explicit) && explicit > 0) return explicit;
+        if (
+            Number.isFinite(price) && price > 0 &&
+            Number.isFinite(changePct) && changePct > -100
+        ) {
+            return price / (1 + (changePct / 100));
+        }
+        return null;
+    }
+
+    // 1) Primary live source: same worker used successfully by Crossover.
+    try {
+        const workerUrl =
+            CROSSOVER_WORKER_URL +
+            `?coin=${encodeURIComponent(coin)}&timeframe=1&t=${Date.now()}`;
+        const response = await fetchApiWithProxyFallback(
+            workerUrl,
+            {
+                method: "GET",
+                headers: { "Accept": "application/json" },
+                cache: "no-store"
+            },
+            10000
+        );
+        const payload = await response.json();
+        const price = Number(
+            payload?.price ??
+            payload?.lastPrice ??
+            payload?.currentPrice ??
+            payload?.data?.price ??
+            payload?.data?.lastPrice
+        );
+        if (!Number.isFinite(price) || price <= 0) {
+            throw new Error("Invalid Crossover worker price");
+        }
+        const changePct = readLiveChangePct(payload, price);
+        const previousClose = normalizePreviousClose(payload, price, changePct);
+        if (!Number.isFinite(changePct) || !Number.isFinite(previousClose)) {
+            throw new Error("Worker did not provide a valid daily change percentage");
+        }
+        return {
+            price,
+            previousClose,
+            changePct,
+            time: Date.now(),
+            offline: false
+        };
+    } catch (workerError) {
+        console.warn("Crypto Portfolio worker failed, trying MEXC 24hr ticker:", symbol, workerError);
+    }
+
+    // 2) MEXC 24hr ticker: this provides a live price + live percentage.
+    try {
+        const ticker24hUrl = new URL("https://api.mexc.com/api/v3/ticker/24hr");
+        ticker24hUrl.searchParams.set("symbol", spotSymbol);
+        const response = await fetchApiWithProxyFallback(
+            ticker24hUrl.toString(),
+            {
+                method: "GET",
+                headers: { "Accept": "application/json" },
+                cache: "no-store"
+            },
+            10000
+        );
+        const payload = await response.json();
+        const price = Number(payload?.lastPrice ?? payload?.price);
+        const changePct = Number(payload?.priceChangePercent ?? payload?.changePct);
+        const previousClose = normalizePreviousClose(payload, price, changePct);
+        if (
+            !Number.isFinite(price) || price <= 0 ||
+            !Number.isFinite(changePct) ||
+            !Number.isFinite(previousClose)
+        ) {
+            throw new Error("Invalid MEXC 24hr ticker response");
+        }
+        return {
+            price,
+            previousClose,
+            changePct,
+            time: Date.now(),
+            offline: false
+        };
+    } catch (ticker24hError) {
+        console.warn("MEXC 24hr ticker failed, trying MEXC spot ticker:", symbol, ticker24hError);
+    }
+
+    // 3) Simple MEXC Spot ticker fallback for the live price.
+    try {
+        const tickerUrl = new URL(MEXC_SPOT_TICKER);
+        tickerUrl.searchParams.set("symbol", spotSymbol);
+        const response = await fetchApiWithProxyFallback(
+            tickerUrl.toString(),
+            {
+                method: "GET",
+                headers: { "Accept": "application/json" },
+                cache: "no-store"
+            },
+            10000
+        );
+        const payload = await response.json();
+        const price = Number(payload && (payload.price ?? payload.lastPrice));
+        if (!Number.isFinite(price) || price <= 0) {
+            throw new Error("Invalid MEXC ticker price");
+        }
+
+        // Never turn an unknown live percentage into 0. If a cached percentage
+        // exists, keep it only as a clearly separate fallback value.
+        const cached = loadCryptoPortfolioCache(symbol);
+        const cachedPct = Number(cached?.changePct);
+        const cachedPrevious = Number(cached?.previousClose);
+        return {
+            price,
+            previousClose:
+                Number.isFinite(cachedPrevious) && cachedPrevious > 0
+                    ? cachedPrevious
+                    : price,
+            changePct:
+                Number.isFinite(cachedPct) ? cachedPct : null,
+            time: Date.now(),
+            offline: false
+        };
+    } catch (tickerError) {
+        console.warn("MEXC spot ticker failed, trying kline:", symbol, tickerError);
+    }
+
+    // 4) Existing Kline fallback; percentage is calculated from daily closes.
+    const now = Math.floor(Date.now() / 1000);
+    const currentCloses = await fetchMexcKlines(
+        symbol,
+        "Min1",
+        now - 180,
+        now + 5
+    );
+    const price = currentCloses[currentCloses.length - 1];
+    if (!Number.isFinite(price) || price <= 0) {
+        throw new Error("Current MEXC price unavailable");
+    }
+    const dayStart = now - (3 * 86400);
+    const dailyCloses = await fetchMexcKlines(
+        symbol,
+        "Day1",
+        dayStart,
+        now + 5
+    );
     let previousClose = null;
-    if (
-        dailyCloses.length >= 2
-    ) {
-        previousClose =
-            dailyCloses[
-                dailyCloses.length - 2
-            ];
+    if (dailyCloses.length >= 2) {
+        previousClose = dailyCloses[dailyCloses.length - 2];
+    } else if (dailyCloses.length === 1) {
+        previousClose = dailyCloses[0];
     }
-    else if (
-        dailyCloses.length === 1
-    ) {
-        previousClose =
-            dailyCloses[0];
+    if (!Number.isFinite(previousClose) || previousClose <= 0) {
+        throw new Error("Previous daily close unavailable");
     }
-    if (
-        !Number.isFinite(previousClose) ||
-        previousClose <= 0
-    ) {
-        throw new Error(
-            "Previous daily close unavailable"
-        );
-    }
-    const changePct =
-        (
-            (
-                price -
-                previousClose
-            ) /
-            previousClose
-        ) *
-        100;
+    const changePct = ((price - previousClose) / previousClose) * 100;
     return {
         price,
         previousClose,
@@ -12456,6 +12611,7 @@ async function getMexcCryptoData(
         offline: false
     };
 }
+
 function renderCryptoPortfolio(
     holdings,
     marketData
@@ -13100,14 +13256,17 @@ async function loadCryptoPortfolio(
     function openPinEntryModal() {
         if (!pinEntryModal || !pinEntryInput) return;
         pinEntryInput.value = "";
-        if (pinEntryHint) pinEntryHint.textContent = isLgWebOsTv ? "Use number keys or the remote. System keyboard is not required." : "";
+        if (pinEntryHint) pinEntryHint.textContent = isLgWebOsTv ? "Use the TV keyboard or the remote number keys." : "";
         pinEntryModal.classList.add("open");
         pinEntryModal.setAttribute("aria-hidden", "false");
-        if (!isLgWebOsTv) {
-            window.setTimeout(() => {
-                try { pinEntryInput.focus(); } catch (error) {}
-            }, 40);
-        }
+
+        // LG webOS opens its system virtual keyboard only after a real input
+        // receives focus. Do this inside the same user action and retry once
+        // for older TV browser engines.
+        try { pinEntryInput.focus(); } catch (error) {}
+        window.setTimeout(() => {
+            try { pinEntryInput.focus(); } catch (error) {}
+        }, isLgWebOsTv ? 60 : 40);
     }
 
     function closePinEntryModal() {
@@ -13177,8 +13336,39 @@ async function loadCryptoPortfolio(
         button.addEventListener("pointerdown", () => syncNativePinFocus(button), false);
     });
 
+    // R03: direct handler for old LG browsers. This avoids relying on
+    // delegated DOM helpers that some legacy webOS engines do not implement.
+    window.__financialPinPress = function(button) {
+        if (!button || !button.getAttribute) return false;
+        var now = Date.now();
+        suppressNextPinClickUntil = now + 650;
+        syncNativePinFocus(button);
+        var inputOpen = button.getAttribute("data-pin-input-open") === "true";
+        var deleteKey = button.getAttribute("data-pin-delete") === "true";
+        var digit = button.getAttribute("data-pin");
+        if (inputOpen) openPinEntryModal();
+        else if (deleteKey) deleteDigit();
+        else if (digit !== null && digit !== "") addDigit(digit);
+        triggerPinHaptic();
+        return false;
+    };
+
+    window.__financialPinCancel = function() {
+        closePinEntryModal();
+        try { pinKeypad.focus(); } catch (error) {}
+        return false;
+    };
+
+    window.__financialPinSubmit = function() {
+        submitPinEntryModal();
+        return false;
+    };
+
     pinKeypad.addEventListener("click", event => {
-        const button = event.target.closest("button.app-pin-key");
+        let button = event.target;
+        while (button && button !== pinKeypad && !(button.classList && button.classList.contains("app-pin-key"))) {
+            button = button.parentNode;
+        }
         if (!button || button.classList.contains("spacer")) return;
         // LG webOS can dispatch a synthetic click after the remote OK/Enter
         // key has already been handled by the explicit keyboard path below.
@@ -14786,6 +14976,174 @@ crossoverInit();
 rfkjStartUltraRotation();
 
 /* =====================================================
+   CRYPTO PORTFOLIO AUTO REFRESH
+   R05: the live prices refresh on their own dedicated loop.
+   This intentionally bypasses the portfolio-load cooldown so an old
+   browser/WebView cannot leave the visible prices frozen until a manual
+   page refresh.
+===================================================== */
+const CRYPTO_PORTFOLIO_LIVE_REFRESH_MS = 15000;
+let cryptoPortfolioLiveRefreshInProgress = false;
+
+function getCurrentCryptoPortfolioHoldings() {
+    try {
+        const cachedHoldings = loadCryptoHoldingsCache();
+        if (
+            cachedHoldings &&
+            typeof cachedHoldings === "object" &&
+            Object.keys(cachedHoldings).length > 0
+        ) {
+            return cachedHoldings;
+        }
+    } catch (error) {
+        console.warn("Crypto Portfolio holdings cache read failed:", error);
+    }
+
+    try {
+        const cachedDashboardData = loadCachedDashboardData();
+        const holdings = cachedDashboardData?.cryptoHoldings;
+        if (
+            holdings &&
+            typeof holdings === "object" &&
+            Object.keys(holdings).length > 0
+        ) {
+            return holdings;
+        }
+    } catch (error) {
+        console.warn("Crypto Portfolio dashboard cache read failed:", error);
+    }
+
+    return null;
+}
+
+async function refreshCryptoPortfolioPricesLive() {
+    if (cryptoPortfolioLiveRefreshInProgress) {
+        return;
+    }
+
+    const holdings = getCurrentCryptoPortfolioHoldings();
+    if (
+        !holdings ||
+        typeof holdings !== "object" ||
+        Object.keys(holdings).length === 0
+    ) {
+        return;
+    }
+
+    cryptoPortfolioLiveRefreshInProgress = true;
+    try {
+        const existingMarketData =
+            getCachedCryptoPortfolioMarketData(holdings);
+        const marketData = { ...existingMarketData };
+        const coins = Object.keys(holdings);
+
+        await Promise.all(
+            coins.map(async coin => {
+                const symbol =
+                    holdings[coin] && holdings[coin].symbol
+                        ? holdings[coin].symbol
+                        : coin + "_USDT";
+                try {
+                    const liveData = await getMexcCryptoData(symbol);
+                    if (
+                        liveData &&
+                        Number.isFinite(Number(liveData.price)) &&
+                        Number(liveData.price) > 0
+                    ) {
+                        marketData[coin] = liveData;
+                        saveCryptoPortfolioCache(symbol, liveData);
+                        clearPageIssue(`mexc:${coin}`);
+                    }
+                } catch (error) {
+                    const cached = loadCryptoPortfolioCache(symbol);
+                    if (cached) {
+                        marketData[coin] = {
+                            ...cached,
+                            offline: true
+                        };
+                        setPageIssue(
+                            `mexc:${coin}`,
+                            `${coin} price cached`,
+                            "cache"
+                        );
+                    }
+                    console.warn(
+                        "Crypto Portfolio live price refresh failed:",
+                        coin,
+                        error
+                    );
+                }
+            })
+        );
+
+        renderCryptoPortfolio(holdings, marketData);
+        const liveCount = Object.values(marketData).filter(
+            item => item && !item.offline
+        ).length;
+        const cachedCount = Object.values(marketData).filter(
+            item => item && item.offline
+        ).length;
+        if (liveCount > 0) {
+            clearPageIssue("mexc-api");
+        }
+        if (cachedCount > 0) {
+            setPageIssue(
+                "mexc-cache",
+                `${cachedCount} crypto prices cached`,
+                "cache"
+            );
+        } else {
+            clearPageIssue("mexc-cache");
+        }
+    } finally {
+        cryptoPortfolioLiveRefreshInProgress = false;
+    }
+}
+
+function scheduleCryptoPortfolioLiveRefresh(delay = CRYPTO_PORTFOLIO_LIVE_REFRESH_MS) {
+    if (cryptoPortfolioRefreshTimer) {
+        clearTimeout(cryptoPortfolioRefreshTimer);
+    }
+
+    cryptoPortfolioRefreshTimer = setTimeout(async () => {
+        try {
+            await refreshCryptoPortfolioPricesLive();
+        } catch (error) {
+            console.warn("Crypto Portfolio scheduled live refresh failed:", error);
+        } finally {
+            scheduleCryptoPortfolioLiveRefresh();
+        }
+    }, delay);
+}
+
+function startCryptoPortfolioAutoRefresh() {
+    scheduleCryptoPortfolioLiveRefresh(5000);
+
+    // Older TV/WebView engines may pause timers while focus/visibility changes.
+    // These events force a fresh quote as soon as the document becomes active.
+    const refreshOnResume = () => {
+        refreshCryptoPortfolioPricesLive().catch(error => {
+            console.warn("Crypto Portfolio resume refresh failed:", error);
+        });
+        scheduleCryptoPortfolioLiveRefresh(CRYPTO_PORTFOLIO_LIVE_REFRESH_MS);
+    };
+
+    window.removeEventListener("focus", refreshOnResume);
+    window.addEventListener("focus", refreshOnResume);
+    window.removeEventListener("pageshow", refreshOnResume);
+    window.addEventListener("pageshow", refreshOnResume);
+    window.removeEventListener("online", refreshOnResume);
+    window.addEventListener("online", refreshOnResume);
+
+    document.removeEventListener("visibilitychange", refreshOnResume);
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            refreshOnResume();
+        }
+    });
+}
+
+/* =====================================================
    INIT
 ===================================================== */
 /*
@@ -14810,6 +15168,7 @@ async function init() {
             loadCryptoPortfolio(),
             loadCryptoSignals()
         ]);
+        startCryptoPortfolioAutoRefresh();
         await dashboardPromise;
         startAutoRefresh();
     }
