@@ -6479,11 +6479,11 @@ h1 {
                 <div class="global-pulse-asset">
                     <span class="global-pulse-icon gold">Au</span>
                     <div>
-                        <div class="global-pulse-name">Gold</div>
+                        <div class="global-pulse-name">Gold <button type="button" class="global-pulse-compact-select" data-global-compact-asset="gold" aria-label="Show Gold in Ultra Compact" title="Show Gold in Ultra Compact">◎</button></div>
                         <div class="global-pulse-symbol">XAU / USD · Spot</div>
                     </div>
                 </div>
-                <div class="global-pulse-card-actions"><button type="button" class="global-pulse-compact-select" data-global-compact-asset="gold" aria-label="Show Gold in Ultra Compact" title="Show Gold in Ultra Compact">◎</button><span class="global-pulse-badge">METAL</span></div>
+                <div class="global-pulse-card-actions"><span class="global-pulse-badge">METAL</span></div>
             </div>
             <div class="global-pulse-price-row">
                 <span id="globalGoldPrice" class="global-pulse-price">-</span>
@@ -6495,11 +6495,11 @@ h1 {
                 <div class="global-pulse-asset">
                     <span class="global-pulse-icon oil">WTI</span>
                     <div>
-                        <div class="global-pulse-name">Crude Oil</div>
+                        <div class="global-pulse-name">Crude Oil <button type="button" class="global-pulse-compact-select" data-global-compact-asset="oil" aria-label="Show Oil in Ultra Compact" title="Show Oil in Ultra Compact">◎</button></div>
                         <div class="global-pulse-symbol">WTI · USD / Barrel</div>
                     </div>
                 </div>
-                <div class="global-pulse-card-actions"><button type="button" class="global-pulse-compact-select" data-global-compact-asset="oil" aria-label="Show Oil in Ultra Compact" title="Show Oil in Ultra Compact">◎</button><span class="global-pulse-badge">ENERGY</span></div>
+                <div class="global-pulse-card-actions"><span class="global-pulse-badge">ENERGY</span></div>
             </div>
             <div class="global-pulse-price-row">
                 <span id="globalOilPrice" class="global-pulse-price">-</span>
@@ -11763,11 +11763,11 @@ function globalPulseRenderTsetmc(results){
                 <div class="global-pulse-asset">
                     <span class="global-pulse-icon ${iconClass}">${iconText}</span>
                     <div>
-                        <div class="global-pulse-name">${name}</div>
+                        <div class="global-pulse-name">${name} <button type="button" class="global-pulse-compact-select" data-global-compact-asset="tse" data-global-compact-symbol="${symbol.replace(/"/g,"&quot;")}" aria-label="Show ${name} in Ultra Compact" title="Show ${name} in Ultra Compact">◎</button></div>
                         <div class="global-pulse-symbol">${sourceLabel}</div>
                     </div>
                 </div>
-                <div class="global-pulse-card-actions"><button type="button" class="global-pulse-compact-select" data-global-compact-asset="tse" data-global-compact-symbol="${symbol.replace(/"/g,"&quot;")}" aria-label="Show ${name} in Ultra Compact" title="Show ${name} in Ultra Compact">◎</button><span class="global-pulse-badge">TSE</span></div>
+                <div class="global-pulse-card-actions"><span class="global-pulse-badge">TSE</span></div>
             </div>
             <div class="global-pulse-tsetmc-values">
                 <div class="global-pulse-tsetmc-group"><span class="global-pulse-tsetmc-label">LAST</span><span class="global-pulse-tsetmc-price">${Number.isFinite(lastPrice)?formatGlobalPulseNumber(lastPrice,0):"-"}</span><span class="global-pulse-tsetmc-percent ${globalPulseTsetmcPercentClass(lastPct)}">${globalPulseTsetmcPercentText(lastPct)}</span></div>
@@ -16111,6 +16111,7 @@ if (
 </style>
 <style id="r01-global-compact-select">
 .global-pulse-card-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto;}
+.global-pulse-name .global-pulse-compact-select{display:inline-grid;vertical-align:middle;margin-left:4px;}
 .global-pulse-compact-select{width:17px;height:17px;padding:0;border-radius:50%;border:1px solid rgba(148,163,184,.20);background:rgba(15,23,42,.55);color:#64748b;font:900 11px/15px Arial,sans-serif;cursor:pointer;display:grid;place-items:center;}
 .global-pulse-compact-select:hover{color:#cbd5e1;border-color:rgba(148,163,184,.42);}
 .global-pulse-compact-select.active{color:#34d399;border-color:rgba(52,211,153,.55);background:rgba(16,185,129,.13);box-shadow:0 0 8px rgba(52,211,153,.25);}
