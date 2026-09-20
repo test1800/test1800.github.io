@@ -2926,19 +2926,6 @@ h1 {
     color:#e2e8f0 !important;
     text-shadow:none;
 }
-/* GLOBAL selected asset: flash only on an actual price change, then return to white. */
-#rfkjUltraGlobalAssetPrice.global-compact-up{
-    color:#f8fafc !important;
-    animation:rfkjGlobalCompactFlashUp .65s ease-out;
-}
-#rfkjUltraGlobalAssetPrice.global-compact-down{
-    color:#f8fafc !important;
-    animation:rfkjGlobalCompactFlashDown .65s ease-out;
-}
-#rfkjUltraGlobalAssetPrice.global-compact-flat{
-    color:#f8fafc !important;
-    text-shadow:none;
-}
 @keyframes rfkjPriceUp{
     0%{filter:brightness(1);transform:translateY(0)}
     50%{filter:brightness(1.45);transform:translateY(-1px)}
@@ -2948,16 +2935,6 @@ h1 {
     0%{filter:brightness(1);transform:translateY(0)}
     50%{filter:brightness(1.4);transform:translateY(1px)}
     100%{filter:brightness(1);transform:translateY(0)}
-}
-@keyframes rfkjGlobalCompactFlashUp{
-    0%{color:#34d399;filter:brightness(1.55);text-shadow:0 0 10px rgba(52,211,153,.50);}
-    45%{color:#34d399;filter:brightness(1.35);text-shadow:0 0 8px rgba(52,211,153,.38);}
-    100%{color:#f8fafc;filter:brightness(1);text-shadow:none;}
-}
-@keyframes rfkjGlobalCompactFlashDown{
-    0%{color:#f87171;filter:brightness(1.45);text-shadow:0 0 10px rgba(248,113,113,.50);}
-    45%{color:#f87171;filter:brightness(1.25);text-shadow:0 0 8px rgba(248,113,113,.38);}
-    100%{color:#f8fafc;filter:brightness(1);text-shadow:none;}
 }
 
 /* Compact 2-column cryptocurrency picker.
@@ -11678,27 +11655,28 @@ function globalPulseCompactAssetPrice(type,symbol=""){
     }
     return {name:"",price:"-",direction:0};
 }
+let globalPulseCompactAssetLastNumeric=null;
+let globalPulseCompactAssetLastKey="";
+function globalPulseCompactAssetNumeric(v){
+    const n=Number(String(v??"").replace(/,/g,""));
+    return Number.isFinite(n)?n:null;
+}
 function globalPulseRefreshCompactAssetDisplay(){
     const value=globalPulseCompactAssetRead();
     const wrap=document.getElementById("rfkjUltraGlobalAsset"), price=document.getElementById("rfkjUltraGlobalAssetPrice"), values=wrap?.closest(".live-price-values");
     if(!wrap||!price)return;
     const has=!!value.type, item=has?globalPulseCompactAssetPrice(value.type,value.symbol):{name:"",price:"-",direction:0};
-    const key=has?`${value.type}:${String(value.symbol||"").trim()}`:"";
-    const previousKey=String(price.dataset.globalCompactKey||"");
-    const previousPrice=String(price.dataset.globalCompactPrice||"");
-    const changed=has && key===previousKey && previousPrice && previousPrice!==String(item.price||"");
+    const key=has?(String(value.type)+"|"+String(value.symbol||"")):"";
+    const numeric=globalPulseCompactAssetNumeric(item.price);
+    const changed=has && key===globalPulseCompactAssetLastKey && numeric!==null && globalPulseCompactAssetLastNumeric!==null && numeric!==globalPulseCompactAssetLastNumeric;
+    const direction=changed?(numeric>globalPulseCompactAssetLastNumeric?1:-1):0;
     wrap.hidden=!has; price.textContent=item.price||"-";
     price.classList.remove("global-compact-up","global-compact-down","global-compact-flat");
-    if(changed && item.direction!==0){
-        // Force a fresh animation only when the selected asset price actually changes.
-        void price.offsetWidth;
-        price.classList.add(item.direction>0?"global-compact-up":"global-compact-down");
-    }else{
-        price.classList.add("global-compact-flat");
-    }
-    price.dataset.globalCompactKey=key;
-    price.dataset.globalCompactPrice=String(item.price||"");
+    void price.offsetWidth;
+    price.classList.add(direction>0?"global-compact-up":direction<0?"global-compact-down":"global-compact-flat");
     if(values) values.classList.toggle("has-global-asset",has);
+    if(has && numeric!==null){ globalPulseCompactAssetLastKey=key; globalPulseCompactAssetLastNumeric=numeric; }
+    else { globalPulseCompactAssetLastKey=""; globalPulseCompactAssetLastNumeric=null; }
 }
 function globalPulseCompactAssetWrite(type,symbol=""){
     const current=globalPulseCompactAssetRead();
