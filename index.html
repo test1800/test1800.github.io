@@ -11634,23 +11634,35 @@ function globalPulseCompactAssetRead(){
     try{const v=JSON.parse(localStorage.getItem(GLOBAL_PULSE_COMPACT_ASSET_KEY)||"null");return v&&typeof v==="object"?v:{type:""};}catch(e){return {type:""};}
 }
 function globalPulseCompactAssetPrice(type,symbol=""){
-    if(type==="gold") return {name:"GOLD",price:document.getElementById("globalGoldPrice")?.textContent?.trim()||"-"};
-    if(type==="oil") return {name:"OIL",price:document.getElementById("globalOilPrice")?.textContent?.trim()||"-"};
+    if(type==="gold"){
+        const change=document.getElementById("globalGoldChange");
+        const direction=change?.classList.contains("positive")?1:change?.classList.contains("negative")?-1:0;
+        return {name:"GOLD",price:document.getElementById("globalGoldPrice")?.textContent?.trim()||"-",direction};
+    }
+    if(type==="oil"){
+        const change=document.getElementById("globalOilChange");
+        const direction=change?.classList.contains("positive")?1:change?.classList.contains("negative")?-1:0;
+        return {name:"OIL",price:document.getElementById("globalOilPrice")?.textContent?.trim()||"-",direction};
+    }
     if(type==="tse"){
         const row=Array.from(document.querySelectorAll("#globalTsetmcCards .global-pulse-tsetmc-card")).find(el=>String(el.dataset.tsetmcSymbol||"").trim()===String(symbol||"").trim());
         if(row){
             const price=row.querySelector(".global-pulse-tsetmc-group:first-child .global-pulse-tsetmc-price")?.textContent?.trim()||"-";
-            return {name:String(symbol||"TSE"),price};
+            const pct=row.querySelector(".global-pulse-tsetmc-group:first-child .global-pulse-tsetmc-percent");
+            const direction=pct?.classList.contains("positive")?1:pct?.classList.contains("negative")?-1:0;
+            return {name:String(symbol||"TSE"),price,direction};
         }
     }
-    return {name:"",price:"-"};
+    return {name:"",price:"-",direction:0};
 }
 function globalPulseRefreshCompactAssetDisplay(){
     const value=globalPulseCompactAssetRead();
     const wrap=document.getElementById("rfkjUltraGlobalAsset"), price=document.getElementById("rfkjUltraGlobalAssetPrice"), values=wrap?.closest(".live-price-values");
     if(!wrap||!price)return;
-    const has=!!value.type, item=has?globalPulseCompactAssetPrice(value.type,value.symbol):{name:"",price:"-"};
+    const has=!!value.type, item=has?globalPulseCompactAssetPrice(value.type,value.symbol):{name:"",price:"-",direction:0};
     wrap.hidden=!has; price.textContent=item.price||"-";
+    price.classList.remove("global-compact-up","global-compact-down","global-compact-flat");
+    price.classList.add(item.direction>0?"global-compact-up":item.direction<0?"global-compact-down":"global-compact-flat");
     if(values) values.classList.toggle("has-global-asset",has);
 }
 function globalPulseCompactAssetWrite(type,symbol=""){
@@ -16094,7 +16106,10 @@ if (
 <style id="r01-global-compact-display-fix">
  .live-price-global-asset{display:flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:0;white-space:nowrap;overflow:hidden;line-height:1;font-weight:850;}
 .live-price-global-asset[hidden]{display:none !important;}
-#rfkjUltraGlobalAssetPrice{color:#f8fafc;font-variant-numeric:tabular-nums;font-size:inherit;line-height:1;}
+#rfkjUltraGlobalAssetPrice{color:#f8fafc;font-variant-numeric:tabular-nums;font-size:inherit;line-height:1;transition:color .25s ease,text-shadow .25s ease,filter .25s ease;}
+#rfkjUltraGlobalAssetPrice.global-compact-up{color:#34d399; text-shadow:0 0 8px rgba(52,211,153,.30);}
+#rfkjUltraGlobalAssetPrice.global-compact-down{color:#f87171; text-shadow:0 0 8px rgba(248,113,113,.30);}
+#rfkjUltraGlobalAssetPrice.global-compact-flat{color:#f8fafc;}
 /* When a GLOBAL block is selected, its price occupies a fourth compact slot beside the three Tether prices. */
 .live-price-values.has-global-asset{gap:clamp(8px,1.05vw,18px) !important;}
 .live-price-values.has-global-asset .live-number{font-size:clamp(17px,1.55vw,22px) !important;}
