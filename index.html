@@ -11677,8 +11677,19 @@ function initGlobalPulseCompactAssetButtons(){
             globalPulseCompactAssetWrite(btn.dataset.globalCompactAsset||"",btn.dataset.globalCompactSymbol||"");
         },true);
     }
+    // Restore the persisted selection without toggling it off.
+    // IMPORTANT: globalPulseCompactAssetWrite() is a toggle action, so calling it
+    // during init would deactivate the saved item after every page refresh.
     const current=globalPulseCompactAssetRead();
-    globalPulseCompactAssetWrite(current.type||"",current.symbol||"");
+    const currentType=String(current.type||"");
+    const currentSymbol=String(current.symbol||"").trim();
+    document.querySelectorAll(".global-pulse-compact-select").forEach(btn=>{
+        btn.classList.toggle("active",
+            btn.dataset.globalCompactAsset===currentType &&
+            (currentType!=="tse" || String(btn.dataset.globalCompactSymbol||"").trim()===currentSymbol)
+        );
+    });
+    globalPulseRefreshCompactAssetDisplay();
 }
 const GLOBAL_PULSE_TSE_WORKER_URL = "https://tsetmc.rxw1.workers.dev/";
 const GLOBAL_PULSE_TSE_CACHE_KEY = "globalPulseTsetmcCache-v1";
