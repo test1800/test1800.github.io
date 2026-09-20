@@ -11654,7 +11654,11 @@ function globalPulseRefreshCompactAssetDisplay(){
     if(values) values.classList.toggle("has-global-asset",has);
 }
 function globalPulseCompactAssetWrite(type,symbol=""){
-    const value={type:type||"",symbol:String(symbol||"").trim()};
+    const current=globalPulseCompactAssetRead();
+    const nextType=type||"";
+    const nextSymbol=String(symbol||"").trim();
+    const sameActive=current.type===nextType && (nextType!=="tse" || String(current.symbol||"").trim()===nextSymbol);
+    const value=sameActive?{type:"",symbol:""}:{type:nextType,symbol:nextSymbol};
     try{localStorage.setItem(GLOBAL_PULSE_COMPACT_ASSET_KEY,JSON.stringify(value));}catch(e){}
     try{window.AndroidNotifications?.setGlobalCompactAsset?.(value.type,value.symbol);}catch(e){}
     document.querySelectorAll(".global-pulse-compact-select").forEach(btn=>{
