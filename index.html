@@ -16119,10 +16119,12 @@ if (
 <style id="r01-global-compact-display-fix">
  .live-price-global-asset{display:flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:0;white-space:nowrap;overflow:hidden;line-height:1;font-weight:850;}
 .live-price-global-asset[hidden]{display:none !important;}
-#rfkjUltraGlobalAssetPrice{color:#f8fafc;font-variant-numeric:tabular-nums;font-size:inherit;line-height:1;transition:color .25s ease,text-shadow .25s ease,filter .25s ease;}
-#rfkjUltraGlobalAssetPrice.global-compact-up{color:#34d399; text-shadow:0 0 8px rgba(52,211,153,.30);}
-#rfkjUltraGlobalAssetPrice.global-compact-down{color:#f87171; text-shadow:0 0 8px rgba(248,113,113,.30);}
+#rfkjUltraGlobalAssetPrice{color:#f8fafc;font-variant-numeric:tabular-nums;font-size:inherit;line-height:1;}
+#rfkjUltraGlobalAssetPrice.global-compact-up{animation:globalCompactFlashUp .85s ease-out 1;}
+#rfkjUltraGlobalAssetPrice.global-compact-down{animation:globalCompactFlashDown .85s ease-out 1;}
 #rfkjUltraGlobalAssetPrice.global-compact-flat{color:#f8fafc;}
+@keyframes globalCompactFlashUp{0%,12%{color:#34d399;text-shadow:0 0 10px rgba(52,211,153,.55);}55%{color:#34d399;text-shadow:0 0 7px rgba(52,211,153,.28);}100%{color:#f8fafc;text-shadow:none;}}
+@keyframes globalCompactFlashDown{0%,12%{color:#f87171;text-shadow:0 0 10px rgba(248,113,113,.55);}55%{color:#f87171;text-shadow:0 0 7px rgba(248,113,113,.28);}100%{color:#f8fafc;text-shadow:none;}}
 /* When a GLOBAL block is selected, its price occupies a fourth compact slot beside the three Tether prices. */
 .live-price-values.has-global-asset{gap:clamp(8px,1.05vw,18px) !important;}
 .live-price-values.has-global-asset .live-number{font-size:clamp(17px,1.55vw,22px) !important;}
