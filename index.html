@@ -5814,6 +5814,9 @@ h1 {
                     </div>
                 </div>
             </div>
+            <div id="rfkjUltraGlobalAsset" class="live-price-global-asset" aria-label="Selected GLOBAL asset" hidden>
+                <span id="rfkjUltraGlobalAssetPrice">-</span>
+            </div>
         </div>
         <div
             id="liveErrorMessage"
@@ -6480,7 +6483,7 @@ h1 {
                         <div class="global-pulse-symbol">XAU / USD · Spot</div>
                     </div>
                 </div>
-                <span class="global-pulse-badge">METAL</span>
+                <div class="global-pulse-card-actions"><button type="button" class="global-pulse-compact-select" data-global-compact-asset="gold" aria-label="Show Gold in Ultra Compact" title="Show Gold in Ultra Compact">◎</button><span class="global-pulse-badge">METAL</span></div>
             </div>
             <div class="global-pulse-price-row">
                 <span id="globalGoldPrice" class="global-pulse-price">-</span>
@@ -6496,7 +6499,7 @@ h1 {
                         <div class="global-pulse-symbol">WTI · USD / Barrel</div>
                     </div>
                 </div>
-                <span class="global-pulse-badge">ENERGY</span>
+                <div class="global-pulse-card-actions"><button type="button" class="global-pulse-compact-select" data-global-compact-asset="oil" aria-label="Show Oil in Ultra Compact" title="Show Oil in Ultra Compact">◎</button><span class="global-pulse-badge">ENERGY</span></div>
             </div>
             <div class="global-pulse-price-row">
                 <span id="globalOilPrice" class="global-pulse-price">-</span>
@@ -11523,6 +11526,21 @@ async function globalPulseCheckEconomicNotification(now){
     }catch(e){}
 }
 
+async function globalPulseCheckEconomicExactNotification(now){
+    if(!globalPulseNotificationAllowed(now)) return;
+    const next=globalPulseEconomicFindNext(now);
+    if(!next || next.diff>30000 || next.diff<0) return;
+    const key=`economic_exact_${next.date.getTime()}`;
+    try{
+        const sent=new Set((localStorage.getItem("globalPulseEconomicExactNotice-v1")||"").split("|"));
+        if(sent.has(key)) return;
+        const title=String(next.event?.title||next.event?.name||next.event?.event||"Economic Event").trim();
+        const country=String(next.event?.country||next.event?.currency||"").trim();
+        await sendDashboardNotification(`🔔 ECONOMIC${country?" · "+country:""}`,`${title} is now live`,"./icon-192.png","GLOBAL_TIME");
+        sent.add(key); localStorage.setItem("globalPulseEconomicExactNotice-v1",Array.from(sent).slice(-30).join("|"));
+    }catch(e){}
+}
+
 async function globalPulseCheckSessionNotifications(now){
     if(!globalPulseNotificationAllowed(now)) return;
     for(const [name,def] of Object.entries(GLOBAL_PULSE_SESSION_DEFS)){
@@ -11611,6 +11629,53 @@ function startGlobalPulseMarketClock(){
     window.globalPulseMarketClockTimer=setInterval(globalPulseUpdateMarketClock,1000);
 }
 
+const GLOBAL_PULSE_COMPACT_ASSET_KEY = "globalPulseCompactAsset-v1";
+function globalPulseCompactAssetRead(){
+    try{const v=JSON.parse(localStorage.getItem(GLOBAL_PULSE_COMPACT_ASSET_KEY)||"null");return v&&typeof v==="object"?v:{type:""};}catch(e){return {type:""};}
+}
+function globalPulseCompactAssetPrice(type,symbol=""){
+    if(type==="gold") return {name:"GOLD",price:document.getElementById("globalGoldPrice")?.textContent?.trim()||"-"};
+    if(type==="oil") return {name:"OIL",price:document.getElementById("globalOilPrice")?.textContent?.trim()||"-"};
+    if(type==="tse"){
+        const row=Array.from(document.querySelectorAll("#globalTsetmcCards .global-pulse-tsetmc-card")).find(el=>String(el.dataset.tsetmcSymbol||"").trim()===String(symbol||"").trim());
+        if(row){
+            const price=row.querySelector(".global-pulse-tsetmc-group:first-child .global-pulse-tsetmc-price")?.textContent?.trim()||"-";
+            return {name:String(symbol||"TSE"),price};
+        }
+    }
+    return {name:"",price:"-"};
+}
+function globalPulseRefreshCompactAssetDisplay(){
+    const value=globalPulseCompactAssetRead();
+    const wrap=document.getElementById("rfkjUltraGlobalAsset"), price=document.getElementById("rfkjUltraGlobalAssetPrice"), values=wrap?.closest(".live-price-values");
+    if(!wrap||!price)return;
+    const has=!!value.type, item=has?globalPulseCompactAssetPrice(value.type,value.symbol):{name:"",price:"-"};
+    wrap.hidden=!has; price.textContent=item.price||"-";
+    if(values) values.classList.toggle("has-global-asset",has);
+}
+function globalPulseCompactAssetWrite(type,symbol=""){
+    const value={type:type||"",symbol:String(symbol||"").trim()};
+    try{localStorage.setItem(GLOBAL_PULSE_COMPACT_ASSET_KEY,JSON.stringify(value));}catch(e){}
+    try{window.AndroidNotifications?.setGlobalCompactAsset?.(value.type,value.symbol);}catch(e){}
+    document.querySelectorAll(".global-pulse-compact-select").forEach(btn=>{
+        btn.classList.toggle("active",btn.dataset.globalCompactAsset===value.type && (value.type!=="tse" || btn.dataset.globalCompactSymbol===value.symbol));
+    });
+    globalPulseRefreshCompactAssetDisplay();
+}
+let globalPulseCompactButtonsReady=false;
+function initGlobalPulseCompactAssetButtons(){
+    if(!globalPulseCompactButtonsReady){
+        globalPulseCompactButtonsReady=true;
+        document.addEventListener("click",event=>{
+            const btn=event.target.closest?.(".global-pulse-compact-select");
+            if(!btn)return;
+            event.preventDefault(); event.stopPropagation();
+            globalPulseCompactAssetWrite(btn.dataset.globalCompactAsset||"",btn.dataset.globalCompactSymbol||"");
+        },true);
+    }
+    const current=globalPulseCompactAssetRead();
+    globalPulseCompactAssetWrite(current.type||"",current.symbol||"");
+}
 const GLOBAL_PULSE_TSE_WORKER_URL = "https://tsetmc.rxw1.workers.dev/";
 const GLOBAL_PULSE_TSE_CACHE_KEY = "globalPulseTsetmcCache-v1";
 const GLOBAL_PULSE_TSE_ALERT_STATE_KEY = "globalPulseTsetmcAlertState-v1";
@@ -11687,7 +11752,7 @@ function globalPulseRenderTsetmc(results){
                         <div class="global-pulse-symbol">${sourceLabel}</div>
                     </div>
                 </div>
-                <span class="global-pulse-badge">TSE</span>
+                <div class="global-pulse-card-actions"><button type="button" class="global-pulse-compact-select" data-global-compact-asset="tse" data-global-compact-symbol="${symbol.replace(/"/g,"&quot;")}" aria-label="Show ${name} in Ultra Compact" title="Show ${name} in Ultra Compact">◎</button><span class="global-pulse-badge">TSE</span></div>
             </div>
             <div class="global-pulse-tsetmc-values">
                 <div class="global-pulse-tsetmc-group"><span class="global-pulse-tsetmc-label">LAST</span><span class="global-pulse-tsetmc-price">${Number.isFinite(lastPrice)?formatGlobalPulseNumber(lastPrice,0):"-"}</span><span class="global-pulse-tsetmc-percent ${globalPulseTsetmcPercentClass(lastPct)}">${globalPulseTsetmcPercentText(lastPct)}</span></div>
@@ -11695,6 +11760,8 @@ function globalPulseRenderTsetmc(results){
             </div>
         </article>`;
     }).join("");
+    globalPulseRefreshCompactAssetDisplay();
+    initGlobalPulseCompactAssetButtons();
     try{window.dispatchEvent(new Event("crossover-assets-updated"));}catch(e){}
 }
 
@@ -11892,6 +11959,7 @@ async function loadGlobalPulse(){
         setPageIssue("global-oil","Oil live price unavailable and no cached value exists","error");
     }
 
+    globalPulseRefreshCompactAssetDisplay();
     try{window.dispatchEvent(new Event("crossover-assets-updated"));}catch(e){}
     if(live){
         clearPageIssue("global-gold");
@@ -11900,6 +11968,7 @@ async function loadGlobalPulse(){
 }
 function startGlobalPulse(){
     globalPulseReadAlertState();
+    initGlobalPulseCompactAssetButtons();
     startGlobalPulseMarketClock();
     startGlobalPulseTsetmc();
     if (globalPulseTimer) clearInterval(globalPulseTimer);
@@ -16004,5 +16073,49 @@ if (
     background:linear-gradient(145deg,rgba(37,99,235,.38),rgba(30,64,175,.22));
     border:1px solid rgba(96,165,250,.38);
     box-shadow:inset 0 1px 0 rgba(219,234,254,.10),0 2px 8px rgba(37,99,235,.10);
+}
+</style>
+
+<style id="r01-global-compact-display-fix">
+ .live-price-global-asset{display:flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:0;white-space:nowrap;overflow:hidden;line-height:1;font-weight:850;}
+.live-price-global-asset[hidden]{display:none !important;}
+#rfkjUltraGlobalAssetPrice{color:#f8fafc;font-variant-numeric:tabular-nums;font-size:inherit;line-height:1;}
+/* When a GLOBAL block is selected, its price occupies a fourth compact slot beside the three Tether prices. */
+.live-price-values.has-global-asset{gap:clamp(8px,1.05vw,18px) !important;}
+.live-price-values.has-global-asset .live-number{font-size:clamp(17px,1.55vw,22px) !important;}
+.live-price-values.has-global-asset .price-arrow{width:22px !important;height:22px !important;font-size:22px !important;}
+.live-price-values.has-global-asset .live-price-item{gap:3px !important;}
+.live-price-values.has-global-asset .live-price-global-asset{font-size:clamp(16px,1.45vw,21px);padding-left:clamp(4px,0.5vw,8px);border-left:1px solid rgba(148,163,184,.20);}
+@media (max-width:700px){
+  .live-price-values.has-global-asset{gap:clamp(4px,1.2vw,9px) !important;}
+  .live-price-values.has-global-asset .live-number{font-size:clamp(12px,4.2vw,18px) !important;}
+  .live-price-values.has-global-asset .price-arrow{width:17px !important;height:17px !important;font-size:17px !important;}
+  .live-price-values.has-global-asset .live-price-global-asset{font-size:clamp(12px,3.9vw,17px);padding-left:4px;}
+}
+
+</style>
+<style id="r01-global-compact-select">
+.global-pulse-card-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto;}
+.global-pulse-compact-select{width:17px;height:17px;padding:0;border-radius:50%;border:1px solid rgba(148,163,184,.20);background:rgba(15,23,42,.55);color:#64748b;font:900 11px/15px Arial,sans-serif;cursor:pointer;display:grid;place-items:center;}
+.global-pulse-compact-select:hover{color:#cbd5e1;border-color:rgba(148,163,184,.42);}
+.global-pulse-compact-select.active{color:#34d399;border-color:rgba(52,211,153,.55);background:rgba(16,185,129,.13);box-shadow:0 0 8px rgba(52,211,153,.25);}
+@media(max-width:430px){.global-pulse-compact-select{width:15px;height:15px;font-size:10px;line-height:13px;}.global-pulse-card-actions{gap:3px;}}
+</style>
+<style id="r01-active-green-effects">
+/* R01: make an actually-open green timeline item visibly active without changing its layout. */
+.global-pulse-session-state.open{
+    animation:globalPulseOpenGlow 1.8s ease-in-out infinite;
+    text-shadow:0 0 7px rgba(52,211,153,.42);
+}
+@keyframes globalPulseOpenGlow{
+    0%,100%{opacity:1;text-shadow:0 0 2px rgba(52,211,153,.18);}
+    50%{opacity:.86;text-shadow:0 0 10px rgba(52,211,153,.62);}
+}
+.rfkj-slot-btn.status-stopped.active{
+    animation:r01GreenTimeframeGlow 1.7s ease-in-out infinite;
+}
+@keyframes r01GreenTimeframeGlow{
+    0%,100%{box-shadow:0 0 7px rgba(16,185,129,.16);}
+    50%{box-shadow:0 0 13px rgba(16,185,129,.52);}
 }
 </style>
