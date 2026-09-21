@@ -6907,6 +6907,7 @@ function syncNativeWidgetSnapshot(){
                 exirDirection:direction("exirPrice"),
                 bitpinDirection:direction("bitpinPrice"),
                 signalHtml,
+                signalUpdatedAt:signalHtml ? Date.now() : 0,
                 globalAssetType:globalAsset.type,
                 globalAssetSymbol:globalAsset.symbol,
                 globalAssetPrice:globalAsset.price,
