@@ -5663,6 +5663,70 @@ h1 {
 .app-pin-key.pin-pressed{transform:scale(.94);filter:brightness(1.18);}
 </style>
 
+
+<style id="B01-bright-values">
+/* B01 — Bright numeric values: remove muted gray from key prices/signal numbers. */
+.live-market-header .live-usd-value,
+.live-market-header #cryptoMini {
+    color: #f8fafc !important;
+    font-weight: 850 !important;
+    text-shadow: 0 0 8px rgba(255,255,255,.16);
+}
+
+/* Header CRYPTO price */
+.crypto-value {
+    color: #f8fafc !important;
+    text-shadow: 0 0 10px rgba(255,255,255,.18);
+}
+
+/* Signal Matrix widget numbers */
+.rfkj-value.signal-plus .rfkj-code,
+.rfkj-value.signal-minus .rfkj-code,
+.rfkj-value.signal-zero .rfkj-code,
+.rfkj-value.signal-invalid .rfkj-code {
+    color: #f8fafc !important;
+    text-shadow: 0 0 10px rgba(255,255,255,.22) !important;
+}
+
+/* Signal Matrix number in Ultra Compact */
+#rfkjUltraPrice {
+    color: #f8fafc !important;
+    text-shadow: 0 0 9px rgba(255,255,255,.22);
+}
+</style>
+
+<style id="b03-number-palette">
+/* B03: distinct bright-white number families. Keep sizes unchanged. */
+.live-number {
+    color: #F8FAFC;
+    text-shadow: 0 0 7px rgba(248,250,252,.10);
+}
+.live-number.live-price-from-bottom,
+.live-number.live-price-from-top {
+    color: #F8FAFC;
+}
+.live-usd-value {
+    color: #E2E8F0;
+}
+#usdTxtPrice { color: #FFFFFF; }
+#yekusd { color: #E5E7EB; }
+#cryptoMini { color: #E0F2FE; }
+#cryptoValue { color: #E0F2FE; }
+#cryptoValue.up { color: #E0F2FE; }
+#cryptoValue.down { color: #F1F5F9; }
+.main-price-number,
+.live-main-number {
+    color: #F8FAFC;
+    text-shadow: 0 0 7px rgba(248,250,252,.10);
+}
+#rfkjUltraPrice {
+    color: #F1F5FF;
+    text-shadow: 0 0 7px rgba(241,245,255,.12);
+}
+.rfkj-ultra-mini { color: #F1F5FF; }
+/* Signal Matrix values: a separate cool-white tone, not gray. */
+.signal-name { color: #CBD5E1; }
+</style>
 </head>
 <body>
 <!--
@@ -6779,6 +6843,83 @@ async function fetchApiWithProxyFallback(
         new Error("All API/proxy URLs unavailable")
     );
 }
+
+/* =====================================================
+   INSTANT NATIVE WIDGET SYNC
+   The home-screen widget receives the exact values already
+   rendered by the dashboard instead of waiting for its own
+   polling timer. This keeps Widget + Ultra Compact in lockstep.
+===================================================== */
+let nativeWidgetSyncFrame = 0;
+function syncNativeWidgetSnapshot(){
+    if(!window.AndroidNotifications || typeof window.AndroidNotifications.syncWidgetSnapshot !== "function") return;
+    if(nativeWidgetSyncFrame) return;
+    nativeWidgetSyncFrame=requestAnimationFrame(()=>{
+        nativeWidgetSyncFrame=0;
+        try{
+            const text=id=>document.getElementById(id)?.textContent?.trim()||"-";
+            const direction=id=>{
+                const el=document.getElementById(id);
+                if(!el)return 0;
+                if(el.classList.contains("up"))return 1;
+                if(el.classList.contains("down"))return -1;
+                return 0;
+            };
+            let signalHtml="";
+            try{
+                const candidates=typeof rfkjUltraCandidates==="function"?rfkjUltraCandidates():[];
+                if(candidates.length){
+                    const index=(typeof rfkjUltraIndex==="number"?rfkjUltraIndex:0)%candidates.length;
+                    const st=candidates[index];
+                    const coin=String(st?.coin||document.querySelector(`#rfkjCoin${st?.index||1}`)?.value||"").trim();
+                    const price=text("rfkjUltraPrice");
+                    const arrow=id=>{
+                        const el=document.getElementById(id);
+                        const cls=el?.className||"";
+                        const value=el?.textContent?.trim()||"→";
+                        const color=cls.includes("up")?"#FFFFFF":cls.includes("down")?"#38BDF8":"#F8FAFC";
+                        return `<font color="${color}">${value}</font>`;
+                    };
+                    if(coin) signalHtml=`${coin} ${price} ${arrow("rfkjUltraRF")}${arrow("rfkjUltraST")}${arrow("rfkjUltraKJ")}`;
+                }
+            }catch(e){}
+
+            let globalAsset={type:"",symbol:"",price:"-",direction:0};
+            try{
+                const selected=JSON.parse(localStorage.getItem(GLOBAL_PULSE_COMPACT_ASSET_KEY)||"null");
+                if(selected&&selected.type){
+                    globalAsset.type=String(selected.type);
+                    globalAsset.symbol=String(selected.symbol||"");
+                    const item=typeof globalPulseCompactAssetPrice==="function"
+                        ?globalPulseCompactAssetPrice(globalAsset.type,globalAsset.symbol):null;
+                    if(item){globalAsset.price=String(item.price||"-");globalAsset.direction=Number(item.direction)||0;}
+                }
+            }catch(e){}
+
+            const snapshot={
+                usd:text("usdTxtPrice"),
+                yekusd:text("yekusd"),
+                crypto:text("cryptoValue"),
+                nobitex:text("currentPrice"),
+                exir:text("exirPrice"),
+                bitpin:text("bitpinPrice"),
+                nobitexDirection:direction("currentPrice"),
+                exirDirection:direction("exirPrice"),
+                bitpinDirection:direction("bitpinPrice"),
+                signalHtml,
+                globalAssetType:globalAsset.type,
+                globalAssetSymbol:globalAsset.symbol,
+                globalAssetPrice:globalAsset.price,
+                globalAssetFlashDirection:globalAsset.direction,
+                updated:new Date().toLocaleTimeString("en-US",{hour12:false})
+            };
+            window.AndroidNotifications.syncWidgetSnapshot(JSON.stringify(snapshot));
+        }catch(e){
+            console.warn("Native widget sync failed:",e);
+        }
+    });
+}
+
 /* =====================================================
    TOP PURCHASES
 ===================================================== */
@@ -8395,8 +8536,8 @@ async function loadYekusd() {
         updateYekusdConnectionColor(
             true
         );
-    }
-    catch (error) {
+        syncNativeWidgetSnapshot();
+    } catch (error) {
         yekusdOnline =
             false;
         const cached =
@@ -8484,8 +8625,8 @@ const response =
         updateUsdTxtConnectionColor(
             true
         );
-    }
-    catch (error) {
+        syncNativeWidgetSnapshot();
+    } catch (error) {
         usdTxtOnline =
             false;
         const cached =
@@ -11072,6 +11213,7 @@ for (
         return await dashboardLoadInProgress;
     }
     finally {
+        syncNativeWidgetSnapshot();
         dashboardLoadInProgress =
             null;
     }
@@ -12027,6 +12169,7 @@ async function loadGlobalPulse(){
         clearPageIssue("global-gold");
         clearPageIssue("global-oil");
     }
+    syncNativeWidgetSnapshot();
 }
 function startGlobalPulse(){
     globalPulseReadAlertState();
@@ -12183,8 +12326,8 @@ const response =
                 "market-price-offline"
             );
         }
-    }
-    catch (error) {
+        syncNativeWidgetSnapshot();
+    } catch (error) {
         cryptoOnline =
             false;
         if (element) {
@@ -14128,6 +14271,7 @@ async function rfkjFetchOne(index,timeframe,notify=true){
             state.ultraRF=rf; state.ultraST=st; state.ultraKJ=kj;
             rfkjRenderUltraCompact(false);
         }
+        syncNativeWidgetSnapshot();
         const old=state.previousSignals[timeframe];
         if(notify&&old){
             const changes=[];
@@ -16183,5 +16327,13 @@ if (
 @keyframes r01GreenTimeframeGlow{
     0%,100%{box-shadow:0 0 7px rgba(16,185,129,.16);}
     50%{box-shadow:0 0 13px rgba(16,185,129,.52);}
+}
+</style>
+
+<style id="B05-dollar-weight">
+/* B05 — Both dollar price values are regular/light; arrowed market numbers stay bold. */
+.live-market-header #usdTxtPrice,
+.live-market-header #yekusd {
+    font-weight: 500 !important;
 }
 </style>
