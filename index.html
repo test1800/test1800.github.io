@@ -13951,7 +13951,8 @@ async function loadCryptoPortfolio(
    RF / KJ SIGNAL MATRIX MONITOR
 ===================================================== */
 const RFKJ_WORKER_URL = "https://signalmatrix.rxw1.workers.dev/";
-const RFKJ_POLL_MS = 5000;
+const RFKJ_POLL_MS = 2000;
+const RFKJ_LIVE_CACHE_KEY = "rfkjLiveSignalCache-v1";
 const RFKJ_SLOT_COUNT = 3;
 const RFKJ_TIMEFRAMES = ["1","3","5","15","30","60","4h","1D","1W"];
 const RFKJ_STATE_KEY = "rfkjMatrixState-v4";
@@ -13969,7 +13970,8 @@ const rfkjInstances = Array.from({length:RFKJ_SLOT_COUNT},(_,i)=>({
     priceDirection:0,
     ultraRF:0,
     ultraST:0,
-    ultraKJ:0
+    ultraKJ:0,
+    cachedLive:null
 }));
 function rfkjGet(id,index){return document.getElementById(`${id}${index}`);}
 function rfkjInstance(index){return rfkjInstances[index-1];}
@@ -14140,21 +14142,60 @@ function rfkjLowestSelectedTimeframe(index){
     if(!s||!s.selectedTimeframes?.length)return "1";
     return s.selectedTimeframes.slice().sort((a,b)=>rfkjTimeframeRank(a)-rfkjTimeframeRank(b))[0];
 }
+function rfkjReadLiveCache(){
+    try{
+        const raw=localStorage.getItem(RFKJ_LIVE_CACHE_KEY);
+        const data=raw?JSON.parse(raw):{};
+        return data&&typeof data==="object"?data:{};
+    }catch(e){return {};}
+}
+function rfkjWriteLiveCache(index,payload){
+    try{
+        const data=rfkjReadLiveCache();
+        data[String(index)]={...payload, savedAt:Date.now()};
+        localStorage.setItem(RFKJ_LIVE_CACHE_KEY,JSON.stringify(data));
+    }catch(e){}
+}
+function rfkjGetLiveCache(index){
+    const s=rfkjInstance(index);
+    if(s?.cachedLive)return s.cachedLive;
+    const data=rfkjReadLiveCache();
+    const cached=data[String(index)];
+    if(cached&&Number.isFinite(Number(cached.price))&&Number(cached.price)>0){
+        if(s)s.cachedLive=cached;
+        return cached;
+    }
+    return null;
+}
 function rfkjUpdateUltraMini(price,rf,kj,st,valid=false){
     const priceEl=document.getElementById("rfkjUltraPrice");
     const rfEl=document.getElementById("rfkjUltraRF");
     const stEl=document.getElementById("rfkjUltraST");
     const kjEl=document.getElementById("rfkjUltraKJ");
     if(!priceEl||!rfEl||!stEl||!kjEl)return;
-    priceEl.textContent=valid?rfkjFormatPrice(price):"-";
+    let live={price,rf,kj,st};
+    if(valid&&Number.isFinite(Number(price))&&Number(price)>0){
+        const idx=rfkjUltraCandidates().findIndex(x=>x===rfkjInstance(rfkjUltraIndex));
+        if(idx>=0){
+            const s=rfkjInstance(rfkjUltraIndex);
+            if(s){s.cachedLive={...live,savedAt:Date.now()};rfkjWriteLiveCache(s.index,s.cachedLive);}
+        }
+    }
+    if(!valid){
+        const candidates=rfkjUltraCandidates();
+        const s=candidates[rfkjUltraIndex%candidates.length];
+        const cached=s?rfkjGetLiveCache(s.index):null;
+        if(cached){live=cached;valid=true;}
+    }
+    const safePrice=Number(live.price);
+    priceEl.textContent=valid&&Number.isFinite(safePrice)&&safePrice>0?rfkjFormatPrice(safePrice):"";
     const set=(el,value)=>{
         el.className="rfkj-ultra-arrow";
-        if(!valid){el.classList.add("invalid");el.textContent="→";return;}
         const n=rfkjNormalizeSignal(value);
         el.textContent=n>0?"↑":n<0?"↓":"→";
         el.classList.add(n>0?"up":n<0?"down":"neutral");
     };
-    set(rfEl,rf);set(stEl,st);set(kjEl,kj);
+    set(rfEl,live.rf);set(stEl,live.st);set(kjEl,live.kj);
 }
 let rfkjUltraTimer=null;
 let rfkjUltraIndex=0;
@@ -14173,7 +14214,8 @@ function rfkjRenderUltraCompact(animate=true){
         rfkjUltraIndex=0;
     }
     if(!candidates.length){
-        rfkjUpdateUltraMini(null,0,0,0,false);
+        const cached=rfkjGetLiveCache(1);
+        if(cached){rfkjUpdateUltraMini(cached.price,cached.rf,cached.kj,cached.st,true);}
         rfkjUltraIndex=0;
         return;
     }
@@ -14266,12 +14308,17 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         state.latestUpdated=data.updated||new Date().toISOString();
         rfkjSetSelectionStatus(index);
         rfkjUpdateHeaderPrice(index);
-        /* Keep the latest display data for Ultra Compact rotation. */
-        if(String(timeframe)===String(rfkjLowestSelectedTimeframe(index))){
+        /* Keep only successful values as the live cache. Never replace a good
+           Signal Matrix number with a dash during a transient worker failure. */
+        if(String(timeframe)===String(rfkjLowestSelectedTimeframe(index)) && Number.isFinite(price) && price>0){
             state.ultraRF=rf; state.ultraST=st; state.ultraKJ=kj;
+            state.cachedLive={price,rf,kj,st,savedAt:Date.now()};
+            rfkjWriteLiveCache(index,state.cachedLive);
             rfkjRenderUltraCompact(false);
+            syncNativeWidgetSnapshot();
+        } else {
+            syncNativeWidgetSnapshot();
         }
-        syncNativeWidgetSnapshot();
         const old=state.previousSignals[timeframe];
         if(notify&&old){
             const changes=[];
@@ -14296,7 +14343,7 @@ async function rfkjFetchSignal(index){
     if(!state||!state.running||state.requestInProgress)return;
     state.requestInProgress=true;
     try{
-        for(const tf of state.selectedTimeframes.slice())await rfkjFetchOne(index,tf,true);
+        await Promise.all(state.selectedTimeframes.slice().map(tf=>rfkjFetchOne(index,tf,true)));
     }finally{
         state.requestInProgress=false;
         rfkjSaveState();
@@ -14425,6 +14472,12 @@ function rfkjSetVisibleCount(count,restore=false){
 }
 function rfkjRestoreState(){
     const saved=rfkjReadSavedState();
+    const liveCache=rfkjReadLiveCache();
+    Object.keys(liveCache).forEach(key=>{
+        const s=rfkjInstance(Number(key));
+        const cached=liveCache[key];
+        if(s&&cached&&Number.isFinite(Number(cached.price))&&Number(cached.price)>0)s.cachedLive=cached;
+    });
     if(!saved)return false;
     const count=Math.max(1,Math.min(3,Number(saved.count)||1));
     rfkjSetVisibleCount(count,true);
