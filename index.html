@@ -8093,10 +8093,11 @@ async function sendDashboardNotification(
     soundType = "USD",
     crossingDirection = null
 ) {
-    // Global browser/PWA burst guard: first notification wins for the moment;
-    // later notifications from any section are intentionally ignored. If the
-    // guard storage is unavailable, allow the notification so alerts do not die.
-    if (!(await acquireDashboardNotificationBurstSlot())) return false;
+    // Crossover alerts are independent events. They must not be suppressed
+    // because another dashboard section notified at the same moment.
+    if (String(soundType).toUpperCase() !== "CROSSOVER") {
+        if (!(await acquireDashboardNotificationBurstSlot())) return false;
+    }
     if (
         window.AndroidNotifications &&
         typeof window.AndroidNotifications.showNotification === "function"
@@ -14702,8 +14703,8 @@ function crossoverPercentageLevels(oldPrice,newPrice,target){
 async function crossoverSendPercentageAlert(index,level,price,target,direction){
     const s=crossoverInstance(index);
     if(!s||!s.running||!s.notificationEnabled)return false;
-    const now=Date.now(),key=String(level),last=Number(s.percentageAlertTimes?.[key]||0);
-    if(now-last<CROSSOVER_ALERT_COOLDOWN)return false;
+    const now=Date.now(),key=String(level);
+    // Every genuine threshold crossing is an independent event.
     s.percentageAlertTimes[key]=now;
     const coin=s.activeCoin||s.coin;
     const pctText=`${level>0?"+":""}${level.toFixed(0)}%`;
@@ -14918,7 +14919,13 @@ function crossoverSaveState(){
     }catch(e){console.warn("Crossover native state save failed",e);}
 }
 function crossoverReadState(){
-    try{const raw=localStorage.getItem(CROSSOVER_STATE_KEY);if(raw)return JSON.parse(raw);}catch(e){}
+    /*
+     * Prefer the native state when available. Native Crossover monitoring can
+     * run while the Activity is closed/minimized, so its latest price and
+     * percentage-alert history must be restored before the WebView starts
+     * polling again. This is what prevents a closed-app alert from replaying
+     * when the app is opened.
+     */
     try{
         if(window.AndroidNotifications&&typeof window.AndroidNotifications.getSignalMatrixStateJson==="function"){
             const raw=window.AndroidNotifications.getSignalMatrixStateJson();
@@ -14932,6 +14939,7 @@ function crossoverReadState(){
             }
         }
     }catch(e){console.warn("Crossover native state read failed",e);}
+    try{const raw=localStorage.getItem(CROSSOVER_STATE_KEY);if(raw)return JSON.parse(raw);}catch(e){}
     return null;
 }
 function crossoverUpdateUI(index){
@@ -14977,16 +14985,8 @@ function crossoverUpdateUI(index){
     if(status&&!s.running&&Number.isFinite(target)&&target>0)status.textContent="Ready • Waiting to start";
     crossoverUpdateNotificationButton(index);
 }
-const CROSSOVER_ALERT_COOLDOWN = 5 * 60 * 1000;
-const crossoverAlertTimes = Object.create(null);
+// Crossover alerts are not rate-limited. Each actual crossing is delivered.
 async function crossoverSendAlert(index,direction,price,target){
-    const now=Date.now();
-    const last=crossoverAlertTimes[index]||0;
-    if(now-last < CROSSOVER_ALERT_COOLDOWN){
-        console.log(`Crossover #${index} alert suppressed: 5-minute cooldown.`);
-        return false;
-    }
-    crossoverAlertTimes[index]=now;
     const s=crossoverInstance(index);
     const arrow=direction>0?"↑":"↓";
     const color=direction>0?"🟢":"🔴";
