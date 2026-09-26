@@ -12482,30 +12482,25 @@ function formatCryptoAmount(value) {
         }
     );
 }
-function formatCryptoUsd(value) {
+function cryptoPriceDecimals(asset) {
+    const key = String(asset || "").trim().toUpperCase();
+    return ({
+        BTC: 0, BNB: 2, ETH: 1, DOGE: 5, ADA: 4, SOL: 2,
+        POL: 5, AVAX: 3, ONE: 6, TRX: 5
+    })[key];
+}
+function formatCryptoAssetPrice(value, asset, withDollar = true) {
     const number = Number(value);
-    if (!Number.isFinite(number) || number <= 0) {
-        return "-";
-    }
-    let maximumFractionDigits = 2;
-    if (number < 1) {
-        maximumFractionDigits = 6;
-    }
-    else if (number < 10) {
-        maximumFractionDigits = 4;
-    }
-    else if (number < 100) {
-        maximumFractionDigits = 3;
-    }
-    return "$" +
-        number.toLocaleString(
-            "en-US",
-            {
-                minimumFractionDigits:
-                    number < 1 ? 4 : 2,
-                maximumFractionDigits
-            }
-        );
+    if (!Number.isFinite(number) || number <= 0) return "-";
+    const decimals = cryptoPriceDecimals(asset);
+    const options = decimals === undefined
+        ? { minimumFractionDigits: number < 1 ? 4 : 2, maximumFractionDigits: number < 1 ? 6 : 2 }
+        : { minimumFractionDigits: decimals, maximumFractionDigits: decimals };
+    const text = number.toLocaleString("en-US", options);
+    return withDollar ? "$" + text : text;
+}
+function formatCryptoUsd(value, asset) {
+    return formatCryptoAssetPrice(value, asset, true);
 }
 function formatCryptoUsdValue(value) {
     const number = Number(value);
@@ -13002,7 +12997,7 @@ function renderCryptoPortfolio(
                         </div>
                         <div class="crypto-portfolio-price-row">
                             <div class="crypto-portfolio-price">
-                                ${formatCryptoUsd(price)}
+                                ${formatCryptoUsd(price, coin)}
                             </div>
                             <div class="crypto-portfolio-value">
                                 ${formatCryptoUsdValue(value)}
@@ -13988,12 +13983,8 @@ function rfkjNormalizeSignal(value){
     const n=Number(value);
     return Number.isFinite(n)?(n>0?1:n<0?-1:0):0;
 }
-function rfkjFormatPrice(value){
-    const n=Number(value);
-    if(!Number.isFinite(n)||n<=0)return "-";
-    if(n>=1000)return n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-    if(n>=1)return n.toLocaleString("en-US",{minimumFractionDigits:3,maximumFractionDigits:3});
-    return n.toLocaleString("en-US",{minimumFractionDigits:4,maximumFractionDigits:6});
+function rfkjFormatPrice(value, asset){
+    return formatCryptoAssetPrice(value, asset, false);
 }
 function rfkjTimeframeLabel(tf){return ({"1":"1M","3":"3M","5":"5M","15":"15M","30":"30M","60":"1H","4h":"4H","1D":"1D","1W":"1W"})[String(tf)]||String(tf);}
 function rfkjApplySignal(el,value,valid=true){
@@ -14038,7 +14029,7 @@ function rfkjUpdateHeaderPrice(index){
     if(priceEl){
         const price=Number(s.latestPrice);
         const valid=Number.isFinite(price)&&price>0;
-        priceEl.textContent=valid?rfkjFormatPrice(price):"-";
+        priceEl.textContent=valid?rfkjFormatPrice(price, coin):"-";
         priceEl.className=`rfkj-header-price-value ${s.priceDirection>0?"price-up":s.priceDirection<0?"price-down":"price-flat"}`;
     }
     if(dailyEl){
@@ -14190,7 +14181,8 @@ function rfkjUpdateUltraMini(price,rf,kj,st,valid=false){
         if(cached){live=cached;valid=true;}
     }
     const safePrice=Number(live.price);
-    priceEl.textContent=valid&&Number.isFinite(safePrice)&&safePrice>0?rfkjFormatPrice(safePrice):"";
+    const ultraCoin=rfkjGet("rfkjCoin", rfkjUltraIndex)?.value || rfkjInstance(rfkjUltraIndex)?.coin || "BTC";
+    priceEl.textContent=valid&&Number.isFinite(safePrice)&&safePrice>0?rfkjFormatPrice(safePrice, ultraCoin):"";
     const set=(el,value)=>{
         el.className="rfkj-ultra-arrow";
         const n=rfkjNormalizeSignal(value);
@@ -14583,7 +14575,7 @@ function crossoverPriceText(value,asset){
     const n=Number(value);
     if(!Number.isFinite(n)||n<=0)return "-";
     if(crossoverIsTseAsset(asset))return Math.round(n).toLocaleString("en-US");
-    return crossoverFormatPrice(n);
+    return crossoverFormatPrice(n, asset);
 }
 function crossoverAssetOptions(){
     const matrixCoinSelect=document.querySelector(".rfkj-instance-coin");
@@ -14874,12 +14866,12 @@ async function crossoverSyncRemote(){
         return false;
     }
 }
-function crossoverFormatPrice(value){
-    const n=Number(value);
-    if(!Number.isFinite(n)||n<=0)return "-";
-    if(n>=1000)return n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-    if(n>=1)return n.toLocaleString("en-US",{minimumFractionDigits:3,maximumFractionDigits:3});
-    return n.toLocaleString("en-US",{minimumFractionDigits:4,maximumFractionDigits:6});
+function crossoverFormatPrice(value, asset){
+    const key=String(asset||"").trim().toUpperCase();
+    if(key==="GOLD") return formatGlobalPulseNumber(value,0);
+    if(key==="OIL") return formatGlobalPulseNumber(value,2);
+    if(key.startsWith("TSE|")) return formatGlobalPulseNumber(value,0);
+    return formatCryptoAssetPrice(value, key, false);
 }
 function crossoverNowText(date=new Date()){
     const d=date instanceof Date?date:new Date(date),pad=n=>String(n).padStart(2,"0");
