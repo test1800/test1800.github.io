@@ -12318,8 +12318,13 @@ const response =
                 "cryptoMini"
             );
         if (mini) {
+            // Ultra Compact: total Crypto is always a whole number
+            // with thousands separators; keep the main Crypto value unchanged.
             mini.textContent =
-                cryptoText;
+                value.toLocaleString("en-US", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                });
         }
         cryptoOnline = true;
         clearPageIssue("crypto-price");
