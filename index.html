@@ -12488,7 +12488,10 @@ function formatCryptoAmount(value) {
     );
 }
 function cryptoPriceDecimals(asset) {
-    const key = String(asset || "").trim().toUpperCase();
+    // Normalize every form used by Signal Matrix (BTC, BTC/USDT, BTC_USDT, etc.)
+    // so a decimal asset can never fall through to an integer/general formatter.
+    const raw = String(asset || "").trim().toUpperCase();
+    const key = raw.replace(/([/_-]?USDT|[/_-]?USD)$/i, "");
     return ({
         BTC: 0, BNB: 2, ETH: 1, DOGE: 5, ADA: 4, SOL: 2,
         POL: 5, AVAX: 3, ONE: 6, TRX: 5
@@ -12498,6 +12501,7 @@ function formatCryptoAssetPrice(value, asset, withDollar = true) {
     const number = Number(value);
     if (!Number.isFinite(number) || number <= 0) return "-";
     const decimals = cryptoPriceDecimals(asset);
+    // Signal Matrix / Ultra Compact must preserve the configured decimals exactly.
     const options = decimals === undefined
         ? { minimumFractionDigits: number < 1 ? 4 : 2, maximumFractionDigits: number < 1 ? 6 : 2 }
         : { minimumFractionDigits: decimals, maximumFractionDigits: decimals };
@@ -13967,6 +13971,7 @@ const rfkjInstances = Array.from({length:RFKJ_SLOT_COUNT},(_,i)=>({
     previousSignals:{},
     latestTimeframe:"1",
     latestPrice:null,
+    latestPriceRaw:null,
     latestUpdated:null,
     latestDailyChangePercent:null,
     priceDirection:0,
@@ -13989,7 +13994,24 @@ function rfkjNormalizeSignal(value){
     return Number.isFinite(n)?(n>0?1:n<0?-1:0):0;
 }
 function rfkjFormatPrice(value, asset){
-    return formatCryptoAssetPrice(value, asset, false);
+    // Signal Matrix / Ultra Compact: preserve decimal assets explicitly.
+    // Keep the raw decimal string when available so a small price such as
+    // DOGE 0.12345 or ONE 0.015234 can never be collapsed to integer 0.
+    const decimals = cryptoPriceDecimals(asset);
+    const raw = String(value ?? "").trim().replace(/,/g, "");
+    const number = Number(raw);
+    if(!Number.isFinite(number) || number<=0)return "-";
+    if(decimals===undefined){
+        return number.toLocaleString("en-US",{
+            minimumFractionDigits:number<1?4:2,
+            maximumFractionDigits:number<1?6:2
+        });
+    }
+    return number.toLocaleString("en-US",{
+        minimumFractionDigits:decimals,
+        maximumFractionDigits:decimals,
+        useGrouping:true
+    });
 }
 function rfkjTimeframeLabel(tf){return ({"1":"1M","3":"3M","5":"5M","15":"15M","30":"30M","60":"1H","4h":"4H","1D":"1D","1W":"1W"})[String(tf)]||String(tf);}
 function rfkjApplySignal(el,value,valid=true){
@@ -14171,23 +14193,33 @@ function rfkjUpdateUltraMini(price,rf,kj,st,valid=false){
     const stEl=document.getElementById("rfkjUltraST");
     const kjEl=document.getElementById("rfkjUltraKJ");
     if(!priceEl||!rfEl||!stEl||!kjEl)return;
+
+    // rfkjUltraIndex is the ZERO-BASED position inside the candidate list,
+    // not the real Matrix number. Always resolve the selected candidate first
+    // and then use its actual `index` to read rfkjCoin1/rfkjCoin2/rfkjCoin3.
+    const candidates=rfkjUltraCandidates();
+    const candidateIndex=candidates.length?rfkjUltraIndex%candidates.length:0;
+    const ultraState=candidates[candidateIndex] || null;
+    const ultraMatrixIndex=ultraState?.index || 1;
+    const ultraCoin=String(rfkjGet("rfkjCoin", ultraMatrixIndex)?.value || ultraState?.coin || "").trim().toUpperCase();
+
     let live={price,rf,kj,st};
-    if(valid&&Number.isFinite(Number(price))&&Number(price)>0){
-        const idx=rfkjUltraCandidates().findIndex(x=>x===rfkjInstance(rfkjUltraIndex));
-        if(idx>=0){
-            const s=rfkjInstance(rfkjUltraIndex);
-            if(s){s.cachedLive={...live,savedAt:Date.now()};rfkjWriteLiveCache(s.index,s.cachedLive);}
-        }
+    if(valid&&Number.isFinite(Number(price))&&Number(price)>0&&ultraState){
+        ultraState.cachedLive={...live,savedAt:Date.now()};
+        rfkjWriteLiveCache(ultraState.index,ultraState.cachedLive);
     }
-    if(!valid){
-        const candidates=rfkjUltraCandidates();
-        const s=candidates[rfkjUltraIndex%candidates.length];
-        const cached=s?rfkjGetLiveCache(s.index):null;
+    if(!valid&&ultraState){
+        const cached=rfkjGetLiveCache(ultraState.index);
         if(cached){live=cached;valid=true;}
     }
+
     const safePrice=Number(live.price);
-    const ultraCoin=rfkjGet("rfkjCoin", rfkjUltraIndex)?.value || rfkjInstance(rfkjUltraIndex)?.coin || "BTC";
-    priceEl.textContent=valid&&Number.isFinite(safePrice)&&safePrice>0?rfkjFormatPrice(safePrice, ultraCoin):"";
+    const displayPrice=live.rawPrice??live.price??safePrice;
+    // Never let a missing/incorrect asset fall back to BTC's integer formatter.
+    // For a running Matrix, its real selected coin is mandatory here.
+    priceEl.textContent=valid&&Number.isFinite(safePrice)&&safePrice>0
+        ?rfkjFormatPrice(displayPrice, ultraCoin||"BTC")
+        :"";
     const set=(el,value)=>{
         el.className="rfkj-ultra-arrow";
         const n=rfkjNormalizeSignal(value);
@@ -14227,7 +14259,7 @@ function rfkjRenderUltraCompact(animate=true){
         void mini.offsetWidth;
         mini.classList.add("rfkj-ultra-switch");
     }
-    rfkjUpdateUltraMini(s.latestPrice,s.ultraRF,s.ultraKJ,s.ultraST,valid);
+    rfkjUpdateUltraMini(s.latestPriceRaw ?? s.latestPrice,s.ultraRF,s.ultraKJ,s.ultraST,valid);
 }
 function rfkjStartUltraRotation(){
     if(rfkjUltraTimer)clearInterval(rfkjUltraTimer);
@@ -14303,6 +14335,7 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         state.priceDirection=(Number.isFinite(previousPrice)&&Number.isFinite(price)&&price>0)
             ? (price>previousPrice?1:price<previousPrice?-1:0)
             : 0;
+        state.latestPriceRaw=(data.price===undefined||data.price===null)?null:String(data.price).trim();
         state.latestPrice=Number.isFinite(price)&&price>0?price:null;
         state.latestUpdated=data.updated||new Date().toISOString();
         rfkjSetSelectionStatus(index);
@@ -14311,7 +14344,7 @@ async function rfkjFetchOne(index,timeframe,notify=true){
            Signal Matrix number with a dash during a transient worker failure. */
         if(String(timeframe)===String(rfkjLowestSelectedTimeframe(index)) && Number.isFinite(price) && price>0){
             state.ultraRF=rf; state.ultraST=st; state.ultraKJ=kj;
-            state.cachedLive={price,rf,kj,st,savedAt:Date.now()};
+            state.cachedLive={price,rawPrice:state.latestPriceRaw,rf,kj,st,savedAt:Date.now()};
             rfkjWriteLiveCache(index,state.cachedLive);
             rfkjRenderUltraCompact(false);
             syncNativeWidgetSnapshot();
