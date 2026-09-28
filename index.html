@@ -14765,10 +14765,9 @@ async function crossoverLoadRemoteStatus(){
         const localState=crossoverReadState();
         const localCount=Number(localState?.count);
         const localCrossovers=Array.isArray(localState?.crossovers)?localState.crossovers:[];
-        const statusUrl=`${CROSSOVER_REMOTE_WORKER_URL}status?clientId=${encodeURIComponent(crossoverClientId())}&t=${Date.now()}`;
-        const response=await fetchApiWithProxyFallback(statusUrl,{
-            method:"GET",cache:"no-store",headers:{"Accept":"application/json"}
-        },PRICE_REQUEST_TIMEOUT);
+        const response=await fetch(`${CROSSOVER_REMOTE_WORKER_URL}status?clientId=${encodeURIComponent(crossoverClientId())}&t=${Date.now()}`,{
+            method:"GET",cache:"no-store"
+        });
         if(!response.ok)throw new Error("Remote Crossover status HTTP "+response.status);
         const data=await response.json();
         if(!data||data.ok!==true||!Array.isArray(data.items))throw new Error("Invalid Remote Crossover status");
@@ -14891,10 +14890,10 @@ async function crossoverSyncRemote(){
         const items=crossoverInstances.slice(0,count).map(s=>({
             index:s.index,coin:String(s.running?(s.activeCoin||s.coin):s.coin||"BTC").toUpperCase(),target:Number(s.activeTarget),running:!!s.running
         })).filter(x=>x.running&&Number.isFinite(x.target)&&x.target>0&&!crossoverIsSpecialAsset(x.coin));
-        const response=await fetchApiWithProxyFallback(CROSSOVER_REMOTE_WORKER_URL,{
-            method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","Accept":"application/json"},
+        const response=await fetch(CROSSOVER_REMOTE_WORKER_URL,{
+            method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},
             body:JSON.stringify({clientId:crossoverClientId(),active:items.length>0,count,items})
-        },PRICE_REQUEST_TIMEOUT);
+        });
         if(!response.ok)throw new Error("Remote Crossover Worker HTTP "+response.status);
         clearPageIssue("crossover-remote");
         console.log("Remote Crossover Worker synced",items);
@@ -15057,7 +15056,7 @@ async function crossoverFetchOne(index,notify=true){
             price=Number(special?.price);
         } else {
             const url=CROSSOVER_WORKER_URL+`?coin=${encodeURIComponent(effectiveCoin)}&timeframe=1&t=${Date.now()}`;
-            const response=await fetchApiWithProxyFallback(url,{method:"GET",cache:"no-store",headers:{"Accept":"application/json"}},PRICE_REQUEST_TIMEOUT);
+            const response=await fetch(url,{method:"GET",cache:"no-store"});
             if(!response.ok)throw new Error(`Worker HTTP ${response.status}`);
             data=await response.json();
             if(!data || typeof data!=="object")throw new Error("Invalid worker response");
