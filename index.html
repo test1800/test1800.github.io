@@ -14272,21 +14272,18 @@ function rfkjStartUltraRotation(){
     rfkjRenderUltraCompact(false);
 }
 function rfkjReadSavedState(){
-    /* Native state is the authoritative source because the Widget and the
-       background native monitor already use it. Keep localStorage as a
-       fallback for older installs / WebView-only sessions, and resync it
-       whenever the native state is successfully read. */
+    /* Native SharedPreferences is the canonical Matrix state because the
+       Widget and native background notifications read the same source.
+       localStorage remains a fallback for older installs/offline WebView data. */
     if(window.AndroidNotifications&&typeof window.AndroidNotifications.getSignalMatrixStateJson==="function"){
         try{
             const raw=window.AndroidNotifications.getSignalMatrixStateJson();
             if(raw){
                 const parsed=JSON.parse(raw);
-                if(parsed&&typeof parsed==="object"){
-                    try{localStorage.setItem(RFKJ_STATE_KEY,JSON.stringify(parsed));localStorage.setItem("rfkjMatrixState-v3",JSON.stringify(parsed));}catch(e){}
-                    return parsed;
-                }
+                try{localStorage.setItem(RFKJ_STATE_KEY,raw);localStorage.setItem("rfkjMatrixState-v3",raw);}catch(e){}
+                return parsed;
             }
-        }catch(e){console.warn("Signal Matrix native state read failed",e);}
+        }catch(e){}
     }
     try{
         const raw=localStorage.getItem(RFKJ_STATE_KEY);
@@ -14305,6 +14302,18 @@ function rfkjSaveState(){
             running:!!s.running
         }))
     };
+    /* signal_matrix_config is shared with native Crossover monitoring.
+       Matrix saves must never erase the Crossover portion of that JSON. */
+    try{
+        if(window.AndroidNotifications&&typeof window.AndroidNotifications.getSignalMatrixStateJson==="function"){
+            const raw=window.AndroidNotifications.getSignalMatrixStateJson();
+            if(raw){
+                const nativeState=JSON.parse(raw);
+                if(Array.isArray(nativeState.crossovers)) data.crossovers=nativeState.crossovers;
+                if(Number.isFinite(Number(nativeState.crossoverCount))) data.crossoverCount=Number(nativeState.crossoverCount);
+            }
+        }
+    }catch(e){}
     const raw=JSON.stringify(data);
     try{localStorage.setItem(RFKJ_STATE_KEY,raw);localStorage.setItem("rfkjMatrixState-v3",raw);}catch(e){}
     if(window.AndroidNotifications&&typeof window.AndroidNotifications.setSignalMatrixStateJson==="function"){
@@ -14775,12 +14784,24 @@ async function crossoverToggleNotifications(index){
 }
 async function crossoverLoadRemoteStatus(){
     try{
-        /* The saved Native/WebView state is authoritative for the UI. The
-           Remote Worker is used only for runtime price/crossing data and is
-           never allowed to resurrect an old coin/target/running selection. */
         const localState=crossoverReadState();
         const localCount=Number(localState?.count);
         const localCrossovers=Array.isArray(localState?.crossovers)?localState.crossovers:[];
+
+        /* The saved local/native state is authoritative for the current device.
+           The Worker is a runtime/background mirror, not a configuration source.
+           This prevents an old remote item from resurrecting a stopped/changed
+           Crossover when the page opens. The normal polling loop still fetches
+           the live price from the Worker after this state is restored. */
+        if(localState && localCrossovers.length){
+            crossoverApplyState(localState);
+            crossoverLoadNotificationPrefs();
+            crossoverLoadLocalAlertHistory();
+            crossoverSyncCountLineStates();
+            clearPageIssue("crossover-remote-status");
+            return true;
+        }
+
         const response=await fetch(`${CROSSOVER_REMOTE_WORKER_URL}status?clientId=${encodeURIComponent(crossoverClientId())}&t=${Date.now()}`,{
             method:"GET",cache:"no-store"
         });
@@ -14788,89 +14809,117 @@ async function crossoverLoadRemoteStatus(){
         const data=await response.json();
         if(!data||data.ok!==true||!Array.isArray(data.items))throw new Error("Invalid Remote Crossover status");
 
+        /*
+         * Remote worker owns Crypto crossover state only.
+         * GOLD / OIL / TSE are intentionally local and are never posted to the
+         * worker, so a missing worker item must NOT clear a locally configured
+         * special crossover.
+         */
+        const localSpecialByIndex=new Map();
+        for(let i=0;i<Math.min(CROSSOVER_COUNT,localCrossovers.length);i++){
+            const saved=localCrossovers[i];
+            const coin=String(saved?.activeCoin||saved?.coin||"").toUpperCase();
+            if(crossoverIsSpecialAsset(coin)) localSpecialByIndex.set(i+1,{...saved,coin,activeCoin:coin});
+        }
         const remoteByIndex=new Map();
         for(const item of data.items){
             const index=Math.max(1,Math.min(CROSSOVER_COUNT,Number(item.index)||0));
             if(!index||!item.running)continue;
             const coin=String(item.coin||"BTC").toUpperCase();
+            /* Special assets are local-only even if an old Worker response contains one. */
             if(crossoverIsSpecialAsset(coin))continue;
             remoteByIndex.set(index,item);
         }
 
-        /* Restore the locally/native saved state first. This prevents stale
-           Worker selections from replacing the user's current UI state. */
-        const restored=crossoverApplyState(localState);
-        if(!restored){
-            crossoverSetVisibleCount((localCount>=1&&localCount<=4)?localCount:1,true);
-            for(let i=1;i<=CROSSOVER_COUNT;i++){
-                const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i),input=crossoverGet("crossoverTarget",i);
-                if(!s)continue;
-                const saved=localCrossovers[i-1];
-                const savedCoin=String(saved?.activeCoin||saved?.coin||localStorage.getItem(`crossoverSelectedCoin-${i}`)||"").toUpperCase();
-                if(CROSSOVER_COINS.includes(savedCoin)||crossoverIsSpecialAsset(savedCoin)){
-                    s.coin=savedCoin;
-                    if(coin){coin.value=savedCoin;coin.dataset.userSelected="1";}
-                }
-                if(input&&Number.isFinite(Number(saved?.activeTarget||saved?.target))){
-                    const target=Number(saved.activeTarget||saved.target);
-                    if(target>0)input.value=target.toLocaleString("en-US",{maximumFractionDigits:8});
-                }
-                crossoverUpdateUI(i);
-            }
-        }
+        for(let i=1;i<=CROSSOVER_COUNT;i++){
+            const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i),input=crossoverGet("crossoverTarget",i),btn=crossoverGet("crossoverStartStop",i),status=crossoverGet("crossoverStatus",i);
+            if(!s)continue;
+            if(s.timer){clearInterval(s.timer);s.timer=null;}
 
-        /* Remote data may update runtime fields only when it matches the
-           already-saved local/native configuration for that slot. */
-        for(const [index,item] of remoteByIndex.entries()){
-            const s=crossoverInstance(index);
-            if(!s||!s.running)continue;
-            const localCoin=String(s.activeCoin||s.coin||"").toUpperCase();
-            const remoteCoin=String(item.coin||"").toUpperCase();
-            const localTarget=Number(s.activeTarget);
-            const remoteTarget=Number(item.target);
-            if(localCoin!==remoteCoin||!Number.isFinite(localTarget)||!Number.isFinite(remoteTarget)||Math.abs(localTarget-remoteTarget)>1e-9){
+            const localSpecial=localSpecialByIndex.get(i);
+            if(localSpecial){
+                /* Preserve the complete local GOLD/OIL/TSE slot exactly as saved. */
+                s.running=!!localSpecial.running;
+                s.activeCoin=String(localSpecial.activeCoin||localSpecial.coin||"").toUpperCase()||null;
+                s.coin=String(localSpecial.coin||s.activeCoin||"").toUpperCase()||"BTC";
+                s.target=Number.isFinite(Number(localSpecial.target))?Number(localSpecial.target):null;
+                s.activeTarget=Number.isFinite(Number(localSpecial.activeTarget))?Number(localSpecial.activeTarget):(s.running?s.target:null);
+                s.previousPrice=Number.isFinite(Number(localSpecial.previousPrice))?Number(localSpecial.previousPrice):null;
+                s.latestPrice=Number.isFinite(Number(localSpecial.latestPrice))?Number(localSpecial.latestPrice):null;
+                s.latestUpdated=localSpecial.latestUpdated||null;
+                s.lastCrossAt=localSpecial.lastCrossAt||null;
+                s.lastCrossDirection=Number(localSpecial.lastCrossDirection)||0;
+                s.priceDirection=Number(localSpecial.priceDirection)||0;
+                s.notificationEnabled=!!localSpecial.notificationEnabled;
+                s.percentageAlertTimes=(localSpecial.percentageAlertTimes&&typeof localSpecial.percentageAlertTimes==="object")?localSpecial.percentageAlertTimes:Object.create(null);
+                if(coin){coin.value=s.coin;coin.dataset.userSelected="1";}
+                if(input)input.value=Number.isFinite(s.target)&&s.target>0?s.target.toLocaleString("en-US",{maximumFractionDigits:8}):"";
+                if(btn){btn.textContent=s.running?"■ Stop Crossover":"▶ Start Crossover";btn.classList.toggle("running",s.running);}
+                if(status)status.textContent=s.running?"Monitoring • Waiting for first price":"Ready • Waiting to start";
+                crossoverUpdateNotificationButton(i);
+                crossoverUpdateUI(i);
+                if(s.running){
+                    crossoverFetchOne(i,false);
+                    s.timer=setInterval(()=>crossoverFetchOne(i,true),CROSSOVER_POLL_MS);
+                }
                 continue;
             }
-            if(Number.isFinite(Number(item.previousPrice)))s.previousPrice=Number(item.previousPrice);
-            if(Number.isFinite(Number(item.latestPrice)))s.latestPrice=Number(item.latestPrice);
-            if(item.latestUpdated)s.latestUpdated=item.latestUpdated;
-            if(item.lastCrossAt)s.lastCrossAt=item.lastCrossAt;
-            if(Number.isFinite(Number(item.lastCrossDirection)))s.lastCrossDirection=Number(item.lastCrossDirection);
-            crossoverUpdateUI(index);
-            if(!s.timer){
-                crossoverFetchOne(index,false);
-                s.timer=setInterval(()=>crossoverFetchOne(index,true),CROSSOVER_POLL_MS);
-            }
+
+            /* No local special asset in this slot: restore normal Worker-owned state. */
+            s.running=false;s.activeCoin=null;s.activeTarget=null;s.target=null;s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
+            s.coin="BTC";
+            if(coin){coin.value="BTC";coin.dataset.userSelected="0";}
+            if(input)input.value="";
+            if(btn){btn.textContent="▶ Start Crossover";btn.classList.remove("running");}
+            if(status)status.textContent="";
         }
 
+        /* Notification switches are local preferences and never alter the Worker. */
         crossoverLoadNotificationPrefs();
         crossoverLoadLocalAlertHistory();
+        /* The visible slot count is local UI state. Remote status must never
+           replace the user's selected number of Crossover panels. */
         const selectedCount=(localCount>=1&&localCount<=4)?localCount:1;
         crossoverSetVisibleCount(selectedCount,true);
+
+        for(const [index,item] of remoteByIndex.entries()){
+            const s=crossoverInstance(index);
+            if(!s)continue;
+            const coin=String(item.coin||"BTC").toUpperCase();
+            const target=Number(item.target);
+            if(!CROSSOVER_COINS.includes(coin)||!Number.isFinite(target)||target<=0)continue;
+            s.coin=coin;s.activeCoin=coin;s.target=target;s.activeTarget=target;s.running=true;
+            const coinSelect=crossoverGet("crossoverCoin",index);
+            if(coinSelect){coinSelect.value=coin;coinSelect.dataset.userSelected="1";coinSelect.dispatchEvent(new Event("change",{bubbles:true}));}
+            s.previousPrice=Number.isFinite(Number(item.previousPrice))?Number(item.previousPrice):null;
+            s.latestPrice=Number.isFinite(Number(item.latestPrice))?Number(item.latestPrice):null;
+            s.latestUpdated=item.latestUpdated||null;
+            s.lastCrossAt=item.lastCrossAt||null;
+            s.lastCrossDirection=Number(item.lastCrossDirection)||0;
+            s.priceDirection=0;
+            s.notificationEnabled=!!s.notificationEnabled;
+            const coinEl=crossoverGet("crossoverCoin",index),input=crossoverGet("crossoverTarget",index),btn=crossoverGet("crossoverStartStop",index),status=crossoverGet("crossoverStatus",index);
+            if(coinEl){coinEl.value=coin;coinEl.dataset.userSelected="1";}
+            if(input)input.value=target.toLocaleString("en-US",{maximumFractionDigits:8});
+            if(btn){btn.textContent="■ Stop Crossover";btn.classList.add("running");}
+            if(status)status.textContent="Monitoring • Waiting for first price";
+            crossoverUpdateNotificationButton(index);
+            crossoverUpdateUI(index);
+            crossoverFetchOne(index,false);
+            s.timer=setInterval(()=>crossoverFetchOne(index,true),CROSSOVER_POLL_MS);
+        }
+
+        /* Persist the merged state so special assets survive the next refresh too. */
         crossoverSaveState();
         crossoverSyncCountLineStates();
         clearPageIssue("crossover-remote-status");
         return true;
     }catch(e){
-        /* Remote Worker is optional for UI restoration. Keep the saved local/
-           native state visible and fall back to it when the Worker is down. */
-        try{
-            const restored=crossoverApplyState(crossoverReadState());
-            if(restored){
-                crossoverLoadNotificationPrefs();
-                crossoverLoadLocalAlertHistory();
-                crossoverSyncCountLineStates();
-                clearPageIssue("crossover-remote-status");
-                console.warn("Remote Crossover status unavailable; restored local/native state",e);
-                return false;
-            }
-        }catch(restoreError){console.warn("Crossover local state restore failed",restoreError);}
         setPageIssue("crossover-remote-status",e?.message||"Remote Crossover status unavailable","warn");
         console.warn("Remote Crossover status load failed:",e);
         return false;
     }
 }
-
 async function crossoverSyncRemote(){
     try{
         const grid=document.getElementById("crossoverGrid");
