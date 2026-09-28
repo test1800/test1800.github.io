@@ -14272,23 +14272,13 @@ function rfkjStartUltraRotation(){
     rfkjRenderUltraCompact(false);
 }
 function rfkjReadSavedState(){
-    /* Native SharedPreferences is the canonical Matrix state because the
-       Widget and native background notifications read the same source.
-       localStorage remains a fallback for older installs/offline WebView data. */
-    if(window.AndroidNotifications&&typeof window.AndroidNotifications.getSignalMatrixStateJson==="function"){
-        try{
-            const raw=window.AndroidNotifications.getSignalMatrixStateJson();
-            if(raw){
-                const parsed=JSON.parse(raw);
-                try{localStorage.setItem(RFKJ_STATE_KEY,raw);localStorage.setItem("rfkjMatrixState-v3",raw);}catch(e){}
-                return parsed;
-            }
-        }catch(e){}
-    }
     try{
         const raw=localStorage.getItem(RFKJ_STATE_KEY);
         if(raw)return JSON.parse(raw);
     }catch(e){}
+    if(window.AndroidNotifications&&typeof window.AndroidNotifications.getSignalMatrixStateJson==="function"){
+        try{const raw=window.AndroidNotifications.getSignalMatrixStateJson();if(raw)return JSON.parse(raw);}catch(e){}
+    }
     return null;
 }
 function rfkjSaveState(){
@@ -14302,18 +14292,6 @@ function rfkjSaveState(){
             running:!!s.running
         }))
     };
-    /* signal_matrix_config is shared with native Crossover monitoring.
-       Matrix saves must never erase the Crossover portion of that JSON. */
-    try{
-        if(window.AndroidNotifications&&typeof window.AndroidNotifications.getSignalMatrixStateJson==="function"){
-            const raw=window.AndroidNotifications.getSignalMatrixStateJson();
-            if(raw){
-                const nativeState=JSON.parse(raw);
-                if(Array.isArray(nativeState.crossovers)) data.crossovers=nativeState.crossovers;
-                if(Number.isFinite(Number(nativeState.crossoverCount))) data.crossoverCount=Number(nativeState.crossoverCount);
-            }
-        }
-    }catch(e){}
     const raw=JSON.stringify(data);
     try{localStorage.setItem(RFKJ_STATE_KEY,raw);localStorage.setItem("rfkjMatrixState-v3",raw);}catch(e){}
     if(window.AndroidNotifications&&typeof window.AndroidNotifications.setSignalMatrixStateJson==="function"){
@@ -14787,21 +14765,6 @@ async function crossoverLoadRemoteStatus(){
         const localState=crossoverReadState();
         const localCount=Number(localState?.count);
         const localCrossovers=Array.isArray(localState?.crossovers)?localState.crossovers:[];
-
-        /* The saved local/native state is authoritative for the current device.
-           The Worker is a runtime/background mirror, not a configuration source.
-           This prevents an old remote item from resurrecting a stopped/changed
-           Crossover when the page opens. The normal polling loop still fetches
-           the live price from the Worker after this state is restored. */
-        if(localState && localCrossovers.length){
-            crossoverApplyState(localState);
-            crossoverLoadNotificationPrefs();
-            crossoverLoadLocalAlertHistory();
-            crossoverSyncCountLineStates();
-            clearPageIssue("crossover-remote-status");
-            return true;
-        }
-
         const response=await fetch(`${CROSSOVER_REMOTE_WORKER_URL}status?clientId=${encodeURIComponent(crossoverClientId())}&t=${Date.now()}`,{
             method:"GET",cache:"no-store"
         });
