@@ -12484,6 +12484,7 @@ const MEXC_SPOT_TICKER =
 const CRYPTO_PRICE_FAILOVER_KEY = "financialCryptoPriceFailover-v1";
 const CRYPTO_PRICE_FAILOVER_RETRY_MS = 30 * 1000;
 const CRYPTO_MEXC_HEALTHCHECK_MS = 60 * 1000;
+const CRYPTO_PRICE_CACHE_PREFIX = "financialCryptoLastGood-v1:";
 const CRYPTO_PRICE_SOURCES = [
     {
         id: "mexc",
@@ -12542,7 +12543,7 @@ function cryptoFailoverStateFor(coin) {
             ? Math.max(0, Math.min(CRYPTO_PRICE_SOURCES.length - 1, Number(item.sourceIndex)))
             : 0,
         retryAt: Number(item.retryAt) || 0,
-        lastMexcProbe: Number(item.lastMexcProbe) || 0
+        mexcHealthAt: Number(item.mexcHealthAt) || 0
     };
 }
 function cryptoFailoverSave(coin, state) {
@@ -12607,87 +12608,70 @@ async function getUnifiedCryptoPrice(coin) {
     let state = cryptoFailoverStateFor(normalized);
     const now = Date.now();
 
-    // When a fallback is active, MEXC is health-checked at most once per minute.
-    // If it recovers, immediately make it the active source again.
-    if (state.sourceIndex > 0 && now - state.lastMexcProbe >= CRYPTO_MEXC_HEALTHCHECK_MS) {
-        state.lastMexcProbe = now;
+    /*
+       MEXC remains the primary source. When a fallback is active, perform a
+       throttled MEXC health check (not on every price request). If it is back,
+       immediately switch the coin to MEXC.
+    */
+    if (state.sourceIndex > 0 && now - state.mexcHealthAt >= CRYPTO_MEXC_HEALTHCHECK_MS) {
+        state.mexcHealthAt = now;
         cryptoFailoverSave(normalized, state);
         try {
             const primary = await cryptoFetchSource(CRYPTO_PRICE_SOURCES[0], normalized);
-            cryptoFailoverSave(normalized, { sourceIndex: 0, retryAt: 0, lastMexcProbe: now });
+            cryptoFailoverSave(normalized, { sourceIndex: 0, retryAt: 0, mexcHealthAt: now });
+            try { localStorage.setItem(CRYPTO_PRICE_CACHE_PREFIX + normalized, JSON.stringify(primary)); } catch (e) {}
             return primary;
         } catch (error) {
-            // Keep using the active fallback.
+            // Keep using the known-good fallback.
         }
     }
 
-    // If the active fallback is healthy, use it directly. We only move forward
-    // after an actual failure; this avoids repeatedly probing the whole chain.
-    if (state.sourceIndex > 0) {
+    /*
+       If a temporary retry pause is active, use only the currently selected
+       source. Do not walk the chain again.
+    */
+    if (state.retryAt > now && state.sourceIndex > 0) {
         try {
             return await cryptoFetchSource(CRYPTO_PRICE_SOURCES[state.sourceIndex], normalized);
         } catch (error) {
-            console.warn(`Active crypto source ${CRYPTO_PRICE_SOURCES[state.sourceIndex].id} failed for ${normalized}:`, error);
-        }
-
-        // Active fallback failed: try the remaining fallback(s) once.
-        for (let index = state.sourceIndex + 1; index < CRYPTO_PRICE_SOURCES.length; index++) {
-            try {
-                const result = await cryptoFetchSource(CRYPTO_PRICE_SOURCES[index], normalized);
-                cryptoFailoverSave(normalized, {
-                    sourceIndex: index,
-                    retryAt: 0,
-                    lastMexcProbe: state.lastMexcProbe
-                });
-                return result;
-            } catch (error) {
-                console.warn(`Fallback crypto source ${CRYPTO_PRICE_SOURCES[index].id} failed for ${normalized}:`, error);
-            }
-        }
-
-        // All fallbacks failed; MEXC gets one recovery attempt now.
-        try {
-            const primary = await cryptoFetchSource(CRYPTO_PRICE_SOURCES[0], normalized);
-            cryptoFailoverSave(normalized, { sourceIndex: 0, retryAt: 0, lastMexcProbe: now });
-            return primary;
-        } catch (error) {
-            cryptoFailoverSave(normalized, {
-                sourceIndex: Math.min(state.sourceIndex + 1, CRYPTO_PRICE_SOURCES.length - 1),
-                retryAt: now + CRYPTO_PRICE_FAILOVER_RETRY_MS,
-                lastMexcProbe: state.lastMexcProbe
-            });
-            throw error;
+            // Fall through to the next backup source below.
         }
     }
 
-    // MEXC is healthy/active. Try it first; only after a real failure do we
-    // move into the fallback chain.
-    try {
-        const result = await cryptoFetchSource(CRYPTO_PRICE_SOURCES[0], normalized);
-        cryptoFailoverSave(normalized, { sourceIndex: 0, retryAt: 0, lastMexcProbe: state.lastMexcProbe });
-        return result;
-    } catch (error) {
-        console.warn(`MEXC failed for ${normalized}:`, error);
-    }
-
-    for (let index = 1; index < CRYPTO_PRICE_SOURCES.length; index++) {
+    for (let index = state.sourceIndex; index < CRYPTO_PRICE_SOURCES.length; index++) {
+        const source = CRYPTO_PRICE_SOURCES[index];
         try {
-            const result = await cryptoFetchSource(CRYPTO_PRICE_SOURCES[index], normalized);
-            cryptoFailoverSave(normalized, {
-                sourceIndex: index,
-                retryAt: 0,
-                lastMexcProbe: now
-            });
+            const result = await cryptoFetchSource(source, normalized);
+            cryptoFailoverSave(normalized, { sourceIndex: index, retryAt: 0, mexcHealthAt: state.mexcHealthAt || 0 });
+            try { localStorage.setItem(CRYPTO_PRICE_CACHE_PREFIX + normalized, JSON.stringify(result)); } catch (e) {}
             return result;
         } catch (error) {
-            console.warn(`Fallback crypto source ${CRYPTO_PRICE_SOURCES[index].id} failed for ${normalized}:`, error);
+            console.warn(`Crypto price source ${source.id} failed for ${normalized}:`, error);
+            /*
+               Move the active source only after it actually fails.
+               The next refresh therefore starts directly from the next
+               source instead of checking the failed source again.
+            */
+            state.sourceIndex = Math.min(index + 1, CRYPTO_PRICE_SOURCES.length - 1);
+            cryptoFailoverSave(normalized, state);
         }
     }
 
+    /*
+       All remaining sources failed. After a short recovery pause, start
+       again from the primary rather than probing the whole chain on every poll.
+    */
+    try {
+        const cachedRaw = localStorage.getItem(CRYPTO_PRICE_CACHE_PREFIX + normalized);
+        const cached = cachedRaw ? JSON.parse(cachedRaw) : null;
+        if (cached && Number.isFinite(Number(cached.price)) && Number(cached.price) > 0) {
+            return { ...cached, source: "cache", offline: true };
+        }
+    } catch (e) {}
     cryptoFailoverSave(normalized, {
-        sourceIndex: 1,
-        retryAt: now + CRYPTO_PRICE_FAILOVER_RETRY_MS,
-        lastMexcProbe: now
+        sourceIndex: 0,
+        retryAt: Date.now() + CRYPTO_PRICE_FAILOVER_RETRY_MS,
+        mexcHealthAt: 0
     });
     throw new Error(`All crypto price sources unavailable for ${normalized}`);
 }
