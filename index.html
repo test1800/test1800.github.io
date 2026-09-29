@@ -12483,8 +12483,6 @@ const MEXC_SPOT_TICKER =
 */
 const CRYPTO_PRICE_FAILOVER_KEY = "financialCryptoPriceFailover-v1";
 const CRYPTO_PRICE_FAILOVER_RETRY_MS = 30 * 1000;
-const CRYPTO_MEXC_HEALTHCHECK_MS = 60 * 1000;
-const CRYPTO_PRICE_CACHE_PREFIX = "financialCryptoLastGood-v1:";
 const CRYPTO_PRICE_SOURCES = [
     {
         id: "mexc",
@@ -12542,8 +12540,7 @@ function cryptoFailoverStateFor(coin) {
         sourceIndex: Number.isInteger(Number(item.sourceIndex))
             ? Math.max(0, Math.min(CRYPTO_PRICE_SOURCES.length - 1, Number(item.sourceIndex)))
             : 0,
-        retryAt: Number(item.retryAt) || 0,
-        mexcHealthAt: Number(item.mexcHealthAt) || 0
+        retryAt: Number(item.retryAt) || 0
     };
 }
 function cryptoFailoverSave(coin, state) {
@@ -12609,32 +12606,15 @@ async function getUnifiedCryptoPrice(coin) {
     const now = Date.now();
 
     /*
-       MEXC remains the primary source. When a fallback is active, perform a
-       throttled MEXC health check (not on every price request). If it is back,
-       immediately switch the coin to MEXC.
+       If every source failed previously, wait before probing the chain again.
+       This prevents a tight MEXC -> CoinGecko -> Nestex loop while offline.
     */
-    if (state.sourceIndex > 0 && now - state.mexcHealthAt >= CRYPTO_MEXC_HEALTHCHECK_MS) {
-        state.mexcHealthAt = now;
-        cryptoFailoverSave(normalized, state);
+    if (state.retryAt > now) {
+        const source = CRYPTO_PRICE_SOURCES[state.sourceIndex];
         try {
-            const primary = await cryptoFetchSource(CRYPTO_PRICE_SOURCES[0], normalized);
-            cryptoFailoverSave(normalized, { sourceIndex: 0, retryAt: 0, mexcHealthAt: now });
-            try { localStorage.setItem(CRYPTO_PRICE_CACHE_PREFIX + normalized, JSON.stringify(primary)); } catch (e) {}
-            return primary;
+            return await cryptoFetchSource(source, normalized);
         } catch (error) {
-            // Keep using the known-good fallback.
-        }
-    }
-
-    /*
-       If a temporary retry pause is active, use only the currently selected
-       source. Do not walk the chain again.
-    */
-    if (state.retryAt > now && state.sourceIndex > 0) {
-        try {
-            return await cryptoFetchSource(CRYPTO_PRICE_SOURCES[state.sourceIndex], normalized);
-        } catch (error) {
-            // Fall through to the next backup source below.
+            throw error;
         }
     }
 
@@ -12642,8 +12622,7 @@ async function getUnifiedCryptoPrice(coin) {
         const source = CRYPTO_PRICE_SOURCES[index];
         try {
             const result = await cryptoFetchSource(source, normalized);
-            cryptoFailoverSave(normalized, { sourceIndex: index, retryAt: 0, mexcHealthAt: state.mexcHealthAt || 0 });
-            try { localStorage.setItem(CRYPTO_PRICE_CACHE_PREFIX + normalized, JSON.stringify(result)); } catch (e) {}
+            cryptoFailoverSave(normalized, { sourceIndex: index, retryAt: 0 });
             return result;
         } catch (error) {
             console.warn(`Crypto price source ${source.id} failed for ${normalized}:`, error);
@@ -12661,17 +12640,9 @@ async function getUnifiedCryptoPrice(coin) {
        All remaining sources failed. After a short recovery pause, start
        again from the primary rather than probing the whole chain on every poll.
     */
-    try {
-        const cachedRaw = localStorage.getItem(CRYPTO_PRICE_CACHE_PREFIX + normalized);
-        const cached = cachedRaw ? JSON.parse(cachedRaw) : null;
-        if (cached && Number.isFinite(Number(cached.price)) && Number(cached.price) > 0) {
-            return { ...cached, source: "cache", offline: true };
-        }
-    } catch (e) {}
     cryptoFailoverSave(normalized, {
         sourceIndex: 0,
-        retryAt: Date.now() + CRYPTO_PRICE_FAILOVER_RETRY_MS,
-        mexcHealthAt: 0
+        retryAt: Date.now() + CRYPTO_PRICE_FAILOVER_RETRY_MS
     });
     throw new Error(`All crypto price sources unavailable for ${normalized}`);
 }
@@ -14064,49 +14035,6 @@ async function loadCryptoPortfolio(
    RF / KJ SIGNAL MATRIX MONITOR
 ===================================================== */
 const RFKJ_WORKER_URL = "https://signalmatrix.rxw1.workers.dev/";
-
-/*
-   Signal Matrix network logic is intentionally aligned with the working
-   Ultra Compact Android widget:
-   1) direct Signal Matrix worker
-   2) CORS proxy
-   3) allorigins proxy
-
-   The worker itself remains the source of RF/KJ/ST calculations. These
-   fallbacks only solve browser/WebView access when the direct worker response
-   is blocked by CORS/network policy. They do not change the Matrix logic.
-*/
-async function rfkjFetchJson(url) {
-    const urls = buildApiProxyFallbacks(url);
-    let lastError = null;
-    for (const candidate of urls) {
-        try {
-            const response = await fetchWithTimeout(
-                candidate,
-                {
-                    method: "GET",
-                    headers: { "Accept": "application/json,text/plain,*/*" },
-                    cache: "no-store"
-                },
-                10000
-            );
-            if (!response.ok) {
-                lastError = new Error(`Signal Matrix HTTP ${response.status}`);
-                continue;
-            }
-            const data = await response.json();
-            if (!data || typeof data !== "object") {
-                lastError = new Error("Invalid Signal Matrix response");
-                continue;
-            }
-            return data;
-        } catch (error) {
-            lastError = error;
-            console.warn("Signal Matrix endpoint failed:", candidate, error);
-        }
-    }
-    throw lastError || new Error("All Signal Matrix endpoints unavailable");
-}
 const RFKJ_POLL_MS = 2000;
 const RFKJ_LIVE_CACHE_KEY = "rfkjLiveSignalCache-v1";
 const RFKJ_SLOT_COUNT = 3;
@@ -14460,7 +14388,10 @@ async function rfkjFetchOne(index,timeframe,notify=true){
     const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
     const url=RFKJ_WORKER_URL+(RFKJ_WORKER_URL.includes("?")?"&":"?")+`coin=${encodeURIComponent(coin)}&timeframe=${encodeURIComponent(timeframe)}&t=${Date.now()}`;
     try{
-        const data=await rfkjFetchJson(url);
+        const response=await fetch(url,{method:"GET",cache:"no-store"});
+        if(!response.ok)throw new Error(`Worker HTTP ${response.status}`);
+        const data=await response.json();
+        if(!data || typeof data!=="object")throw new Error("Invalid worker response");
         const rf=rfkjNormalizeSignal(data.RF??data.rf??data.rangeFilter??data.range_filter??0);
         const kj=rfkjNormalizeSignal(data.KJ??data.kj??data.kijunsen??0);
         const st=rfkjNormalizeSignal(data.ST??data.st??data.superTrend??data.supertrend??0);
