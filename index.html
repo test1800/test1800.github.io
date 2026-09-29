@@ -9595,30 +9595,114 @@ function dateNumber(date) {
     );
 }
 /* =====================================================
-   BANK COMPOUNDING
+   BANK RATE HISTORY
+   Rates are effective from their Jalali "from" date.
+   No single/fallback annual bank rate is used.
 ===================================================== */
+function parseBankRatePeriods(rawPeriods) {
+    if (!Array.isArray(rawPeriods) || rawPeriods.length === 0) {
+        throw new Error(
+            "data.json must contain a non-empty bankRatePeriods array."
+        );
+    }
+
+    const periods = rawPeriods
+        .map((item) => ({
+            from: String(item?.from || "").trim(),
+            rate: Number(item?.rate)
+        }))
+        .filter((item) =>
+            /^\d{4}\/\d{2}\/\d{2}$/.test(item.from) &&
+            Number.isFinite(item.rate) &&
+            item.rate >= 0
+        )
+        .sort((a, b) => dateNumber(a.from) - dateNumber(b.from));
+
+    if (periods.length === 0) {
+        throw new Error(
+            "bankRatePeriods contains no valid rate periods."
+        );
+    }
+
+    for (let i = 1; i < periods.length; i++) {
+        if (periods[i].from === periods[i - 1].from) {
+            throw new Error(
+                "Duplicate bankRatePeriods date: " + periods[i].from
+            );
+        }
+    }
+
+    return periods;
+}
+
+function getActiveBankRate(periods, date) {
+    let active = periods[0];
+    for (const period of periods) {
+        if (dateNumber(period.from) <= dateNumber(date)) {
+            active = period;
+        } else {
+            break;
+        }
+    }
+    return active.rate;
+}
+
+function formatBankRate(rate) {
+    if (!Number.isFinite(rate)) return "--";
+    return Number.isInteger(rate)
+        ? rate + "%"
+        : rate.toFixed(2) + "%";
+}
+
+function jalaliDayIndex(date) {
+    const value = jalaliToGregorian(
+        ...String(date).split("/").map(Number)
+    );
+    return Date.UTC(
+        value.getFullYear(),
+        value.getMonth(),
+        value.getDate()
+    ) / 86400000;
+}
+
 function compoundValue(
     principal,
     startDate,
     endDate,
-    annualRate
+    bankRatePeriods
 ) {
-    const days =
-        daysBetweenInclusive(
-            startDate,
-            endDate
+    if (principal <= 0) return 0;
+
+    let value = principal;
+    const startDay = jalaliDayIndex(startDate);
+    const endDay = jalaliDayIndex(endDate);
+
+    if (endDay < startDay) return value;
+
+    for (let i = 0; i < bankRatePeriods.length; i++) {
+        const period = bankRatePeriods[i];
+        const periodStart = jalaliDayIndex(period.from);
+        const nextPeriodStart =
+            i + 1 < bankRatePeriods.length
+                ? jalaliDayIndex(bankRatePeriods[i + 1].from)
+                : Infinity;
+
+        const segmentStart = Math.max(startDay, periodStart);
+        const segmentEnd = Math.min(
+            endDay,
+            nextPeriodStart - 1
         );
-    const dailyRate =
-        annualRate /
-        100 /
-        365;
-    return (
-        principal *
-        Math.pow(
-            1 + dailyRate,
-            days
-        )
-    );
+
+        if (segmentEnd >= segmentStart) {
+            const days = segmentEnd - segmentStart + 1;
+            value *= Math.pow(
+                1 + period.rate / 100 / 365,
+                days
+            );
+        }
+    }
+
+    return value;
 }
 /* =====================================================
    PORTFOLIO FIFO
@@ -10637,12 +10721,10 @@ async function loadDashboardData() {
                         error
                     )
             );
-            const annualBankRate =
-                Number(
-                    data.annualBankRate
-                )
-                ||
-                40;
+            const bankRatePeriods =
+                parseBankRatePeriods(
+                    data.bankRatePeriods
+                );
             const divisor =
                 Number(
                     data.priceDivisor
@@ -10821,8 +10903,12 @@ async function loadDashboardData() {
             );
             safeText(
                 "bankRate",
-                annualBankRate +
-                "%"
+                formatBankRate(
+                    getActiveBankRate(
+                        bankRatePeriods,
+                        today
+                    )
+                )
             );
             const averageLivePrice =
                 calculateAverageLivePrice(
@@ -11081,7 +11167,7 @@ async function loadDashboardData() {
                     transactions,
                     averageLivePrice,
                     today,
-                    annualBankRate
+                    bankRatePeriods
                 );
             displaySection(
                 overall,
@@ -11109,7 +11195,7 @@ async function loadDashboardData() {
                     sixTransactions,
                     averageLivePrice,
                     today,
-                    annualBankRate
+                    bankRatePeriods
                 );
             displaySection(
                 six,
@@ -11164,7 +11250,7 @@ for (
                     lastTransactions,
                     averageLivePrice,
                     today,
-                    annualBankRate
+                    bankRatePeriods
                 );
             displaySection(
                 last,
