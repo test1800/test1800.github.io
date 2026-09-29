@@ -14064,6 +14064,49 @@ async function loadCryptoPortfolio(
    RF / KJ SIGNAL MATRIX MONITOR
 ===================================================== */
 const RFKJ_WORKER_URL = "https://signalmatrix.rxw1.workers.dev/";
+
+/*
+   Signal Matrix network logic is intentionally aligned with the working
+   Ultra Compact Android widget:
+   1) direct Signal Matrix worker
+   2) CORS proxy
+   3) allorigins proxy
+
+   The worker itself remains the source of RF/KJ/ST calculations. These
+   fallbacks only solve browser/WebView access when the direct worker response
+   is blocked by CORS/network policy. They do not change the Matrix logic.
+*/
+async function rfkjFetchJson(url) {
+    const urls = buildApiProxyFallbacks(url);
+    let lastError = null;
+    for (const candidate of urls) {
+        try {
+            const response = await fetchWithTimeout(
+                candidate,
+                {
+                    method: "GET",
+                    headers: { "Accept": "application/json,text/plain,*/*" },
+                    cache: "no-store"
+                },
+                10000
+            );
+            if (!response.ok) {
+                lastError = new Error(`Signal Matrix HTTP ${response.status}`);
+                continue;
+            }
+            const data = await response.json();
+            if (!data || typeof data !== "object") {
+                lastError = new Error("Invalid Signal Matrix response");
+                continue;
+            }
+            return data;
+        } catch (error) {
+            lastError = error;
+            console.warn("Signal Matrix endpoint failed:", candidate, error);
+        }
+    }
+    throw lastError || new Error("All Signal Matrix endpoints unavailable");
+}
 const RFKJ_POLL_MS = 2000;
 const RFKJ_LIVE_CACHE_KEY = "rfkjLiveSignalCache-v1";
 const RFKJ_SLOT_COUNT = 3;
@@ -14417,10 +14460,7 @@ async function rfkjFetchOne(index,timeframe,notify=true){
     const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
     const url=RFKJ_WORKER_URL+(RFKJ_WORKER_URL.includes("?")?"&":"?")+`coin=${encodeURIComponent(coin)}&timeframe=${encodeURIComponent(timeframe)}&t=${Date.now()}`;
     try{
-        const response=await fetch(url,{method:"GET",cache:"no-store"});
-        if(!response.ok)throw new Error(`Worker HTTP ${response.status}`);
-        const data=await response.json();
-        if(!data || typeof data!=="object")throw new Error("Invalid worker response");
+        const data=await rfkjFetchJson(url);
         const rf=rfkjNormalizeSignal(data.RF??data.rf??data.rangeFilter??data.range_filter??0);
         const kj=rfkjNormalizeSignal(data.KJ??data.kj??data.kijunsen??0);
         const st=rfkjNormalizeSignal(data.ST??data.st??data.superTrend??data.supertrend??0);
