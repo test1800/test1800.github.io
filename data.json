@@ -3,7 +3,16 @@
   "exirApi": "https://api.exir.io/v2/orderbook?symbol=usdt-irt",
   "bitpinApi": "https://api.bitpin.org/api/v1/mth/orderbook/USDT_IRT/",
   "defaultPrice": 190000,
-  "annualBankRate": 38,
+  "bankRatePeriods": [
+  {
+    "from": "1405/02/01",
+    "rate": 38
+  },
+  {
+    "from": "1405/05/13",
+    "rate": 20
+  }
+  ],
   "priceDivisor": 10,
   "transactions": [
     {
