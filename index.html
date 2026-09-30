@@ -15009,7 +15009,13 @@ function crossoverLoadNotificationPrefs(){
     const data=crossoverReadNotificationPrefs();
     crossoverInstances.forEach(s=>{s.notificationEnabled=data[String(s.index)]===true;});
 }
-function crossoverMailPrefsKey(){return "crossoverEmailPrefs-v1";}
+function crossoverIsCryptoEmailAsset(value){
+    const v=String(value||"").trim().toUpperCase();
+    /* The Crossover Email Worker supports crypto assets only. USD, GOLD, OIL
+       and TSE symbols must never be registered with that Worker. */
+    return ["BTC","BNB","ETH","DOGE","ADA","SOL","ONE","AVAX","POL","TRX"].includes(v);
+}
+function crossoverMailPrefsKey(){return "crossoverEmailPrefs-v2";}
 function crossoverReadMailPrefs(){
     try{
         const raw=localStorage.getItem(crossoverMailPrefsKey());
@@ -15019,14 +15025,27 @@ function crossoverReadMailPrefs(){
 }
 function crossoverSaveMailPrefs(){
     try{
-        const data={};
-        crossoverInstances.forEach(s=>{data[String(s.index)]=!!s.emailEnabled;});
+        const data={version:3,slots:{}};
+        crossoverInstances.forEach(s=>{
+            data.slots[String(s.index)]={
+                enabled:!!s.emailEnabled,
+                running:!!s.running,
+                coin:String(s.activeCoin||s.coin||"").toUpperCase(),
+                target:Number(s.activeTarget)
+            };
+        });
         localStorage.setItem(crossoverMailPrefsKey(),JSON.stringify(data));
     }catch(e){}
 }
 function crossoverLoadMailPrefs(){
     const data=crossoverReadMailPrefs();
-    crossoverInstances.forEach(s=>{s.emailEnabled=data[String(s.index)]===true;});
+    const slots=(data&&data.slots&&typeof data.slots==="object")?data.slots:data;
+    crossoverInstances.forEach(s=>{
+        const saved=slots?.[String(s.index)];
+        s.emailEnabled= saved&&typeof saved==="object"
+            ? saved.enabled===true
+            : saved===true;
+    });
 }
 function crossoverLoadLocalAlertHistory(){
     try{
@@ -15053,7 +15072,8 @@ function crossoverUpdateMailButton(index){
     if(!s||!btn)return;
     const enabled=!!s.emailEnabled;
     const configured=Number.isFinite(Number(s.activeTarget))&&Number(s.activeTarget)>0;
-    const available=!!s.running&&configured;
+    const cryptoAsset=crossoverIsCryptoEmailAsset(s.activeCoin||s.coin);
+    const available=!!s.running&&configured&&cryptoAsset;
     btn.disabled=!available;
     btn.classList.toggle("enabled",enabled&&available);
     btn.textContent="M";
@@ -15063,23 +15083,21 @@ function crossoverUpdateMailButton(index){
 }
 async function crossoverSyncEmailWorker(){
     /*
-     * The Crossover Worker is intentionally contacted ONLY after an explicit
-     * M click (or when M must be cleared because its Crossover was stopped).
-     * The payload keeps the original Worker command contract: clientId,
-     * active, count, items.  `count` is the visible Crossover panel count,
-     * exactly as the old Start/Stop sync used it.
+     * The Email Worker is a CRYPTO-only remote monitor.  UI Crossover slots
+     * may also monitor USD/GOLD/OIL/TSE, but those assets are deliberately
+     * excluded here because this Worker has no corresponding crypto feed.
      *
-     * IMPORTANT: GOLD, OIL, TSE and USD are valid Crossover assets too.  They
-     * must never be silently filtered out of the email command.
+     * The payload contract remains: clientId, active, count, items.
      */
-    const grid=document.getElementById("crossoverGrid");
-    const count=Math.max(1,Math.min(CROSSOVER_COUNT,Number(grid?.dataset.count||1)));
-    const items=crossoverInstances.slice(0,count).map(s=>({
+    /* Email monitoring is independent of how many Crossover cards are
+       currently visible.  All four slots must be sent to the Worker. */
+    const count=CROSSOVER_COUNT;
+    const items=crossoverInstances.map(s=>({
         index:s.index,
         coin:String(s.running?(s.activeCoin||s.coin):s.coin||"BTC").toUpperCase(),
         target:Number(s.running?s.activeTarget:s.target),
         running:!!s.emailEnabled&&!!s.running
-    })).filter(x=>x.running&&Number.isFinite(x.target)&&x.target>0);
+    })).filter(x=>x.running&&crossoverIsCryptoEmailAsset(x.coin)&&Number.isFinite(x.target)&&x.target>0);
     const active=items.length>0;
     const payload={clientId:crossoverClientId(),active,count,items};
     try{
@@ -15105,23 +15123,28 @@ async function crossoverToggleEmail(index){
     const s=crossoverInstance(index),btn=crossoverGet("crossoverMail",index);
     if(!s||!btn)return;
     if(!s.running)return;
-    const target=Number(s.activeTarget);
-    if(!Number.isFinite(target)||target<=0)return;
-    const previous=!!s.emailEnabled;
-    s.emailEnabled=!previous;
-    crossoverUpdateMailButton(index);
-    /* Only this explicit M action talks to the Worker. */
-    const ok=await crossoverSyncEmailWorker();
-    if(!ok){
-        /* Do not leave a false ON/OFF state when the command was rejected. */
-        s.emailEnabled=previous;
+    if(!crossoverIsCryptoEmailAsset(s.activeCoin||s.coin)){
+        s.emailEnabled=false;
         crossoverUpdateMailButton(index);
         crossoverSaveMailPrefs();
         crossoverSaveState();
         return;
     }
+    const target=Number(s.activeTarget);
+    if(!Number.isFinite(target)||target<=0)return;
+    const previous=!!s.emailEnabled;
+    s.emailEnabled=!previous;
+    /* Persist the user's explicit M choice BEFORE the network call.
+       A transient Worker/network failure must never erase the local switch.
+       Startup will retry the Worker registration for any restored ON slot. */
     crossoverSaveMailPrefs();
     crossoverSaveState();
+    crossoverUpdateMailButton(index);
+    /* Only this explicit M action talks to the Worker. */
+    const ok=await crossoverSyncEmailWorker();
+    if(!ok){
+        console.warn("Crossover Email Worker sync failed; local M state retained for retry.");
+    }
     const status=crossoverGet("crossoverStatus",index);
     if(status)status.textContent=s.emailEnabled?"Email ON":"Email OFF";
 }
@@ -15381,7 +15404,7 @@ async function crossoverFetchOne(index,notify=true){
         if(status)status.textContent=`Worker unavailable • ${error.message||"request failed"}`;
     }finally{s.requestInProgress=false;}
 }
-function crossoverStart(index,sendStart=true){
+function crossoverStart(index,sendStart=true,restoreEmail=false){
     const s=crossoverInstance(index);
     const target=Number(s.target);
     if(!s||s.running)return;
@@ -15396,9 +15419,10 @@ function crossoverStart(index,sendStart=true){
     s.activeCoin=s.coin;
     s.activeTarget=target;
     s.running=true;
-    /* Email is an explicit M permission for this active run. A fresh Start
-       never inherits a stale email flag from an old stopped run. */
-    s.emailEnabled=false;
+    /* A normal fresh Start clears Email so it is an explicit M permission.
+       During startup restore, preserve the saved Email state for this running
+       crypto Crossover; it is restored separately and re-synced with the Worker. */
+    if(!restoreEmail)s.emailEnabled=false;
     crossoverPersistSelection(index,s.activeCoin);
     /* Keep the last saved price so the first new quote can be compared to it. */
     if(!Number.isFinite(Number(s.previousPrice)))s.previousPrice=null;
@@ -15521,7 +15545,15 @@ function crossoverApplyState(saved){
         s.lastCrossDirection=Number(m.lastCrossDirection)||0;
         s.priceDirection=Number(m.priceDirection)||0;
         s.notificationEnabled=!!m.notificationEnabled;
-        s.emailEnabled=!!m.running&&!!m.emailEnabled;
+        /* The dedicated Email preference is authoritative.  Do not let an
+           older crossoverState snapshot overwrite a user's saved M choice. */
+        const mailPrefs=crossoverReadMailPrefs();
+        const mailSlots=(mailPrefs&&mailPrefs.slots&&typeof mailPrefs.slots==="object")?mailPrefs.slots:mailPrefs;
+        const savedMail=mailSlots?.[String(idx)];
+        const savedMailEnabled=savedMail&&typeof savedMail==="object"
+            ? savedMail.enabled===true
+            : savedMail===true;
+        s.emailEnabled=!!m.running&&savedMailEnabled&&crossoverIsCryptoEmailAsset(s.activeCoin||s.coin);
         s.percentageAlertTimes=(m.percentageAlertTimes&&typeof m.percentageAlertTimes==="object")?m.percentageAlertTimes:Object.create(null);
         const coin=crossoverGet("crossoverCoin",idx),input=crossoverGet("crossoverTarget",idx);
         if(coin){coin.value=s.coin; coin.dataset.userSelected="1";}
@@ -15541,8 +15573,13 @@ function crossoverApplyState(saved){
                    its label can remain on BTC after a refresh. */
                 coin.dispatchEvent(new Event("change",{bubbles:true}));
             }
-            crossoverStart(idx,false);
+            const savedEmailEnabled=!!s.emailEnabled;
+            crossoverStart(idx,false,true);
             s.coin=activeCoin;
+            s.emailEnabled=savedEmailEnabled&&crossoverIsCryptoEmailAsset(s.activeCoin||s.coin);
+            crossoverUpdateMailButton(idx);
+            crossoverSaveMailPrefs();
+            crossoverSaveState();
             crossoverUpdateUI(idx);
         }
     });
@@ -15652,11 +15689,35 @@ function crossoverInit(){
         }
         crossoverSaveState();
     }
-    for(let i=1;i<=4;i++){
+    /*
+     * Restore the email switch exactly as it was for running crypto slots.
+     * Non-crypto slots are always forced OFF.  Then re-register the restored
+     * crypto email monitors with the Worker so a refresh/reopen does not lose
+     * the server-side email command.
+     */
+    let emailStateChanged=false;
+    for(let i=1;i<=CROSSOVER_COUNT;i++){
+        const s=crossoverInstance(i);
+        if(s.emailEnabled&&!s.running){
+            s.emailEnabled=false;
+            emailStateChanged=true;
+        }
+        if(s.emailEnabled&&!crossoverIsCryptoEmailAsset(s.activeCoin||s.coin)){
+            s.emailEnabled=false;
+            emailStateChanged=true;
+        }
         crossoverUpdateNotificationButton(i);
         crossoverUpdateMailButton(i);
     }
+    if(emailStateChanged){
+        crossoverSaveMailPrefs();
+        crossoverSaveState();
+    }
     crossoverSyncCountLineStates();
+    /* Re-sync restored email-enabled crypto slots after startup. */
+    if(crossoverInstances.some(s=>s.running&&s.emailEnabled&&crossoverIsCryptoEmailAsset(s.activeCoin||s.coin))){
+        crossoverSyncEmailWorker().catch(()=>{});
+    }
 }
 crossoverInit();
 rfkjStartUltraRotation();
