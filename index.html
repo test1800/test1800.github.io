@@ -4734,6 +4734,41 @@ h1 {
     cursor:not-allowed;
     transform:none !important;
 }
+
+/* Compact M switch: explicit email control. It never blocks page startup. */
+.crossover-mail{
+    flex:0 0 25px !important;
+    width:25px !important;
+    min-width:25px !important;
+    height:25px !important;
+    min-height:25px !important;
+    padding:0 !important;
+    border:1px solid rgba(148,163,184,.24);
+    border-radius:8px;
+    color:#94a3b8;
+    background:rgba(15,23,42,.38);
+    font:950 9px/1 Inter,"Segoe UI",Arial,sans-serif;
+    letter-spacing:-.2px;
+    cursor:pointer;
+    transition:.18s ease;
+    opacity:.9;
+}
+.crossover-mail:hover{transform:translateY(-1px);border-color:rgba(148,163,184,.52);}
+.crossover-mail.enabled{
+    color:#dbeafe;
+    border-color:rgba(96,165,250,.72);
+    background:linear-gradient(145deg,rgba(59,130,246,.28),rgba(37,99,235,.10));
+    box-shadow:0 0 12px rgba(59,130,246,.18),inset 0 1px 0 rgba(255,255,255,.08);
+}
+.crossover-mail:disabled{opacity:.34;cursor:not-allowed;transform:none !important;}
+.crossover-status{
+    font-size:7.5px !important;
+    opacity:.72;
+}
+@media (max-width:700px){
+    .crossover-mail{flex-basis:23px !important;width:23px !important;min-width:23px !important;height:23px !important;min-height:23px !important;font-size:8px !important;}
+    .crossover-status{font-size:7px !important;}
+}
 .crossover-status{
     flex:1 1 50%;
     min-width:0;
@@ -5679,13 +5714,19 @@ h1 {
     text-shadow: 0 0 10px rgba(255,255,255,.18);
 }
 
-/* Signal Matrix widget numbers */
-.rfkj-value.signal-plus .rfkj-code,
-.rfkj-value.signal-minus .rfkj-code,
+/* Signal Matrix labels follow the active signal color. */
+.rfkj-value.signal-plus .rfkj-code {
+    color:#ffffff !important;
+    text-shadow:0 0 12px rgba(255,255,255,.55) !important;
+}
+.rfkj-value.signal-minus .rfkj-code {
+    color:#60a5fa !important;
+    text-shadow:0 0 12px rgba(37,99,235,.60) !important;
+}
 .rfkj-value.signal-zero .rfkj-code,
 .rfkj-value.signal-invalid .rfkj-code {
-    color: #f8fafc !important;
-    text-shadow: 0 0 10px rgba(255,255,255,.22) !important;
+    color:#94a3b8 !important;
+    text-shadow:none !important;
 }
 
 /* Signal Matrix number in Ultra Compact */
@@ -5930,12 +5971,12 @@ h1 {
 </header>
 <div
     id="loading"
-    class="loading">
-    Loading...
-</div>
+    class="loading"
+    aria-hidden="true"
+    style="display:none;"></div>
 <div
     id="dashboard"
-    style="display:none;">
+    style="display:grid;">
  <!-- =================================================
          OVERALL
     ================================================= -->
@@ -6541,9 +6582,6 @@ h1 {
     <div
         class="crypto-portfolio-grid"
         id="cryptoPortfolioGrid">
-        <div class="crypto-portfolio-item">
-            Loading...
-        </div>
     </div>
 </div>
 <!-- =================================================
@@ -6704,7 +6742,7 @@ h1 {
                 <div class="crossover-coin-wrap"><select id="crossoverCoin1" class="crossover-coin" aria-label="Select asset"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option><option value="USD">USD</option></select></div>
             </div>
             <div class="crossover-distance invalid" id="crossoverDistance1">Current value — • Target —</div>
-            <div class="crossover-action"><button type="button" id="crossoverStartStop1" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify1" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><div id="crossoverStatus1" class="crossover-status">Ready • Set a target price</div></div>
+            <div class="crossover-action"><button type="button" id="crossoverStartStop1" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify1" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><button type="button" id="crossoverMail1" class="crossover-mail" aria-label="Email alerts off" title="Email alerts off">M</button><div id="crossoverStatus1" class="crossover-status">Ready</div></div>
         </div>
         <div class="card crossover-card" data-crossover-index="2" >
             <div class="crossover-header">
@@ -6716,7 +6754,7 @@ h1 {
                 <div class="crossover-coin-wrap"><select id="crossoverCoin2" class="crossover-coin" aria-label="Select asset"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option><option value="USD">USD</option></select></div>
             </div>
             <div class="crossover-distance invalid" id="crossoverDistance2">Current value — • Target —</div>
-            <div class="crossover-action"><button type="button" id="crossoverStartStop2" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify2" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><div id="crossoverStatus2" class="crossover-status">Ready • Set a target price</div></div>
+            <div class="crossover-action"><button type="button" id="crossoverStartStop2" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify2" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><button type="button" id="crossoverMail2" class="crossover-mail" aria-label="Email alerts off" title="Email alerts off">M</button><div id="crossoverStatus2" class="crossover-status">Ready</div></div>
         </div>
         <div class="card crossover-card" data-crossover-index="3" >
             <div class="crossover-header">
@@ -6728,7 +6766,7 @@ h1 {
                 <div class="crossover-coin-wrap"><select id="crossoverCoin3" class="crossover-coin" aria-label="Select asset"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option><option value="USD">USD</option></select></div>
             </div>
             <div class="crossover-distance invalid" id="crossoverDistance3">Current value — • Target —</div>
-            <div class="crossover-action"><button type="button" id="crossoverStartStop3" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify3" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><div id="crossoverStatus3" class="crossover-status">Ready • Set a target price</div></div>
+            <div class="crossover-action"><button type="button" id="crossoverStartStop3" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify3" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><button type="button" id="crossoverMail3" class="crossover-mail" aria-label="Email alerts off" title="Email alerts off">M</button><div id="crossoverStatus3" class="crossover-status">Ready</div></div>
         </div>
         <div class="card crossover-card" data-crossover-index="4" >
             <div class="crossover-header">
@@ -6740,7 +6778,7 @@ h1 {
                 <div class="crossover-coin-wrap"><select id="crossoverCoin4" class="crossover-coin" aria-label="Select asset"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option><option value="USD">USD</option></select></div>
             </div>
             <div class="crossover-distance invalid" id="crossoverDistance4">Current value — • Target —</div>
-            <div class="crossover-action"><button type="button" id="crossoverStartStop4" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify4" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><div id="crossoverStatus4" class="crossover-status">Ready • Set a target price</div></div>
+            <div class="crossover-action"><button type="button" id="crossoverStartStop4" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify4" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><button type="button" id="crossoverMail4" class="crossover-mail" aria-label="Email alerts off" title="Email alerts off">M</button><div id="crossoverStatus4" class="crossover-status">Ready</div></div>
         </div>
     </div>
 </div>
@@ -10620,7 +10658,8 @@ function calculateAverageLivePrice(
 /* =====================================================
    LOAD DASHBOARD DATA
 ===================================================== */
-async function loadDashboardData() {
+async function loadDashboardData(options = {}) {
+    const cacheOnly = options && options.cacheOnly === true;
     if (
         dashboardLoadInProgress
     ) {
@@ -10644,8 +10683,9 @@ async function loadDashboardData() {
             /* =================================================
                DATA.JSON
             ================================================= */
-            const dataRequest =
-                fetchWithTimeout(
+            const dataRequest = cacheOnly
+                ? null
+                : fetchWithTimeout(
                     REMOTE_DATA_JSON_URL,
                     {
                         cache:
@@ -10684,6 +10724,11 @@ async function loadDashboardData() {
                     throw error;
                 });
             if (!data) {
+                if (cacheOnly) {
+                    throw new Error(
+                        "No saved dashboard snapshot is available yet."
+                    );
+                }
                 try {
                     data =
                         await dataRequest;
@@ -10696,9 +10741,9 @@ async function loadDashboardData() {
                     );
                 }
             }
-            else {
+            else if (!cacheOnly) {
                 usingCachedData =
-                    false;
+                    true;
                 dataRequest
                     .catch(
                         () => {}
@@ -10782,89 +10827,94 @@ async function loadDashboardData() {
                     defaultPrice;
             }
             /* =================================================
-               ALL MARKET REQUESTS IN PARALLEL
+               LIVE MARKET REQUESTS
+               The first paint must NEVER wait for the network.
+               cacheOnly renders the last saved prices immediately;
+               the normal pass refreshes them in the background.
             ================================================= */
-            const results =
-                await Promise.allSettled([
-                    getCurrentPrice(
-                        data.priceApi,
-                        divisor
-                    ),
-                    getExirPrice(
-                        data.exirApi
-                    ),
-                    getBitpinPrice(
-                        bitpinApi
-                    )
-                ]);
-            const nobitexResult =
-                results[0];
-            const exirResult =
-                results[1];
-            const bitpinResult =
-                results[2];
-            if (
-                nobitexResult.status ===
-                "fulfilled"
-            ) {
-                clearPageIssue("nobitex");
-                currentPrice =
-                    nobitexResult.value;
-                nobitexOnline =
-                    true;
-                usingCachedNobitex =
-                    false;
-                saveNobitexPrice(
-                    currentPrice
-                );
-            }
-            else {
-                priceErrors.push(
-                    "Nobitex"
-                );
-                setPageIssue("nobitex", "Nobitex unavailable", "error");
-            }
-            if (
-                exirResult.status ===
-                "fulfilled"
-            ) {
-                clearPageIssue("exir");
-                exirPrice =
-                    exirResult.value;
-                exirOnline =
-                    true;
-                usingCachedExir =
-                    false;
-                saveExirPrice(
-                    exirPrice
-                );
-            }
-            else {
-                priceErrors.push(
-                    "Exir"
-                );
-                setPageIssue("exir", "Exir unavailable", "error");
-            }
-            if (
-                bitpinResult.status ===
-                "fulfilled"
-            ) {
-                clearPageIssue("bitpin");
-                bitpinPrice =
-                    bitpinResult.value;
-                bitpinOnline =
-                    true;
-                usingCachedBitpin =
-                    false;
-                saveBitpinPrice(
-                    bitpinPrice
-                );
-            }
-            else {
-                priceErrors.push(
-                    "Bitpin"
-                );
-                setPageIssue("bitpin", "Bitpin unavailable", "error");
+            if (!cacheOnly) {
+                const results =
+                    await Promise.allSettled([
+                        getCurrentPrice(
+                            data.priceApi,
+                            divisor
+                        ),
+                        getExirPrice(
+                            data.exirApi
+                        ),
+                        getBitpinPrice(
+                            bitpinApi
+                        )
+                    ]);
+                const nobitexResult =
+                    results[0];
+                const exirResult =
+                    results[1];
+                const bitpinResult =
+                    results[2];
+                if (
+                    nobitexResult.status ===
+                    "fulfilled"
+                ) {
+                    clearPageIssue("nobitex");
+                    currentPrice =
+                        nobitexResult.value;
+                    nobitexOnline =
+                        true;
+                    usingCachedNobitex =
+                        false;
+                    saveNobitexPrice(
+                        currentPrice
+                    );
+                }
+                else {
+                    priceErrors.push(
+                        "Nobitex"
+                    );
+                    setPageIssue("nobitex", "Nobitex unavailable", "error");
+                }
+                if (
+                    exirResult.status ===
+                    "fulfilled"
+                ) {
+                    clearPageIssue("exir");
+                    exirPrice =
+                        exirResult.value;
+                    exirOnline =
+                        true;
+                    usingCachedExir =
+                        false;
+                    saveExirPrice(
+                        exirPrice
+                    );
+                }
+                else {
+                    priceErrors.push(
+                        "Exir"
+                    );
+                    setPageIssue("exir", "Exir unavailable", "error");
+                }
+                if (
+                    bitpinResult.status ===
+                    "fulfilled"
+                ) {
+                    clearPageIssue("bitpin");
+                    bitpinPrice =
+                        bitpinResult.value;
+                    bitpinOnline =
+                        true;
+                    usingCachedBitpin =
+                        false;
+                    saveBitpinPrice(
+                        bitpinPrice
+                    );
+                }
+                else {
+                    priceErrors.push(
+                        "Bitpin"
+                    );
+                    setPageIssue("bitpin", "Bitpin unavailable", "error");
+                }
             }
             /* =================================================
                MARKET CONNECTION COLORS
@@ -14095,6 +14145,11 @@ function rfkjTimeframeLabel(tf){return ({"1":"1M","3":"3M","5":"5M","15":"15M","
 function rfkjApplySignal(el,value,valid=true){
     if(!el)return;
     const n=rfkjNormalizeSignal(value);
+    /* Signal Matrix boxes must show the indicator name/percent only,
+       never the raw numeric state (0 / 1 / -1). */
+    Array.from(el.childNodes).forEach(node=>{
+        if(node.nodeType===Node.TEXT_NODE)node.remove();
+    });
     el.classList.remove("signal-plus","signal-minus","signal-zero","signal-invalid");
     if(!valid)el.classList.add("signal-invalid");
     else if(n>0)el.classList.add("signal-plus");
@@ -14640,11 +14695,12 @@ initRFKJSignalMonitor();
 ===================================================== */
 const CROSSOVER_WORKER_URL = "https://signalmatrix.rxw1.workers.dev/";
 /* Cloudflare Crossover monitor: independent 15-second server-side checking. */
-const CROSSOVER_REMOTE_WORKER_URL = "https://crossoverworker.rxw1.workers.dev/";
-/* Crossover email alerts are handled only by this remote worker. */
+const CROSSOVER_EMAIL_WORKER_URL = "https://crossoverworker.rxw1.workers.dev/";
+/* The email Worker is intentionally NOT read during startup. It is contacted only when M is toggled. */
 const CROSSOVER_POLL_MS = 5000;
 const CROSSOVER_COUNT = 4;
 const CROSSOVER_STATE_KEY = "crossoverState-v2";
+const CROSSOVER_SELECTION_KEY_PREFIX = "crossoverSelectedCoin-";
 const CROSSOVER_COINS = ["BTC","BNB","ETH","DOGE","ADA","SOL","ONE","AVAX","POL","TRX","USD"];
 const CROSSOVER_COMMODITY_ASSETS = {
     GOLD:{label:"GOLD", apiSymbol:"XAUUSD", iconClass:"gold", iconText:"Au"},
@@ -14653,6 +14709,27 @@ const CROSSOVER_COMMODITY_ASSETS = {
 function crossoverIsSpecialAsset(value){
     const v=String(value||"").toUpperCase();
     return v==="GOLD"||v==="OIL"||v.startsWith("TSE|");
+}
+function crossoverIsValidAsset(value){
+    const v=String(value||"").trim().toUpperCase();
+    return CROSSOVER_COINS.includes(v)||crossoverIsSpecialAsset(v);
+}
+function crossoverSelectionKey(index){
+    return `${CROSSOVER_SELECTION_KEY_PREFIX}${index}`;
+}
+function crossoverReadPersistedSelection(index){
+    try{
+        const value=String(localStorage.getItem(crossoverSelectionKey(index))||"").trim().toUpperCase();
+        return crossoverIsValidAsset(value)?value:"";
+    }catch(e){return "";}
+}
+function crossoverPersistSelection(index,value){
+    const v=String(value||"").trim().toUpperCase();
+    if(!crossoverIsValidAsset(v))return false;
+    try{
+        localStorage.setItem(crossoverSelectionKey(index),v);
+        return true;
+    }catch(e){return false;}
 }
 function crossoverAssetSymbol(value){
     const v=String(value||"").toUpperCase();
@@ -14704,24 +14781,63 @@ function crossoverPriceText(value,asset){
     return crossoverFormatPrice(n, asset);
 }
 function crossoverAssetOptions(){
+    /*
+     * IMPORTANT: the selected asset of every Crossover slot is persisted
+     * independently.  Build the option list from that persisted state first,
+     * then add live/discovered assets.  This means GOLD, OIL and TSE assets
+     * are treated exactly like crypto assets during restore; they are never
+     * lost just because their live source/cache is temporarily unavailable.
+     */
+    const out=[];
+    const add=value=>{
+        const v=String(value||"").trim().toUpperCase();
+        if(!v)return;
+        if(CROSSOVER_COINS.includes(v)||crossoverIsSpecialAsset(v))out.push(v);
+    };
+
     const matrixCoinSelect=document.querySelector(".rfkj-instance-coin");
-    const matrixCoins=matrixCoinSelect?Array.from(matrixCoinSelect.options).map(o=>o.value).filter(Boolean):CROSSOVER_COINS.filter(v=>v!=="USD");
-    const out=[...new Set([...matrixCoins,"USD","GOLD","OIL"])];
+    if(matrixCoinSelect){
+        Array.from(matrixCoinSelect.options).forEach(o=>add(o.value));
+    }else{
+        CROSSOVER_COINS.forEach(add);
+    }
+
+    ["USD","GOLD","OIL"].forEach(add);
+
+    /* Persisted slot selections are ALWAYS added, including TSE symbols. */
+    for(let i=1;i<=CROSSOVER_COUNT;i++){
+        try{
+            const saved=String(localStorage.getItem(crossoverSelectionKey(i))||"").trim().toUpperCase();
+            add(saved);
+        }catch(e){}
+    }
+
+    /* Also recover selections from the saved crossover object itself. */
+    try{
+        const raw=localStorage.getItem(CROSSOVER_STATE_KEY);
+        const state=raw?JSON.parse(raw):null;
+        (state?.crossovers||[]).slice(0,CROSSOVER_COUNT).forEach(m=>{
+            add(m?.activeCoin);
+            add(m?.selectedCoin);
+            add(m?.coin);
+        });
+    }catch(e){}
+
+    /* Live TSE discovery is supplemental only; it can never remove a saved asset. */
     try{
         const cached=readGlobalPulseTsetmcCache();
-        (cached.results||[]).forEach(row=>{
+        (cached?.results||[]).forEach(row=>{
             const symbol=String(row?.symbol||"").trim();
-            if(symbol)out.push(`TSE|${symbol}`);
+            if(symbol)add(`TSE|${symbol}`);
         });
+    }catch(e){}
+    try{
         (GLOBAL_PULSE_TSE_DEFAULT_RESULTS||[]).forEach(row=>{
             const symbol=String(row?.symbol||"").trim();
-            if(symbol)out.push(`TSE|${symbol}`);
+            if(symbol)add(`TSE|${symbol}`);
         });
-        for(let i=1;i<=4;i++){
-            const saved=String(localStorage.getItem(`crossoverSelectedCoin-${i}`)||"").toUpperCase();
-            if(crossoverIsSpecialAsset(saved))out.push(saved);
-        }
     }catch(e){}
+
     return [...new Set(out)];
 }
 async function crossoverFetchSpecialPrice(asset){
@@ -14754,7 +14870,7 @@ function crossoverNotifyAssetIcon(value){
 }
 const crossoverInstances = Array.from({length:CROSSOVER_COUNT},(_,i)=>({
     index:i+1, coin:"BTC", activeCoin:null, target:null, activeTarget:null, running:false, timer:null,
-    notificationEnabled:false, percentageAlertTimes:Object.create(null),
+    notificationEnabled:false, emailEnabled:false, percentageAlertTimes:Object.create(null),
     requestInProgress:false, wasOffline:false, previousPrice:null, latestPrice:null,
     latestUpdated:null, lastCrossAt:null, lastCrossDirection:0, priceDirection:0
 }));
@@ -14784,6 +14900,25 @@ function crossoverLoadNotificationPrefs(){
     const data=crossoverReadNotificationPrefs();
     crossoverInstances.forEach(s=>{s.notificationEnabled=data[String(s.index)]===true;});
 }
+function crossoverMailPrefsKey(){return "crossoverEmailPrefs-v1";}
+function crossoverReadMailPrefs(){
+    try{
+        const raw=localStorage.getItem(crossoverMailPrefsKey());
+        const data=raw?JSON.parse(raw):{};
+        return data&&typeof data==="object"?data:{};
+    }catch(e){return {};}
+}
+function crossoverSaveMailPrefs(){
+    try{
+        const data={};
+        crossoverInstances.forEach(s=>{data[String(s.index)]=!!s.emailEnabled;});
+        localStorage.setItem(crossoverMailPrefsKey(),JSON.stringify(data));
+    }catch(e){}
+}
+function crossoverLoadMailPrefs(){
+    const data=crossoverReadMailPrefs();
+    crossoverInstances.forEach(s=>{s.emailEnabled=data[String(s.index)]===true;});
+}
 function crossoverLoadLocalAlertHistory(){
     try{
         const raw=localStorage.getItem(CROSSOVER_STATE_KEY);
@@ -14803,6 +14938,83 @@ function crossoverUpdateNotificationButton(index){
     btn.textContent=enabled?"🔔":"🔕";
     btn.title=s.running?(enabled?"Percentage notifications are on":"Percentage notifications are off"):"Start Crossover first";
     btn.setAttribute("aria-pressed",enabled?"true":"false");
+}
+function crossoverUpdateMailButton(index){
+    const s=crossoverInstance(index),btn=crossoverGet("crossoverMail",index);
+    if(!s||!btn)return;
+    const enabled=!!s.emailEnabled;
+    const configured=Number.isFinite(Number(s.activeTarget))&&Number(s.activeTarget)>0;
+    const available=!!s.running&&configured;
+    btn.disabled=!available;
+    btn.classList.toggle("enabled",enabled&&available);
+    btn.textContent="M";
+    btn.title=available?(enabled?"Email alerts on":"Email alerts off"):"Start Crossover first";
+    btn.setAttribute("aria-pressed",enabled?"true":"false");
+    btn.setAttribute("aria-label",enabled?"Email alerts on":"Email alerts off");
+}
+async function crossoverSyncEmailWorker(){
+    /*
+     * The Crossover Worker is intentionally contacted ONLY after an explicit
+     * M click (or when M must be cleared because its Crossover was stopped).
+     * The payload keeps the original Worker command contract: clientId,
+     * active, count, items.  `count` is the visible Crossover panel count,
+     * exactly as the old Start/Stop sync used it.
+     *
+     * IMPORTANT: GOLD, OIL, TSE and USD are valid Crossover assets too.  They
+     * must never be silently filtered out of the email command.
+     */
+    const grid=document.getElementById("crossoverGrid");
+    const count=Math.max(1,Math.min(CROSSOVER_COUNT,Number(grid?.dataset.count||1)));
+    const items=crossoverInstances.slice(0,count).map(s=>({
+        index:s.index,
+        coin:String(s.running?(s.activeCoin||s.coin):s.coin||"BTC").toUpperCase(),
+        target:Number(s.running?s.activeTarget:s.target),
+        running:!!s.emailEnabled&&!!s.running
+    })).filter(x=>x.running&&Number.isFinite(x.target)&&x.target>0);
+    const active=items.length>0;
+    const payload={clientId:crossoverClientId(),active,count,items};
+    try{
+        const response=await fetch(CROSSOVER_EMAIL_WORKER_URL,{
+            method:"POST",
+            cache:"no-store",
+            headers:{"Content-Type":"application/json","Accept":"application/json"},
+            body:JSON.stringify(payload),
+            keepalive:true
+        });
+        const text=await response.text().catch(()=>"");
+        if(!response.ok)throw new Error(`Email Worker HTTP ${response.status}${text?` • ${text.slice(0,160)}`:""}`);
+        clearPageIssue("crossover-email-worker");
+        console.log("Crossover Email Worker command sent",payload);
+        return true;
+    }catch(e){
+        setPageIssue("crossover-email-worker",e?.message||"Email Worker unavailable","warn");
+        console.warn("Crossover Email Worker command failed:",e,payload);
+        return false;
+    }
+}
+async function crossoverToggleEmail(index){
+    const s=crossoverInstance(index),btn=crossoverGet("crossoverMail",index);
+    if(!s||!btn)return;
+    if(!s.running)return;
+    const target=Number(s.activeTarget);
+    if(!Number.isFinite(target)||target<=0)return;
+    const previous=!!s.emailEnabled;
+    s.emailEnabled=!previous;
+    crossoverUpdateMailButton(index);
+    /* Only this explicit M action talks to the Worker. */
+    const ok=await crossoverSyncEmailWorker();
+    if(!ok){
+        /* Do not leave a false ON/OFF state when the command was rejected. */
+        s.emailEnabled=previous;
+        crossoverUpdateMailButton(index);
+        crossoverSaveMailPrefs();
+        crossoverSaveState();
+        return;
+    }
+    crossoverSaveMailPrefs();
+    crossoverSaveState();
+    const status=crossoverGet("crossoverStatus",index);
+    if(status)status.textContent=s.emailEnabled?"Email ON":"Email OFF";
 }
 function crossoverPercentageLevels(oldPrice,newPrice,target){
     const oldPct=((oldPrice-target)/target)*100;
@@ -14848,150 +15060,6 @@ async function crossoverToggleNotifications(index){
         try{await sendDashboardNotification(title,message,crossoverNotifyAssetIcon(coin),"CROSSOVER");}catch(e){console.warn("Crossover notification activation failed",e);}
     }
 }
-async function crossoverLoadRemoteStatus(){
-    try{
-        const localState=crossoverReadState();
-        const localCount=Number(localState?.count);
-        const localCrossovers=Array.isArray(localState?.crossovers)?localState.crossovers:[];
-        const response=await fetch(`${CROSSOVER_REMOTE_WORKER_URL}status?clientId=${encodeURIComponent(crossoverClientId())}&t=${Date.now()}`,{
-            method:"GET",cache:"no-store"
-        });
-        if(!response.ok)throw new Error("Remote Crossover status HTTP "+response.status);
-        const data=await response.json();
-        if(!data||data.ok!==true||!Array.isArray(data.items))throw new Error("Invalid Remote Crossover status");
-
-        /*
-         * Remote worker owns Crypto crossover state only.
-         * GOLD / OIL / TSE are intentionally local and are never posted to the
-         * worker, so a missing worker item must NOT clear a locally configured
-         * special crossover.
-         */
-        const localSpecialByIndex=new Map();
-        for(let i=0;i<Math.min(CROSSOVER_COUNT,localCrossovers.length);i++){
-            const saved=localCrossovers[i];
-            const coin=String(saved?.activeCoin||saved?.coin||"").toUpperCase();
-            if(crossoverIsSpecialAsset(coin)) localSpecialByIndex.set(i+1,{...saved,coin,activeCoin:coin});
-        }
-        const remoteByIndex=new Map();
-        for(const item of data.items){
-            const index=Math.max(1,Math.min(CROSSOVER_COUNT,Number(item.index)||0));
-            if(!index||!item.running)continue;
-            const coin=String(item.coin||"BTC").toUpperCase();
-            /* Special assets are local-only even if an old Worker response contains one. */
-            if(crossoverIsSpecialAsset(coin))continue;
-            remoteByIndex.set(index,item);
-        }
-
-        for(let i=1;i<=CROSSOVER_COUNT;i++){
-            const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i),input=crossoverGet("crossoverTarget",i),btn=crossoverGet("crossoverStartStop",i),status=crossoverGet("crossoverStatus",i);
-            if(!s)continue;
-            if(s.timer){clearInterval(s.timer);s.timer=null;}
-
-            const localSpecial=localSpecialByIndex.get(i);
-            if(localSpecial){
-                /* Preserve the complete local GOLD/OIL/TSE slot exactly as saved. */
-                s.running=!!localSpecial.running;
-                s.activeCoin=String(localSpecial.activeCoin||localSpecial.coin||"").toUpperCase()||null;
-                s.coin=String(localSpecial.coin||s.activeCoin||"").toUpperCase()||"BTC";
-                s.target=Number.isFinite(Number(localSpecial.target))?Number(localSpecial.target):null;
-                s.activeTarget=Number.isFinite(Number(localSpecial.activeTarget))?Number(localSpecial.activeTarget):(s.running?s.target:null);
-                s.previousPrice=Number.isFinite(Number(localSpecial.previousPrice))?Number(localSpecial.previousPrice):null;
-                s.latestPrice=Number.isFinite(Number(localSpecial.latestPrice))?Number(localSpecial.latestPrice):null;
-                s.latestUpdated=localSpecial.latestUpdated||null;
-                s.lastCrossAt=localSpecial.lastCrossAt||null;
-                s.lastCrossDirection=Number(localSpecial.lastCrossDirection)||0;
-                s.priceDirection=Number(localSpecial.priceDirection)||0;
-                s.notificationEnabled=!!localSpecial.notificationEnabled;
-                s.percentageAlertTimes=(localSpecial.percentageAlertTimes&&typeof localSpecial.percentageAlertTimes==="object")?localSpecial.percentageAlertTimes:Object.create(null);
-                if(coin){coin.value=s.coin;coin.dataset.userSelected="1";}
-                if(input)input.value=Number.isFinite(s.target)&&s.target>0?s.target.toLocaleString("en-US",{maximumFractionDigits:8}):"";
-                if(btn){btn.textContent=s.running?"■ Stop Crossover":"▶ Start Crossover";btn.classList.toggle("running",s.running);}
-                if(status)status.textContent=s.running?"Monitoring • Waiting for first price":"Ready • Waiting to start";
-                crossoverUpdateNotificationButton(i);
-                crossoverUpdateUI(i);
-                if(s.running){
-                    crossoverFetchOne(i,false);
-                    s.timer=setInterval(()=>crossoverFetchOne(i,true),CROSSOVER_POLL_MS);
-                }
-                continue;
-            }
-
-            /* No local special asset in this slot: restore normal Worker-owned state. */
-            s.running=false;s.activeCoin=null;s.activeTarget=null;s.target=null;s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
-            s.coin="BTC";
-            if(coin){coin.value="BTC";coin.dataset.userSelected="0";}
-            if(input)input.value="";
-            if(btn){btn.textContent="▶ Start Crossover";btn.classList.remove("running");}
-            if(status)status.textContent="";
-        }
-
-        /* Notification switches are local preferences and never alter the Worker. */
-        crossoverLoadNotificationPrefs();
-        crossoverLoadLocalAlertHistory();
-        /* The visible slot count is local UI state. Remote status must never
-           replace the user's selected number of Crossover panels. */
-        const selectedCount=(localCount>=1&&localCount<=4)?localCount:1;
-        crossoverSetVisibleCount(selectedCount,true);
-
-        for(const [index,item] of remoteByIndex.entries()){
-            const s=crossoverInstance(index);
-            if(!s)continue;
-            const coin=String(item.coin||"BTC").toUpperCase();
-            const target=Number(item.target);
-            if(!CROSSOVER_COINS.includes(coin)||!Number.isFinite(target)||target<=0)continue;
-            s.coin=coin;s.activeCoin=coin;s.target=target;s.activeTarget=target;s.running=true;
-            const coinSelect=crossoverGet("crossoverCoin",index);
-            if(coinSelect){coinSelect.value=coin;coinSelect.dataset.userSelected="1";coinSelect.dispatchEvent(new Event("change",{bubbles:true}));}
-            s.previousPrice=Number.isFinite(Number(item.previousPrice))?Number(item.previousPrice):null;
-            s.latestPrice=Number.isFinite(Number(item.latestPrice))?Number(item.latestPrice):null;
-            s.latestUpdated=item.latestUpdated||null;
-            s.lastCrossAt=item.lastCrossAt||null;
-            s.lastCrossDirection=Number(item.lastCrossDirection)||0;
-            s.priceDirection=0;
-            s.notificationEnabled=!!s.notificationEnabled;
-            const coinEl=crossoverGet("crossoverCoin",index),input=crossoverGet("crossoverTarget",index),btn=crossoverGet("crossoverStartStop",index),status=crossoverGet("crossoverStatus",index);
-            if(coinEl){coinEl.value=coin;coinEl.dataset.userSelected="1";}
-            if(input)input.value=target.toLocaleString("en-US",{maximumFractionDigits:8});
-            if(btn){btn.textContent="■ Stop Crossover";btn.classList.add("running");}
-            if(status)status.textContent="Monitoring • Waiting for first price";
-            crossoverUpdateNotificationButton(index);
-            crossoverUpdateUI(index);
-            crossoverFetchOne(index,false);
-            s.timer=setInterval(()=>crossoverFetchOne(index,true),CROSSOVER_POLL_MS);
-        }
-
-        /* Persist the merged state so special assets survive the next refresh too. */
-        crossoverSaveState();
-        crossoverSyncCountLineStates();
-        clearPageIssue("crossover-remote-status");
-        return true;
-    }catch(e){
-        setPageIssue("crossover-remote-status",e?.message||"Remote Crossover status unavailable","warn");
-        console.warn("Remote Crossover status load failed:",e);
-        return false;
-    }
-}
-async function crossoverSyncRemote(){
-    try{
-        const grid=document.getElementById("crossoverGrid");
-        const count=Math.max(1,Math.min(4,Number(grid?.dataset.count||1)));
-        const items=crossoverInstances.slice(0,count).map(s=>({
-            index:s.index,coin:String(s.running?(s.activeCoin||s.coin):s.coin||"BTC").toUpperCase(),target:Number(s.activeTarget),running:!!s.running
-        })).filter(x=>x.running&&Number.isFinite(x.target)&&x.target>0&&!crossoverIsSpecialAsset(x.coin));
-        const response=await fetch(CROSSOVER_REMOTE_WORKER_URL,{
-            method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({clientId:crossoverClientId(),active:items.length>0,count,items})
-        });
-        if(!response.ok)throw new Error("Remote Crossover Worker HTTP "+response.status);
-        clearPageIssue("crossover-remote");
-        console.log("Remote Crossover Worker synced",items);
-        return true;
-    }catch(e){
-        setPageIssue("crossover-remote",e?.message||"Remote Crossover Worker sync failed","warn");
-        console.warn("Remote Crossover Worker sync failed:",e);
-        return false;
-    }
-}
 function crossoverFormatPrice(value, asset){
     const key=String(asset||"").trim().toUpperCase();
     if(key==="GOLD") return formatGlobalPulseNumber(value,0);
@@ -15009,11 +15077,12 @@ function crossoverSaveState(){
         count:Number(document.getElementById("crossoverGrid")?.dataset.count||1),
         liveAverage:Number((document.getElementById("overallLive")?.textContent||"").replace(/,/g,""))||null,
         crossovers:crossoverInstances.map(s=>({
-            coin:s.coin,activeCoin:s.activeCoin,target:s.target,activeTarget:s.activeTarget,running:!!s.running,previousPrice:s.previousPrice,
+            selectedCoin:s.coin,coin:s.coin,activeCoin:s.activeCoin,target:s.target,activeTarget:s.activeTarget,running:!!s.running,previousPrice:s.previousPrice,
             latestPrice:s.latestPrice,latestUpdated:s.latestUpdated,
             lastCrossAt:s.lastCrossAt,lastCrossDirection:s.lastCrossDirection,
             priceDirection:s.priceDirection||0,
             notificationEnabled:!!s.notificationEnabled,
+            emailEnabled:!!s.emailEnabled,
             percentageAlertTimes:s.percentageAlertTimes||{}
         }))
     };
@@ -15021,7 +15090,14 @@ function crossoverSaveState(){
     try{
         localStorage.setItem(CROSSOVER_STATE_KEY,raw);
         crossoverInstances.forEach((item,i)=>{
-            localStorage.setItem(`crossoverSelectedCoin-${i+1}`,item.coin||"BTC");
+            const selected=String(item.running?(item.activeCoin||item.coin):item.coin||"").toUpperCase();
+            if(selected && crossoverIsValidAsset(selected)){
+                crossoverPersistSelection(i+1,selected);
+            }
+            localStorage.setItem(`crossoverRunning-${i+1}`,item.running?"1":"0");
+            if(Number.isFinite(Number(item.activeTarget))&&Number(item.activeTarget)>0){
+                localStorage.setItem(`crossoverActiveTarget-${i+1}`,String(item.activeTarget));
+            }
         });
     }catch(e){}
     try{
@@ -15038,12 +15114,22 @@ function crossoverSaveState(){
 }
 function crossoverReadState(){
     /*
-     * Prefer the native state when available. Native Crossover monitoring can
-     * run while the Activity is closed/minimized, so its latest price and
-     * percentage-alert history must be restored before the WebView starts
-     * polling again. This is what prevents a closed-app alert from replaying
-     * when the app is opened.
+     * UI state is LOCAL-FIRST. The selector/Start state saved by this WebView
+     * is authoritative for what must be shown after a refresh. The native
+     * state can be older (for example it may still contain BTC), so it must
+     * never overwrite a newer local selection such as POL or GOLD.
+     *
+     * Native state is used only as a fallback when there is no local Crossover
+     * state at all. This also keeps the fast-startup path independent of the
+     * remote Crossover Worker.
      */
+    try{
+        const raw=localStorage.getItem(CROSSOVER_STATE_KEY);
+        if(raw){
+            const local=JSON.parse(raw);
+            if(local&&Array.isArray(local.crossovers))return local;
+        }
+    }catch(e){console.warn("Crossover local state read failed",e);}
     try{
         if(window.AndroidNotifications&&typeof window.AndroidNotifications.getSignalMatrixStateJson==="function"){
             const raw=window.AndroidNotifications.getSignalMatrixStateJson();
@@ -15057,7 +15143,6 @@ function crossoverReadState(){
             }
         }
     }catch(e){console.warn("Crossover native state read failed",e);}
-    try{const raw=localStorage.getItem(CROSSOVER_STATE_KEY);if(raw)return JSON.parse(raw);}catch(e){}
     return null;
 }
 function crossoverUpdateUI(index){
@@ -15100,8 +15185,9 @@ function crossoverUpdateUI(index){
             distance.classList.add("invalid");
         }
     }
-    if(status&&!s.running&&Number.isFinite(target)&&target>0)status.textContent="Ready • Waiting to start";
+    if(status&&!s.running&&Number.isFinite(target)&&target>0)status.textContent="Ready";
     crossoverUpdateNotificationButton(index);
+    crossoverUpdateMailButton(index);
 }
 // Crossover alerts are not rate-limited. Each actual crossing is delivered.
 async function crossoverSendAlert(index,direction,price,target){
@@ -15114,7 +15200,7 @@ async function crossoverSendAlert(index,direction,price,target){
     const time=crossoverNowText();
     const message=`Crossover ${arrow} • ${crossoverPriceText(price,effectiveCoin)} • Target ${crossoverPriceText(target,effectiveCoin)} • ${time}`;
     try{await sendDashboardNotification(title,message,crossoverNotifyAssetIcon(effectiveCoin),"CROSSOVER");}catch(e){console.warn("Crossover notification failed",e);}
-    /* Crossover email is sent exclusively by CROSSOVER_REMOTE_WORKER_URL. */
+    /* Crossover email is sent exclusively by CROSSOVER_EMAIL_WORKER_URL. */
 }
 async function crossoverFetchOne(index,notify=true){
     const s=crossoverInstance(index);
@@ -15197,9 +15283,14 @@ function crossoverStart(index,sendStart=true){
         if(status)status.textContent="Enter a valid target price";
         return;
     }
+    s.coin=String(s.coin||"BTC").toUpperCase();
     s.activeCoin=s.coin;
     s.activeTarget=target;
     s.running=true;
+    /* Email is an explicit M permission for this active run. A fresh Start
+       never inherits a stale email flag from an old stopped run. */
+    s.emailEnabled=false;
+    crossoverPersistSelection(index,s.activeCoin);
     /* Keep the last saved price so the first new quote can be compared to it. */
     if(!Number.isFinite(Number(s.previousPrice)))s.previousPrice=null;
     s.priceDirection=0;
@@ -15208,7 +15299,7 @@ function crossoverStart(index,sendStart=true){
     const b=crossoverGet("crossoverStartStop",index);
     if(b){b.textContent="■ Stop Crossover";b.classList.add("running");}
     const status=crossoverGet("crossoverStatus",index);
-    if(status)status.textContent="Monitoring • Waiting for first price";
+    if(status)status.textContent="Monitoring";
     crossoverUpdateNotificationButton(index);
     if(sendStart){
         const price=Number(s.latestPrice);
@@ -15217,7 +15308,6 @@ function crossoverStart(index,sendStart=true){
     crossoverFetchOne(index,false);
     s.timer=setInterval(()=>crossoverFetchOne(index,true),CROSSOVER_POLL_MS);
     crossoverSaveState();
-    crossoverSyncRemote();
     crossoverSyncCountLineStates();
 }
 async function crossoverSendStartNotification(index,price,target){
@@ -15231,7 +15321,9 @@ async function crossoverSendStartNotification(index,price,target){
 function crossoverStop(index,sendStop=true){
     const s=crossoverInstance(index);
     if(!s)return;
+    const hadEmail=!!s.emailEnabled;
     s.running=false;
+    s.emailEnabled=false;
     const stoppedCoin=s.activeCoin||s.coin;
     s.activeCoin=null;
     s.activeTarget=null;
@@ -15248,8 +15340,11 @@ function crossoverStop(index,sendStop=true){
     clearPageIssue(`crossover:${index}`);
     crossoverUpdateUI(index);
     crossoverSaveState();
-    crossoverSyncRemote();
     crossoverSyncCountLineStates();
+    if(hadEmail){
+        crossoverSaveMailPrefs();
+        crossoverSyncEmailWorker().catch(()=>{});
+    }
     if(sendStop){
         const stoppedLabel=crossoverNotificationAssetLabel(stoppedCoin);
         const title=`Crossover #${index} • ${stoppedLabel}`;
@@ -15287,11 +15382,22 @@ function crossoverApplyState(saved){
     (saved.crossovers||[]).slice(0,4).forEach((m,i)=>{
         const idx=i+1,s=crossoverInstance(idx);
         if(!s)return;
-        let savedCoin=String(m.coin||"").toUpperCase();
-        if(!savedCoin){try{savedCoin=String(localStorage.getItem(`crossoverSelectedCoin-${idx}`)||"").toUpperCase();}catch(e){}}
-        s.coin=(CROSSOVER_COINS.includes(savedCoin)||crossoverIsSpecialAsset(savedCoin))?savedCoin:"BTC";
+        const localSelected=crossoverReadPersistedSelection(idx);
+        let savedCoin=String(m.selectedCoin||m.activeCoin||m.coin||"").toUpperCase();
+        /* Per-slot local selection is the strongest source of truth. */
+        if(localSelected && (CROSSOVER_COINS.includes(localSelected)||crossoverIsSpecialAsset(localSelected))){
+            savedCoin=localSelected;
+        }
+        s.coin=crossoverIsValidAsset(savedCoin)?savedCoin:(localSelected||"BTC");
         const savedActive=String(m.activeCoin||"").toUpperCase();
-        s.activeCoin=(CROSSOVER_COINS.includes(savedActive)||crossoverIsSpecialAsset(savedActive))?savedActive:(m.running?s.coin:null);
+        const validActive=CROSSOVER_COINS.includes(savedActive)||crossoverIsSpecialAsset(savedActive);
+        s.activeCoin=m.running?(validActive?savedActive:s.coin):null;
+        /* A per-slot saved selection is authoritative even when an older
+           native/local activeCoin still says BTC. */
+        if(m.running && localSelected && crossoverIsValidAsset(localSelected)){
+            s.coin=localSelected;
+            s.activeCoin=localSelected;
+        }
         s.target=Number.isFinite(Number(m.target))?Number(m.target):null;
         s.activeTarget=Number.isFinite(Number(m.activeTarget))?Number(m.activeTarget):(m.running&&Number.isFinite(Number(m.target))?Number(m.target):null);
         // If this crossover was running, restore the exact target that was registered
@@ -15306,6 +15412,7 @@ function crossoverApplyState(saved){
         s.lastCrossDirection=Number(m.lastCrossDirection)||0;
         s.priceDirection=Number(m.priceDirection)||0;
         s.notificationEnabled=!!m.notificationEnabled;
+        s.emailEnabled=!!m.running&&!!m.emailEnabled;
         s.percentageAlertTimes=(m.percentageAlertTimes&&typeof m.percentageAlertTimes==="object")?m.percentageAlertTimes:Object.create(null);
         const coin=crossoverGet("crossoverCoin",idx),input=crossoverGet("crossoverTarget",idx);
         if(coin){coin.value=s.coin; coin.dataset.userSelected="1";}
@@ -15335,11 +15442,18 @@ function crossoverApplyState(saved){
 function crossoverInit(){
     crossoverLoadNotificationPrefs();
     for(let i=1;i<=CROSSOVER_COUNT;i++){
-        const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i),input=crossoverGet("crossoverTarget",i),btn=crossoverGet("crossoverStartStop",i),notifyBtn=crossoverGet("crossoverNotify",i);
+        const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i),input=crossoverGet("crossoverTarget",i),btn=crossoverGet("crossoverStartStop",i),notifyBtn=crossoverGet("crossoverNotify",i),mailBtn=crossoverGet("crossoverMail",i);
         if(!s||!coin||!input||!btn)continue;
         coin.addEventListener("change",()=>{
-            s.coin=String(coin.value||"BTC").toUpperCase();
+            const selected=String(coin.value||"").toUpperCase();
+            /* A special asset (GOLD/OIL/TSE) can be restored before the
+               custom picker rebuilds the native <select>. In that short
+               window the browser may expose an empty value. Never convert
+               that temporary empty value into BTC. */
+            if(!crossoverIsValidAsset(selected))return;
+            s.coin=selected;
             coin.dataset.userSelected="1";
+            crossoverPersistSelection(i,s.coin);
             /* While running, the selector is only a pending edit. The active
                coin remains registered exactly like activeTarget. */
             if(!s.running){
@@ -15390,31 +15504,50 @@ function crossoverInit(){
         });
         btn.addEventListener("click",()=>s.running?crossoverStop(i):crossoverStart(i));
         if(notifyBtn)notifyBtn.addEventListener("click",()=>crossoverToggleNotifications(i));
+        if(mailBtn)mailBtn.addEventListener("click",()=>crossoverToggleEmail(i));
         crossoverUpdateUI(i);
+        crossoverUpdateMailButton(i);
     }
     document.querySelectorAll(".crossover-slot-btn").forEach(btn=>btn.addEventListener("click",()=>crossoverSetVisibleCount(btn.dataset.crossoverCount)));
-    /* Prefer the shared remote Crossover state. If it cannot be reached,
-       fall back to the last locally saved state so the UI still works offline. */
-    crossoverLoadRemoteStatus().then(remoteLoaded=>{
-        if(!remoteLoaded){
-            const restored=crossoverApplyState(crossoverReadState());
-            if(!restored){
-                crossoverSetVisibleCount(1,true);
-                for(let i=1;i<=4;i++){
-                    const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i);
-                    let savedCoin="";
-                    try{savedCoin=String(localStorage.getItem(`crossoverSelectedCoin-${i}`)||"").toUpperCase();}catch(e){}
-                    if(CROSSOVER_COINS.includes(savedCoin)||crossoverIsSpecialAsset(savedCoin)){
-                        s.coin=savedCoin;
-                        if(coin){coin.value=savedCoin;coin.dataset.userSelected="1";}
-                    }
-                    crossoverUpdateUI(i);
-                }
-                crossoverSaveState();
+
+    /*
+     * FAST STARTUP:
+     * Crossover UI is restored ONLY from the last locally saved state.
+     * The email Worker is deliberately not queried here. This makes the
+     * number of cards, selected assets, targets and local running state
+     * available immediately, even with no network connection.
+     */
+    crossoverLoadMailPrefs();
+    for(let i=1;i<=CROSSOVER_COUNT;i++){
+        try{
+            const saved=crossoverReadPersistedSelection(i);
+            const select=crossoverGet("crossoverCoin",i);
+            if(saved && select){
+                select.value=saved;
+                select.dataset.userSelected="1";
+                crossoverInstance(i).coin=saved;
             }
+        }catch(e){}
+    }
+    const restored=crossoverApplyState(crossoverReadState());
+    if(!restored){
+        crossoverSetVisibleCount(1,true);
+        for(let i=1;i<=4;i++){
+            const s=crossoverInstance(i),coin=crossoverGet("crossoverCoin",i);
+            const savedCoin=crossoverReadPersistedSelection(i);
+            if(savedCoin){
+                s.coin=savedCoin;
+                if(coin){coin.value=savedCoin;coin.dataset.userSelected="1";}
+            }
+            crossoverUpdateUI(i);
         }
-        crossoverSyncCountLineStates();
-    });
+        crossoverSaveState();
+    }
+    for(let i=1;i<=4;i++){
+        crossoverUpdateNotificationButton(i);
+        crossoverUpdateMailButton(i);
+    }
+    crossoverSyncCountLineStates();
 }
 crossoverInit();
 rfkjStartUltraRotation();
@@ -15603,18 +15736,41 @@ function startCryptoPortfolioAutoRefresh() {
 */
 async function init() {
     try {
-        // Global Pulse must start independently of the main dashboard request.
-        // A slow/unavailable dashboard source must never leave Gold/Oil blank.
+        /*
+           FAST BOOT:
+           1) Paint the last successful snapshot immediately.
+           2) Start every network refresh without blocking first paint.
+           3) Never expose the old "Loading..." gate again.
+        */
         startGlobalPulse();
-        const dashboardPromise = loadDashboardData();
+
+        const cachedBoot = loadDashboardData({ cacheOnly: true })
+            .catch(error => {
+                console.warn("Cached dashboard boot unavailable:", error);
+                return null;
+            });
+
         void Promise.allSettled([
             prepareCryptoIconCache(),
             loadCryptoPortfolio(),
             loadCryptoSignals()
         ]);
         startCryptoPortfolioAutoRefresh();
-        await dashboardPromise;
-        startAutoRefresh();
+
+        await cachedBoot;
+
+        /*
+           Refresh live data only after the cached UI is already visible.
+           This pass may take several seconds, but it no longer controls
+           the initial page paint.
+        */
+        void loadDashboardData()
+            .catch(error => {
+                console.error("Dashboard live refresh error:", error);
+            })
+            .finally(() => {
+                startAutoRefresh();
+            });
     }
     catch (error) {
         console.error(
@@ -15795,7 +15951,7 @@ if (
         const selectorIndex=(select.id.match(/(\d+)$/)||[])[1]||"1";
         let hasUserSelection=select.dataset.userSelected==="1";
         let preservedValue=String(select.value||"").toUpperCase();
-        if(!preservedValue){try{preservedValue=String(localStorage.getItem(`crossoverSelectedCoin-${selectorIndex}`)||"").toUpperCase();}catch(e){}}
+        if(!preservedValue)preservedValue=crossoverReadPersistedSelection(selectorIndex);
         /* A persisted selection is still a real selection after refresh.
            Do not hide its icon/name merely because the custom picker itself
            was recreated after the page reload. */
@@ -15804,14 +15960,23 @@ if (
         }
         function rebuild(){
             const options=crossoverAssetOptions();
-            if(!options.includes(preservedValue) && !options.includes(String(select.value||"").toUpperCase())){
-                select.value="BTC";
+            const state=crossoverInstances[Number(selectorIndex)-1];
+            let desired=String(preservedValue||"").toUpperCase();
+            if(!desired){
+                desired=String(state?.running?(state.activeCoin||state.coin):state?.coin||"").toUpperCase();
             }
-            if(preservedValue&&options.includes(preservedValue)){select.value=preservedValue;}
+            if(!desired)desired=crossoverReadPersistedSelection(selectorIndex);
             select.innerHTML="";
             options.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=crossoverAssetLabel(v);select.appendChild(o);});
-            if(options.includes(preservedValue)){select.value=preservedValue;}
-            else if(!options.includes(String(select.value||"").toUpperCase()))select.value="BTC";
+            /* Never manufacture BTC when a persisted asset exists. */
+            if(desired && options.includes(desired)){
+                select.value=desired;
+                preservedValue=desired;
+                hasUserSelection=true;
+            }else if(!select.value){
+                select.value=options[0]||"BTC";
+            }
+            preservedValue=String(select.value||desired||"").toUpperCase();
             menu.innerHTML="";
             options.forEach(v=>{
                 const item=document.createElement("button");item.type="button";item.className="crossover-coin-option";item.dataset.value=v;
@@ -15819,7 +15984,7 @@ if (
                 item.addEventListener("click",()=>{
                     select.value=v;select.dataset.userSelected="1";hasUserSelection=true;preservedValue=v;
                     picker.classList.add("has-user-selection");
-                    try{localStorage.setItem(`crossoverSelectedCoin-${selectorIndex}`,v);}catch(e){}
+                    crossoverPersistSelection(selectorIndex,v);
                     select.dispatchEvent(new Event("change",{bubbles:true}));sync();close();
                 });
                 menu.appendChild(item);
@@ -15833,12 +15998,13 @@ if (
                authoritative value shown in the selector. This also survives
                remote status refreshes and picker recreation. */
             const active=String(state?.running?(state.activeCoin||state.coin):state?.coin||"").toUpperCase();
-            if(active && (CROSSOVER_COINS.includes(active)||crossoverIsSpecialAsset(active)) &&
-               (!v || (state?.running && crossoverIsSpecialAsset(active)))){
-                v=active;
-                select.value=active;
+            const persisted=crossoverReadPersistedSelection(selectorIndex);
+            const authoritative=(state?.running?active:(persisted||active));
+            if(authoritative && (CROSSOVER_COINS.includes(authoritative)||crossoverIsSpecialAsset(authoritative))){
+                v=authoritative;
+                if(select.value!==authoritative)select.value=authoritative;
             }
-            const shouldShow=hasUserSelection || !!(v && (CROSSOVER_COINS.includes(v)||crossoverIsSpecialAsset(v)) && (active===v || localStorage.getItem(`crossoverSelectedCoin-${selectorIndex}`)));
+            const shouldShow=hasUserSelection || !!(v && crossoverIsValidAsset(v) && (active===v || persisted));
             if(shouldShow){
                 icon.innerHTML=crossoverAssetIconHTML(v);
                 name.textContent=crossoverAssetLabel(v);
@@ -15862,8 +16028,8 @@ if (
         }
         function close(){menu.classList.remove("is-open");picker.classList.remove("open");trigger.classList.remove("open");trigger.setAttribute("aria-expanded","false");}
         select.addEventListener("change",()=>{
-            preservedValue=String(select.value||"BTC").toUpperCase();
-            try{localStorage.setItem(`crossoverSelectedCoin-${selectorIndex}`,preservedValue);}catch(e){}
+            preservedValue=String(select.value||"").toUpperCase();
+            crossoverPersistSelection(selectorIndex,preservedValue);
             sync();
         });
         trigger.addEventListener("click",e=>{e.stopPropagation();const open=!menu.classList.contains("is-open");if(open){document.querySelectorAll(".crossover-coin-menu.is-open").forEach(m=>m.classList.remove("is-open"));document.querySelectorAll(".crossover-coin-picker.open").forEach(p=>p.classList.remove("open"));menu.classList.add("is-open");picker.classList.add("open");trigger.classList.add("open");trigger.setAttribute("aria-expanded","true");requestAnimationFrame(positionMenu);}else close();});
