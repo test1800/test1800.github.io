@@ -6799,14 +6799,15 @@ const WORKER_URLS = {
     ],
     email:
         "https://email.rxw.workers.dev/",
+    // First top dollar price: YEKUSD rate worker.
     usd: [
-        "https://usdd.rxw.workers.dev/",
-        "https://api.cors.syrins.tech/?url=https%3A%2F%2Fusdd.rxw.workers.dev%2F"
-    ],
-    yekusd: [
-        "https://bahausd.rxw.workers.dev/",
         "https://yekusd-rateusd.rxw.workers.dev/",
         "https://api.cors.syrins.tech/?url=https%3A%2F%2Fyekusd-rateusd.rxw.workers.dev%2F"
+    ],
+    // Second top dollar price: BahaUSD worker.
+    yekusd: [
+        "https://bahausd.rxw.workers.dev/",
+        "https://api.cors.syrins.tech/?url=https%3A%2F%2Fbahausd.rxw.workers.dev%2F"
     ],
     signal: [
         "https://coinsignaltable.rxw.workers.dev/",
@@ -8545,6 +8546,12 @@ function updateYekusdConnectionColor(
    LOAD YEKUSD
 ===================================================== */
 async function loadYekusd() {
+    // Cache-first: show the last valid value immediately, then fetch fresh data.
+    const cachedFirst = loadCachedYekusdPrice();
+    if (cachedFirst) {
+        safeText("yekusd", cachedFirst);
+        updateYekusdConnectionColor(false);
+    }
     try {
          const response =
             await fetchWithFallback(
@@ -8634,6 +8641,12 @@ function updateUsdTxtConnectionColor(
    LOAD USD TXT
 ===================================================== */
 async function loadUsdTxt() {
+    // Cache-first: show the last valid value immediately, then fetch fresh data.
+    const cachedFirst = loadCachedUsdTxtPrice();
+    if (cachedFirst) {
+        safeText("usdTxtPrice", cachedFirst);
+        updateUsdTxtConnectionColor(false);
+    }
     try {
 const response =
     await fetchWithFallback(
