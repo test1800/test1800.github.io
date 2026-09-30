@@ -80,6 +80,12 @@
       "type": "buy",
       "amount": 500,
       "price": 227000
+    },
+    {
+      "date": "1405/07/08",
+      "type": "buy",
+      "amount": 500,
+      "price": 258000
     }
   ],
   "cryptoHoldings": {
