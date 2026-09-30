@@ -5753,6 +5753,17 @@ h1 {
 #yekusd { color: #E5E7EB; }
 #cryptoMini { color: #E0F2FE; }
 #cryptoValue { color: #E0F2FE; }
+/* Crypto cache state: visibly different until a genuinely fresh API value arrives. */
+#cryptoValue.crypto-cached,
+#cryptoMini.crypto-cached {
+    color: #94A3B8 !important;
+    text-shadow: none !important;
+    transform: none !important;
+}
+#cryptoValue.crypto-live,
+#cryptoMini.crypto-live {
+    color: #FFFFFF !important;
+}
 #cryptoValue.up { color: #E0F2FE; }
 #cryptoValue.down { color: #F1F5F9; }
 .main-price-number,
@@ -8503,7 +8514,9 @@ const CACHE_KEYS = {
     USD_TXT_PRICE:
         "financialDashboardUsdTxtPrice",
     YEKUSD_PRICE:
-        "financialDashboardYekusdPrice"
+        "financialDashboardYekusdPrice",
+    CRYPTO_PRICE:
+        "financialDashboardCryptoPrice"
 };
 /* =====================================================
    YEKUSD ONLINE / OFFLINE
@@ -12381,9 +12394,73 @@ let cryptoOnline =
     false;
 let lastCryptoPrice =
     null;
+function saveCryptoPrice(value) {
+    try {
+        const number = Number(value);
+        if (Number.isFinite(number)) {
+            localStorage.setItem(
+                CACHE_KEYS.CRYPTO_PRICE,
+                String(number)
+            );
+        }
+    } catch (error) {}
+}
+function loadCachedCryptoPrice() {
+    try {
+        const saved = localStorage.getItem(
+            CACHE_KEYS.CRYPTO_PRICE
+        );
+        const number = Number(saved);
+        return Number.isFinite(number) ? number : null;
+    } catch (error) {
+        return null;
+    }
+}
+function renderCachedCryptoPrice() {
+    const cached = loadCachedCryptoPrice();
+    if (cached === null) {
+        return null;
+    }
+
+    const cryptoText = cached.toLocaleString(
+        "en-US",
+        {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }
+    );
+    safeText("cryptoValue", cryptoText);
+    const cryptoElement = document.getElementById("cryptoValue");
+    if (cryptoElement) {
+        cryptoElement.classList.remove("crypto-live", "up", "down", "market-price-offline");
+        cryptoElement.classList.add("crypto-cached");
+    }
+
+    const mini = document.getElementById("cryptoMini");
+    if (mini) {
+        mini.textContent = cached.toLocaleString(
+            "en-US",
+            {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }
+        );
+        mini.classList.remove("crypto-live");
+        mini.classList.add("crypto-cached");
+    }
+
+    lastCryptoPrice = cached;
+    return cached;
+}
+
 async function loadCryptoValue() {
     const element =
         $("cryptoValue");
+
+    // Show the last valid Crypto value immediately on refresh/open.
+    // The live API request below can then replace it when a fresh value arrives.
+    renderCachedCryptoPrice();
+
     try {
 const response =
     await fetchWithFallback(
@@ -12407,6 +12484,10 @@ const response =
                 "Invalid crypto value"
             );
         }
+
+        // Keep the last valid value available for the next refresh/open.
+        saveCryptoPrice(value);
+
         const cryptoText =
             value.toLocaleString(
                 "en-US",
@@ -12479,8 +12560,16 @@ const response =
         clearPageIssue("crypto-price");
         if (element) {
             element.classList.remove(
-                "market-price-offline"
+                "market-price-offline",
+                "crypto-cached",
+                "up",
+                "down"
             );
+            element.classList.add("crypto-live");
+        }
+        if (mini) {
+            mini.classList.remove("crypto-cached");
+            mini.classList.add("crypto-live");
         }
         syncNativeWidgetSnapshot();
     } catch (error) {
@@ -14098,7 +14187,7 @@ async function loadCryptoPortfolio(
    RF / KJ SIGNAL MATRIX MONITOR
 ===================================================== */
 const RFKJ_WORKER_URL = "https://signalmatrix.rxw1.workers.dev/";
-const RFKJ_POLL_MS = 2000;
+const RFKJ_POLL_MS = 1000;
 const RFKJ_LIVE_CACHE_KEY = "rfkjLiveSignalCache-v1";
 const RFKJ_SIGNAL_CACHE_KEY = "rfkjSignalDisplayCache-v1";
 const RFKJ_SLOT_COUNT = 3;
@@ -14545,11 +14634,17 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         rfkjSetSignalPercent(index,timeframe,"RF",rfPercent);
         rfkjSetSignalPercent(index,timeframe,"ST",stPercent);
         rfkjSetSignalPercent(index,timeframe,"KJ",kjPercent);
+        // Register the freshly received Matrix data immediately. Do not wait
+        // for the other selected timeframes to finish their requests.
         rfkjSaveDisplayedSignals(index,timeframe,{
             RF:rf, ST:st, KJ:kj,
             RFPercent:rfPercent, STPercent:stPercent, KJPercent:kjPercent,
             valid:true
         });
+        // Persist successful worker data immediately after the blocks are updated.
+        // The next timeframe request must never delay this registration.
+        rfkjSaveState();
+        syncNativeWidgetSnapshot();
         const dailyChangePercent=Number(data.dailyChangePercent);
         state.latestDailyChangePercent=Number.isFinite(dailyChangePercent)?dailyChangePercent:null;
         let price=Number(data.price);
@@ -14621,14 +14716,13 @@ async function rfkjFetchOne(index,timeframe,notify=true){
 }
 async function rfkjFetchSignal(index){
     const state=rfkjInstance(index);
-    if(!state||!state.running||state.requestInProgress)return;
-    state.requestInProgress=true;
-    try{
-        await Promise.all(state.selectedTimeframes.slice().map(tf=>rfkjFetchOne(index,tf,true)));
-    }finally{
-        state.requestInProgress=false;
-        rfkjSaveState();
-    }
+    if(!state||!state.running)return;
+    // Never let a slow previous cycle block the next polling cycle.
+    // Each worker URL already contains a cache-busting timestamp, so every
+    // cycle asks the Worker for the newest available value.
+    const timeframes=state.selectedTimeframes.slice();
+    await Promise.all(timeframes.map(tf=>rfkjFetchOne(index,tf,true)));
+    rfkjSaveState();
 }
 function rfkjStart(index,sendStart=true){
     const s=rfkjInstance(index);
