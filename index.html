@@ -14087,6 +14087,7 @@ async function loadCryptoPortfolio(
 const RFKJ_WORKER_URL = "https://signalmatrix.rxw1.workers.dev/";
 const RFKJ_POLL_MS = 2000;
 const RFKJ_LIVE_CACHE_KEY = "rfkjLiveSignalCache-v1";
+const RFKJ_SIGNAL_CACHE_KEY = "rfkjSignalDisplayCache-v1";
 const RFKJ_SLOT_COUNT = 3;
 const RFKJ_TIMEFRAMES = ["1","3","5","15","30","60","4h","1D","1W"];
 const RFKJ_STATE_KEY = "rfkjMatrixState-v4";
@@ -14260,6 +14261,10 @@ function rfkjRenderSignalRows(index){
         host.appendChild(row);
     });
     rfkjObserveSignalLabels();
+    /* Restore cached Matrix values only while this Matrix is running.
+       A stopped Matrix must remain inactive after refresh; its last values are
+       not allowed to reappear until it is started again and fresh data arrives. */
+    if(rfkjInstance(index)?.running)rfkjRestoreDisplayedSignals(index);
 }
 function rfkjSignalElement(index,timeframe,key){
     return document.querySelector(`#rfkjSignalRows${index} .rfkj-signal-row[data-timeframe="${CSS.escape(String(timeframe))}"] [data-signal="${key}"]`);
@@ -14308,6 +14313,72 @@ function rfkjWriteLiveCache(index,payload){
         data[String(index)]={...payload, savedAt:Date.now()};
         localStorage.setItem(RFKJ_LIVE_CACHE_KEY,JSON.stringify(data));
     }catch(e){}
+}
+function rfkjReadSignalDisplayCache(){
+    try{
+        const raw=localStorage.getItem(RFKJ_SIGNAL_CACHE_KEY);
+        const data=raw?JSON.parse(raw):{};
+        return data&&typeof data==="object"?data:{};
+    }catch(e){return {};}
+}
+function rfkjWriteSignalDisplayCache(index,payload){
+    try{
+        const data=rfkjReadSignalDisplayCache();
+        data[String(index)]={...payload,savedAt:Date.now()};
+        localStorage.setItem(RFKJ_SIGNAL_CACHE_KEY,JSON.stringify(data));
+    }catch(e){}
+}
+function rfkjGetSignalDisplayCache(index){
+    const data=rfkjReadSignalDisplayCache();
+    const cached=data[String(index)];
+    return cached&&typeof cached==="object"?cached:null;
+}
+function rfkjSaveDisplayedSignals(index,timeframe,values){
+    const coin=String(rfkjGet("rfkjCoin",index)?.value||"").trim().toUpperCase();
+    if(!coin)return;
+    const old=rfkjGetSignalDisplayCache(index);
+    const signals=(old&&old.coin===coin&&old.signals&&typeof old.signals==="object")?old.signals:{};
+    signals[String(timeframe)]={...values,savedAt:Date.now()};
+    const state=rfkjInstance(index);
+    rfkjWriteSignalDisplayCache(index,{
+        coin,
+        signals,
+        latestPrice:state?.latestPrice??null,
+        latestPriceRaw:state?.latestPriceRaw??null,
+        latestUpdated:state?.latestUpdated??null,
+        latestDailyChangePercent:state?.latestDailyChangePercent??null,
+        priceDirection:state?.priceDirection??0
+    });
+}
+function rfkjRestoreDisplayedSignals(index){
+    const state=rfkjInstance(index);
+    const coin=String(rfkjGet("rfkjCoin",index)?.value||"").trim().toUpperCase();
+    const cached=rfkjGetSignalDisplayCache(index);
+    if(!state||!cached||!coin||String(cached.coin||"").toUpperCase()!==coin)return;
+    if(cached.signals&&typeof cached.signals==="object"){
+        state.previousSignals={};
+        Object.entries(cached.signals).forEach(([tf,v])=>{
+            if(!RFKJ_TIMEFRAMES.includes(String(tf))||!v||typeof v!=="object")return;
+            const signalTF=String(tf);
+            rfkjApplySignal(rfkjSignalElement(index,signalTF,"RF"),v.RF, v.valid!==false);
+            rfkjApplySignal(rfkjSignalElement(index,signalTF,"ST"),v.ST, v.valid!==false);
+            rfkjApplySignal(rfkjSignalElement(index,signalTF,"KJ"),v.KJ, v.valid!==false);
+            rfkjSetSignalPercent(index,signalTF,"RF",v.RFPercent);
+            rfkjSetSignalPercent(index,signalTF,"ST",v.STPercent);
+            rfkjSetSignalPercent(index,signalTF,"KJ",v.KJPercent);
+            state.previousSignals[signalTF]={RF:rfkjNormalizeSignal(v.RF),ST:rfkjNormalizeSignal(v.ST),KJ:rfkjNormalizeSignal(v.KJ)};
+        });
+    }
+    if(Number.isFinite(Number(cached.latestPrice))&&Number(cached.latestPrice)>0){
+        state.latestPrice=Number(cached.latestPrice);
+        state.latestPriceRaw=cached.latestPriceRaw??String(cached.latestPrice);
+        state.latestUpdated=cached.latestUpdated||null;
+        state.latestDailyChangePercent=Number.isFinite(Number(cached.latestDailyChangePercent))
+            ?Number(cached.latestDailyChangePercent):null;
+        state.priceDirection=Number(cached.priceDirection)||0;
+        rfkjUpdateHeaderPrice(index);
+        rfkjSetSelectionStatus(index);
+    }
 }
 function rfkjGetLiveCache(index){
     const s=rfkjInstance(index);
@@ -14461,6 +14532,11 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         rfkjSetSignalPercent(index,timeframe,"RF",rfPercent);
         rfkjSetSignalPercent(index,timeframe,"ST",stPercent);
         rfkjSetSignalPercent(index,timeframe,"KJ",kjPercent);
+        rfkjSaveDisplayedSignals(index,timeframe,{
+            RF:rf, ST:st, KJ:kj,
+            RFPercent:rfPercent, STPercent:stPercent, KJPercent:kjPercent,
+            valid:true
+        });
         const dailyChangePercent=Number(data.dailyChangePercent);
         state.latestDailyChangePercent=Number.isFinite(dailyChangePercent)?dailyChangePercent:null;
         let price=Number(data.price);
@@ -14481,6 +14557,23 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         state.latestPriceRaw=priceRaw;
         state.latestPrice=Number.isFinite(price)&&price>0?price:null;
         state.latestUpdated=data.updated||new Date().toISOString();
+        rfkjSaveDisplayedSignals(index,timeframe,{
+            RF:rf, ST:st, KJ:kj,
+            RFPercent:rfPercent, STPercent:stPercent, KJPercent:kjPercent,
+            valid:true
+        });
+        /* Update cached header values after the final unified price is known. */
+        try{
+            const cachedDisplay=rfkjGetSignalDisplayCache(index);
+            if(cachedDisplay&&cachedDisplay.coin===String(coin).trim().toUpperCase()){
+                cachedDisplay.latestPrice=state.latestPrice;
+                cachedDisplay.latestPriceRaw=state.latestPriceRaw;
+                cachedDisplay.latestUpdated=state.latestUpdated;
+                cachedDisplay.latestDailyChangePercent=state.latestDailyChangePercent;
+                cachedDisplay.priceDirection=state.priceDirection;
+                rfkjWriteSignalDisplayCache(index,cachedDisplay);
+            }
+        }catch(e){}
         rfkjSetSelectionStatus(index);
         rfkjUpdateHeaderPrice(index);
         /* Keep only successful values as the live cache. Never replace a good
@@ -14670,6 +14763,9 @@ function rfkjRestoreState(){
         if(!s.selectedTimeframes.length)s.selectedTimeframes=["1"];
         card.querySelectorAll(".rfkj-timeframe").forEach(b=>b.classList.toggle("active",s.selectedTimeframes.includes(b.dataset.rfkjTime)));
         rfkjRenderSignalRows(idx);
+        /* Only a Matrix saved in RUNNING state may restore its cached signal values.
+           STOPPED state must come back with inactive/empty Signal Boxes. */
+        if(m.running)rfkjRestoreDisplayedSignals(idx);
         rfkjSetSelectionStatus(idx);
         const custom=card.querySelector(".rfkj-compact-coin-picker");
         if(custom&&typeof custom._syncVisual==="function")custom._syncVisual();
