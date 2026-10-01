@@ -10,7 +10,7 @@
   },
   {
     "from": "1405/07/01",
-    "rate": 40
+    "rate": 39
   }
   ],
   "priceDivisor": 10,
@@ -86,6 +86,12 @@
       "type": "buy",
       "amount": 500,
       "price": 258000
+    },
+    {
+      "date": "1405/07/09",
+      "type": "buy",
+      "amount": 200,
+      "price": 257000
     }
   ],
   "cryptoHoldings": {
