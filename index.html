@@ -12748,7 +12748,9 @@ async function cryptoFetchSource(source, coin) {
     };
 }
 
-async function getUnifiedCryptoPrice(coin) {
+const CRYPTO_MEXC_PROBE_MS = 30 * 1000;
+
+async function getUnifiedCryptoPrice(coin, options = {}) {
     const normalized = String(coin || "").replace(/[-_\/]/g, "").replace(/USDT$/i, "").toUpperCase();
     if (!CRYPTO_COINGECKO_IDS[normalized]) {
         throw new Error(`Unsupported crypto asset: ${normalized || "unknown"}`);
@@ -12756,21 +12758,64 @@ async function getUnifiedCryptoPrice(coin) {
 
     let state = cryptoFailoverStateFor(normalized);
     const now = Date.now();
+    const preferPrimary = options && options.preferPrimary === true;
 
     /*
-       If every source failed previously, wait before probing the chain again.
-       This prevents a tight MEXC -> CoinGecko -> Nestex loop while offline.
+       MEXC is the authoritative primary source. The Crypto Portfolio calls
+       this with preferPrimary=true, so every portfolio refresh probes MEXC
+       first even if an older localStorage state selected a fallback.
+       This prevents a stale fallback state (for example DOGE -> CoinGecko)
+       from surviving after MEXC has recovered.
     */
-    if (state.retryAt > now) {
-        const source = CRYPTO_PRICE_SOURCES[state.sourceIndex];
+    if (preferPrimary) {
         try {
-            return await cryptoFetchSource(source, normalized);
+            const primary = await cryptoFetchSource(CRYPTO_PRICE_SOURCES[0], normalized);
+            cryptoFailoverSave(normalized, { sourceIndex: 0, retryAt: 0 });
+            return primary;
         } catch (error) {
-            throw error;
+            console.warn(`Primary MEXC probe failed for ${normalized}:`, error);
+            state = cryptoFailoverStateFor(normalized);
+            // If MEXC failed, continue with the last known fallback.
+            if (state.sourceIndex === 0) {
+                state.sourceIndex = 1;
+            }
+            cryptoFailoverSave(normalized, state);
+        }
+    } else if (state.sourceIndex > 0) {
+        /*
+           Non-portfolio consumers also periodically re-check MEXC while a
+           fallback is active. Once MEXC answers with a valid price, the
+           selected source immediately returns to index 0.
+        */
+        const lastProbe = Number(state.lastMexcProbeAt) || 0;
+        if (now - lastProbe >= CRYPTO_MEXC_PROBE_MS) {
+            cryptoFailoverSave(normalized, { ...state, lastMexcProbeAt: now });
+            try {
+                const primary = await cryptoFetchSource(CRYPTO_PRICE_SOURCES[0], normalized);
+                cryptoFailoverSave(normalized, { sourceIndex: 0, retryAt: 0 });
+                return primary;
+            } catch (error) {
+                console.warn(`MEXC recovery probe failed for ${normalized}:`, error);
+                state = cryptoFailoverStateFor(normalized);
+            }
         }
     }
 
-    for (let index = state.sourceIndex; index < CRYPTO_PRICE_SOURCES.length; index++) {
+    /*
+       A retry pause must never block the selected fallback itself. If MEXC
+       was already probed recently, use the active fallback until the next
+       probe window instead of getting stuck on a stale source state.
+    */
+    if (state.retryAt > now && state.sourceIndex > 0) {
+        const source = CRYPTO_PRICE_SOURCES[state.sourceIndex];
+        return await cryptoFetchSource(source, normalized);
+    }
+
+    const startIndex = Math.max(0, Math.min(
+        CRYPTO_PRICE_SOURCES.length - 1,
+        state.sourceIndex
+    ));
+    for (let index = startIndex; index < CRYPTO_PRICE_SOURCES.length; index++) {
         const source = CRYPTO_PRICE_SOURCES[index];
         try {
             const result = await cryptoFetchSource(source, normalized);
@@ -13088,7 +13133,7 @@ async function getMexcCryptoData(symbol) {
         .toUpperCase();
 
     const cached = loadCryptoPortfolioCache(symbol);
-    const live = await getUnifiedCryptoPrice(coin);
+    const live = await getUnifiedCryptoPrice(coin, { preferPrimary: true });
 
     /*
        MEXC and CoinGecko's requested simple price endpoints intentionally
