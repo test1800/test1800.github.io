@@ -9061,43 +9061,47 @@ function clearPageIssue(key) {
 function pageIssueLabel(key, issue) {
     const k = String(key || "");
     const m = String(issue?.message || "").toLowerCase();
-    if (k === "connection") return "Internet connection";
-    if (k === "data-json") return "data.json";
-    if (k === "usd") return "USD";
-    if (k === "yekusd") return "YEKUSD";
-    if (k === "signal-api") return "Signal";
-    if (k === "signal-cache") return "Signal";
-    if (k === "crypto-portfolio") return "Portfolio";
-    if (k === "crypto-price") return "Crypto";
-    if (k === "fear-greed") return "Fear & Greed";
-    if (k === "portfolio-data") return "Portfolio";
-    if (k === "nobitex") return "Nobitex";
-    if (k === "exir") return "Exir";
-    if (k === "bitpin") return "Bitpin";
-    if (k === "market-connection") return "Market";
+
+    // Keep the error box compact: API/source name + short state.
+    // These labels are intentionally short so an issue can be identified at a glance.
+    if (k === "connection") return "Internet Error";
+    if (k === "data-json") return "Data JSON";
+    if (k === "usd") return "USD API";
+    if (k === "yekusd") return "YEKUSD API";
+    if (k === "signal-api") return "Signal API";
+    if (k === "signal-cache") return "Signal Cache";
+    if (k === "crypto-portfolio") return "Portfolio API";
+    if (k === "crypto-price") return "Crypto API";
+    if (k === "fear-greed") return "F&G API";
+    if (k === "portfolio-data") return "Portfolio Data";
+    if (k === "nobitex") return "Nobitex API";
+    if (k === "exir") return "Exir API";
+    if (k === "bitpin") return "Bitpin API";
+    if (k === "market-connection") return "Market API";
+    if (k === "mexc-api") return "MEXC API";
     if (k === "mexc-cache") return "MEXC Cache";
     if (k.startsWith("mexc:")) return `MEXC ${k.slice(5)}`;
-    if (k.startsWith("rfkj:")) {
-        const parts = k.split(":");
-        const index = parts[1] || "?";
-        const tf = parts[2] ? rfkjTimeframeLabel(parts[2]) : "";
-        return `Matrix #${index}${tf ? ` ${tf}` : ""}`;
-    }
-    if (k === "crossover-remote") return "Crossover Remote";
+    if (k.startsWith("rfkj:")) return `Matrix #${k.split(":")[1] || "?"}`;
+    if (k === "crossover-remote") return "Crossover API";
+    if (k === "crossover-email-worker") return "Email API";
     if (k.startsWith("crossover:")) return `Crossover #${k.split(":")[1] || "?"}`;
-    if (k === "global-gold") return "Global Gold";
-    if (k === "global-gold-change") return "Global Gold Change";
-    if (k === "global-oil") return "Global Oil";
-    if (k === "global-economic") return "Economic Calendar";
-    if (k === "global-tsetmc") return "TSETMC";
-    if (k.startsWith("global-tsetmc:")) return `TSETMC ${k.slice(15)}`;
+    if (k === "global-gold") return "Gold API";
+    if (k === "global-gold-change") return "Gold Change";
+    if (k === "global-oil") return "Oil API";
+    if (k === "global-economic") return "Economic API";
+    if (k === "global-tsetmc") return "TSE API";
+    if (k.startsWith("global-tsetmc:")) return `TSE ${k.slice(15)}`;
     if (k === "js") return "Page JavaScript";
-    if (k === "promise") return "Background request";
-    if (k.startsWith("img:")) return `${k.slice(4)} icon`;
-    if (m.includes("nobitex")) return "Nobitex";
-    if (m.includes("exir")) return "Exir";
-    if (m.includes("bitpin")) return "Bitpin";
-    return "Page component";
+    if (k === "promise") return "Background Request";
+    if (k.startsWith("img:")) return `${k.slice(4)} Icon`;
+    if (m.includes("nobitex")) return "Nobitex API";
+    if (m.includes("exir")) return "Exir API";
+    if (m.includes("bitpin")) return "Bitpin API";
+    if (m.includes("mexc")) return "MEXC API";
+    if (m.includes("tsetmc") || m.includes("tse")) return "TSE API";
+    if (m.includes("matrix") || m.includes("signal")) return "Signal API";
+    if (m.includes("crossover")) return "Crossover API";
+    return "Page Error";
 }
 function pageIssueDescription(key, issue) {
     const k = String(key || "");
