@@ -8783,6 +8783,13 @@ function updateMarketPriceConnectionColors(
    NUMBER FORMAT
 ===================================================== */
 function formatNumber(value) {
+    if (
+        value === null ||
+        value === undefined ||
+        value === ""
+    ) {
+        return "-";
+    }
     const number =
         Number(value);
     if (
@@ -8957,10 +8964,12 @@ function loadNobitexPrice() {
     }
 }
 function saveExirPrice(price) {
+    const value = Number(price);
+    if (!Number.isFinite(value) || value <= 0) return;
     try {
         localStorage.setItem(
             CACHE_KEYS.EXIR_PRICE,
-            String(price)
+            String(value)
         );
     }
     catch (error) {}
@@ -8973,7 +8982,7 @@ function loadExirPrice() {
             );
         const price =
             Number(saved);
-        return Number.isFinite(price)
+        return Number.isFinite(price) && price > 0
             ? price
             : null;
     }
@@ -8981,6 +8990,8 @@ function loadExirPrice() {
         return null;
     }
 }
+/* EXIR cache is persistent and follows the same cache-first lifecycle as
+   Nobitex and Bitpin. Do not clear it on page/app startup. */
 function saveBitpinPrice(price) {
     try {
         localStorage.setItem(
@@ -10491,84 +10502,147 @@ async function getCurrentPrice(
 }
 /* =====================================================
    EXIR API
-   Uses lowest ASK price
+   Uses the lowest ASK price from the live Exir orderbook.
+   The Exir endpoint is mandatory for this price.
 ===================================================== */
-async function getExirPrice(
-    apiUrl
-) {
-    if (!apiUrl) {
-        throw new Error(
-            "Exir API URL is missing"
-        );
+const EXIR_ORDERBOOK_API =
+    "https://api.exir.io/v2/orderbook?symbol=usdt-irt";
+let nativeExirCallbacks = {};
+let nativeExirSequence = 0;
+window.__nativeExirPriceResult = function(callbackId, priceText) {
+    const callback = nativeExirCallbacks[callbackId];
+    if (!callback) return;
+    delete nativeExirCallbacks[callbackId];
+    callback(String(priceText || ""));
+};
+
+function getNativeExirPrice(apiUrl = EXIR_ORDERBOOK_API) {
+    return new Promise((resolve, reject) => {
+        if (
+            !window.AndroidNotifications ||
+            typeof window.AndroidNotifications.fetchExirPriceAsync !== "function"
+        ) {
+            reject(new Error("Native Exir bridge unavailable"));
+            return;
+        }
+
+        const callbackId =
+            "exir_" + Date.now() + "_" + (++nativeExirSequence);
+        const timer = setTimeout(() => {
+            delete nativeExirCallbacks[callbackId];
+            reject(new Error("Native Exir timeout"));
+        }, 16000);
+
+        nativeExirCallbacks[callbackId] = (value) => {
+            clearTimeout(timer);
+            const price = Number(value);
+            if (Number.isFinite(price) && price > 0) {
+                resolve(price);
+            } else {
+                reject(new Error("Invalid native Exir price"));
+            }
+        };
+
+        try {
+            window.AndroidNotifications.fetchExirPriceAsync(
+                callbackId,
+                apiUrl
+            );
+        } catch (error) {
+            clearTimeout(timer);
+            delete nativeExirCallbacks[callbackId];
+            reject(error);
+        }
+    });
+}
+
+async function parseExirLowestAskResponse(response) {
+    if (!response || !response.ok) {
+        throw new Error("Unable to get Exir price");
     }
-    const response =
-        await fetchApiWithProxyFallback(
-            apiUrl,
-            {
-                method: "GET",
-                headers: {
-                    "Accept": "application/json"
+    const data = await response.json();
+    const pair =
+        data?.["usdt-irt"] ||
+        data?.["USDT-IRT"] ||
+        data?.["USDT-IRT".toLowerCase()];
+    const asks = Array.isArray(pair?.asks) ? pair.asks : [];
+    let lowestAsk = Infinity;
+    for (const level of asks) {
+        const raw = Array.isArray(level) ? level[0] : level?.price;
+        const price = Number(raw);
+        if (Number.isFinite(price) && price > 0 && price < lowestAsk) {
+            lowestAsk = price;
+        }
+    }
+    if (!Number.isFinite(lowestAsk) || lowestAsk <= 0) {
+        throw new Error("Invalid Exir asks: no valid ask price");
+    }
+    return lowestAsk;
+}
+
+async function getExirPrice(apiUrl = EXIR_ORDERBOOK_API) {
+    const sourceUrl =
+        (typeof apiUrl === "string" && apiUrl.trim())
+            ? apiUrl.trim()
+            : EXIR_ORDERBOOK_API;
+
+    /* Android: try native first, but NEVER stop there. If direct EXIR is
+       blocked by the network, continue to the same proxy chain used by PWA. */
+    if (
+        window.AndroidNotifications &&
+        typeof window.AndroidNotifications.fetchExirPriceAsync === "function"
+    ) {
+        try {
+            return await getNativeExirPrice(sourceUrl);
+        } catch (nativeError) {
+            console.warn("Native Exir failed; trying proxy fallback", nativeError);
+        }
+    }
+
+    const target =
+        sourceUrl +
+        (sourceUrl.includes("?") ? "&" : "?") +
+        "_=" + Date.now();
+
+    // EXIR-specific fallback order. Do not depend on a generic proxy list: if
+    // the direct EXIR host is unreachable on the current network, cors.dev is
+    // the first server-side HTTPS fallback, followed by the legacy proxies.
+    const encodedTarget = encodeURIComponent(target);
+    const exirUrls = [
+        target,
+        `https://proxy.cors.dev/${target}`,
+        `https://api.cors.syrins.tech/?url=${encodedTarget}`,
+        `https://api.allorigins.win/raw?url=${encodedTarget}`
+    ];
+    /* EXIR has its own fallback queue. Do NOT pass the array to
+       fetchApiWithProxyFallback(), which accepts one URL string.
+       Passing the array there stringifies it into a comma-separated URL
+       and makes the browser path fail even though the native widget works. */
+    let lastError = null;
+    for (const url of exirUrls) {
+        try {
+            const response = await fetchWithTimeout(
+                url,
+                {
+                    method: "GET",
+                    headers: { "Accept": "application/json" },
+                    cache: "no-store"
                 },
-                cache: "no-store"
-            },
-            PRICE_REQUEST_TIMEOUT
-        );
-    if (!response.ok) {
-        throw new Error(
-            "Unable to get Exir price"
-        );
+                PRICE_REQUEST_TIMEOUT
+            );
+            if (!response || !response.ok) {
+                lastError = new Error(
+                    "EXIR HTTP " + (response ? response.status : "unknown")
+                );
+                continue;
+            }
+            return await parseExirLowestAskResponse(response);
+        } catch (error) {
+            lastError = error;
+            console.warn("EXIR source failed:", url, error);
+        }
     }
-    const data =
-        await response.json();
-    /*
-       Exir Order Book structure:
-       data["usdt-irt"].asks
-       Example:
-       "asks": [
-           [187499, 500],
-           [187500, 738.18],
-           ...
-       ]
-       We use the first / lowest ASK price:
-       data["usdt-irt"].asks[0][0]
-       Result:
-       187499
-    */
-    const orderBook =
-        data?.["usdt-irt"];
-    if (
-        !orderBook
-        ||
-        !Array.isArray(
-            orderBook.asks
-        )
-        ||
-        orderBook.asks.length === 0
-        ||
-        !Array.isArray(
-            orderBook.asks[0]
-        )
-        ||
-        orderBook.asks[0].length === 0
-    ) {
-        throw new Error(
-            "Invalid Exir orderbook: usdt-irt asks not found"
-        );
-    }
-    const rawPrice =
-        orderBook.asks[0][0];
-    const price =
-        Number(rawPrice);
-    if (
-        !Number.isFinite(price)
-        ||
-        price <= 0
-    ) {
-        throw new Error(
-            "Invalid Exir ask price"
-        );
-    }
-    return price;
+    throw lastError || new Error("All EXIR sources unavailable");
 }
 /* =====================================================
    BITPIN API
@@ -10844,12 +10918,6 @@ async function loadDashboardData(options = {}) {
                 )
                 ||
                 10;
-            const defaultPrice =
-                Number(
-                    data.defaultPrice
-                )
-                ||
-                190000;
             const bitpinApi =
                 data.bitpinApi
                 ||
@@ -10876,24 +10944,10 @@ async function loadDashboardData(options = {}) {
             let bitpinOnline =
                 false;
             const priceErrors = [];
-            if (
-                currentPrice === null
-            ) {
-                currentPrice =
-                    defaultPrice;
-            }
-            if (
-                exirPrice === null
-            ) {
-                exirPrice =
-                    defaultPrice;
-            }
-            if (
-                bitpinPrice === null
-            ) {
-                bitpinPrice =
-                    defaultPrice;
-            }
+            /*
+               No hard-coded market price is allowed.
+               A missing source remains null until a live API value arrives.
+            */
             /* =================================================
                LIVE MARKET REQUESTS
                The first paint must NEVER wait for the network.
@@ -10908,7 +10962,7 @@ async function loadDashboardData(options = {}) {
                             divisor
                         ),
                         getExirPrice(
-                            data.exirApi
+                            data.exirApi || EXIR_ORDERBOOK_API
                         ),
                         getBitpinPrice(
                             bitpinApi
@@ -10960,7 +11014,15 @@ async function loadDashboardData(options = {}) {
                     priceErrors.push(
                         "Exir"
                     );
-                    setPageIssue("exir", "Exir unavailable", "error");
+                    /* Keep the last valid EXIR value visible when live EXIR
+                       is unavailable, exactly like Nobitex/Bitpin. */
+                    exirPrice = loadExirPrice();
+                    usingCachedExir = exirPrice !== null;
+                    setPageIssue(
+                        "exir",
+                        usingCachedExir ? "Exir cached" : "Exir unavailable",
+                        usingCachedExir ? "cache" : "error"
+                    );
                 }
                 if (
                     bitpinResult.status ===
@@ -11047,25 +11109,27 @@ async function loadDashboardData(options = {}) {
             showLivePriceErrors(
                 priceErrors
             );
-            const isOffline =
-                !navigator.onLine
-                ||
-                usingCachedData;
-            if (isOffline) {
+            /*
+               MARKET API status must reflect market connectivity only.
+               `usingCachedData` means the dashboard data.json came from
+               local cache; it does NOT mean the market APIs are offline.
+               The old logic incorrectly raised "Market API Warn" on every
+               normal refresh whenever a cached dashboard snapshot existed.
+            */
+            if (!navigator.onLine) {
                 const cachedTime =
                     getCachedPriceTime();
                 let message =
-                    "Offline Mode • Showing Cached Data";
-                if (
-                    cachedTime
-                ) {
-                    message +=
-                        " • Saved: " +
-                        cachedTime;
+                    "Internet offline • Market prices may use cache";
+                if (cachedTime) {
+                    message += " • Saved: " + cachedTime;
                 }
                 setPageIssue("market-connection", message, "warn");
             }
             else {
+                /* Individual Nobitex / Exir / Bitpin issues are reported
+                   by their own page-issue keys above. Do not manufacture a
+                   generic Market API warning just because data.json is cached. */
                 clearPageIssue("market-connection");
             }
             const updateTime =
@@ -12775,15 +12839,56 @@ function cryptoFailoverSave(coin, state) {
 }
 async function cryptoFetchSource(source, coin) {
     const apiUrl = source.url(coin);
-    const response = await fetchApiWithProxyFallback(
-        apiUrl,
-        {
-            method: "GET",
-            headers: { "Accept": "application/json" },
-            cache: "no-store"
-        },
-        PRICE_REQUEST_TIMEOUT
-    );
+    const requestOptions = {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+        cache: "no-store"
+    };
+
+    /*
+       MEXC is the primary source for every Crypto Portfolio item.
+       Do not rely on the generic dashboard proxy chain here: a browser can
+       open api.mexc.com directly in a tab while fetch() is still blocked by
+       CORS.  The portfolio therefore has its own explicit MEXC request chain.
+       Android still uses the native bridge first inside fetchApiWithProxyFallback.
+    */
+    let response;
+    if (source.id === "mexc") {
+        const encoded = encodeURIComponent(apiUrl);
+        const mexcUrls = [
+            apiUrl,
+            `https://api.cors.syrins.tech/?url=${encoded}`,
+            `https://api.allorigins.win/raw?url=${encoded}`,
+            `https://corsproxy.io/?url=${encoded}`
+        ];
+        let lastError = null;
+        for (const url of mexcUrls) {
+            try {
+                const candidate = await fetchWithTimeout(
+                    url,
+                    requestOptions,
+                    7000
+                );
+                if (!candidate.ok) {
+                    throw new Error(`MEXC HTTP ${candidate.status}`);
+                }
+                response = candidate;
+                break;
+            } catch (error) {
+                lastError = error;
+            }
+        }
+        if (!response) {
+            throw (lastError || new Error("MEXC unavailable"));
+        }
+    } else {
+        response = await fetchApiWithProxyFallback(
+            apiUrl,
+            requestOptions,
+            PRICE_REQUEST_TIMEOUT
+        );
+    }
+
     const payload = await response.json();
     if (!payload || typeof payload !== "object") {
         throw new Error(`${source.id} returned invalid JSON`);
