@@ -14232,6 +14232,43 @@ async function loadCryptoPortfolio(
    RF / KJ SIGNAL MATRIX MONITOR
 ===================================================== */
 const RFKJ_WORKER_URL = "https://signalmatrix.rxw1.workers.dev/";
+const RFKJ_FALLBACK_URL = "https://ropmwamrcvvuwrvajxdr.supabase.co/functions/v1/test-function";
+const RFKJ_REQUEST_TIMEOUT_MS = 5000;
+let rfkjActiveApiIndex = 0; // 0 = primary worker, 1 = Supabase fallback
+
+async function rfkjFetchWithFailover(query){
+    const urls = [RFKJ_WORKER_URL, RFKJ_FALLBACK_URL];
+    const makeUrl = base => base + (base.includes("?") ? "&" : "?") + query;
+    const tryFetch = async base => {
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => controller.abort(), RFKJ_REQUEST_TIMEOUT_MS);
+        try{
+            const response = await fetch(makeUrl(base), {
+                method:"GET",
+                cache:"no-store",
+                signal:controller.signal
+            });
+            if(!response.ok) throw new Error(`Signal Matrix HTTP ${response.status}`);
+            const data = await response.json();
+            if(!data || typeof data!=="object") throw new Error("Invalid Signal Matrix response");
+            return data;
+        }finally{
+            window.clearTimeout(timer);
+        }
+    };
+    try{
+        return await tryFetch(urls[rfkjActiveApiIndex]);
+    }catch(firstError){
+        const otherIndex = rfkjActiveApiIndex === 0 ? 1 : 0;
+        try{
+            const data = await tryFetch(urls[otherIndex]);
+            rfkjActiveApiIndex = otherIndex;
+            return data;
+        }catch(secondError){
+            throw firstError;
+        }
+    }
+}
 const RFKJ_POLL_MS = 1000;
 const RFKJ_LIVE_CACHE_KEY = "rfkjLiveSignalCache-v1";
 const RFKJ_SIGNAL_CACHE_KEY = "rfkjSignalDisplayCache-v1";
@@ -14659,12 +14696,8 @@ async function rfkjFetchOne(index,timeframe,notify=true){
     const state=rfkjInstance(index);
     if(!state||!state.running)return;
     const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
-    const url=RFKJ_WORKER_URL+(RFKJ_WORKER_URL.includes("?")?"&":"?")+`coin=${encodeURIComponent(coin)}&timeframe=${encodeURIComponent(timeframe)}&t=${Date.now()}`;
     try{
-        const response=await fetch(url,{method:"GET",cache:"no-store"});
-        if(!response.ok)throw new Error(`Worker HTTP ${response.status}`);
-        const data=await response.json();
-        if(!data || typeof data!=="object")throw new Error("Invalid worker response");
+        const data=await rfkjFetchWithFailover(`coin=${encodeURIComponent(coin)}&timeframe=${encodeURIComponent(timeframe)}&t=${Date.now()}`);
         const rf=rfkjNormalizeSignal(data.RF??data.rf??data.rangeFilter??data.range_filter??0);
         const kj=rfkjNormalizeSignal(data.KJ??data.kj??data.kijunsen??0);
         const st=rfkjNormalizeSignal(data.ST??data.st??data.superTrend??data.supertrend??0);
