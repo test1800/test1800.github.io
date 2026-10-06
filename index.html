@@ -6867,8 +6867,46 @@ async function fetchApiWithProxyFallback(
     options = {},
     timeout = PRICE_REQUEST_TIMEOUT
 ) {
-    const urls = buildApiProxyFallbacks(apiUrl);
+    const target = String(apiUrl || "").trim();
     let lastError = null;
+
+    /*
+       Android WebView CORS-safe path:
+       When the dashboard is running inside the Android app, use the native
+       network stack first for the actual public API URL. This avoids relying
+       on third-party CORS proxies for Exir/MEXC.
+    */
+    try {
+        if (
+            target &&
+            window.AndroidNotifications &&
+            typeof window.AndroidNotifications.fetchExternalMarketJson === "function"
+        ) {
+            const nativeBody =
+                window.AndroidNotifications.fetchExternalMarketJson(target);
+            if (nativeBody) {
+                return new Response(
+                    nativeBody,
+                    {
+                        status: 200,
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
+            }
+        }
+    } catch (error) {
+        lastError = error;
+        console.warn("Native market API request failed:", target, error);
+    }
+
+    /*
+       Browser/PWA fallback:
+       Keep the existing direct + proxy chain for non-Android environments
+       and as a recovery path if the native request is temporarily unavailable.
+    */
+    const urls = buildApiProxyFallbacks(target);
     for (const url of urls) {
         try {
             const response =
