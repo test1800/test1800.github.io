@@ -12045,6 +12045,9 @@ function initGlobalPulseCompactAssetButtons(){
     globalPulseRefreshCompactAssetDisplay();
 }
 const GLOBAL_PULSE_TSE_WORKER_URL = "https://tsetmc.rxw1.workers.dev/";
+const GLOBAL_PULSE_TSE_FALLBACK_URL = "https://ropmwamrcvvuwrvajxdr.supabase.co/functions/v1/dynamic-service/";
+const GLOBAL_PULSE_TSE_ACTIVE_API_KEY = "globalPulseTsetmcActiveApi-v1";
+let globalPulseTsetmcActiveApiIndex = 0; // 0=Worker, 1=Supabase
 const GLOBAL_PULSE_TSE_CACHE_KEY = "globalPulseTsetmcCache-v1";
 const GLOBAL_PULSE_TSE_ALERT_STATE_KEY = "globalPulseTsetmcAlertState-v1";
 const GLOBAL_PULSE_TSE_REFRESH_MS = 10 * 1000;
@@ -12157,6 +12160,45 @@ async function globalPulseCheckTsetmcNotification(row){
     }
     saveGlobalPulseTsetmcAlertState();
 }
+function readGlobalPulseTsetmcActiveApi(){
+    try{
+        const value=Number(localStorage.getItem(GLOBAL_PULSE_TSE_ACTIVE_API_KEY));
+        globalPulseTsetmcActiveApiIndex=(value===1)?1:0;
+    }catch(e){globalPulseTsetmcActiveApiIndex=0;}
+    return globalPulseTsetmcActiveApiIndex;
+}
+function saveGlobalPulseTsetmcActiveApi(index){
+    globalPulseTsetmcActiveApiIndex=index===1?1:0;
+    try{localStorage.setItem(GLOBAL_PULSE_TSE_ACTIVE_API_KEY,String(globalPulseTsetmcActiveApiIndex));}catch(e){}
+}
+async function fetchGlobalPulseTsetmcWithFailover(requestStartedAt){
+    const bases=[GLOBAL_PULSE_TSE_WORKER_URL,GLOBAL_PULSE_TSE_FALLBACK_URL];
+    const active=readGlobalPulseTsetmcActiveApi();
+    const order=[active,active===0?1:0];
+    let firstError=null;
+    for(const index of order){
+        const base=bases[index];
+        const url=`${base}?t=${requestStartedAt}&fresh=${requestStartedAt}`;
+        try{
+            const response=await fetchApiWithProxyFallback(
+                url,
+                {method:"GET",headers:{"Accept":"application/json"},cache:"no-store"},
+                PRICE_REQUEST_TIMEOUT
+            );
+            if(!response.ok)throw new Error(`HTTP ${response.status}`);
+            const data=await response.json();
+            const results=Array.isArray(data?.results)
+                ? data.results.filter(row=>row&&String(row.symbol||"").trim())
+                : [];
+            if(!data?.ok || !results.length)throw new Error("TSETMC source returned no valid results");
+            if(index!==active)saveGlobalPulseTsetmcActiveApi(index);
+            return {data,sourceIndex:index};
+        }catch(error){
+            if(!firstError)firstError=error;
+        }
+    }
+    throw firstError||new Error("TSETMC sources unavailable");
+}
 async function loadGlobalPulseTsetmc(force=false){
     readGlobalPulseTsetmcAlertState();
     const cached=readGlobalPulseTsetmcCache();
@@ -12166,19 +12208,8 @@ async function loadGlobalPulseTsetmc(force=false){
 
     try{
         const requestStartedAt=Date.now();
-        let data=null;
-
-        // The page itself polls the same Worker used elsewhere in the app.
-        // Use the project's existing fetch/proxy helper so the values in the
-        // GLOBAL TSE cards are replaced by the newest Worker JSON every 10s.
-        const freshUrl=`${GLOBAL_PULSE_TSE_WORKER_URL}?t=${requestStartedAt}&fresh=${requestStartedAt}`;
-        const response=await fetchApiWithProxyFallback(
-            freshUrl,
-            {method:"GET",headers:{"Accept":"application/json"},cache:"no-store"},
-            PRICE_REQUEST_TIMEOUT
-        );
-        data=await response.json();
-
+        const failover=await fetchGlobalPulseTsetmcWithFailover(requestStartedAt);
+        const data=failover.data;
         const results=Array.isArray(data?.results)
             ? data.results.filter(row=>row&&String(row.symbol||"").trim())
             : [];
@@ -15132,9 +15163,8 @@ async function crossoverFetchSpecialPrice(asset){
     }
     if(v.startsWith("TSE|")){
         const symbol=crossoverTseSymbol(v);
-        const url=`${GLOBAL_PULSE_TSE_WORKER_URL}?t=${Date.now()}&fresh=${Date.now()}`;
-        const response=await fetchApiWithProxyFallback(url,{method:"GET",headers:{"Accept":"application/json"},cache:"no-store"},PRICE_REQUEST_TIMEOUT);
-        const data=await response.json();
+        const failover=await fetchGlobalPulseTsetmcWithFailover(Date.now());
+        const data=failover.data;
         const row=(Array.isArray(data?.results)?data.results:[]).find(r=>String(r?.symbol||"").trim().toUpperCase()===symbol);
         const price=Number(row?.lastPrice);
         if(!data?.ok||!Number.isFinite(price)||price<=0)throw new Error(`TSETMC ${symbol} price unavailable`);
