@@ -10599,10 +10599,11 @@ async function getExirPrice(apiUrl = EXIR_ORDERBOOK_API) {
         }
     }
 
-    const target =
-        sourceUrl +
-        (sourceUrl.includes("?") ? "&" : "?") +
-        "_=" + Date.now();
+    // Exir's /v2/orderbook endpoint must be called with its documented
+    // query only.  A cache-buster such as &_=timestamp makes Exir return
+    // {"message":"Path not found","code":284}.  no-store below is used
+    // for browser/proxy caching control instead.
+    const target = sourceUrl;
 
     // EXIR-specific fallback order. Do not depend on a generic proxy list: if
     // the direct EXIR host is unreachable on the current network, cors.dev is
