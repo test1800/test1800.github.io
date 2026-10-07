@@ -2226,6 +2226,40 @@ h1 {
     font-size: 16px;
     text-align: center;
 }
+.app-pin-unlock-status {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: -14px 0 24px;
+    color: #cbd5e1;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .2px;
+}
+.app-pin-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,.18);
+    border-top-color: #4696ff;
+    border-right-color: #7db7ff;
+    border-radius: 50%;
+    animation: appPinSpin .72s linear infinite;
+    flex: 0 0 auto;
+}
+@keyframes appPinSpin {
+    to { transform: rotate(360deg); }
+}
+#appPinLock.pin-unlocking .app-pin-unlock-status {
+    display: flex;
+}
+#appPinLock.pin-unlocking .app-pin-key {
+    pointer-events: none;
+    opacity: .55;
+}
+#appPinLock.pin-unlocking .app-pin-error {
+    visibility: hidden;
+}
 .app-pin-boxes {
     display: flex;
     align-items: center;
@@ -5791,6 +5825,7 @@ h1 {
         <div class="app-pin-lock-circle">●</div>
         <div class="app-pin-title">Welcome</div>
         <div class="app-pin-subtitle">Enter your 4-digit PIN</div>
+        <div class="app-pin-unlock-status" id="appPinUnlockStatus" aria-live="polite"><span class="app-pin-spinner" aria-hidden="true"></span><span>Unlocking...</span></div>
         <div class="app-pin-boxes" id="appPinBoxes">
             <div class="app-pin-box"></div>
             <div class="app-pin-box"></div>
@@ -12734,6 +12769,8 @@ window.addEventListener(
 window.addEventListener(
     "online",
     async () => {
+        // Never trigger dashboard/API work while the PIN screen is locked.
+        if (typeof dashboardProcessingStarted === "boolean" && !dashboardProcessingStarted) return;
         setPageIssue("connection", "Online • Refreshing", "info");
         setTimeout(() => {
             clearPageIssue("connection");
@@ -12749,10 +12786,6 @@ window.addEventListener(
     }
 );
 window.addEventListener("DOMContentLoaded", renderPageStatus);
-window.addEventListener("DOMContentLoaded", () => {
-    loadFearGreedIndex();
-    setInterval(loadFearGreedIndex, FEAR_GREED_REFRESH_MS);
-});
 /* =====================================================
    CRYPTO PORTFOLIO
    MEXC FUTURES KLINE
@@ -13851,6 +13884,7 @@ async function loadCryptoPortfolio(
         document.querySelectorAll("#appPinBoxes .app-pin-box")
     );
     const pinError = document.getElementById("appPinError");
+    const pinUnlockStatus = document.getElementById("appPinUnlockStatus");
     const pinKeypad = document.getElementById("appPinKeypad");
     const pinEntryModal = document.getElementById("appPinEntryModal");
     const pinEntryInput = document.getElementById("appPinEntryInput");
@@ -13923,23 +13957,65 @@ async function loadCryptoPortfolio(
         renderPin();
     }
 
+    function showUnlocking() {
+        // Keep the PIN overlay visible so the fourth digit can actually be
+        // painted.  The dashboard must not start until the browser has had
+        // a render opportunity; this is a render-cycle handoff, not a timer.
+        pinOverlay.classList.add("pin-unlocking");
+        if (pinUnlockStatus) pinUnlockStatus.setAttribute("aria-hidden", "false");
+        if (pinKeypad) pinKeypad.setAttribute("aria-disabled", "true");
+    }
+
+    function finishUnlock() {
+        pinOverlay.classList.remove("pin-unlocking");
+        if (pinUnlockStatus) pinUnlockStatus.setAttribute("aria-hidden", "true");
+        if (pinKeypad) pinKeypad.setAttribute("aria-disabled", "false");
+        pinOverlay.classList.add("pin-unlocked");
+        pinOverlay.setAttribute("aria-hidden", "true");
+        markSessionUnlocked();
+        if (typeof startDashboardProcessing === "function") {
+            startDashboardProcessing();
+        }
+    }
+
     function showPin() {
         resetPin();
         focusedPinIndex = 0;
         renderPinFocus();
         if (pinError) pinError.textContent = "";
-        pinOverlay.classList.remove("pin-unlocked");
+        pinOverlay.classList.remove("pin-unlocked", "pin-unlocking");
         pinOverlay.setAttribute("aria-hidden", "false");
+        if (pinUnlockStatus) pinUnlockStatus.setAttribute("aria-hidden", "true");
+        if (pinKeypad) pinKeypad.setAttribute("aria-disabled", "false");
         if (!isLgWebOsTv) {
             try { pinOverlay.focus({ preventScroll: true }); } catch (error) { try { pinOverlay.focus(); } catch (_) {} }
         }
     }
 
     function hidePin() {
-        pinOverlay.classList.add("pin-unlocked");
-        pinOverlay.setAttribute("aria-hidden", "true");
-        markSessionUnlocked();
+        // IMPORTANT: do not hide the overlay or start init in the same JS turn
+        // as the fourth digit. WebView cannot paint DOM changes until this
+        // JavaScript turn yields. Keep the fourth dot visible, show the
+        // unlocking state, resume native/WebView processing, then hand control
+        // to the next two browser render frames. No artificial delay is used.
+        showUnlocking();
         setNativeLockState(false);
+
+        const handoff = () => {
+            const secondFrame = () => finishUnlock();
+            if (typeof window.requestAnimationFrame === "function") {
+                window.requestAnimationFrame(secondFrame);
+            } else {
+                // Legacy fallback: queue a macrotask only when RAF is absent.
+                Promise.resolve().then(secondFrame);
+            }
+        };
+
+        if (typeof window.requestAnimationFrame === "function") {
+            window.requestAnimationFrame(handoff);
+        } else {
+            Promise.resolve().then(handoff);
+        }
     }
 
     function checkPin() {
@@ -13960,13 +14036,11 @@ async function loadCryptoPortfolio(
         if (enteredPin.length >= 4) return;
         enteredPin += digit;
         renderPin();
-        // Unlock immediately after the fourth digit, just like the original PIN flow.
+        // IMPORTANT: Android MainActivity pauses WebView timers while the PIN
+        // overlay is locked. Therefore the 4th digit must unlock synchronously;
+        // never depend on setTimeout/setInterval for the critical PIN transition.
         if (enteredPin.length === 4) {
-            window.setTimeout(() => {
-                if (!pinOverlay.classList.contains("pin-unlocked") && enteredPin.length === 4) {
-                    checkPin();
-                }
-            }, 120);
+            checkPin();
         }
     }
 
@@ -14392,6 +14466,9 @@ async function loadCryptoPortfolio(
     } else if (!nativeAvailable() && unlockedForSession) {
         pinOverlay.classList.add("pin-unlocked");
         pinOverlay.setAttribute("aria-hidden", "true");
+        if (typeof startDashboardProcessing === "function") {
+            startDashboardProcessing();
+        }
     } else {
         setNativeLockState(true);
         showPin();
@@ -16747,6 +16824,11 @@ async function init() {
         */
         startGlobalPulse();
 
+        // Fear & Greed is part of dashboard processing and therefore starts
+        // only after the PIN has been accepted.
+        loadFearGreedIndex();
+        setInterval(loadFearGreedIndex, FEAR_GREED_REFRESH_MS);
+
         const cachedBoot = loadDashboardData({ cacheOnly: true })
             .catch(error => {
                 console.warn("Cached dashboard boot unavailable:", error);
@@ -16796,8 +16878,18 @@ async function init() {
         }
     }
 }
-/* PIN protection is handled by the HTML overlay above. */
-init();
+/*
+   PIN protection is handled by the HTML overlay above.
+   IMPORTANT: Do NOT call init() here. The PIN screen must be completely
+   idle with respect to dashboard/API processing. The correct PIN calls
+   startDashboardProcessing(), which starts init exactly once.
+*/
+let dashboardProcessingStarted = false;
+function startDashboardProcessing() {
+    if (dashboardProcessingStarted) return;
+    dashboardProcessingStarted = true;
+    init();
+}
 /* =====================================================
    SERVICE WORKER
 ===================================================== */
