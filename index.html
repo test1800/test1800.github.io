@@ -8943,31 +8943,69 @@ function loadCachedDashboardData() {
 }
 function saveLocalData(data) {
     try {
-        localStorage.setItem(
-            CACHE_KEYS.DATA,
-            JSON.stringify(data)
-        );
-    }
-    catch (error) {
-        console.warn(
-            "Could not save dashboard data",
-            error
-        );
+        const json = JSON.stringify(data);
+        localStorage.setItem(CACHE_KEYS.DATA, json);
+        if (window.AndroidNotifications && typeof window.AndroidNotifications.saveDashboardCache === "function") {
+            window.AndroidNotifications.saveDashboardCache(json);
+        }
+    } catch (error) {
+        console.warn("Could not save dashboard data", error);
     }
 }
 function loadLocalData() {
     try {
-        const saved =
-            localStorage.getItem(
-                CACHE_KEYS.DATA
-            );
-        return saved
-            ? JSON.parse(saved)
-            : null;
+        const saved = localStorage.getItem(CACHE_KEYS.DATA);
+        if (saved) return JSON.parse(saved);
+    } catch (error) {}
+
+    // Android WebView can lose Web Storage after a manual reload on some
+    // devices/builds. Recover the last dashboard snapshot from native storage.
+    try {
+        if (window.AndroidNotifications && typeof window.AndroidNotifications.getDashboardCache === "function") {
+            const native = window.AndroidNotifications.getDashboardCache();
+            if (native) {
+                const state = JSON.parse(native);
+                const data = state && state.data ? state.data : state;
+                if (data && typeof data === "object") {
+                    localStorage.setItem(CACHE_KEYS.DATA, JSON.stringify(data));
+                    if (state.nobitexPrice != null) localStorage.setItem(CACHE_KEYS.NOBITEX_PRICE, String(state.nobitexPrice));
+                    if (state.nobitexTime) localStorage.setItem(CACHE_KEYS.NOBITEX_TIME, String(state.nobitexTime));
+                    if (state.exirPrice != null) localStorage.setItem(CACHE_KEYS.EXIR_PRICE, String(state.exirPrice));
+                    if (state.bitpinPrice != null) localStorage.setItem(CACHE_KEYS.BITPIN_PRICE, String(state.bitpinPrice));
+                    if (state.bitpinTime) localStorage.setItem(CACHE_KEYS.BITPIN_TIME, String(state.bitpinTime));
+                    if (state.averagePrice != null) localStorage.setItem(CACHE_KEYS.AVERAGE_PRICE, String(state.averagePrice));
+                    if (state.averageTime) localStorage.setItem(CACHE_KEYS.AVERAGE_TIME, String(state.averageTime));
+                    if (state.usdTxtPrice != null) localStorage.setItem(CACHE_KEYS.USD_TXT_PRICE, String(state.usdTxtPrice));
+                    if (state.yekusdPrice != null) localStorage.setItem(CACHE_KEYS.YEKUSD_PRICE, String(state.yekusdPrice));
+                    return data;
+                }
+            }
+        }
+    } catch (error) {
+        console.warn("Native dashboard cache read failed", error);
     }
-    catch (error) {
-        return null;
-    }
+    return null;
+}
+function persistNativeDashboardState() {
+    try {
+        if (!window.AndroidNotifications || typeof window.AndroidNotifications.saveDashboardCache !== "function") return;
+        const data = localStorage.getItem(CACHE_KEYS.DATA);
+        if (!data) return;
+        const state = {
+            data: JSON.parse(data),
+            nobitexPrice: localStorage.getItem(CACHE_KEYS.NOBITEX_PRICE),
+            nobitexTime: localStorage.getItem(CACHE_KEYS.NOBITEX_TIME),
+            exirPrice: localStorage.getItem(CACHE_KEYS.EXIR_PRICE),
+            bitpinPrice: localStorage.getItem(CACHE_KEYS.BITPIN_PRICE),
+            bitpinTime: localStorage.getItem(CACHE_KEYS.BITPIN_TIME),
+            averagePrice: localStorage.getItem(CACHE_KEYS.AVERAGE_PRICE),
+            averageTime: localStorage.getItem(CACHE_KEYS.AVERAGE_TIME),
+            usdTxtPrice: localStorage.getItem(CACHE_KEYS.USD_TXT_PRICE),
+            yekusdPrice: localStorage.getItem(CACHE_KEYS.YEKUSD_PRICE),
+            savedAt: Date.now()
+        };
+        window.AndroidNotifications.saveDashboardCache(JSON.stringify(state));
+    } catch (error) {}
 }
 function saveNobitexPrice(price) {
     try {
@@ -11519,6 +11557,7 @@ for (
         return await dashboardLoadInProgress;
     }
     finally {
+        persistNativeDashboardState();
         syncNativeWidgetSnapshot();
         dashboardLoadInProgress =
             null;
@@ -16629,8 +16668,6 @@ function crossoverInit(){
         crossoverSyncEmailWorker().catch(()=>{});
     }
 }
-crossoverInit();
-rfkjStartUltraRotation();
 
 /* =====================================================
    CRYPTO PORTFOLIO AUTO REFRESH
@@ -16816,6 +16853,10 @@ function startCryptoPortfolioAutoRefresh() {
 */
 async function init() {
     try {
+        // Heavy monitors are intentionally started only after PIN unlock.
+        // They must never run during page construction/refresh.
+        crossoverInit();
+        rfkjStartUltraRotation();
         /*
            FAST BOOT:
            1) Paint the last successful snapshot immediately.
