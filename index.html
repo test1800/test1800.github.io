@@ -2250,6 +2250,42 @@ h1 {
     border-width: 2px;
     border-color: #4696ff;
 }
+/* PIN verification indicator: appears only while the fourth digit is checked. */
+.app-pin-loader {
+    display: none;
+    width: 30px;
+    height: 30px;
+    margin: -13px 0 13px;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    color: #67b7ff;
+}
+.app-pin-loader.visible { display: flex; }
+.app-pin-loader::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 2px solid rgba(103,183,255,.16);
+    border-top-color: #79c4ff;
+    border-right-color: #4696ff;
+    border-radius: 50%;
+    box-shadow: 0 0 13px rgba(70,150,255,.24), inset 0 0 7px rgba(70,150,255,.08);
+    animation: appPinLoaderSpin .72s linear infinite;
+}
+.app-pin-loader::after {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #b9e3ff;
+    box-shadow: 0 0 9px #4696ff;
+}
+@keyframes appPinLoaderSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .app-pin-loader::before { animation-duration: 1.8s; }
+}
 .app-pin-error {
     width: 100%;
     min-height: 25px;
@@ -5797,6 +5833,7 @@ h1 {
             <div class="app-pin-box"></div>
             <div class="app-pin-box"></div>
         </div>
+        <div class="app-pin-loader" id="appPinLoader" role="status" aria-label="Checking PIN"></div>
         <div class="app-pin-error" id="appPinError"></div>
         <div class="app-pin-keypad" id="appPinKeypad">
             <div class="app-pin-row">
@@ -12772,7 +12809,7 @@ const MEXC_SPOT_TICKER =
    it fails. We do NOT walk the whole chain on every refresh.
 */
 const CRYPTO_PRICE_FAILOVER_KEY = "financialCryptoPriceFailover-v1";
-const CRYPTO_PRICE_FAILOVER_RETRY_MS = 5 * 1000;
+const CRYPTO_PRICE_FAILOVER_RETRY_MS = 30 * 1000;
 const CRYPTO_PRICE_SOURCES = [
     {
         id: "mexc",
@@ -12853,31 +12890,46 @@ async function cryptoFetchSource(source, coin) {
        CORS.  The portfolio therefore has its own explicit MEXC request chain.
        Android still uses the native bridge first inside fetchApiWithProxyFallback.
     */
-    /*
-       IMPORTANT: MEXC is a public market-data endpoint. The fact that the
-       URL opens in a browser tab does NOT mean a page/WebView fetch is allowed
-       to read its response because of CORS. Use the same native bridge + proxy
-       chain that the rest of the dashboard uses, so a valid MEXC response is
-       never mistaken for an invalid price merely because direct fetch is blocked.
-    */
-    const response = await fetchApiWithProxyFallback(
-        apiUrl,
-        requestOptions,
-        source.id === "mexc" ? 10000 : PRICE_REQUEST_TIMEOUT
-    );
+    let response;
+    if (source.id === "mexc") {
+        const encoded = encodeURIComponent(apiUrl);
+        const mexcUrls = [
+            apiUrl,
+            `https://api.cors.syrins.tech/?url=${encoded}`,
+            `https://api.allorigins.win/raw?url=${encoded}`,
+            `https://corsproxy.io/?url=${encoded}`
+        ];
+        let lastError = null;
+        for (const url of mexcUrls) {
+            try {
+                const candidate = await fetchWithTimeout(
+                    url,
+                    requestOptions,
+                    7000
+                );
+                if (!candidate.ok) {
+                    throw new Error(`MEXC HTTP ${candidate.status}`);
+                }
+                response = candidate;
+                break;
+            } catch (error) {
+                lastError = error;
+            }
+        }
+        if (!response) {
+            throw (lastError || new Error("MEXC unavailable"));
+        }
+    } else {
+        response = await fetchApiWithProxyFallback(
+            apiUrl,
+            requestOptions,
+            PRICE_REQUEST_TIMEOUT
+        );
+    }
 
-    let payload = await response.json();
+    const payload = await response.json();
     if (!payload || typeof payload !== "object") {
         throw new Error(`${source.id} returned invalid JSON`);
-    }
-
-    /* MEXC /ticker/price normally returns an object, but accept a one-item
-       array too so a proxy/native layer can never cause a false rejection. */
-    if (source.id === "mexc" && Array.isArray(payload)) {
-        payload = payload.find(item => item && typeof item === "object") || null;
-    }
-    if (source.id === "mexc" && (!payload || typeof payload !== "object")) {
-        throw new Error("MEXC returned invalid ticker payload");
     }
 
     let price = null;
@@ -12885,11 +12937,6 @@ async function cryptoFetchSource(source, coin) {
     let changePct = null;
 
     if (source.id === "mexc") {
-        const returnedSymbol = String(payload.symbol || "").replace(/[-_\/]/g, "").toUpperCase();
-        const requestedSymbol = cryptoSpotSymbol(coin);
-        if (returnedSymbol && returnedSymbol !== requestedSymbol) {
-            throw new Error(`MEXC symbol mismatch: expected ${requestedSymbol}, got ${returnedSymbol}`);
-        }
         price = Number(payload.price ?? payload.lastPrice);
     } else if (source.id === "coingecko") {
         const id = CRYPTO_COINGECKO_IDS[coin];
@@ -12917,7 +12964,7 @@ async function cryptoFetchSource(source, coin) {
     };
 }
 
-const CRYPTO_MEXC_PROBE_MS = 5 * 1000;
+const CRYPTO_MEXC_PROBE_MS = 30 * 1000;
 
 async function getUnifiedCryptoPrice(coin, options = {}) {
     const normalized = String(coin || "").replace(/[-_\/]/g, "").replace(/USDT$/i, "").toUpperCase();
@@ -13851,6 +13898,7 @@ async function loadCryptoPortfolio(
         document.querySelectorAll("#appPinBoxes .app-pin-box")
     );
     const pinError = document.getElementById("appPinError");
+    const pinLoader = document.getElementById("appPinLoader");
     const pinKeypad = document.getElementById("appPinKeypad");
     const pinEntryModal = document.getElementById("appPinEntryModal");
     const pinEntryInput = document.getElementById("appPinEntryInput");
@@ -13918,7 +13966,13 @@ async function loadCryptoPortfolio(
         }
     }
 
+    function setPinLoading(loading) {
+        if (pinLoader) pinLoader.classList.toggle("visible", loading);
+        if (pinKeypad) pinKeypad.style.pointerEvents = loading ? "none" : "";
+    }
+
     function resetPin() {
+        setPinLoading(false);
         enteredPin = "";
         renderPin();
     }
@@ -13943,6 +13997,7 @@ async function loadCryptoPortfolio(
     }
 
     function checkPin() {
+        setPinLoading(false);
         if (enteredPin === APP_PIN) {
             if (pinError) pinError.textContent = "";
             hidePin();
@@ -13960,13 +14015,17 @@ async function loadCryptoPortfolio(
         if (enteredPin.length >= 4) return;
         enteredPin += digit;
         renderPin();
-        // Unlock immediately after the fourth digit, just like the original PIN flow.
+        // Show the animated indicator for the actual PIN check, without adding a timer.
         if (enteredPin.length === 4) {
-            window.setTimeout(() => {
+            setPinLoading(true);
+            // Let the browser paint the spinner before running the synchronous check.
+            requestAnimationFrame(() => requestAnimationFrame(() => {
                 if (!pinOverlay.classList.contains("pin-unlocked") && enteredPin.length === 4) {
                     checkPin();
+                } else {
+                    setPinLoading(false);
                 }
-            }, 120);
+            }));
         }
     }
 
@@ -14402,11 +14461,8 @@ async function loadCryptoPortfolio(
 ===================================================== */
 const RFKJ_WORKER_URL = "https://signalmatrix.rxw1.workers.dev/";
 const RFKJ_FALLBACK_URL = "https://ropmwamrcvvuwrvajxdr.supabase.co/functions/v1/clever-handler/";
-const RFKJ_REQUEST_TIMEOUT_MS = 2500;
-const RFKJ_RECOVERY_PROBE_MS = 1500;
-let rfkjActiveApiIndex = 0; // 0 = primary Worker, 1 = Supabase fallback
-let rfkjLastPrimaryProbeAt = 0;
-let rfkjBothApisDown = false;
+const RFKJ_REQUEST_TIMEOUT_MS = 5000;
+let rfkjActiveApiIndex = 0; // 0 = primary worker, 1 = Supabase fallback
 
 async function rfkjFetchWithFailover(query){
     const urls = [RFKJ_WORKER_URL, RFKJ_FALLBACK_URL];
@@ -14415,63 +14471,44 @@ async function rfkjFetchWithFailover(query){
         const controller = new AbortController();
         const timer = window.setTimeout(() => controller.abort(), RFKJ_REQUEST_TIMEOUT_MS);
         try{
-            const response = await fetch(makeUrl(base), {method:"GET",cache:"no-store",signal:controller.signal});
+            const response = await fetch(makeUrl(base), {
+                method:"GET",
+                cache:"no-store",
+                signal:controller.signal
+            });
             if(!response.ok) throw new Error(`Signal Matrix HTTP ${response.status}`);
             const data = await response.json();
             if(!data || typeof data!=="object") throw new Error("Invalid Signal Matrix response");
-            const hasSignal = ["RF","rf","ST","st","KJ","kj","price"].some(k => data[k]!==undefined && data[k]!==null);
-            if(!hasSignal) throw new Error("Signal Matrix response has no usable data");
             return data;
-        }finally{ window.clearTimeout(timer); }
+        }finally{
+            window.clearTimeout(timer);
+        }
     };
-
-    // Primary recovery is deliberately fast: while on Supabase, probe the
-    // Worker frequently and immediately return to it as soon as it is healthy.
-    if(rfkjActiveApiIndex===1 && Date.now()-rfkjLastPrimaryProbeAt>=RFKJ_RECOVERY_PROBE_MS){
-        rfkjLastPrimaryProbeAt=Date.now();
-        try{
-            const primaryData=await tryFetch(urls[0]);
-            rfkjActiveApiIndex=0;
-            rfkjBothApisDown=false;
-            return {data:primaryData, source:0, bothDown:false};
-        }catch(_primaryError){}
-    }
-
-    const firstIndex=rfkjActiveApiIndex;
     try{
-        const data=await tryFetch(urls[firstIndex]);
-        rfkjBothApisDown=false;
-        return {data, source:firstIndex, bothDown:false};
+        return await tryFetch(urls[rfkjActiveApiIndex]);
     }catch(firstError){
-        const otherIndex=firstIndex===0?1:0;
+        const otherIndex = rfkjActiveApiIndex === 0 ? 1 : 0;
         try{
-            const data=await tryFetch(urls[otherIndex]);
-            rfkjActiveApiIndex=otherIndex;
-            rfkjBothApisDown=false;
-            return {data, source:otherIndex, bothDown:false};
+            const data = await tryFetch(urls[otherIndex]);
+            rfkjActiveApiIndex = otherIndex;
+            return data;
         }catch(secondError){
-            rfkjBothApisDown=true;
-            // Keep the last valid Matrix values untouched. Caller may use the
-            // existing price provider only for the NUMBER while both Matrix
-            // APIs are down.
-            return {data:null, source:-1, bothDown:true, error:firstError};
+            throw firstError;
         }
     }
 }
-
 const RFKJ_POLL_MS = 1000;
 const RFKJ_LIVE_CACHE_KEY = "rfkjLiveSignalCache-v1";
 const RFKJ_SIGNAL_CACHE_KEY = "rfkjSignalDisplayCache-v1";
 const RFKJ_SLOT_COUNT = 3;
 const RFKJ_TIMEFRAMES = ["1","3","5","15","30","60","4h","1D","1W"];
-const RFKJ_STATE_KEY = "rfkjMatrixState-v5";
+const RFKJ_STATE_KEY = "rfkjMatrixState-v4";
 const rfkjInstances = Array.from({length:RFKJ_SLOT_COUNT},(_,i)=>({
     index:i+1,
     selectedTimeframes:["1"],
     running:false,
     timer:null,
     requestInProgress:false,
-    runToken:0,
     previousSignals:{},
     latestTimeframe:"1",
     latestPrice:null,
@@ -14862,29 +14899,17 @@ function rfkjReadSavedState(){
 }
 function rfkjSaveState(){
     const data={
-        version:5,
+        version:4,
         count:Number(document.getElementById("rfkjMatrixGrid")?.dataset.count||1),
-        matrices:rfkjInstances.map(s=>{
-            const coinEl=rfkjGet("rfkjCoin",s.index);
-            const display=rfkjGetSignalDisplayCache(s.index);
-            return {
-                coin:coinEl?.value||"",
-                selectedCoin:coinEl?.dataset.userSelected==="1",
-                timeframes:s.selectedTimeframes.slice(),
-                running:!!s.running,
-                latestPrice:s.latestPrice??display?.latestPrice??null,
-                latestPriceRaw:s.latestPriceRaw??display?.latestPriceRaw??null,
-                latestUpdated:s.latestUpdated??display?.latestUpdated??null,
-                latestDailyChangePercent:s.latestDailyChangePercent??display?.latestDailyChangePercent??null,
-                priceDirection:s.priceDirection??display?.priceDirection??0
-            };
-        })
+        matrices:rfkjInstances.map(s=>({
+            coin:rfkjGet("rfkjCoin",s.index)?.value||"",
+            selectedCoin:rfkjGet("rfkjCoin",s.index)?.dataset.userSelected==="1",
+            timeframes:s.selectedTimeframes.slice(),
+            running:!!s.running
+        }))
     };
     const raw=JSON.stringify(data);
-    try{
-        localStorage.setItem(RFKJ_STATE_KEY,raw);
-        localStorage.setItem("rfkjMatrixState-v3",raw);
-    }catch(e){}
+    try{localStorage.setItem(RFKJ_STATE_KEY,raw);localStorage.setItem("rfkjMatrixState-v3",raw);}catch(e){}
     if(window.AndroidNotifications&&typeof window.AndroidNotifications.setSignalMatrixStateJson==="function"){
         try{window.AndroidNotifications.setSignalMatrixStateJson(raw);}catch(e){}
     }
@@ -14895,52 +14920,12 @@ async function rfkjSendNotification(index,title,message,type="RFKJ"){
         await sendDashboardNotification(title,message,getCryptoIconSrc(coin),type);
     }catch(e){console.warn("Signal Matrix notification failed",e);}
 }
-async function rfkjFetchOne(index,timeframe,notify=true,runToken=null){
+async function rfkjFetchOne(index,timeframe,notify=true){
     const state=rfkjInstance(index);
     if(!state||!state.running)return;
-    const token = runToken ?? state.runToken;
-    const stillRunning = () => {
-        const current=rfkjInstance(index);
-        return !!current && current.running && current.runToken===token;
-    };
     const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
     try{
-        const result=await rfkjFetchWithFailover(`coin=${encodeURIComponent(coin)}&timeframe=${encodeURIComponent(timeframe)}&t=${Date.now()}`);
-        if(!stillRunning())return;
-        if(result.bothDown){
-            // NEVER clear RF/ST/KJ. Keep the last valid arrows/signals exactly as
-            // they are. Only the NUMBER may use the existing price failover.
-            let fallbackPrice=Number(state.latestPrice);
-            let fallbackRaw=state.latestPriceRaw;
-            try{
-                const unifiedPrice=await getUnifiedCryptoPrice(coin);
-                if(!stillRunning())return;
-                if(Number.isFinite(Number(unifiedPrice.price))&&Number(unifiedPrice.price)>0){
-                    fallbackPrice=Number(unifiedPrice.price);
-                    fallbackRaw=String(unifiedPrice.price);
-                }
-            }catch(_priceError){}
-            if(Number.isFinite(fallbackPrice)&&fallbackPrice>0){
-                const previousPrice=Number(state.latestPrice);
-                state.priceDirection=(Number.isFinite(previousPrice)&&fallbackPrice!==previousPrice)
-                    ?(fallbackPrice>previousPrice?1:-1):state.priceDirection||0;
-                state.latestPrice=fallbackPrice;
-                state.latestPriceRaw=fallbackRaw??String(fallbackPrice);
-                state.latestUpdated=state.latestUpdated||new Date().toISOString();
-                rfkjUpdateHeaderPrice(index);
-                if(String(timeframe)===String(rfkjLowestSelectedTimeframe(index))){
-                    state.cachedLive={price:fallbackPrice,rawPrice:state.latestPriceRaw,rf:state.ultraRF,kj:state.ultraKJ,st:state.ultraST,savedAt:Date.now()};
-                    rfkjWriteLiveCache(index,state.cachedLive);
-                    rfkjRenderUltraCompact(false);
-                }
-            }
-            setPageIssue(`rfkj:${index}:${timeframe}`,"Signal Matrix APIs unavailable • keeping last signals","error");
-            syncNativeWidgetSnapshot();
-            return;
-        }
-
-        const data=result.data;
-        if(!stillRunning())return;
+        const data=await rfkjFetchWithFailover(`coin=${encodeURIComponent(coin)}&timeframe=${encodeURIComponent(timeframe)}&t=${Date.now()}`);
         const rf=rfkjNormalizeSignal(data.RF??data.rf??data.rangeFilter??data.range_filter??0);
         const kj=rfkjNormalizeSignal(data.KJ??data.kj??data.kijunsen??0);
         const st=rfkjNormalizeSignal(data.ST??data.st??data.superTrend??data.supertrend??0);
@@ -14954,31 +14939,68 @@ async function rfkjFetchOne(index,timeframe,notify=true,runToken=null){
         rfkjApplySignal(rfkjSignalElement(index,timeframe,"KJ"),kj);
         rfkjSetSignalPercent(index,timeframe,"RF",rfPercent);
         rfkjSetSignalPercent(index,timeframe,"ST",stPercent);
-        rfkjSaveDisplayedSignals(index,timeframe,{RF:rf,ST:st,KJ:kj,RFPercent:rfPercent,STPercent:stPercent,KJPercent:kjPercent,valid:true});
+        rfkjSetSignalPercent(index,timeframe,"KJ",kjPercent);
+        // Register the freshly received Matrix data immediately. Do not wait
+        // for the other selected timeframes to finish their requests.
+        rfkjSaveDisplayedSignals(index,timeframe,{
+            RF:rf, ST:st, KJ:kj,
+            RFPercent:rfPercent, STPercent:stPercent, KJPercent:kjPercent,
+            valid:true
+        });
+        // Persist successful worker data immediately after the blocks are updated.
+        // The next timeframe request must never delay this registration.
+        rfkjSaveState();
+        syncNativeWidgetSnapshot();
         const dailyChangePercent=Number(data.dailyChangePercent);
         state.latestDailyChangePercent=Number.isFinite(dailyChangePercent)?dailyChangePercent:null;
-
-        // IMPORTANT: while either Matrix API is healthy, PRICE also comes from
-        // Signal Matrix. Other price APIs are forbidden in this healthy state.
         let price=Number(data.price);
         let priceRaw=(data.price===undefined||data.price===null)?null:String(data.price).trim();
-        const previousPrice=Number(state.latestPrice);
-        if(Number.isFinite(price)&&price>0){
-            state.priceDirection=(Number.isFinite(previousPrice)&&price!==previousPrice)?(price>previousPrice?1:-1):state.priceDirection||0;
-            state.latestPrice=price;
-            state.latestPriceRaw=priceRaw;
+        try{
+            const unifiedPrice=await getUnifiedCryptoPrice(coin);
+            if(Number.isFinite(Number(unifiedPrice.price))&&Number(unifiedPrice.price)>0){
+                price=Number(unifiedPrice.price);
+                priceRaw=String(unifiedPrice.price);
+            }
+        }catch(priceError){
+            console.warn(`Unified crypto price failed for ${coin}, keeping Signal Matrix worker price:`,priceError);
         }
+        const previousPrice=Number(state.latestPrice);
+        state.priceDirection=(Number.isFinite(previousPrice)&&Number.isFinite(price)&&price>0)
+            ? (price>previousPrice?1:price<previousPrice?-1:0)
+            : 0;
+        state.latestPriceRaw=priceRaw;
+        state.latestPrice=Number.isFinite(price)&&price>0?price:null;
         state.latestUpdated=data.updated||new Date().toISOString();
+        rfkjSaveDisplayedSignals(index,timeframe,{
+            RF:rf, ST:st, KJ:kj,
+            RFPercent:rfPercent, STPercent:stPercent, KJPercent:kjPercent,
+            valid:true
+        });
+        /* Update cached header values after the final unified price is known. */
+        try{
+            const cachedDisplay=rfkjGetSignalDisplayCache(index);
+            if(cachedDisplay&&cachedDisplay.coin===String(coin).trim().toUpperCase()){
+                cachedDisplay.latestPrice=state.latestPrice;
+                cachedDisplay.latestPriceRaw=state.latestPriceRaw;
+                cachedDisplay.latestUpdated=state.latestUpdated;
+                cachedDisplay.latestDailyChangePercent=state.latestDailyChangePercent;
+                cachedDisplay.priceDirection=state.priceDirection;
+                rfkjWriteSignalDisplayCache(index,cachedDisplay);
+            }
+        }catch(e){}
         rfkjSetSelectionStatus(index);
         rfkjUpdateHeaderPrice(index);
-        if(String(timeframe)===String(rfkjLowestSelectedTimeframe(index))&&Number.isFinite(price)&&price>0){
+        /* Keep only successful values as the live cache. Never replace a good
+           Signal Matrix number with a dash during a transient worker failure. */
+        if(String(timeframe)===String(rfkjLowestSelectedTimeframe(index)) && Number.isFinite(price) && price>0){
             state.ultraRF=rf; state.ultraST=st; state.ultraKJ=kj;
             state.cachedLive={price,rawPrice:state.latestPriceRaw,rf,kj,st,savedAt:Date.now()};
             rfkjWriteLiveCache(index,state.cachedLive);
             rfkjRenderUltraCompact(false);
+            syncNativeWidgetSnapshot();
+        } else {
+            syncNativeWidgetSnapshot();
         }
-        syncNativeWidgetSnapshot();
-        rfkjSaveState();
         const old=state.previousSignals[timeframe];
         if(notify&&old){
             const changes=[];
@@ -14988,17 +15010,14 @@ async function rfkjFetchOne(index,timeframe,notify=true,runToken=null){
             for(const change of changes){
                 const colorType=change.value>0?"RFKJ_WHITE":"RFKJ_BLUE";
                 const colorText=change.value>0?"WHITE":"BLUE";
-                if(!stillRunning())return;
                 await rfkjSendNotification(index,`🔔 ${coin} • ${rfkjTimeframeLabel(timeframe)} • #${index}`,`${change.name} → ${colorText}`,colorType);
-                if(!stillRunning())return;
             }
         }
         state.previousSignals[timeframe]={RF:rf,KJ:kj,ST:st};
     }catch(error){
         console.warn(`Signal Matrix ${index}/${timeframe} failed`,error);
-        // Existing cached RF/ST/KJ remain rendered. Do not replace them with 0,
-        // dashes or invalid state.
-        setPageIssue(`rfkj:${index}:${timeframe}`,`Signal Matrix unavailable • keeping last signals`,`error`);
+        setPageIssue(`rfkj:${index}:${timeframe}`,`Worker unavailable • ${error.message||"request failed"}`,"error");
+        if(timeframe===state.latestTimeframe)rfkjSetStatus(index,`Worker unavailable • ${error.message||"request failed"}`,true);
     }
 }
 async function rfkjFetchSignal(index){
@@ -15007,15 +15026,13 @@ async function rfkjFetchSignal(index){
     // Never let a slow previous cycle block the next polling cycle.
     // Each worker URL already contains a cache-busting timestamp, so every
     // cycle asks the Worker for the newest available value.
-    const token=state.runToken;
     const timeframes=state.selectedTimeframes.slice();
-    await Promise.all(timeframes.map(tf=>rfkjFetchOne(index,tf,true,token)));
-    if(rfkjInstance(index)?.running && rfkjInstance(index)?.runToken===token)rfkjSaveState();
+    await Promise.all(timeframes.map(tf=>rfkjFetchOne(index,tf,true)));
+    rfkjSaveState();
 }
 function rfkjStart(index,sendStart=true){
     const s=rfkjInstance(index);
     if(!s||s.running)return;
-    s.runToken=(s.runToken||0)+1;
     s.running=true;
     const b=rfkjGet("rfkjStartStop",index);
     if(b){b.textContent="■ Stop Signal";b.classList.add("running");}
@@ -15031,7 +15048,6 @@ function rfkjStart(index,sendStart=true){
 function rfkjStop(index,sendStop=true){
     const s=rfkjInstance(index);
     if(!s)return;
-    s.runToken=(s.runToken||0)+1;
     s.running=false;
     if(s.timer){clearInterval(s.timer);s.timer=null;}
     const b=rfkjGet("rfkjStartStop",index);
@@ -15047,21 +15063,7 @@ function rfkjStop(index,sendStop=true){
     });
     s.previousSignals={};
     s.priceDirection=0;
-    s.latestPrice=null;
-    s.latestPriceRaw=null;
-    s.latestUpdated=null;
     s.latestDailyChangePercent=null;
-    s.cachedLive=null;
-    /* Stop means immediately blank: remove both display and live caches so a
-       later refresh can never resurrect stale Matrix values. */
-    try{
-        const display=rfkjReadSignalDisplayCache();
-        delete display[String(index)];
-        localStorage.setItem(RFKJ_SIGNAL_CACHE_KEY,JSON.stringify(display));
-        const live=rfkjReadLiveCache();
-        delete live[String(index)];
-        localStorage.setItem(RFKJ_LIVE_CACHE_KEY,JSON.stringify(live));
-    }catch(e){}
     rfkjClearIssues(index);
     rfkjSetStatus(index,"Signal stopped.");
     rfkjUpdateHeaderPrice(index);
@@ -15163,9 +15165,7 @@ function rfkjRestoreState(){
     (saved.matrices||[]).slice(0,3).forEach((m,i)=>{
         const idx=i+1,s=rfkjInstance(idx),coin=rfkjGet("rfkjCoin",idx),card=document.querySelector(`.rfkj-instance[data-rfkj-index="${idx}"]`);
         if(!s||!coin||!card)return;
-        /* A saved BTC selection is still a real selection. Never treat BTC as
-           an unselected/default value during restore. */
-        const isSelected = m.selectedCoin===true || !!m.coin;
+        const isSelected = m.selectedCoin===true || (idx!==1 && !!m.coin) || (idx===1 && !!m.coin && m.coin!=="BTC");
         coin.value=isSelected?(m.coin||"BTC"):"";
         if(isSelected)coin.dataset.userSelected="1";
         else delete coin.dataset.userSelected;
@@ -15176,21 +15176,9 @@ function rfkjRestoreState(){
         if(!s.selectedTimeframes.length)s.selectedTimeframes=["1"];
         card.querySelectorAll(".rfkj-timeframe").forEach(b=>b.classList.toggle("active",s.selectedTimeframes.includes(b.dataset.rfkjTime)));
         rfkjRenderSignalRows(idx);
-        /* Restore the last displayed values before restarting the poller so the
-           user sees the previous Matrix immediately after refresh. */
-        if(m.running){
-            const display=rfkjGetSignalDisplayCache(idx);
-            if(display){
-                rfkjRestoreDisplayedSignals(idx);
-            }else if(Number.isFinite(Number(m.latestPrice))&&Number(m.latestPrice)>0){
-                s.latestPrice=Number(m.latestPrice);
-                s.latestPriceRaw=m.latestPriceRaw??String(m.latestPrice);
-                s.latestUpdated=m.latestUpdated||null;
-                s.latestDailyChangePercent=Number.isFinite(Number(m.latestDailyChangePercent))?Number(m.latestDailyChangePercent):null;
-                s.priceDirection=Number(m.priceDirection)||0;
-                rfkjUpdateHeaderPrice(idx);
-            }
-        }
+        /* Only a Matrix saved in RUNNING state may restore its cached signal values.
+           STOPPED state must come back with inactive/empty Signal Boxes. */
+        if(m.running)rfkjRestoreDisplayedSignals(idx);
         rfkjSetSelectionStatus(idx);
         const custom=card.querySelector(".rfkj-compact-coin-picker");
         if(custom&&typeof custom._syncVisual==="function")custom._syncVisual();
@@ -15218,7 +15206,7 @@ const CROSSOVER_WORKER_URL = "https://signalmatrix.rxw1.workers.dev/";
 /* Cloudflare Crossover monitor: independent 15-second server-side checking. */
 const CROSSOVER_EMAIL_WORKER_URL = "https://crossoverworker.rxw1.workers.dev/";
 /* The email Worker is intentionally NOT read during startup. It is contacted only when M is toggled. */
-const CROSSOVER_POLL_MS = 2000;
+const CROSSOVER_POLL_MS = 5000;
 const CROSSOVER_COUNT = 4;
 const CROSSOVER_STATE_KEY = "crossoverState-v2";
 const CROSSOVER_SELECTION_KEY_PREFIX = "crossoverSelectedCoin-";
@@ -15614,31 +15602,6 @@ function crossoverNowText(date=new Date()){
     const d=date instanceof Date?date:new Date(date),pad=n=>String(n).padStart(2,"0");
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
-function crossoverPriceCacheKey(index){
-    return `crossoverLatestPrice-v1-${index}`;
-}
-function crossoverReadPriceCache(index){
-    try{
-        const raw=localStorage.getItem(crossoverPriceCacheKey(index));
-        if(!raw)return null;
-        const data=JSON.parse(raw);
-        const price=Number(data?.price);
-        if(!Number.isFinite(price)||price<=0)return null;
-        return {price,updated:data?.updated||null,direction:Number(data?.direction)||0};
-    }catch(e){return null;}
-}
-function crossoverWritePriceCache(index,s){
-    try{
-        const price=Number(s?.latestPrice);
-        if(!s?.running||!Number.isFinite(price)||price<=0)return;
-        localStorage.setItem(crossoverPriceCacheKey(index),JSON.stringify({
-            price,updated:s.latestUpdated||new Date().toISOString(),direction:Number(s.priceDirection)||0
-        }));
-    }catch(e){}
-}
-function crossoverClearPriceCache(index){
-    try{localStorage.removeItem(crossoverPriceCacheKey(index));}catch(e){}
-}
 function crossoverSaveState(){
     const data={
         version:1,
@@ -15658,8 +15621,6 @@ function crossoverSaveState(){
     try{
         localStorage.setItem(CROSSOVER_STATE_KEY,raw);
         crossoverInstances.forEach((item,i)=>{
-            if(item.running)crossoverWritePriceCache(i+1,item);
-            else crossoverClearPriceCache(i+1);
             const selected=String(item.running?(item.activeCoin||item.coin):item.coin||"").toUpperCase();
             if(selected && crossoverIsValidAsset(selected)){
                 crossoverPersistSelection(i+1,selected);
@@ -15684,35 +15645,43 @@ function crossoverSaveState(){
 }
 function crossoverReadState(){
     /*
-     * UI state is LOCAL-FIRST. The selector/Start state saved by this WebView
-     * is authoritative for what must be shown after a refresh. The native
-     * state can be older (for example it may still contain BTC), so it must
-     * never overwrite a newer local selection such as POL or GOLD.
-     *
-     * Native state is used only as a fallback when there is no local Crossover
-     * state at all. This also keeps the fast-startup path independent of the
-     * remote Crossover Worker.
+     * Local state remains authoritative for user choices and controls. Merge
+     * only live runtime values from the native checker, because it continues
+     * monitoring while the app is minimized/closed. Otherwise, when the app is
+     * reopened, stale local prices can trigger the same Crossover notification
+     * a second time. Coin, target, running state, and preferences stay local-first.
      */
+    let local=null;
     try{
         const raw=localStorage.getItem(CROSSOVER_STATE_KEY);
         if(raw){
-            const local=JSON.parse(raw);
-            if(local&&Array.isArray(local.crossovers))return local;
+            const parsed=JSON.parse(raw);
+            if(parsed&&Array.isArray(parsed.crossovers))local=parsed;
         }
     }catch(e){console.warn("Crossover local state read failed",e);}
+
+    let matrix=null;
     try{
         if(window.AndroidNotifications&&typeof window.AndroidNotifications.getSignalMatrixStateJson==="function"){
             const raw=window.AndroidNotifications.getSignalMatrixStateJson();
-            const matrix=raw?JSON.parse(raw):null;
-            if(matrix&&Array.isArray(matrix.crossovers)){
-                return {
-                    version:1,
-                    count:Number(matrix.crossoverCount||matrix.count||1),
-                    crossovers:matrix.crossovers
-                };
-            }
+            const parsed=raw?JSON.parse(raw):null;
+            if(parsed&&Array.isArray(parsed.crossovers))matrix=parsed;
         }
     }catch(e){console.warn("Crossover native state read failed",e);}
+
+    if(local&&matrix){
+        for(let i=0;i<Math.min(4,local.crossovers.length,matrix.crossovers.length);i++){
+            const webItem=local.crossovers[i],nativeItem=matrix.crossovers[i];
+            if(!webItem||!nativeItem)continue;
+            // Runtime-only merge: preserves settings while adopting background progress.
+            for(const key of ["previousPrice","latestPrice","percentageAlertTimes"]){
+                if(nativeItem[key]!==undefined&&nativeItem[key]!==null)webItem[key]=nativeItem[key];
+            }
+        }
+        return local;
+    }
+    if(local)return local;
+    if(matrix)return {version:1,count:Number(matrix.crossoverCount||matrix.count||1),crossovers:matrix.crossovers};
     return null;
 }
 function crossoverUpdateUI(index){
@@ -15737,19 +15706,12 @@ function crossoverUpdateUI(index){
         }
         if(liveSymbol)liveSymbol.textContent=assetLabel;
     }
-    /*
-     * Price visibility follows the Crossover lifecycle:
-     * - RUNNING: immediately use the last cached latestPrice, then replace it
-     *   as soon as crossoverFetchOne receives a fresh quote.
-     * - STOPPED: never display a stale cached/live price.
-     */
     const price=Number(s.latestPrice),target=Number(s.running?s.activeTarget:s.target);
-    const hasLivePrice=s.running&&Number.isFinite(price)&&price>0;
     if(priceEl){
-        priceEl.textContent=hasLivePrice?crossoverPriceText(price,effectiveCoin):"";
+        priceEl.textContent=Number.isFinite(price)&&price>0?crossoverPriceText(price,effectiveCoin):"-";
         priceEl.classList.remove("price-up","price-down");
-        if(hasLivePrice&&s.priceDirection>0)priceEl.classList.add("price-up");
-        else if(hasLivePrice&&s.priceDirection<0)priceEl.classList.add("price-down");
+        if(s.priceDirection>0)priceEl.classList.add("price-up");
+        else if(s.priceDirection<0)priceEl.classList.add("price-down");
     }
     if(distance){
         distance.classList.remove("above","below","invalid");
@@ -15758,7 +15720,7 @@ function crossoverUpdateUI(index){
             distance.textContent=`${pct>=0?"+":""}${pct.toFixed(2)}% • ${price>=target?"Above":"Below"} target • Target: ${assetLabel} ${crossoverPriceText(target,effectiveCoin)}`;
             distance.classList.add(price>=target?"above":"below");
         }else{
-            distance.textContent=`Current value — • Target: ${assetLabel} ${Number.isFinite(target)?crossoverPriceText(target,effectiveCoin):"—"}`;
+            distance.textContent=`Current value ${Number.isFinite(price)?crossoverPriceText(price,effectiveCoin):"—"} • Target: ${assetLabel} ${Number.isFinite(target)?crossoverPriceText(target,effectiveCoin):"—"}`;
             distance.classList.add("invalid");
         }
     }
@@ -15779,430 +15741,110 @@ async function crossoverSendAlert(index,direction,price,target){
     try{await sendDashboardNotification(title,message,crossoverNotifyAssetIcon(effectiveCoin),"CROSSOVER");}catch(e){console.warn("Crossover notification failed",e);}
     /* Crossover email is sent exclusively by CROSSOVER_EMAIL_WORKER_URL. */
 }
-/*
- * Crossover-specific crypto pricing.
- *
- * IMPORTANT: Crossover must NOT inherit the sticky source state used by the
- * rest of the dashboard. Every Crossover quote starts with the live MEXC
- * spot ticker. CoinGecko/Nestex are used only when MEXC itself cannot return
- * a valid price. This guarantees that a healthy MEXC quote always wins, even
- * if a previous session had fallen back to another provider.
- */
-
-/*
- * REAL-TIME CROSSOVER PRICE ENGINE
- *
- * WebSocket is the primary path for Crossover because REST polling cannot
- * guarantee the newest trade. Binance and Bybit public trade streams are
- * used as independent live feeds. REST is retained as a safety fallback.
- *
- * The first valid tick is also pushed directly into the Crossover card and
- * through crossoverEvaluateLivePrice(), so Cross Over is evaluated on the
- * trade itself instead of waiting for the 5-second timer.
- */
-const crossoverRealtimeStreams = new Map();
-
-function crossoverRealtimeNormalize(coin){
-    return String(coin||"").replace(/[-_\/]/g,"").replace(/USDT$/i,"").toUpperCase();
+function crossoverPriceCacheKey(asset){
+    return `crossoverPriceCache-v1:${String(asset||"").trim().toUpperCase()}`;
 }
-
-function crossoverRealtimeStop(coin){
-    const key=crossoverRealtimeNormalize(coin);
-    const item=crossoverRealtimeStreams.get(key);
-    if(!item)return;
-    try{item.binance?.close();}catch(e){}
-    try{item.bybit?.close();}catch(e){}
-    crossoverRealtimeStreams.delete(key);
+function crossoverReadCachedPrice(asset){
+    try{
+        const raw=localStorage.getItem(crossoverPriceCacheKey(asset));
+        const saved=raw?JSON.parse(raw):null;
+        const price=Number(saved?.price);
+        if(!Number.isFinite(price)||price<=0)return null;
+        return {price,updated:saved.updated||null};
+    }catch(e){return null;}
 }
-
-function crossoverRealtimeApply(coin,price,source){
-    const key=crossoverRealtimeNormalize(coin);
+function crossoverWriteCachedPrice(asset,price,updated){
     const value=Number(price);
     if(!Number.isFinite(value)||value<=0)return;
-
-    let item=crossoverRealtimeStreams.get(key);
-    if(!item){
-        item={};
-        crossoverRealtimeStreams.set(key,item);
-    }
-
-    const now=Date.now();
-    item.price=value;
-    item.source=source;
-    item.time=now;
-    item.connected=true;
-
-    /*
-     * Apply the tick immediately to every running Crossover using this coin.
-     * This bypasses the REST polling interval completely.
-     */
-    crossoverInstances.forEach(s=>{
-        if(!s||!s.running)return;
-        const effective=crossoverRealtimeNormalize(s.activeCoin||s.coin);
-        if(effective!==key)return;
-        crossoverProcessLivePrice(s.index,value,source,now,true).catch(error=>{
-            console.warn(`Crossover realtime ${s.index} processing failed`,error);
-        });
-    });
-}
-
-function crossoverRealtimeOpenBinance(coin){
-    const key=crossoverRealtimeNormalize(coin);
-    const item=crossoverRealtimeStreams.get(key)||{};
-    const symbol=key.toLowerCase()+"usdt";
-    const url=`wss://stream.binance.com:9443/ws/${encodeURIComponent(symbol)}@trade`;
     try{
-        const ws=new WebSocket(url);
-        item.binance=ws;
-        item.binanceOpenedAt=Date.now();
-        crossoverRealtimeStreams.set(key,item);
-
-        ws.onopen=()=>{
-            item.binanceConnected=true;
-            item.binanceOpenedAt=Date.now();
-        };
-        ws.onmessage=event=>{
-            try{
-                const payload=JSON.parse(event.data);
-                const price=Number(payload?.p);
-                if(Number.isFinite(price)&&price>0)crossoverRealtimeApply(key,price,"binance-ws");
-            }catch(e){}
-        };
-        ws.onerror=()=>{item.binanceConnected=false;};
-        ws.onclose=()=>{
-            item.binanceConnected=false;
-            /*
-             * Reconnect unless no Crossover is using this asset anymore.
-             * A short delay prevents a reconnect storm during network loss.
-             */
-            setTimeout(()=>{
-                const current=crossoverRealtimeStreams.get(key);
-                if(!current)return;
-                if(crossoverInstances.some(s=>s?.running&&crossoverRealtimeNormalize(s.activeCoin||s.coin)===key)){
-                    crossoverRealtimeOpenBinance(key);
-                }
-            },1500);
-        };
-    }catch(error){
-        console.warn(`Binance WebSocket unavailable for ${key}`,error);
-    }
+        localStorage.setItem(crossoverPriceCacheKey(asset),JSON.stringify({price:value,updated:updated||new Date().toISOString()}));
+    }catch(e){}
 }
-
-function crossoverRealtimeOpenBybit(coin){
-    const key=crossoverRealtimeNormalize(coin);
-    const item=crossoverRealtimeStreams.get(key)||{};
-    if(item.bybit && (item.bybit.readyState===0||item.bybit.readyState===1))return;
-
-    try{
-        const ws=new WebSocket("wss://stream.bybit.com/v5/public/spot");
-        item.bybit=ws;
-        item.bybitOpenedAt=Date.now();
-        crossoverRealtimeStreams.set(key,item);
-
-        ws.onopen=()=>{
-            item.bybitConnected=true;
-            try{
-                ws.send(JSON.stringify({
-                    op:"subscribe",
-                    args:[`publicTrade.${key}USDT`]
-                }));
-            }catch(e){}
-        };
-        ws.onmessage=event=>{
-            try{
-                const payload=JSON.parse(event.data);
-                const rows=Array.isArray(payload?.data)?payload.data:[];
-                for(const row of rows){
-                    const price=Number(row?.p);
-                    if(Number.isFinite(price)&&price>0){
-                        crossoverRealtimeApply(key,price,"bybit-ws");
-                        break;
-                    }
-                }
-            }catch(e){}
-        };
-        ws.onerror=()=>{item.bybitConnected=false;};
-        ws.onclose=()=>{
-            item.bybitConnected=false;
-            setTimeout(()=>{
-                const current=crossoverRealtimeStreams.get(key);
-                if(!current)return;
-                if(crossoverInstances.some(s=>s?.running&&crossoverRealtimeNormalize(s.activeCoin||s.coin)===key)){
-                    crossoverRealtimeOpenBybit(key);
-                }
-            },2000);
-        };
-    }catch(error){
-        console.warn(`Bybit WebSocket unavailable for ${key}`,error);
-    }
-}
-
-function crossoverRealtimeEnsure(coin){
-    const key=crossoverRealtimeNormalize(coin);
-    if(!key||crossoverIsSpecialAsset(key)||key==="USD")return;
-    let item=crossoverRealtimeStreams.get(key);
-    if(!item){
-        item={createdAt:Date.now()};
-        crossoverRealtimeStreams.set(key,item);
-        crossoverRealtimeOpenBinance(key);
-        /*
-         * Keep a second independent stream alive. If Binance is unavailable
-         * in the user's network, Bybit can still provide live trade ticks.
-         */
-        crossoverRealtimeOpenBybit(key);
-    }
-}
-
-function crossoverRealtimeGet(coin){
-    const key=crossoverRealtimeNormalize(coin);
-    const item=crossoverRealtimeStreams.get(key);
-    if(!item||!Number.isFinite(Number(item.price)))return null;
-    const age=Date.now()-Number(item.time||0);
-    return age<=10000 ? {
-        price:Number(item.price),
-        source:item.source||"realtime-ws",
-        time:Number(item.time||Date.now())
-    } : null;
-}
-
-async function crossoverProcessLivePrice(index,price,source,time,notify,allowDuringRequest=false){
-    const s=crossoverInstance(index);
-    if(!s||!s.running)return false;
-    if(s.requestInProgress&&!allowDuringRequest)return false;
-
-    const target=Number(s.activeTarget);
-    if(!Number.isFinite(target)||target<=0)return false;
-
-    const value=Number(price);
-    if(!Number.isFinite(value)||value<=0)return false;
-
-    const old=Number(s.previousPrice);
-    if(Number.isFinite(old)&&old===value){
-        s.latestPrice=value;
-        s.latestUpdated=new Date(time||Date.now()).toISOString();
-        s.priceDirection=0;
-        crossoverUpdateUI(index);
-        return true;
-    }
-
-    const suppressAlertsAfterOffline=!!s.wasOffline;
-    s.wasOffline=false;
-    clearPageIssue(`crossover:${index}`);
-
-    s.priceDirection=Number.isFinite(old)
-        ? (value>old?1:value<old?-1:0)
-        : 0;
-    s.latestPrice=value;
-    s.latestUpdated=new Date(time||Date.now()).toISOString();
-
-    if(notify&&!suppressAlertsAfterOffline&&Number.isFinite(old)&&old!==value){
-        const crossedUp=old<target&&value>=target;
-        const crossedDown=old>target&&value<=target;
-        if(crossedUp||crossedDown){
-            const direction=crossedUp?1:-1;
-            s.lastCrossAt=new Date().toISOString();
-            s.lastCrossDirection=direction;
-            const status=crossoverGet("crossoverStatus",index);
-            if(status)status.textContent=`Crossed ${direction>0?"UP ↑":"DOWN ↓"} • ${crossoverNowText(s.lastCrossAt)}`;
-            if(s.notificationEnabled){
-                await crossoverSendAlert(index,direction,value,target);
-            }
-        }
-
-        if(s.notificationEnabled){
-            const levels=crossoverPercentageLevels(old,value,target);
-            for(const item of levels){
-                await crossoverSendPercentageAlert(index,item.level,value,target,item.direction);
-            }
-        }
-    }
-
-    s.previousPrice=value;
-    crossoverWritePriceCache(index,s);
-    crossoverUpdateUI(index);
-    crossoverSaveState();
-    return true;
-}
-
-async function crossoverFetchMexcDirect(coin){
-    const normalized=String(coin||"").replace(/[-_\/]/g,"").replace(/USDT$/i,"").toUpperCase();
-    const symbol=cryptoSpotSymbol(normalized);
-
-    /*
-       Crossover MEXC source is intentionally DIRECT ONLY.
-       No CORS proxy, no dashboard proxy, no allorigins, no worker and no
-       cache-busting URL rewrite. The requested URL is exactly the official
-       MEXC spot ticker endpoint for the selected <SYMBOL>USDT pair.
-    */
-    const apiUrl=`https://api.mexc.com/api/v3/ticker/price?symbol=${encodeURIComponent(symbol)}`;
-    const requestOptions={
-        method:"GET",
-        headers:{
-            "Accept":"application/json",
-            "Cache-Control":"no-cache",
-            "Pragma":"no-cache"
-        },
-        cache:"no-store"
-    };
-
-    let payload=null;
-
-    /* Android: direct to api.mexc.com through the native network stack. */
-    try{
-        if(window.AndroidNotifications&&typeof window.AndroidNotifications.fetchExternalMarketJson==="function"){
-            const body=window.AndroidNotifications.fetchExternalMarketJson(apiUrl);
-            if(body)payload=JSON.parse(body);
-        }
-    }catch(error){
-        console.warn(`Crossover direct MEXC request failed for ${symbol}`,error);
-    }
-
-    /* Browser/PWA: direct fetch to api.mexc.com only. */
-    if(!payload){
-        try{
-            const response=await fetchWithTimeout(apiUrl,requestOptions,10000);
-            if(!response.ok)throw new Error(`MEXC HTTP ${response.status}`);
-            payload=await response.json();
-        }catch(error){
-            throw error;
-        }
-    }
-
-    if(Array.isArray(payload))payload=payload.find(item=>item&&typeof item==="object")||null;
-    const returnedSymbol=String(payload?.symbol||"").replace(/[-_\/]/g,"").toUpperCase();
-    if(returnedSymbol&&returnedSymbol!==symbol)throw new Error(`MEXC symbol mismatch: expected ${symbol}, got ${returnedSymbol}`);
-    const price=Number(payload?.price??payload?.lastPrice);
-    if(!Number.isFinite(price)||price<=0)throw new Error(`MEXC returned invalid price for ${symbol}`);
-
-    return {price,previousClose:null,changePct:null,source:"mexc",time:Date.now(),offline:false};
-}
-
-async function crossoverFetchCryptoPrice(coin){
-    const normalized=crossoverRealtimeNormalize(coin);
-
-    /*
-     * First choice: an actual trade pushed by WebSocket. This is the newest
-     * observed market price and avoids the latency/cache behavior of REST.
-     */
-    crossoverRealtimeEnsure(normalized);
-    const live=crossoverRealtimeGet(normalized);
-    if(live){
-        return {
-            price:live.price,
-            previousClose:null,
-            changePct:null,
-            source:live.source,
-            time:live.time
-        };
-    }
-
-    /*
-     * If the live socket has not produced a tick yet, keep the REST failover
-     * chain. MEXC is still attempted, then the existing secondary providers.
-     */
-    try{
-        return await crossoverFetchMexcDirect(normalized);
-    }catch(mexcError){
-        console.warn(`Crossover MEXC unavailable for ${normalized}; using REST fallback`,mexcError);
-    }
-
-    const fallbackSources=CRYPTO_PRICE_SOURCES.filter(source=>source.id!=="mexc");
-    let lastError=null;
-    for(const source of fallbackSources){
-        try{
-            const result=await cryptoFetchSource(source,normalized);
-            if(Number.isFinite(Number(result?.price))&&Number(result.price)>0)return result;
-        }catch(error){
-            lastError=error;
-            console.warn(`Crossover fallback ${source.id} failed for ${normalized}`,error);
-        }
-    }
-    throw lastError||new Error(`No price source available for ${normalized}`);
-}
-
 async function crossoverFetchOne(index,notify=true){
     const s=crossoverInstance(index);
     if(!s||!s.running||s.requestInProgress)return;
-
     const target=Number(s.activeTarget);
     if(!Number.isFinite(target)||target<=0){
         const status=crossoverGet("crossoverStatus",index);
         if(status)status.textContent="Enter a valid target price";
         return;
     }
-
+    s.requestInProgress=true;
     const effectiveCoin=s.activeCoin||s.coin;
-
-    /*
-     * For crypto, consume the live WebSocket cache first. The WebSocket
-     * callback already evaluates crossings immediately; this timer is only
-     * a watchdog/fallback in case no live tick has arrived recently.
-     */
-    if(!crossoverIsSpecialAsset(effectiveCoin)&&effectiveCoin!=="USD"){
-        crossoverRealtimeEnsure(effectiveCoin);
-        const live=crossoverRealtimeGet(effectiveCoin);
-        if(live){
-            await crossoverProcessLivePrice(index,live.price,live.source,live.time,notify,true);
-            return;
+    /* Cache-first paint: after a manual page refresh, show the last successful
+       Crossover quote immediately while the live request is being refreshed. */
+    if(!Number.isFinite(Number(s.latestPrice))||Number(s.latestPrice)<=0){
+        const cached=crossoverReadCachedPrice(effectiveCoin);
+        if(cached){
+            s.latestPrice=cached.price;
+            s.latestUpdated=cached.updated||s.latestUpdated;
+            crossoverUpdateUI(index);
         }
     }
-
-    s.requestInProgress=true;
     try{
         let price;
         let data={};
-
-        if(effectiveCoin==="USD"){
+        if(effectiveCoin==="USD") {
             const liveEl=document.getElementById("overallLive");
             price=Number(String(liveEl?.textContent||"").replace(/,/g,""));
             if(!Number.isFinite(price)||price<=0){
-                try{
-                    const raw=localStorage.getItem(CROSSOVER_STATE_KEY);
-                    const saved=raw?JSON.parse(raw):null;
-                    price=Number(saved?.liveAverage);
-                }catch(e){}
+                try{const raw=localStorage.getItem(CROSSOVER_STATE_KEY);const saved=raw?JSON.parse(raw):null;price=Number(saved?.liveAverage);}catch(e){}
             }
             if(!Number.isFinite(price)||price<=0)throw new Error("Live Average unavailable");
-            data={updated:new Date().toISOString(),source:"dashboard-live"};
-        }else if(crossoverIsSpecialAsset(effectiveCoin)){
+            data={updated:new Date().toISOString()};
+        } else if(crossoverIsSpecialAsset(effectiveCoin)) {
             const special=await crossoverFetchSpecialPrice(effectiveCoin);
             data=special||{};
             price=Number(special?.price);
-        }else{
-            const crossoverPrice=await crossoverFetchCryptoPrice(effectiveCoin);
-            data={
-                updated:new Date(crossoverPrice.time||Date.now()).toISOString(),
-                price:crossoverPrice.price,
-                source:crossoverPrice.source
-            };
-            price=Number(crossoverPrice.price);
+        } else {
+            const unifiedPrice=await getUnifiedCryptoPrice(effectiveCoin);
+            data={updated:new Date(unifiedPrice.time).toISOString(),price:unifiedPrice.price,source:unifiedPrice.source};
+            price=Number(unifiedPrice.price);
         }
-
         if(!Number.isFinite(price)||price<=0)throw new Error("Invalid current price");
-
-        /*
-         * The live processor owns crossing state. Re-use it here for REST
-         * fallback so both paths behave identically.
-         */
-        await crossoverProcessLivePrice(
-            index,
-            price,
-            data.source||"rest",
-            Date.parse(data.updated)||Date.now(),
-            notify,
-            true
-        );
+        clearPageIssue(`crossover:${index}`);
+        const old=Number(s.previousPrice);
+        const suppressAlertsAfterOffline=!!s.wasOffline;
+        s.wasOffline=false;
+        s.priceDirection=(Number.isFinite(old)&&Number.isFinite(price)&&price>0)
+            ? (price>old?1:price<old?-1:0)
+            : 0;
+        s.latestPrice=price;
+        s.latestUpdated=data.updated||new Date().toISOString();
+        crossoverWriteCachedPrice(effectiveCoin,price,s.latestUpdated);
+        if(notify&&!suppressAlertsAfterOffline&&Number.isFinite(old)&&old!==price){
+            const crossedUp=old<target&&price>=target;
+            const crossedDown=old>target&&price<=target;
+            if(crossedUp||crossedDown){
+                const direction=crossedUp?1:-1;
+                s.lastCrossAt=new Date().toISOString();
+                s.lastCrossDirection=direction;
+                const status=crossoverGet("crossoverStatus",index);
+                if(status)status.textContent=`Crossed ${direction>0?"UP ↑":"DOWN ↓"} • ${crossoverNowText(s.lastCrossAt)}`;
+                if(s.notificationEnabled){
+                    await crossoverSendAlert(index,direction,price,target);
+                }
+            }
+            if(s.notificationEnabled){
+                const levels=crossoverPercentageLevels(old,price,target);
+                for(const item of levels)await crossoverSendPercentageAlert(index,item.level,price,target,item.direction);
+            }
+        }
+        s.previousPrice=price;
+        crossoverUpdateUI(index);
+        crossoverSaveState();
     }catch(error){
         s.wasOffline=true;
-        setPageIssue(`crossover:${index}`,`Price source unavailable • ${error.message||"request failed"}`,"error");
+        if(!Number.isFinite(Number(s.latestPrice))||Number(s.latestPrice)<=0){
+            const cached=crossoverReadCachedPrice(effectiveCoin);
+            if(cached){s.latestPrice=cached.price;s.latestUpdated=cached.updated||s.latestUpdated;crossoverUpdateUI(index);}
+        }
+        setPageIssue(`crossover:${index}`,`Worker unavailable • ${error.message||"request failed"}`,"error");
         console.warn(`Crossover ${index} failed`,error);
         const status=crossoverGet("crossoverStatus",index);
-        if(status)status.textContent=`Price source unavailable • ${error.message||"request failed"}`;
-    }finally{
-        s.requestInProgress=false;
-    }
+        if(status)status.textContent=`Worker unavailable • ${error.message||"request failed"}`;
+    }finally{s.requestInProgress=false;}
 }
-
 function crossoverStart(index,sendStart=true,restoreEmail=false){
     const s=crossoverInstance(index);
     const target=Number(s.target);
@@ -16223,7 +15865,6 @@ function crossoverStart(index,sendStart=true,restoreEmail=false){
        crypto Crossover; it is restored separately and re-synced with the Worker. */
     if(!restoreEmail)s.emailEnabled=false;
     crossoverPersistSelection(index,s.activeCoin);
-    if(!crossoverIsSpecialAsset(s.activeCoin)&&s.activeCoin!=="USD")crossoverRealtimeEnsure(s.activeCoin);
     /* Keep the last saved price so the first new quote can be compared to it. */
     if(!Number.isFinite(Number(s.previousPrice)))s.previousPrice=null;
     s.priceDirection=0;
@@ -16260,21 +15901,11 @@ function crossoverStop(index,sendStop=true){
     const stoppedCoin=s.activeCoin||s.coin;
     s.activeCoin=null;
     s.activeTarget=null;
-    /*
-     * STOP means the live Crossover price must disappear completely.
-     * The running state is the authority for showing the cached/live price.
-     * Clear the cached quote here so a stopped Crossover can never resurrect
-     * an old number on the next refresh.
-     */
-    s.previousPrice=null;
-    s.latestPrice=null;
-    s.latestUpdated=null;
-    crossoverClearPriceCache(index);
-    s.lastCrossAt=null;
-    s.lastCrossDirection=0;
-    s.priceDirection=0;
+    if(s.coin!==stoppedCoin){
+        s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;
+        s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
+    }
     if(s.timer){clearInterval(s.timer);s.timer=null;}
-    if(stoppedCoin&&!crossoverInstances.some(x=>x!==s&&x?.running&&(x.activeCoin||x.coin)===stoppedCoin))crossoverRealtimeStop(stoppedCoin);
     const b=crossoverGet("crossoverStartStop",index);
     if(b){b.textContent="▶ Start Crossover";b.classList.remove("running");}
     const status=crossoverGet("crossoverStatus",index);
@@ -16349,10 +15980,8 @@ function crossoverApplyState(saved){
             s.target=Number(s.activeTarget);
         }
         s.previousPrice=Number.isFinite(Number(m.previousPrice))?Number(m.previousPrice):null;
-        const cachedPrice=crossoverReadPriceCache(idx);
-        s.latestPrice=cachedPrice?.price??(Number.isFinite(Number(m.latestPrice))?Number(m.latestPrice):null);
-        s.latestUpdated=cachedPrice?.updated||m.latestUpdated||null;
-        if(cachedPrice)s.priceDirection=cachedPrice.direction;
+        s.latestPrice=Number.isFinite(Number(m.latestPrice))?Number(m.latestPrice):null;
+        s.latestUpdated=m.latestUpdated||null;
         s.lastCrossAt=m.lastCrossAt||null;
         s.lastCrossDirection=Number(m.lastCrossDirection)||0;
         s.priceDirection=Number(m.priceDirection)||0;
@@ -16378,38 +16007,17 @@ function crossoverApplyState(saved){
                and becomes active only after Stop → Start. */
             const activeCoin=s.activeCoin||s.coin;
             s.coin=activeCoin;
-            /* IMPORTANT: do not dispatch the selector change event before Start.
-               The change handler intentionally clears live price while a slot is
-               stopped. On refresh that used to erase the cached online price just
-               before crossoverStart() restored the running slot. */
             if(coin){
                 coin.value=activeCoin;
                 coin.dataset.userSelected="1";
+                /* The visible custom picker listens to change; without this,
+                   its label can remain on BTC after a refresh. */
+                coin.dispatchEvent(new Event("change",{bubbles:true}));
             }
-            const restoredCachedPrice=s.latestPrice;
-            const restoredCachedUpdated=s.latestUpdated;
-            const restoredCachedDirection=s.priceDirection;
             const savedEmailEnabled=!!s.emailEnabled;
             crossoverStart(idx,false,true);
             s.coin=activeCoin;
             s.emailEnabled=savedEmailEnabled&&crossoverIsCryptoEmailAsset(s.activeCoin||s.coin);
-            /* Restore the cached quote after Start as the first visible value.
-               The polling request may replace it immediately with a fresh quote. */
-            if(Number.isFinite(Number(restoredCachedPrice))&&Number(restoredCachedPrice)>0){
-                s.latestPrice=Number(restoredCachedPrice);
-                s.latestUpdated=restoredCachedUpdated||s.latestUpdated||null;
-                s.priceDirection=Number(restoredCachedDirection)||0;
-                crossoverWritePriceCache(idx,s);
-            }
-            /* Refresh the custom picker only after running=true, so its change
-               handler cannot clear the restored price. */
-            if(coin){
-                coin.value=activeCoin;
-                coin.dataset.userSelected="1";
-                coin.dispatchEvent(new Event("change",{bubbles:true}));
-                s.coin=activeCoin;
-                s.activeCoin=activeCoin;
-            }
             crossoverUpdateMailButton(idx);
             crossoverSaveMailPrefs();
             crossoverSaveState();
