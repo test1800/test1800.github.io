@@ -15212,6 +15212,22 @@ const CROSSOVER_POLL_MS = 5000;
 const CROSSOVER_COUNT = 4;
 const CROSSOVER_STATE_KEY = "crossoverState-v2";
 const CROSSOVER_SELECTION_KEY_PREFIX = "crossoverSelectedCoin-";
+const CROSSOVER_LAST_CROSS_KEY_PREFIX = "crossoverLastCross-";
+function crossoverSaveLastCross(index, timestamp, direction){
+    try{
+        const key=`${CROSSOVER_LAST_CROSS_KEY_PREFIX}${index}`;
+        if(timestamp) localStorage.setItem(key,JSON.stringify({timestamp,direction:Number(direction)||0}));
+        else localStorage.removeItem(key);
+    }catch(e){}
+}
+function crossoverReadLastCross(index){
+    try{
+        const raw=localStorage.getItem(`${CROSSOVER_LAST_CROSS_KEY_PREFIX}${index}`);
+        if(!raw)return null;
+        const saved=JSON.parse(raw);
+        return saved&&saved.timestamp&&Number.isFinite(new Date(saved.timestamp).getTime())?saved:null;
+    }catch(e){return null;}
+}
 const CROSSOVER_COINS = ["BTC","BNB","ETH","DOGE","ADA","SOL","ONE","AVAX","POL","TRX","USD"];
 const CROSSOVER_COMMODITY_ASSETS = {
     GOLD:{label:"GOLD", apiSymbol:"XAUUSD", iconClass:"gold", iconText:"Au"},
@@ -15832,6 +15848,7 @@ async function crossoverFetchOne(index,notify=true){
                 const direction=crossedUp?1:-1;
                 s.lastCrossAt=new Date().toISOString();
                 s.lastCrossDirection=direction;
+                crossoverSaveLastCross(index,s.lastCrossAt,direction);
                 const status=crossoverGet("crossoverStatus",index);
                 if(status){
                     status.textContent=crossoverLastCrossLabel(s.lastCrossAt,direction);
@@ -15889,6 +15906,7 @@ function crossoverStart(index,sendStart=true,restoreEmail=false){
     if(!restoreEmail){
         s.lastCrossAt=null;
         s.lastCrossDirection=0;
+        crossoverSaveLastCross(index,null,0);
     }
     const b=crossoverGet("crossoverStartStop",index);
     if(b){b.textContent="■ Stop Crossover";b.classList.add("running");}
@@ -15932,6 +15950,7 @@ function crossoverStop(index,sendStop=true){
        starts clean and records a new timestamp only after a real crossing. */
     s.lastCrossAt=null;
     s.lastCrossDirection=0;
+    crossoverSaveLastCross(index,null,0);
     const status=crossoverGet("crossoverStatus",index);
     if(status){status.textContent="";status.removeAttribute("title");}
     crossoverUpdateNotificationButton(index);
@@ -16006,8 +16025,10 @@ function crossoverApplyState(saved){
         s.previousPrice=Number.isFinite(Number(m.previousPrice))?Number(m.previousPrice):null;
         s.latestPrice=Number.isFinite(Number(m.latestPrice))?Number(m.latestPrice):null;
         s.latestUpdated=m.latestUpdated||null;
-        s.lastCrossAt=m.lastCrossAt||null;
-        s.lastCrossDirection=Number(m.lastCrossDirection)||0;
+        const savedLastCross=crossoverReadLastCross(idx);
+        s.lastCrossAt=m.lastCrossAt||savedLastCross?.timestamp||null;
+        s.lastCrossDirection=Number(m.lastCrossDirection)||Number(savedLastCross?.direction)||0;
+        if(s.lastCrossAt)crossoverSaveLastCross(idx,s.lastCrossAt,s.lastCrossDirection);
         s.priceDirection=Number(m.priceDirection)||0;
         s.notificationEnabled=!!m.notificationEnabled;
         /* The dedicated Email preference is authoritative.  Do not let an
