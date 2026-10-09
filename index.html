@@ -7011,6 +7011,29 @@ function syncNativeWidgetSnapshot(){
                 }
             }catch(e){}
 
+            // If no Signal Matrix is active, feed the first active Crossover to the widget.
+            // Crossover fallback intentionally has no direction arrows.
+            if(!signalHtml){
+                try{
+                    const crossovers=Array.isArray(crossoverInstances)?crossoverInstances:[];
+                    for(const cross of crossovers){
+                        if(!cross || !cross.running) continue;
+                        const coin=String(cross.activeCoin||cross.coin||"").trim().toUpperCase();
+                        let price=Number(cross.latestPrice);
+                        let priceText="";
+                        if(Number.isFinite(price)&&price>0){
+                            priceText=typeof crossoverPriceText==="function"?crossoverPriceText(price,coin):String(price);
+                        }else{
+                            priceText=document.querySelector(`#crossoverLive${cross.index} .crossover-live-price`)?.textContent?.trim()||"";
+                        }
+                        if(coin && priceText && priceText!=="-"){
+                            signalHtml=`${coin} ${priceText}`;
+                            break;
+                        }
+                    }
+                }catch(e){}
+            }
+
             let globalAsset={type:"",symbol:"",price:"-",direction:0};
             try{
                 const selected=JSON.parse(localStorage.getItem(GLOBAL_PULSE_COMPACT_ASSET_KEY)||"null");
@@ -12805,8 +12828,9 @@ const MEXC_SPOT_TICKER =
    Unified crypto price failover.
    Source order is sticky per coin:
    1) MEXC spot ticker (primary)
-   2) CoinGecko simple/price
-   3) Nestex CG ticker
+   2) Binance spot ticker
+   3) CoinGecko simple/price
+   4) Nestex CG ticker
    Once a source works, subsequent requests use that source directly until
    it fails. We do NOT walk the whole chain on every refresh.
 */
@@ -12816,6 +12840,10 @@ const CRYPTO_PRICE_SOURCES = [
     {
         id: "mexc",
         url: coin => `https://api.mexc.com/api/v3/ticker/price?symbol=${encodeURIComponent(cryptoSpotSymbol(coin))}`
+    },
+    {
+        id: "binance",
+        url: coin => `https://api.binance.com/api/v3/ticker/price?symbol=${encodeURIComponent(cryptoSpotSymbol(coin))}`
     },
     {
         id: "coingecko",
@@ -12893,34 +12921,27 @@ async function cryptoFetchSource(source, coin) {
        Android still uses the native bridge first inside fetchApiWithProxyFallback.
     */
     let response;
-    if (source.id === "mexc") {
+    if (source.id === "mexc" || source.id === "binance") {
         const encoded = encodeURIComponent(apiUrl);
-        const mexcUrls = [
+        const exchangeName = source.id.toUpperCase();
+        const exchangeUrls = [
             apiUrl,
             `https://api.cors.syrins.tech/?url=${encoded}`,
             `https://api.allorigins.win/raw?url=${encoded}`,
             `https://corsproxy.io/?url=${encoded}`
         ];
         let lastError = null;
-        for (const url of mexcUrls) {
+        for (const url of exchangeUrls) {
             try {
-                const candidate = await fetchWithTimeout(
-                    url,
-                    requestOptions,
-                    7000
-                );
-                if (!candidate.ok) {
-                    throw new Error(`MEXC HTTP ${candidate.status}`);
-                }
+                const candidate = await fetchWithTimeout(url, requestOptions, 6500);
+                if (!candidate.ok) throw new Error(`${exchangeName} HTTP ${candidate.status}`);
                 response = candidate;
                 break;
             } catch (error) {
                 lastError = error;
             }
         }
-        if (!response) {
-            throw (lastError || new Error("MEXC unavailable"));
-        }
+        if (!response) throw (lastError || new Error(`${exchangeName} unavailable`));
     } else {
         response = await fetchApiWithProxyFallback(
             apiUrl,
@@ -12938,7 +12959,7 @@ async function cryptoFetchSource(source, coin) {
     let previousClose = null;
     let changePct = null;
 
-    if (source.id === "mexc") {
+    if (source.id === "mexc" || source.id === "binance") {
         price = Number(payload.price ?? payload.lastPrice);
     } else if (source.id === "coingecko") {
         const id = CRYPTO_COINGECKO_IDS[coin];
@@ -14474,28 +14495,40 @@ async function rfkjFetchWithFailover(query){
         const timer = window.setTimeout(() => controller.abort(), RFKJ_REQUEST_TIMEOUT_MS);
         try{
             const response = await fetch(makeUrl(base), {
-                method:"GET",
-                cache:"no-store",
-                signal:controller.signal
+                method:"GET", cache:"no-store", signal:controller.signal,
+                headers:{"Accept":"application/json"}
             });
             if(!response.ok) throw new Error(`Signal Matrix HTTP ${response.status}`);
-            const data = await response.json();
-            if(!data || typeof data!=="object") throw new Error("Invalid Signal Matrix response");
+            let data = await response.json();
+            if(data && typeof data === "object" && data.data && typeof data.data === "object") data = data.data;
+            if(!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Invalid Signal Matrix response");
+            const hasSignal = ["RF","rf","rangeFilter","range_filter","KJ","kj","kijunsen","ST","st","superTrend","supertrend"]
+                .some(key => Object.prototype.hasOwnProperty.call(data,key));
+            if(!hasSignal) throw new Error("Signal Matrix response contains no signal values");
             return data;
         }finally{
             window.clearTimeout(timer);
         }
     };
+    // Always probe the primary first so recovery is detected immediately.
     try{
-        return await tryFetch(urls[rfkjActiveApiIndex]);
-    }catch(firstError){
-        const otherIndex = rfkjActiveApiIndex === 0 ? 1 : 0;
+        const data = await tryFetch(urls[0]);
+        rfkjActiveApiIndex = 0;
+        return data;
+    }catch(primaryError){
         try{
-            const data = await tryFetch(urls[otherIndex]);
-            rfkjActiveApiIndex = otherIndex;
+            const data = await tryFetch(urls[1]);
+            rfkjActiveApiIndex = 1;
             return data;
-        }catch(secondError){
-            throw firstError;
+        }catch(fallbackError){
+            // If both failed, give the primary one final chance before reporting failure.
+            try{
+                const data = await tryFetch(urls[0]);
+                rfkjActiveApiIndex = 0;
+                return data;
+            }catch(primaryRetryError){
+                throw new Error(`Signal Matrix APIs unavailable (primary: ${primaryRetryError.message || primaryError.message}; fallback: ${fallbackError.message})`);
+            }
         }
     }
 }
@@ -14851,8 +14884,9 @@ let rfkjUltraIndex=0;
 let rfkjUltraSignature="";
 function rfkjUltraCandidates(){
     return rfkjInstances.filter(s=>{
-        const coin=rfkjGet("rfkjCoin",s.index);
-        return !!s.running && coin?.dataset.userSelected==="1" && !!String(coin.value||"").trim();
+        // Running is the priority flag. Never let a running Matrix fall through
+        // to Crossover just because a legacy state is missing its selected-coin marker.
+        return !!s.running;
     });
 }
 function rfkjRenderUltraCompact(animate=true){
@@ -14863,9 +14897,39 @@ function rfkjRenderUltraCompact(animate=true){
         rfkjUltraIndex=0;
     }
     if(!candidates.length){
-        const cached=rfkjGetLiveCache(1);
-        if(cached){rfkjUpdateUltraMini(cached.price,cached.rf,cached.kj,cached.st,true);}
+        // No Signal Matrix is running: do not resurrect Matrix #1's cached price
+        // or arrows. Show the first running Crossover's live price instead.
+        // This keeps the compact strip consistent with the native home widget.
         rfkjUltraIndex=0;
+        const priceEl=document.getElementById("rfkjUltraPrice");
+        const rfEl=document.getElementById("rfkjUltraRF");
+        const stEl=document.getElementById("rfkjUltraST");
+        const kjEl=document.getElementById("rfkjUltraKJ");
+        let crossover=null;
+        try{
+            const saved=crossoverReadState();
+            const list=Array.isArray(saved?.crossovers)?saved.crossovers:[];
+            crossover=list.find(c=>c&&c.running&&String(c.activeCoin||c.coin||"").trim())||null;
+        }catch(e){}
+        if(crossover){
+            const coin=String(crossover.activeCoin||crossover.coin||"").trim().toUpperCase();
+            let price=Number(crossover.latestPrice);
+            if(!Number.isFinite(price)||price<=0){
+                const cached=typeof crossoverReadCachedPrice==="function"?crossoverReadCachedPrice(coin):null;
+                price=Number(cached?.price);
+            }
+            if(priceEl){
+                priceEl.textContent=Number.isFinite(price)&&price>0
+                    ?crossoverPriceText(price,coin):"";
+            }
+        }else if(priceEl){
+            priceEl.textContent="";
+        }
+        [rfEl,stEl,kjEl].forEach(el=>{
+            if(!el)return;
+            el.textContent="";
+            el.className="rfkj-ultra-arrow";
+        });
         return;
     }
     rfkjUltraIndex=rfkjUltraIndex%candidates.length;
@@ -15035,6 +15099,13 @@ async function rfkjFetchSignal(index){
 function rfkjStart(index,sendStart=true){
     const s=rfkjInstance(index);
     if(!s||s.running)return;
+    const coinInput=rfkjGet("rfkjCoin",index);
+    // Starting Matrix is an explicit request to use Matrix, even if an older
+    // saved selection left the coin input blank. Match the existing BTC default.
+    if(coinInput&&!String(coinInput.value||"").trim()){
+        coinInput.value="BTC";
+        coinInput.dataset.userSelected="1";
+    }
     s.running=true;
     const b=rfkjGet("rfkjStartStop",index);
     if(b){b.textContent="■ Stop Signal";b.classList.add("running");}
@@ -15042,6 +15113,12 @@ function rfkjStart(index,sendStart=true){
         const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
         rfkjSendNotification(index,`🔔 ${coin} • #${index}`,`Signal started ↑`);
     }
+    // Persist the new running state and switch Ultra Compact before starting any
+    // network request. A slow/failing worker must never leave the old Crossover
+    // price visible while Matrix #1 is already running.
+    rfkjSaveState();
+    rfkjRenderUltraCompact(false);
+    syncNativeWidgetSnapshot();
     rfkjFetchSignal(index);
     s.timer=setInterval(()=>rfkjFetchSignal(index),RFKJ_POLL_MS);
     rfkjSaveState();
@@ -15167,7 +15244,10 @@ function rfkjRestoreState(){
     (saved.matrices||[]).slice(0,3).forEach((m,i)=>{
         const idx=i+1,s=rfkjInstance(idx),coin=rfkjGet("rfkjCoin",idx),card=document.querySelector(`.rfkj-instance[data-rfkj-index="${idx}"]`);
         if(!s||!coin||!card)return;
-        const isSelected = m.selectedCoin===true || (idx!==1 && !!m.coin) || (idx===1 && !!m.coin && m.coin!=="BTC");
+        // A persisted coin is a valid selection for every Matrix slot, including BTC.
+        // The running flag controls whether it is displayed; do not accidentally
+        // hide a running first Matrix just because an older state lacks selectedCoin.
+        const isSelected = m.selectedCoin===true || !!String(m.coin||"").trim() || !!m.running;
         coin.value=isSelected?(m.coin||"BTC"):"";
         if(isSelected)coin.dataset.userSelected="1";
         else delete coin.dataset.userSelected;
@@ -15872,7 +15952,7 @@ async function crossoverFetchOne(index,notify=true){
             const cached=crossoverReadCachedPrice(effectiveCoin);
             if(cached){s.latestPrice=cached.price;s.latestUpdated=cached.updated||s.latestUpdated;crossoverUpdateUI(index);}
         }
-        setPageIssue(`crossover:${index}`,`Worker unavailable • ${error.message||"request failed"}`,"error");
+        setPageIssue(`crossover:${index}`,`Price APIs unavailable • keeping last price`,"error");
         console.warn(`Crossover ${index} failed`,error);
         const status=crossoverGet("crossoverStatus",index);
         if(status)status.textContent=`Worker unavailable • ${error.message||"request failed"}`;
