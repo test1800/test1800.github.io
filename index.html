@@ -4808,6 +4808,8 @@ h1 {
 .crossover-status{
     flex:1 1 50%;
     min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
     min-height:28px;
     display:flex;
     align-items:center;
@@ -15602,6 +15604,15 @@ function crossoverNowText(date=new Date()){
     const d=date instanceof Date?date:new Date(date),pad=n=>String(n).padStart(2,"0");
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
+/* Short label designed for the narrow status pill beside the email icon. */
+function crossoverLastCrossLabel(timestamp,direction=0){
+    if(!timestamp)return "";
+    const d=new Date(timestamp);
+    if(!Number.isFinite(d.getTime()))return "";
+    const pad=n=>String(n).padStart(2,"0");
+    const arrow=direction>0?"▲":direction<0?"▼":"◆";
+    return `${arrow} ${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 function crossoverSaveState(){
     const data={
         version:1,
@@ -15645,43 +15656,35 @@ function crossoverSaveState(){
 }
 function crossoverReadState(){
     /*
-     * Local state remains authoritative for user choices and controls. Merge
-     * only live runtime values from the native checker, because it continues
-     * monitoring while the app is minimized/closed. Otherwise, when the app is
-     * reopened, stale local prices can trigger the same Crossover notification
-     * a second time. Coin, target, running state, and preferences stay local-first.
+     * UI state is LOCAL-FIRST. The selector/Start state saved by this WebView
+     * is authoritative for what must be shown after a refresh. The native
+     * state can be older (for example it may still contain BTC), so it must
+     * never overwrite a newer local selection such as POL or GOLD.
+     *
+     * Native state is used only as a fallback when there is no local Crossover
+     * state at all. This also keeps the fast-startup path independent of the
+     * remote Crossover Worker.
      */
-    let local=null;
     try{
         const raw=localStorage.getItem(CROSSOVER_STATE_KEY);
         if(raw){
-            const parsed=JSON.parse(raw);
-            if(parsed&&Array.isArray(parsed.crossovers))local=parsed;
+            const local=JSON.parse(raw);
+            if(local&&Array.isArray(local.crossovers))return local;
         }
     }catch(e){console.warn("Crossover local state read failed",e);}
-
-    let matrix=null;
     try{
         if(window.AndroidNotifications&&typeof window.AndroidNotifications.getSignalMatrixStateJson==="function"){
             const raw=window.AndroidNotifications.getSignalMatrixStateJson();
-            const parsed=raw?JSON.parse(raw):null;
-            if(parsed&&Array.isArray(parsed.crossovers))matrix=parsed;
-        }
-    }catch(e){console.warn("Crossover native state read failed",e);}
-
-    if(local&&matrix){
-        for(let i=0;i<Math.min(4,local.crossovers.length,matrix.crossovers.length);i++){
-            const webItem=local.crossovers[i],nativeItem=matrix.crossovers[i];
-            if(!webItem||!nativeItem)continue;
-            // Runtime-only merge: preserves settings while adopting background progress.
-            for(const key of ["previousPrice","latestPrice","percentageAlertTimes"]){
-                if(nativeItem[key]!==undefined&&nativeItem[key]!==null)webItem[key]=nativeItem[key];
+            const matrix=raw?JSON.parse(raw):null;
+            if(matrix&&Array.isArray(matrix.crossovers)){
+                return {
+                    version:1,
+                    count:Number(matrix.crossoverCount||matrix.count||1),
+                    crossovers:matrix.crossovers
+                };
             }
         }
-        return local;
-    }
-    if(local)return local;
-    if(matrix)return {version:1,count:Number(matrix.crossoverCount||matrix.count||1),crossovers:matrix.crossovers};
+    }catch(e){console.warn("Crossover native state read failed",e);}
     return null;
 }
 function crossoverUpdateUI(index){
@@ -15724,7 +15727,17 @@ function crossoverUpdateUI(index){
             distance.classList.add("invalid");
         }
     }
-    if(status&&!s.running&&Number.isFinite(target)&&target>0)status.textContent="Ready";
+    if(status){
+        if(!s.running){
+            if(Number.isFinite(target)&&target>0)status.textContent="Ready";
+        }else if(s.lastCrossAt){
+            status.textContent=crossoverLastCrossLabel(s.lastCrossAt,s.lastCrossDirection);
+            status.title=`Last crossover: ${crossoverNowText(s.lastCrossAt)}`;
+        }else{
+            status.textContent="Monitoring";
+            status.removeAttribute("title");
+        }
+    }
     crossoverUpdateNotificationButton(index);
     crossoverUpdateMailButton(index);
 }
@@ -15820,7 +15833,10 @@ async function crossoverFetchOne(index,notify=true){
                 s.lastCrossAt=new Date().toISOString();
                 s.lastCrossDirection=direction;
                 const status=crossoverGet("crossoverStatus",index);
-                if(status)status.textContent=`Crossed ${direction>0?"UP ↑":"DOWN ↓"} • ${crossoverNowText(s.lastCrossAt)}`;
+                if(status){
+                    status.textContent=crossoverLastCrossLabel(s.lastCrossAt,direction);
+                    status.title=`Last crossover: ${crossoverNowText(s.lastCrossAt)}`;
+                }
                 if(s.notificationEnabled){
                     await crossoverSendAlert(index,direction,price,target);
                 }
@@ -15868,8 +15884,12 @@ function crossoverStart(index,sendStart=true,restoreEmail=false){
     /* Keep the last saved price so the first new quote can be compared to it. */
     if(!Number.isFinite(Number(s.previousPrice)))s.previousPrice=null;
     s.priceDirection=0;
-    s.lastCrossAt=null;
-    s.lastCrossDirection=0;
+    /* A fresh Start begins a new monitoring session. During state restoration,
+       preserve the cached last-cross timestamp so it survives app refreshes. */
+    if(!restoreEmail){
+        s.lastCrossAt=null;
+        s.lastCrossDirection=0;
+    }
     const b=crossoverGet("crossoverStartStop",index);
     if(b){b.textContent="■ Stop Crossover";b.classList.add("running");}
     const status=crossoverGet("crossoverStatus",index);
@@ -15908,8 +15928,12 @@ function crossoverStop(index,sendStop=true){
     if(s.timer){clearInterval(s.timer);s.timer=null;}
     const b=crossoverGet("crossoverStartStop",index);
     if(b){b.textContent="▶ Start Crossover";b.classList.remove("running");}
+    /* Stop clears the visible and cached crossover marker. The next Start
+       starts clean and records a new timestamp only after a real crossing. */
+    s.lastCrossAt=null;
+    s.lastCrossDirection=0;
     const status=crossoverGet("crossoverStatus",index);
-    if(status)status.textContent=s.lastCrossAt?`Last cross • ${crossoverNowText(s.lastCrossAt)}`:"Crossover stopped.";
+    if(status){status.textContent="";status.removeAttribute("title");}
     crossoverUpdateNotificationButton(index);
     clearPageIssue(`crossover:${index}`);
     crossoverUpdateUI(index);
