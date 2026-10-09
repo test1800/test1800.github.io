@@ -16090,7 +16090,11 @@ function crossoverInit(){
                coin remains registered exactly like activeTarget. */
             if(!s.running){
                 s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;
-                s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
+                s.priceDirection=0;
+                /* Do not clear lastCrossAt here: during page restoration the
+                   active selector dispatches change before running state is
+                   reattached. Last-cross history is cleared only by Stop or
+                   by an intentional fresh Start. */
             }
             clearPageIssue(`crossover:${i}`);
             crossoverUpdateUI(i);crossoverSaveState();
@@ -16125,7 +16129,9 @@ function crossoverInit(){
                 input.value="";
             }
 
-            s.previousPrice=null;s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
+            s.previousPrice=null;s.priceDirection=0;
+            /* Editing the pending target must not erase the persisted last-cross
+               marker; only Stop or a fresh Start starts a clean history. */
             crossoverUpdateUI(i);crossoverSaveState();
             /* While running, editing Target Price changes only the pending input.
                The worker keeps the target captured at Start until Stop is pressed. */
