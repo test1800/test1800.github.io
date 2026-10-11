@@ -2844,7 +2844,12 @@ h1 {
 ===================================================== */
 .rfkj-ultra-mini{
     display:none;
+    border-radius:5px;
+    transition:background-color .2s ease, box-shadow .2s ease;
 }
+.rfkj-ultra-mini.daily-positive{background:rgba(34,197,94,.17);box-shadow:inset 0 0 0 1px rgba(74,222,128,.24);}
+.rfkj-ultra-mini.daily-negative{background:rgba(239,68,68,.17);box-shadow:inset 0 0 0 1px rgba(248,113,113,.24);}
+.rfkj-ultra-mini.daily-neutral{background:transparent;box-shadow:none;}
 .rfkj-ultra-arrow{
     display:inline-flex;
     width:9px;
@@ -6993,6 +6998,8 @@ function syncNativeWidgetSnapshot(){
                 return 0;
             };
             let signalHtml="";
+            let signalDailyChangePercent=null;
+            let crossoverDailyChangePercent=null;
             try{
                 const candidates=typeof rfkjUltraCandidates==="function"?rfkjUltraCandidates():[];
                 if(candidates.length){
@@ -7000,6 +7007,7 @@ function syncNativeWidgetSnapshot(){
                     const st=candidates[index];
                     const coin=String(st?.coin||document.querySelector(`#rfkjCoin${st?.index||1}`)?.value||"").trim();
                     const price=text("rfkjUltraPrice");
+                    signalDailyChangePercent=st?.latestDailyChangePercent!=null && Number.isFinite(Number(st.latestDailyChangePercent))?Number(st.latestDailyChangePercent):null;
                     const arrow=id=>{
                         const el=document.getElementById(id);
                         const cls=el?.className||"";
@@ -7020,6 +7028,8 @@ function syncNativeWidgetSnapshot(){
                         if(!cross || !cross.running) continue;
                         const coin=String(cross.activeCoin||cross.coin||"").trim().toUpperCase();
                         let price=Number(cross.latestPrice);
+                        const daily=Number(cross.dailyChangePercent ?? cross.dailyChange ?? cross.changePercent);
+                        crossoverDailyChangePercent=Number.isFinite(daily)?daily:null;
                         let priceText="";
                         if(Number.isFinite(price)&&price>0){
                             priceText=typeof crossoverPriceText==="function"?crossoverPriceText(price,coin):String(price);
@@ -7034,7 +7044,7 @@ function syncNativeWidgetSnapshot(){
                 }catch(e){}
             }
 
-            let globalAsset={type:"",symbol:"",price:"-",direction:0};
+            let globalAsset={type:"",symbol:"",price:"-",direction:0,dailyChangePercent:null};
             try{
                 const selected=JSON.parse(localStorage.getItem(GLOBAL_PULSE_COMPACT_ASSET_KEY)||"null");
                 if(selected&&selected.type){
@@ -7042,7 +7052,7 @@ function syncNativeWidgetSnapshot(){
                     globalAsset.symbol=String(selected.symbol||"");
                     const item=typeof globalPulseCompactAssetPrice==="function"
                         ?globalPulseCompactAssetPrice(globalAsset.type,globalAsset.symbol):null;
-                    if(item){globalAsset.price=String(item.price||"-");globalAsset.direction=Number(item.direction)||0;}
+                    if(item){globalAsset.price=String(item.price||"-");globalAsset.direction=Number(item.direction)||0;globalAsset.dailyChangePercent=item.dailyChangePercent!=null && Number.isFinite(Number(item.dailyChangePercent))?Number(item.dailyChangePercent):(Number(item.direction)||0); }
                 }
             }catch(e){}
 
@@ -7057,11 +7067,14 @@ function syncNativeWidgetSnapshot(){
                 exirDirection:direction("exirPrice"),
                 bitpinDirection:direction("bitpinPrice"),
                 signalHtml,
+                signalDailyChangePercent,
+                crossoverDailyChangePercent,
                 signalUpdatedAt:signalHtml ? Date.now() : 0,
                 globalAssetType:globalAsset.type,
                 globalAssetSymbol:globalAsset.symbol,
                 globalAssetPrice:globalAsset.price,
                 globalAssetFlashDirection:globalAsset.direction,
+                globalAssetDailyChangePercent:globalAsset.dailyChangePercent,
                 updated:new Date().toLocaleTimeString("en-US",{hour12:false})
             };
             window.AndroidNotifications.syncWidgetSnapshot(JSON.stringify(snapshot));
@@ -12135,12 +12148,16 @@ function globalPulseCompactAssetPrice(type,symbol=""){
     if(type==="gold"){
         const change=document.getElementById("globalGoldChange");
         const direction=change?.classList.contains("positive")?1:change?.classList.contains("negative")?-1:0;
-        return {name:"GOLD",price:document.getElementById("globalGoldPrice")?.textContent?.trim()||"-",direction};
+        const pctText=(change?.textContent||"").replace(/[^0-9+-.]/g,"");
+        const pct=pctText?Number(pctText):NaN;
+        return {name:"GOLD",price:document.getElementById("globalGoldPrice")?.textContent?.trim()||"-",direction,dailyChangePercent:Number.isFinite(pct)?pct:direction};
     }
     if(type==="oil"){
         const change=document.getElementById("globalOilChange");
         const direction=change?.classList.contains("positive")?1:change?.classList.contains("negative")?-1:0;
-        return {name:"OIL",price:document.getElementById("globalOilPrice")?.textContent?.trim()||"-",direction};
+        const pctText=(change?.textContent||"").replace(/[^0-9+-.]/g,"");
+        const pct=pctText?Number(pctText):NaN;
+        return {name:"OIL",price:document.getElementById("globalOilPrice")?.textContent?.trim()||"-",direction,dailyChangePercent:Number.isFinite(pct)?pct:direction};
     }
     if(type==="tse"){
         const row=Array.from(document.querySelectorAll("#globalTsetmcCards .global-pulse-tsetmc-card")).find(el=>String(el.dataset.tsetmcSymbol||"").trim()===String(symbol||"").trim());
@@ -12148,7 +12165,9 @@ function globalPulseCompactAssetPrice(type,symbol=""){
             const price=row.querySelector(".global-pulse-tsetmc-group:first-child .global-pulse-tsetmc-price")?.textContent?.trim()||"-";
             const pct=row.querySelector(".global-pulse-tsetmc-group:first-child .global-pulse-tsetmc-percent");
             const direction=pct?.classList.contains("positive")?1:pct?.classList.contains("negative")?-1:0;
-            return {name:String(symbol||"TSE"),price,direction};
+            const pctText=(pct?.textContent||"").replace(/[^0-9+-.]/g,"");
+            const dailyChangePercent=pctText?Number(pctText):NaN;
+            return {name:String(symbol||"TSE"),price,direction,dailyChangePercent:Number.isFinite(dailyChangePercent)?dailyChangePercent:direction};
         }
     }
     return {name:"",price:"-",direction:0};
@@ -12163,7 +12182,9 @@ function globalPulseRefreshCompactAssetDisplay(){
     const previousPrice=String(price.dataset.globalCompactPrice||"");
     const changed=has && key===previousKey && previousPrice && previousPrice!==String(item.price||"");
     wrap.hidden=!has; price.textContent=item.price||"-";
-    price.classList.remove("global-compact-up","global-compact-down","global-compact-flat");
+    price.classList.remove("global-compact-up","global-compact-down","global-compact-flat","daily-positive","daily-negative","daily-neutral");
+    const daily=Number(item.dailyChangePercent);
+    price.classList.add(!Number.isFinite(daily)||daily===0?"daily-neutral":daily>0?"daily-positive":"daily-negative");
     if(changed && item.direction!==0){
         // Force a fresh animation only when the selected asset price actually changes.
         void price.offsetWidth;
@@ -14889,6 +14910,37 @@ function rfkjUltraCandidates(){
         return !!s.running;
     });
 }
+function rfkjApplyDailyTint(el,value){
+    if(!el)return;
+    const n=Number(value);
+    el.style.background="";
+    el.style.boxShadow="";
+    el.classList.remove("daily-positive","daily-negative","daily-neutral");
+    if(!Number.isFinite(n)||n===0)el.classList.add("daily-neutral");
+    else if(n>0)el.classList.add("daily-positive");
+    else el.classList.add("daily-negative");
+}
+// Crossover uses a continuous daily-change gradient: -3% red, 0% amber, +3% green.
+// Signal Matrix and Global keep their existing color logic.
+function rfkjApplyCrossoverDailyTint(el,value){
+    if(!el)return;
+    const n=Number(value);
+    el.classList.remove("daily-positive","daily-negative","daily-neutral");
+    if(!Number.isFinite(n)){
+        el.classList.add("daily-neutral");
+        el.style.background="";
+        el.style.boxShadow="";
+        return;
+    }
+    const v=Math.max(-3,Math.min(3,n));
+    const red=[239,68,68], amber=[250,204,21], green=[34,197,94];
+    const a=v<0?red:amber, b=v<0?amber:green, t=Math.abs(v)/3;
+    const rgb=a.map((c,i)=>Math.round(c+(b[i]-c)*t));
+    const color=`${rgb[0]},${rgb[1]},${rgb[2]}`;
+    const strength=0.09+Math.min(1,Math.abs(v)/3)*0.13;
+    el.style.background=`linear-gradient(135deg,rgba(${color},${strength}),rgba(${color},${strength*0.42}))`;
+    el.style.boxShadow=`inset 0 0 0 1px rgba(${color},${0.10+Math.min(1,Math.abs(v)/3)*0.16})`;
+}
 function rfkjRenderUltraCompact(animate=true){
     const candidates=rfkjUltraCandidates();
     const signature=candidates.map(s=>s.index).join(",");
@@ -14922,8 +14974,10 @@ function rfkjRenderUltraCompact(animate=true){
                 priceEl.textContent=Number.isFinite(price)&&price>0
                     ?crossoverPriceText(price,coin):"";
             }
+            rfkjApplyCrossoverDailyTint(document.getElementById("rfkjUltraMini"), crossover.dailyChangePercent);
         }else if(priceEl){
             priceEl.textContent="";
+            rfkjApplyDailyTint(document.getElementById("rfkjUltraMini"), null);
         }
         [rfEl,stEl,kjEl].forEach(el=>{
             if(!el)return;
@@ -14936,6 +14990,7 @@ function rfkjRenderUltraCompact(animate=true){
     const s=candidates[rfkjUltraIndex];
     const valid=Number.isFinite(Number(s.latestPrice))&&Number(s.latestPrice)>0;
     const mini=document.getElementById("rfkjUltraMini");
+    rfkjApplyDailyTint(mini,s.latestDailyChangePercent);
     if(animate&&mini){
         mini.classList.remove("rfkj-ultra-switch");
         void mini.offsetWidth;
@@ -15017,7 +15072,10 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         // The next timeframe request must never delay this registration.
         rfkjSaveState();
         syncNativeWidgetSnapshot();
-        const dailyChangePercent=Number(data.dailyChangePercent);
+        let dailyChangePercent=Number(data.dailyChangePercent);
+        if(!Number.isFinite(dailyChangePercent)){
+            try{ dailyChangePercent=await crossoverFetchDailyPercent(coin); }catch(e){}
+        }
         state.latestDailyChangePercent=Number.isFinite(dailyChangePercent)?dailyChangePercent:null;
         let price=Number(data.price);
         let priceRaw=(data.price===undefined||data.price===null)?null:String(data.price).trim();
@@ -15478,7 +15536,7 @@ const crossoverInstances = Array.from({length:CROSSOVER_COUNT},(_,i)=>({
     index:i+1, coin:"BTC", activeCoin:null, target:null, activeTarget:null, running:false, timer:null,
     notificationEnabled:false, emailEnabled:false, percentageAlertTimes:Object.create(null),
     requestInProgress:false, wasOffline:false, previousPrice:null, latestPrice:null,
-    latestUpdated:null, lastCrossAt:null, lastCrossDirection:0, priceDirection:0
+    latestUpdated:null, lastCrossAt:null, lastCrossDirection:0, priceDirection:0, dailyChangePercent:null
 }));
 function crossoverGet(id,index){return document.getElementById(`${id}${index}`);}
 function crossoverInstance(index){return crossoverInstances[index-1];}
@@ -15716,7 +15774,7 @@ function crossoverSaveState(){
         liveAverage:Number((document.getElementById("overallLive")?.textContent||"").replace(/,/g,""))||null,
         crossovers:crossoverInstances.map(s=>({
             selectedCoin:s.coin,coin:s.coin,activeCoin:s.activeCoin,target:s.target,activeTarget:s.activeTarget,running:!!s.running,previousPrice:s.previousPrice,
-            latestPrice:s.latestPrice,latestUpdated:s.latestUpdated,
+            latestPrice:s.latestPrice,latestUpdated:s.latestUpdated,dailyChangePercent:s.dailyChangePercent,
             lastCrossAt:s.lastCrossAt,lastCrossDirection:s.lastCrossDirection,
             priceDirection:s.priceDirection||0,
             notificationEnabled:!!s.notificationEnabled,
@@ -15869,6 +15927,23 @@ function crossoverWriteCachedPrice(asset,price,updated){
         localStorage.setItem(crossoverPriceCacheKey(asset),JSON.stringify({price:value,updated:updated||new Date().toISOString()}));
     }catch(e){}
 }
+async function crossoverFetchDailyPercent(asset){
+    const v=String(asset||"").toUpperCase();
+    if(v==="GOLD"||v==="OIL"||v.startsWith("TSE|")){
+        const item=globalPulseCompactAssetPrice(v==="GOLD"?"gold":v==="OIL"?"oil":"tse",v.startsWith("TSE|")?crossoverTseSymbol(v):"");
+        const n=Number(item?.dailyChangePercent);
+        return Number.isFinite(n)?n:null;
+    }
+    if(!CRYPTO_COINGECKO_IDS[v])return null;
+    const url=`https://api.mexc.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(v+"USDT")}`;
+    try{
+        const response=await fetchApiWithProxyFallback(url,{method:"GET",headers:{Accept:"application/json"},cache:"no-store"},6500);
+        if(!response?.ok)return null;
+        const payload=await response.json();
+        const n=Number(payload?.priceChangePercent);
+        return Number.isFinite(n)?n:null;
+    }catch(e){return null;}
+}
 async function crossoverFetchOne(index,notify=true){
     const s=crossoverInstance(index);
     if(!s||!s.running||s.requestInProgress)return;
@@ -15920,7 +15995,15 @@ async function crossoverFetchOne(index,notify=true){
             : 0;
         s.latestPrice=price;
         s.latestUpdated=data.updated||new Date().toISOString();
+        const dailyChangePercent=await crossoverFetchDailyPercent(effectiveCoin);
+        if(Number.isFinite(dailyChangePercent))s.dailyChangePercent=dailyChangePercent;
         crossoverWriteCachedPrice(effectiveCoin,price,s.latestUpdated);
+        // Persist the latest Crossover daily percentage before rendering Ultra Compact.
+        // In Crossover-only mode the compact strip reads crossoverReadState() from
+        // localStorage, so without this save it could keep a stale/missing percentage.
+        crossoverSaveState();
+        syncNativeWidgetSnapshot();
+        rfkjRenderUltraCompact(false);
         if(notify&&!suppressAlertsAfterOffline&&Number.isFinite(old)&&old!==price){
             const crossedUp=old<target&&price>=target;
             const crossedDown=old>target&&price<=target;
@@ -17366,6 +17449,9 @@ if (
 #rfkjUltraGlobalAssetPrice.global-compact-up{color:#34d399; text-shadow:0 0 8px rgba(52,211,153,.30);}
 #rfkjUltraGlobalAssetPrice.global-compact-down{color:#f87171; text-shadow:0 0 8px rgba(248,113,113,.30);}
 #rfkjUltraGlobalAssetPrice.global-compact-flat{color:#f8fafc;}
+#rfkjUltraGlobalAssetPrice.daily-positive{background:rgba(34,197,94,.17);box-shadow:inset 0 0 0 1px rgba(74,222,128,.24);border-radius:5px;padding:2px 4px;}
+#rfkjUltraGlobalAssetPrice.daily-negative{background:rgba(239,68,68,.17);box-shadow:inset 0 0 0 1px rgba(248,113,113,.24);border-radius:5px;padding:2px 4px;}
+#rfkjUltraGlobalAssetPrice.daily-neutral{background:transparent;box-shadow:none;}
 /* When a GLOBAL block is selected, its price occupies a fourth compact slot beside the three Tether prices. */
 .live-price-values.has-global-asset{gap:clamp(8px,1.05vw,18px) !important;}
 .live-price-values.has-global-asset .live-number{font-size:clamp(17px,1.55vw,22px) !important;}
