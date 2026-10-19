@@ -4810,6 +4810,19 @@ h1 {
     .crossover-mail{flex-basis:23px !important;width:23px !important;min-width:23px !important;height:23px !important;min-height:23px !important;font-size:8px !important;}
     .crossover-status{font-size:7px !important;}
 }
+/* Warren Buffett-inspired daily-change guidance; educational, not a fixed Buffett rule. */
+.crossover-buffett-guide{
+    flex:1.35 1 0 !important;min-width:0;max-width:48%;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    padding:3px 5px;box-sizing:border-box;border-radius:7px;
+    font:850 8px/1.2 Inter,"Segoe UI",Arial,sans-serif;
+    white-space:normal;overflow-wrap:anywhere;
+    border:1px solid rgba(148,163,184,.18);background:rgba(15,23,42,.32);
+}
+.crossover-buffett-guide.sell{color:#4ade80;border-color:rgba(74,222,128,.32);background:rgba(22,163,74,.10);text-shadow:0 0 8px rgba(74,222,128,.12);}
+.crossover-buffett-guide.hold{color:#facc15;border-color:rgba(250,204,21,.30);background:rgba(202,138,4,.09);text-shadow:0 0 8px rgba(250,204,21,.10);}
+.crossover-buffett-guide.buy{color:#f87171;border-color:rgba(248,113,113,.32);background:rgba(220,38,38,.10);text-shadow:0 0 8px rgba(248,113,113,.10);}
+@media (max-width:700px){.crossover-buffett-guide{font-size:7px;padding:2px 3px;flex:1.2 1 0 !important;}}
 .crossover-status{
     flex:1 1 50%;
     min-width:0;
@@ -5020,6 +5033,15 @@ h1 {
     .crossover-action .crossover-status{
         flex:1 1 50% !important;
     }
+}
+/* Fit the guidance beside the email control without changing the other controls. */
+.crossover-action .crossover-start-stop{flex:1.25 1 0 !important;}
+.crossover-action .crossover-buffett-guide{flex:1.35 1 0 !important;max-width:none;}
+.crossover-action .crossover-status{flex:0.9 1 0 !important;}
+@media (max-width:700px){
+    .crossover-action .crossover-start-stop{flex:1.15 1 0 !important;}
+    .crossover-action .crossover-buffett-guide{flex:1.2 1 0 !important;}
+    .crossover-action .crossover-status{flex:0.8 1 0 !important;}
 }
 </style>
 
@@ -6797,7 +6819,7 @@ h1 {
                 <div class="crossover-coin-wrap"><select id="crossoverCoin1" class="crossover-coin" aria-label="Select asset"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option><option value="USD">USD</option></select></div>
             </div>
             <div class="crossover-distance invalid" id="crossoverDistance1">Current value — • Target —</div>
-            <div class="crossover-action"><button type="button" id="crossoverStartStop1" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify1" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><button type="button" id="crossoverMail1" class="crossover-mail" aria-label="Email alerts off" title="Email alerts off">M</button><div id="crossoverStatus1" class="crossover-status">Ready</div></div>
+            <div class="crossover-action"><button type="button" id="crossoverStartStop1" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify1" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><button type="button" id="crossoverMail1" class="crossover-mail" aria-label="Email alerts off" title="Email alerts off">M</button><div id="crossoverBuffettGuide1" class="crossover-buffett-guide hold" aria-live="polite">No change</div><div id="crossoverStatus1" class="crossover-status">Ready</div></div>
         </div>
         <div class="card crossover-card" data-crossover-index="2" >
             <div class="crossover-header">
@@ -6809,7 +6831,7 @@ h1 {
                 <div class="crossover-coin-wrap"><select id="crossoverCoin2" class="crossover-coin" aria-label="Select asset"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option><option value="USD">USD</option></select></div>
             </div>
             <div class="crossover-distance invalid" id="crossoverDistance2">Current value — • Target —</div>
-            <div class="crossover-action"><button type="button" id="crossoverStartStop2" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify2" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><button type="button" id="crossoverMail2" class="crossover-mail" aria-label="Email alerts off" title="Email alerts off">M</button><div id="crossoverStatus2" class="crossover-status">Ready</div></div>
+            <div class="crossover-action"><button type="button" id="crossoverStartStop2" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify2" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><button type="button" id="crossoverMail2" class="crossover-mail" aria-label="Email alerts off" title="Email alerts off">M</button><div id="crossoverBuffettGuide2" class="crossover-buffett-guide hold" aria-live="polite">No change</div><div id="crossoverStatus2" class="crossover-status">Ready</div></div>
         </div>
         <div class="card crossover-card" data-crossover-index="3" >
             <div class="crossover-header">
@@ -6821,7 +6843,7 @@ h1 {
                 <div class="crossover-coin-wrap"><select id="crossoverCoin3" class="crossover-coin" aria-label="Select asset"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option><option value="USD">USD</option></select></div>
             </div>
             <div class="crossover-distance invalid" id="crossoverDistance3">Current value — • Target —</div>
-            <div class="crossover-action"><button type="button" id="crossoverStartStop3" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify3" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><button type="button" id="crossoverMail3" class="crossover-mail" aria-label="Email alerts off" title="Email alerts off">M</button><div id="crossoverStatus3" class="crossover-status">Ready</div></div>
+            <div class="crossover-action"><button type="button" id="crossoverStartStop3" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify3" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><button type="button" id="crossoverMail3" class="crossover-mail" aria-label="Email alerts off" title="Email alerts off">M</button><div id="crossoverBuffettGuide3" class="crossover-buffett-guide hold" aria-live="polite">No change</div><div id="crossoverStatus3" class="crossover-status">Ready</div></div>
         </div>
         <div class="card crossover-card" data-crossover-index="4" >
             <div class="crossover-header">
@@ -6833,7 +6855,7 @@ h1 {
                 <div class="crossover-coin-wrap"><select id="crossoverCoin4" class="crossover-coin" aria-label="Select asset"><option value="BTC">BTC</option><option value="BNB">BNB</option><option value="ETH">ETH</option><option value="DOGE">DOGE</option><option value="ADA">ADA</option><option value="SOL">SOL</option><option value="ONE">ONE</option><option value="AVAX">AVAX</option><option value="POL">POL</option><option value="TRX">TRX</option><option value="USD">USD</option></select></div>
             </div>
             <div class="crossover-distance invalid" id="crossoverDistance4">Current value — • Target —</div>
-            <div class="crossover-action"><button type="button" id="crossoverStartStop4" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify4" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><button type="button" id="crossoverMail4" class="crossover-mail" aria-label="Email alerts off" title="Email alerts off">M</button><div id="crossoverStatus4" class="crossover-status">Ready</div></div>
+            <div class="crossover-action"><button type="button" id="crossoverStartStop4" class="crossover-start-stop">▶ Start Crossover</button><button type="button" id="crossoverNotify4" class="crossover-notify" aria-label="Enable Crossover percentage notifications" title="Percentage notifications are off">🔕</button><button type="button" id="crossoverMail4" class="crossover-mail" aria-label="Email alerts off" title="Email alerts off">M</button><div id="crossoverBuffettGuide4" class="crossover-buffett-guide hold" aria-live="polite">No change</div><div id="crossoverStatus4" class="crossover-status">Ready</div></div>
         </div>
     </div>
 </div>
@@ -15841,6 +15863,84 @@ function crossoverReadState(){
     }catch(e){console.warn("Crossover native state read failed",e);}
     return null;
 }
+function crossoverBuffettGuidance(percent){
+    if(percent===null||percent===undefined||percent===""||!Number.isFinite(Number(percent)))return {text:"Waiting for daily change…",tone:"hold",title:"Waiting for a valid daily percentage change."};
+    const p=Number(percent);
+    if(p < -25)return {text:"Reassess strategy: close or hold based",tone:"buy",title:"A drop alone is not a buy signal. Reassess the investment thesis and fundamentals before deciding whether to close or hold."};
+    if(p < -15)return {text:"Increase position by 10%",tone:"buy",title:"Consider adding only if the investment thesis and valuation remain attractive."};
+    if(p < 5)return {text:"No change",tone:"hold",title:"Avoid acting on this price move alone."};
+    if(p < 15)return {text:"Hold",tone:"hold",title:"Hold; avoid reacting to ordinary price movements."};
+    if(p < 25)return {text:"Continue investing",tone:"hold",title:"Continue only if the long-term investment thesis remains valid."};
+    if(p < 35)return {text:"Sell 10% of position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
+    if(p < 45)return {text:"Sell 20% of position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
+    if(p < 60)return {text:"Sell 30% of position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
+    if(p < 100)return {text:"Sell 40% of position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
+    return {text:"Sell entire position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
+}
+function crossoverGuidePercentFromTarget(index){
+    const s=crossoverInstance(index);
+    if(!s)return null;
+    const asset=String((s.running?(s.activeCoin||s.coin):s.coin)||"").toUpperCase();
+    const target=Number(s.running?s.activeTarget:s.target);
+    let price=Number(s.latestPrice);
+    if((!Number.isFinite(price)||price<=0) && asset){
+        const cached=crossoverReadCachedPrice(asset);
+        if(cached)price=Number(cached.price);
+    }
+    // The guide is attached to Crossover's own target: compare the live asset
+    // price with the target entered by the user. Example: 85,000 vs 60,000 = +41.67%.
+    if(Number.isFinite(price)&&price>0&&Number.isFinite(target)&&target>0){
+        const pct=((price-target)/target)*100;
+        return Number.isFinite(pct)?pct:null;
+    }
+    return null;
+}
+async function crossoverRefreshBuffettGuide(index){
+    const s=crossoverInstance(index);
+    if(!s)return;
+    const asset=String((s.running?(s.activeCoin||s.coin):s.coin)||"").toUpperCase();
+    // Prefer Crossover's actual live-price-versus-target percentage. This is
+    // available immediately when both the target and the current/cached price exist.
+    const targetPct=crossoverGuidePercentFromTarget(index);
+    if(targetPct!==null){
+        crossoverUpdateBuffettGuide(index,targetPct);
+        return;
+    }
+    // Otherwise reuse a valid daily-change value already held for this asset.
+    if(s.dailyChangePercent!==null && s.dailyChangePercent!==undefined &&
+       s.dailyChangePercent!=="" && Number.isFinite(Number(s.dailyChangePercent))){
+        crossoverUpdateBuffettGuide(index,Number(s.dailyChangePercent));
+    }
+    if(!asset||asset==="USD")return;
+    try{
+        const pct=await crossoverFetchDailyPercent(asset);
+        if(pct!==null&&pct!==undefined&&pct!==""&&Number.isFinite(Number(pct))){
+            s.dailyChangePercent=Number(pct);
+            // If target/current price became available during the request, use that
+            // instead of applying a daily percentage to the wrong Crossover context.
+            const latestTargetPct=crossoverGuidePercentFromTarget(index);
+            crossoverUpdateBuffettGuide(index,latestTargetPct!==null?latestTargetPct:s.dailyChangePercent);
+            crossoverSaveState();
+        }else if(s.dailyChangePercent===null||s.dailyChangePercent===undefined||s.dailyChangePercent===""){
+            const el=document.getElementById(`crossoverBuffettGuide${index}`);
+            if(el){el.textContent="Daily change unavailable";el.classList.remove("buy","hold","sell");el.classList.add("hold");el.title="No valid daily percentage or target-relative percentage is available yet.";}
+        }
+    }catch(e){
+        const el=document.getElementById(`crossoverBuffettGuide${index}`);
+        if(el && (s.dailyChangePercent===null||s.dailyChangePercent===undefined||s.dailyChangePercent==="")){
+            el.textContent="Daily change unavailable";el.classList.remove("buy","hold","sell");el.classList.add("hold");el.title="No valid daily percentage or target-relative percentage is available yet.";
+        }
+    }
+}
+function crossoverUpdateBuffettGuide(index,percent){
+    const el=document.getElementById(`crossoverBuffettGuide${index}`);
+    if(!el)return;
+    const guidance=crossoverBuffettGuidance(percent);
+    el.textContent=guidance.text;
+    el.classList.remove("buy","hold","sell");
+    el.classList.add(guidance.tone);
+    el.title=guidance.title;
+}
 function crossoverUpdateUI(index){
     const s=crossoverInstance(index);
     if(!s)return;
@@ -15850,6 +15950,8 @@ function crossoverUpdateUI(index){
     const distance=crossoverGet("crossoverDistance",index);
     const status=crossoverGet("crossoverStatus",index);
     const effectiveCoin=s.running?(s.activeCoin||s.coin):s.coin;
+    const targetGuidePercent=crossoverGuidePercentFromTarget(index);
+    crossoverUpdateBuffettGuide(index,targetGuidePercent!==null?targetGuidePercent:s.dailyChangePercent);
     const isUSD=effectiveCoin==="USD";
     const assetLabel=crossoverAssetLabel(effectiveCoin);
     const coinSelect=crossoverGet("crossoverCoin",index);
@@ -15895,6 +15997,13 @@ function crossoverUpdateUI(index){
     crossoverUpdateNotificationButton(index);
     crossoverUpdateMailButton(index);
 }
+// Keep the Buffett guidance live even when a Crossover card is not running.
+if(!window.__crossoverBuffettGuideRefreshStarted){
+    window.__crossoverBuffettGuideRefreshStarted=true;
+    const refreshAllCrossoverGuides=()=>{for(let i=1;i<=4;i++)crossoverRefreshBuffettGuide(i);};
+    setTimeout(refreshAllCrossoverGuides,1200);
+    setInterval(refreshAllCrossoverGuides,30000);
+}
 // Crossover alerts are not rate-limited. Each actual crossing is delivered.
 async function crossoverSendAlert(index,direction,price,target){
     const s=crossoverInstance(index);
@@ -15928,21 +16037,45 @@ function crossoverWriteCachedPrice(asset,price,updated){
     }catch(e){}
 }
 async function crossoverFetchDailyPercent(asset){
-    const v=String(asset||"").toUpperCase();
+    const v=String(asset||"").trim().toUpperCase();
+    if(!v||v==="USD")return null;
     if(v==="GOLD"||v==="OIL"||v.startsWith("TSE|")){
-        const item=globalPulseCompactAssetPrice(v==="GOLD"?"gold":v==="OIL"?"oil":"tse",v.startsWith("TSE|")?crossoverTseSymbol(v):"");
-        const n=Number(item?.dailyChangePercent);
-        return Number.isFinite(n)?n:null;
+        try{
+            const item=globalPulseCompactAssetPrice(v==="GOLD"?"gold":v==="OIL"?"oil":"tse",v.startsWith("TSE|")?crossoverTseSymbol(v):"");
+            const raw=item?.dailyChangePercent;
+            if(raw!==null&&raw!==undefined&&String(raw).trim()!==""&&Number.isFinite(Number(raw)))return Number(raw);
+        }catch(e){}
+        return null;
     }
-    if(!CRYPTO_COINGECKO_IDS[v])return null;
-    const url=`https://api.mexc.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(v+"USDT")}`;
-    try{
-        const response=await fetchApiWithProxyFallback(url,{method:"GET",headers:{Accept:"application/json"},cache:"no-store"},6500);
-        if(!response?.ok)return null;
-        const payload=await response.json();
-        const n=Number(payload?.priceChangePercent);
-        return Number.isFinite(n)?n:null;
-    }catch(e){return null;}
+
+    // Use the same exchange market data family as the existing Crossover price
+    // path, but request its 24-hour ticker explicitly. The previous implementation
+    // relied on fetchApiWithProxyFallback for a cross-origin endpoint that can be
+    // blocked in WebView, leaving the guide stuck on "Waiting for daily change…".
+    const symbol=typeof cryptoSpotSymbol==="function"
+        ? cryptoSpotSymbol(v)
+        : (v.replace(/[-_\\/]/g,"").endsWith("USDT")?v.replace(/[-_\\/]/g,""):v.replace(/[-_\\/]/g,"")+"USDT");
+    const mexcUrl=`https://api.mexc.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(symbol)}`;
+    const binanceUrl=`https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(symbol)}`;
+    const urls=[
+        mexcUrl,
+        `https://api.cors.syrins.tech/?url=${encodeURIComponent(mexcUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(mexcUrl)}`,
+        binanceUrl,
+        `https://api.cors.syrins.tech/?url=${encodeURIComponent(binanceUrl)}`
+    ];
+    for(const url of urls){
+        try{
+            const response=await fetchWithTimeout(url,{method:"GET",headers:{Accept:"application/json"},cache:"no-store"},4000);
+            if(!response?.ok)continue;
+            const payload=await response.json();
+            const raw=payload?.priceChangePercent;
+            if(raw!==null&&raw!==undefined&&String(raw).trim()!==""&&Number.isFinite(Number(raw))){
+                return Number(raw);
+            }
+        }catch(e){}
+    }
+    return null;
 }
 async function crossoverFetchOne(index,notify=true){
     const s=crossoverInstance(index);
@@ -16188,6 +16321,12 @@ function crossoverApplyState(saved){
         s.previousPrice=Number.isFinite(Number(m.previousPrice))?Number(m.previousPrice):null;
         s.latestPrice=Number.isFinite(Number(m.latestPrice))?Number(m.latestPrice):null;
         s.latestUpdated=m.latestUpdated||null;
+        // Restore the last valid daily percentage so the guidance is available
+        // immediately after a page/WebView refresh, before the next API response.
+        const savedDaily=m.dailyChangePercent;
+        s.dailyChangePercent=(savedDaily!==null && savedDaily!==undefined &&
+            savedDaily!=="" && Number.isFinite(Number(savedDaily)))
+            ? Number(savedDaily) : null;
         const savedLastCross=crossoverReadLastCross(idx);
         s.lastCrossAt=m.lastCrossAt||savedLastCross?.timestamp||null;
         s.lastCrossDirection=Number(m.lastCrossDirection)||Number(savedLastCross?.direction)||0;
@@ -16253,6 +16392,8 @@ function crossoverInit(){
                coin remains registered exactly like activeTarget. */
             if(!s.running){
                 s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;
+                // The previous asset's percentage must not be shown for the new selection.
+                s.dailyChangePercent=null;
                 s.priceDirection=0;
                 /* Do not clear lastCrossAt here: during page restoration the
                    active selector dispatches change before running state is
@@ -16261,6 +16402,7 @@ function crossoverInit(){
             }
             clearPageIssue(`crossover:${i}`);
             crossoverUpdateUI(i);crossoverSaveState();
+            if(!s.running)crossoverRefreshBuffettGuide(i);
         });
         input.addEventListener("input",()=>{
             // Keep a decimal point while the user is typing (e.g. 125.5).
