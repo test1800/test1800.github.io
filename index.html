@@ -15866,16 +15866,15 @@ function crossoverReadState(){
 function crossoverBuffettGuidance(percent){
     if(percent===null||percent===undefined||percent===""||!Number.isFinite(Number(percent)))return {text:"Waiting for daily change…",tone:"hold",title:"Waiting for a valid daily percentage change."};
     const p=Number(percent);
-    if(p < -25)return {text:"Reassess strategy: close or hold based",tone:"buy",title:"A drop alone is not a buy signal. Reassess the investment thesis and fundamentals before deciding whether to close or hold."};
-    if(p < -15)return {text:"Increase position by 10%",tone:"buy",title:"Consider adding only if the investment thesis and valuation remain attractive."};
-    if(p < 5)return {text:"No change",tone:"hold",title:"Avoid acting on this price move alone."};
-    if(p < 15)return {text:"Hold",tone:"hold",title:"Hold; avoid reacting to ordinary price movements."};
-    if(p < 25)return {text:"Continue investing",tone:"hold",title:"Continue only if the long-term investment thesis remains valid."};
-    if(p < 35)return {text:"Sell 10% of position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
-    if(p < 45)return {text:"Sell 20% of position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
-    if(p < 60)return {text:"Sell 30% of position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
-    if(p < 100)return {text:"Sell 40% of position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
-    return {text:"Sell entire position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
+    if(p <= -25)return {text:"Stop buying; serious review",tone:"buy",title:"Stop adding to the position and reassess the investment thesis carefully."};
+    if(p <= -15)return {text:"Increase position by 10%",tone:"buy",title:"Only consider adding after confirming the analysis and investment thesis."};
+    if(p <= -10)return {text:"Reassess; no automatic buying",tone:"hold",title:"Review the situation; do not buy automatically."};
+    if(p <= -5)return {text:"No change",tone:"hold",title:"Avoid acting on this price move alone."};
+    if(p < 20)return {text:"Hold",tone:"hold",title:"Hold; avoid reacting to ordinary price movements."};
+    if(p < 30)return {text:"Sell 10% of initial position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
+    if(p < 40)return {text:"Sell 15% of initial position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
+    if(p < 75)return {text:"Sell 20% of initial position",tone:"sell",title:"Custom portfolio rule, not a fixed Warren Buffett rule."};
+    return {text:"Evaluate selling the remainder",tone:"sell",title:"Review the investment and decide whether to sell the remaining position."};
 }
 function crossoverGuidePercentFromTarget(index){
     const s=crossoverInstance(index);
