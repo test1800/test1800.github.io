@@ -6632,6 +6632,8 @@ h1 {
       <button type="button" data-average-range="week">Week</button>
       <button type="button" data-average-range="month">Month</button>
       <button type="button" data-average-range="year">Year</button>
+      <button type="button" data-average-range="fiveYears">5Y</button>
+      <button type="button" data-average-range="all">All</button>
     </div>
   </div>
   <div class="average-price-chart-plot" id="averagePriceChartPlot">
@@ -17097,7 +17099,7 @@ if (
   const plot=document.getElementById('averagePriceChartPlot');
   // Restore the user's last selected chart range before the first render.
   let range='day';
-  try{const savedRange=localStorage.getItem(RANGE_KEY);if(['hour','day','week','month','year'].includes(savedRange))range=savedRange;}catch(e){}
+  try{const savedRange=localStorage.getItem(RANGE_KEY);if(['hour','day','week','month','year','fiveYears','all'].includes(savedRange))range=savedRange;}catch(e){}
 
   // No application-level record cap: retain and export every valid numeric point in IndexedDB.
   // IndexedDB is used because localStorage cannot reliably hold large histories.
@@ -17122,7 +17124,7 @@ if (
   function fmt(v){return Math.round(Number(v)).toLocaleString('en-US',{maximumFractionDigits:0});}
   function niceStep(raw){const power=Math.pow(10,Math.floor(Math.log10(Math.max(raw,1))));const n=raw/power;return (n<=1?1:n<=2?2:n<=5?5:10)*power;}
   function draw(){
-    record();const now=Date.now(),span=range==='hour'?3600000:range==='day'?86400000:range==='week'?7*86400000:range==='month'?30*86400000:365*86400000;
+    record();const now=Date.now(),span=range==='hour'?3600000:range==='day'?86400000:range==='week'?7*86400000:range==='month'?30*86400000:range==='year'?365*86400000:range==='fiveYears'?5*365*86400000:Math.max(0,now-(read().length?Math.min(...read().map(p=>p.t)):now));
     const rawPts=read().filter(p=>p.t>=now-span&&p.t<=now+60000);
     // Keep every raw point in storage/export, but render at most 3,000 representative points for smooth charts.
     let pts=rawPts;
@@ -17133,40 +17135,52 @@ if (
     const vals=pts.map(p=>p.v).filter(v=>Number.isFinite(v)&&v>0);
     if(!vals.length){plot.innerHTML='<div class="average-price-chart-empty"><span>No cached price data</span></div>';return;}
     const dataMin=Math.min(...vals),dataMax=Math.max(...vals),mean=dataMin+(dataMax-dataMin)/2;
-    // Keep approximately 5% headroom, then round axis endpoints to thousands (or a smaller unit for small prices).
-    const unit=Math.pow(10,Math.max(0,Math.floor(Math.log10(Math.max(dataMax,1)))-2));
-    let min=Math.floor((dataMin*.95)/unit)*unit,max=Math.floor((dataMax*1.05)/unit)*unit;
-    if(!(max>min)) {min=Math.floor((dataMin-unit)/unit)*unit;max=Math.ceil((dataMax+unit)/unit)*unit;}
-    if(!(max>min)){min=0;max=unit*4;}
-    const step=niceStep((max-min)/4);min=Math.floor(min/step)*step;max=Math.floor(max/step)*step;
-    if(max<=dataMax)max+=step;
-    if(!(max>min))max=min+step;
+    // Keep the vertical axis tight to this range's actual low/high, using tidy tick intervals.
+    const dataSpan=dataMax-dataMin;
+    const pad=dataSpan>0?dataSpan*.015:Math.max(Math.abs(dataMax)*.002,1);
+    const rawMin=dataMin-pad,rawMax=dataMax+pad;
+    const rawStep=niceStep((rawMax-rawMin)/4);
+    const step=rawStep>=1000?Math.max(1000,Math.round(rawStep/1000)*1000):rawStep;
+    let min=Math.floor(rawMin/step)*step,max=Math.ceil(rawMax/step)*step;
+    if(!(max>min)){min-=step;max+=step;}
     // Wait for the container to have its real layout width. A guessed width on first paint
     // makes the SVG stretch until a timeframe change triggers a redraw.
     const measuredWidth=Math.round(plot.getBoundingClientRect().width);
     if(measuredWidth<100)return;
-    const W=Math.max(300,measuredWidth),H=150,L=76,R=measuredWidth<=480?38:91,T=9,B=27,pw=W-L-R,ph=H-T-B;
+    const W=Math.max(300,measuredWidth),H=150,L=76,R=measuredWidth<=480?38:91,T=16,B=36,pw=W-L-R,ph=H-T-B;
     const x=t=>L+((Number(t)-(now-span))/span)*pw,y=v=>T+(max-Number(v))/(max-min)*ph;
     const last=pts[pts.length-1],lx=x(last.t),ly=y(last.v),meanY=y(mean);
-    let grid='';const levels=Math.max(4,Math.round((max-min)/step));
+    let grid='';const levels=4;
     for(let i=0;i<=levels;i++){const val=min+(max-min)*i/levels,yy=y(val);grid+=`<line x1="${L}" y1="${yy}" x2="${W-R+5}" y2="${yy}" stroke="currentColor" opacity=".14"/><text x="${L-8}" y="${yy+3.5}" text-anchor="end" fill="currentColor" opacity=".82" font-size="10">${fmt(val)}</text>`;}
     const ticks=range==='hour'?[0,.25,.5,.75,1]:range==='day'?[0,.25,.5,.75,1]:[0,.2,.4,.6,.8,1];let times='';
     const jalaliFmt=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{day:'numeric',month:'short'});
     ticks.forEach((f,i)=>{const d=new Date(now-span+span*f);const label=range==='hour'||range==='day'?d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false}):range==='week'?new Intl.DateTimeFormat('fa-IR-u-ca-persian',{weekday:'short'}).format(d):jalaliFmt.format(d);times+=`<text x="${L+pw*f}" y="${H-7}" text-anchor="${i===0?'start':i===ticks.length-1?'end':'middle'}" fill="currentColor" opacity=".65" font-size="9">${label}</text>`;});
-    // Fill is blue below the range midpoint and white above it. Equality is blue.
-    const meanStop=Math.max(0,Math.min(100,(meanY-T)/ph*100));
     const baseGap=range==='hour'?120000:range==='day'?5*60000:range==='week'?30*60000:range==='month'?2*3600000:12*3600000;
-    let segments='';
+    let segments='',areaFills='',gradients='';
     for(let i=1;i<pts.length;i++){
       const a=pts[i-1],b=pts[i],ax=x(a.t),ay=y(a.v),bx=x(b.t),by=y(b.v);
-      const color=((a.v+b.v)/2<=mean)?'#62aaff':'#ffffff';
+      const aAbove=a.v>mean,bAbove=b.v>mean;
       const dashed=(b.t-a.t)>baseGap;
-      segments+=`<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="${color}" stroke-width="2" stroke-linecap="round" ${dashed?'stroke-dasharray="3 4" opacity=".8"':''}/>`;
+      const addFill=(x1,y1,x2,y2,above,id)=>{
+        const color=above?'#ffffff':'#168cff';
+        gradients+=`<linearGradient id="meanFill${id}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x1}" y2="${meanY}"><stop offset="0%" stop-color="${color}" stop-opacity="${above?'.30':'.78'}"/><stop offset="55%" stop-color="${color}" stop-opacity="${above?'.14':'.42'}"/><stop offset="100%" stop-color="${color}" stop-opacity="${above?'.025':'.10'}"/></linearGradient>`;
+        areaFills+=`<polygon points="${x1},${y1} ${x2},${y2} ${x2},${meanY} ${x1},${meanY}" fill="url(#meanFill${id})"/>`;
+      };
+      if(aAbove===bAbove){
+        addFill(ax,ay,bx,by,aAbove,i);
+        segments+=`<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="${aAbove?'#ffffff':'#62aaff'}" stroke-width="2" stroke-linecap="round" ${dashed?'stroke-dasharray="3 4" opacity=".8"':''}/>`;
+      }else{
+        const ratio=(mean-a.v)/(b.v-a.v),cx=ax+(bx-ax)*ratio;
+        addFill(ax,ay,cx,meanY,aAbove,`${i}a`);
+        addFill(cx,meanY,bx,by,bAbove,`${i}b`);
+        segments+=`<line x1="${ax}" y1="${ay}" x2="${cx}" y2="${meanY}" stroke="${aAbove?'#ffffff':'#62aaff'}" stroke-width="2" stroke-linecap="round" ${dashed?'stroke-dasharray="3 4" opacity=".8"':''}/><line x1="${cx}" y1="${meanY}" x2="${bx}" y2="${by}" stroke="${bAbove?'#ffffff':'#62aaff'}" stroke-width="2" stroke-linecap="round" ${dashed?'stroke-dasharray="3 4" opacity=".8"':''}/>`;
+      }
     }
+    const meanLabelX=L+3,meanLabelY=T+10;
     // The vertical start marker is only a baseline guide, not a price sample and never affects calculations.
     const first=pts[0],fx=x(first.t),fy=y(first.v),mobileBadge=measuredWidth<=480,badgeX=mobileBadge?W-28:W-79,badgeY=Math.max(T,Math.min(T+ph-19,ly-9.5));
     const fillPath=pts.map((p,i)=>(i?'L':'M')+x(p.t).toFixed(1)+' '+y(p.v).toFixed(1)).join(' ');
-    plot.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Live Average price history"><defs><linearGradient id="avgPriceFill" gradientUnits="userSpaceOnUse" x1="0" y1="${T}" x2="0" y2="${T+ph}"><stop offset="0%" stop-color="#ffffff" stop-opacity=".22"/><stop offset="${meanStop.toFixed(2)}%" stop-color="#ffffff" stop-opacity=".10"/><stop offset="${meanStop.toFixed(2)}%" stop-color="#58a6ff" stop-opacity=".24"/><stop offset="100%" stop-color="#58a6ff" stop-opacity=".34"/></linearGradient></defs>${grid}<path d="${fillPath} L ${lx} ${T+ph} L ${fx} ${T+ph} Z" fill="url(#avgPriceFill)"/><line x1="${fx}" y1="${fy}" x2="${fx}" y2="${T+ph}" stroke="#62aaff" stroke-width="1.2" opacity=".8"/>${segments}<circle cx="${lx}" cy="${ly}" r="3" fill="${last.v>=mean?'#62aaff':'#ffffff'}" stroke="#18202b" stroke-width="1"/><line x1="${W-R+2}" y1="${T}" x2="${W-R+2}" y2="${T+ph}" stroke="currentColor" opacity=".12"/>${mobileBadge?`<g transform="rotate(-90 ${W-19} ${Math.max(T+35,Math.min(T+ph-35,ly))})"><rect x="${W-54}" y="${Math.max(T+35,Math.min(T+ph-35,ly))-9.5}" width="70" height="19" rx="6" fill="${last.v>=mean?'#2878d8':'#59616d'}"/><text x="${W-19}" y="${Math.max(T+35,Math.min(T+ph-35,ly))+3.5}" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${fmt(last.v)}</text></g>`:`<rect x="${badgeX}" y="${badgeY}" width="70" height="19" rx="6" fill="${last.v>=mean?'#2878d8':'#59616d'}"/><text x="${badgeX+35}" y="${badgeY+12.5}" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${fmt(last.v)}</text>`}${times}</svg>`;
+    plot.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Live Average price history">${grid}<defs>${gradients}</defs>${areaFills}<text x="${meanLabelX}" y="${meanLabelY}" fill="currentColor" opacity=".72" font-size="9" font-weight="600">${fmt(mean)}</text><text x="${W-R-4}" y="${T-4}" text-anchor="end" fill="#ffffff" opacity=".9" font-size="9" font-weight="600">${fmt(dataMax)}</text><text x="${W-R-4}" y="${T+ph+12}" text-anchor="end" fill="#58a6ff" opacity=".98" font-size="9" font-weight="600">${fmt(dataMin)}</text><line x1="${fx}" y1="${fy}" x2="${fx}" y2="${T+ph}" stroke="#62aaff" stroke-width="1.2" opacity=".8"/>${segments}<circle cx="${lx}" cy="${ly}" r="3" fill="${last.v>=mean?'#62aaff':'#ffffff'}" stroke="#18202b" stroke-width="1"/><line x1="${W-R+2}" y1="${T}" x2="${W-R+2}" y2="${T+ph}" stroke="currentColor" opacity=".12"/>${mobileBadge?`<g transform="rotate(-90 ${W-19} ${Math.max(T+35,Math.min(T+ph-35,ly))})"><rect x="${W-54}" y="${Math.max(T+35,Math.min(T+ph-35,ly))-9.5}" width="70" height="19" rx="6" fill="${last.v>=mean?'#2878d8':'#59616d'}"/><text x="${W-19}" y="${Math.max(T+35,Math.min(T+ph-35,ly))+3.5}" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${fmt(last.v)}</text></g>`:`<rect x="${badgeX}" y="${badgeY}" width="70" height="19" rx="6" fill="${last.v>=mean?'#2878d8':'#59616d'}"/><text x="${badgeX+35}" y="${badgeY+12.5}" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${fmt(last.v)}</text>`}${times}</svg>`;
     // Interactive price tooltip: hover with a mouse or tap/drag on touch screens.
     const svg=plot.querySelector('svg');
     if(svg){
@@ -17201,15 +17215,18 @@ if (
   }
   card.querySelectorAll('[data-average-range]').forEach(b=>b.addEventListener('click',()=>{
     const nextRange=b.dataset.averageRange;
-    if(!['hour','day','week','month','year'].includes(nextRange))return;
+    if(!['hour','day','week','month','year','fiveYears','all'].includes(nextRange))return;
     range=nextRange;
     try{localStorage.setItem(RANGE_KEY,range);}catch(e){}
     draw();
   }));
   // Automatically synchronize additional numeric history from the GitHub raw file.
   // The manual Import control is intentionally removed; Export remains available.
-  const HISTORY_URL='https://raw.githubusercontent.com/test1800/test1800.github.io/main/FinancialChartHistory.json';
-  const REMOTE_META_KEY='financialDashboardPriceChartRemoteMetaV1';
+  const HISTORY_URLS=[
+    'https://raw.githubusercontent.com/test1800/test1800.github.io/main/FinancialChartHistoryauto.json',
+    'https://raw.githubusercontent.com/test1800/test1800.github.io/main/FinancialChartHistory.json'
+  ];
+  const REMOTE_META_KEY='financialDashboardPriceChartRemoteMetaV2';
   const exportButton=document.getElementById('averageChartExport');
   function normalizeImported(payload){
     let arr=Array.isArray(payload)?payload:(payload&&Array.isArray(payload.history)?payload.history:(payload&&Array.isArray(payload.data)?payload.data:[]));
@@ -17224,40 +17241,55 @@ if (
     autoSyncRunning=true;lastSyncAt=Date.now();
     try{
       const previous=remoteMeta();
-      // First use a lightweight HEAD request where supported, so large JSON files
-      // are not downloaded repeatedly when the published backup has not changed.
-      let shouldDownload=force || !previous.etag && !previous.lastModified;
-      let remoteHeaders={};
-      try{
-        const head=await fetch(HISTORY_URL+'?_='+Date.now(),{method:'HEAD',cache:'no-store'});
-        if(head.ok){
-          remoteHeaders={etag:head.headers.get('ETag')||'',lastModified:head.headers.get('Last-Modified')||'',length:head.headers.get('Content-Length')||''};
-          if(previous.etag && remoteHeaders.etag)shouldDownload=previous.etag!==remoteHeaders.etag;
-          else if(previous.lastModified && remoteHeaders.lastModified)shouldDownload=previous.lastModified!==remoteHeaders.lastModified;
-          else if(previous.length && remoteHeaders.length)shouldDownload=previous.length!==remoteHeaders.length;
-          else if(!previous.etag && !previous.lastModified && !previous.length)shouldDownload=true;
-        }else if(!previous.etag && !previous.lastModified && !previous.length)shouldDownload=true;
-      }catch(e){if(!previous.etag && !previous.lastModified && !previous.length)shouldDownload=true;}
-      if(!shouldDownload)return;
-      const response=await fetch(HISTORY_URL+'?_='+Date.now(),{cache:'no-store'});
-      if(!response.ok)throw new Error('GitHub returned HTTP '+response.status);
-      const payload=await response.json(), incoming=normalizeImported(payload);
-      if(!incoming.length)return;
       const existing=new Set(read().map(p=>String(Number(p.t))+':'+String(Number(p.v))));
       const additions=[];
-      for(const p of incoming){const key=String(Number(p.t))+':'+String(Number(p.v));if(!existing.has(key)){existing.add(key);additions.push({t:Number(p.t),v:Number(p.v)});}}
+      // Read both automated and manually maintained sources; keep local records and
+      // merge unique timestamp/value pairs without changing the chart's data logic.
+      for(let sourceIndex=0;sourceIndex<HISTORY_URLS.length;sourceIndex++){
+        const url=HISTORY_URLS[sourceIndex], metaKey='source'+sourceIndex, old=previous[metaKey]||{};
+        let shouldDownload=force || !old.etag && !old.lastModified && !old.length;
+        let remoteHeaders={};
+        try{
+          const head=await fetch(url+'?_='+Date.now(),{method:'HEAD',cache:'no-store'});
+          if(head.ok){
+            remoteHeaders={etag:head.headers.get('ETag')||'',lastModified:head.headers.get('Last-Modified')||'',length:head.headers.get('Content-Length')||''};
+            if(old.etag && remoteHeaders.etag)shouldDownload=old.etag!==remoteHeaders.etag;
+            else if(old.lastModified && remoteHeaders.lastModified)shouldDownload=old.lastModified!==remoteHeaders.lastModified;
+            else if(old.length && remoteHeaders.length)shouldDownload=old.length!==remoteHeaders.length;
+            else if(!old.etag && !old.lastModified && !old.length)shouldDownload=true;
+          }else if(!old.etag && !old.lastModified && !old.length)shouldDownload=true;
+        }catch(e){if(!old.etag && !old.lastModified && !old.length)shouldDownload=true;}
+        if(!shouldDownload)continue;
+        try{
+          const response=await fetch(url+'?_='+Date.now(),{cache:'no-store'});
+          if(!response.ok)throw new Error('GitHub returned HTTP '+response.status);
+          const payload=await response.json(),incoming=normalizeImported(payload);
+          for(const point of incoming){
+            const key=String(Number(point.t))+':'+String(Number(point.v));
+            if(!existing.has(key)){existing.add(key);additions.push({t:Number(point.t),v:Number(point.v)});}
+          }
+          previous[metaKey]={etag:response.headers.get('ETag')||remoteHeaders.etag||'',lastModified:response.headers.get('Last-Modified')||remoteHeaders.lastModified||'',length:response.headers.get('Content-Length')||remoteHeaders.length||'',checkedAt:Date.now(),count:incoming.length};
+        }catch(sourceError){console.warn('Price Chart history sync failed for '+url+':',sourceError);}
+      }
       if(additions.length){
         await persistPoints(additions);
         historyCache=cleanHistory(read().concat(additions));
         scheduleDraw();
       }
-      saveRemoteMeta({etag:response.headers.get('ETag')||remoteHeaders.etag||'',lastModified:response.headers.get('Last-Modified')||remoteHeaders.lastModified||'',length:response.headers.get('Content-Length')||remoteHeaders.length||'',checkedAt:Date.now(),count:incoming.length});
+      saveRemoteMeta(previous);
       const card=document.getElementById('averagePriceChartCard');
       if(card)card.dataset.historySync='ok';
     }catch(err){
-      // Keep local chart usable if GitHub is offline or the file is temporarily invalid.
       console.warn('Price Chart automatic history sync failed:',err);
     }finally{autoSyncRunning=false;}
+  }
+  if(exportButton){
+    const updateExportTooltip=()=>{
+      try{exportButton.title='Export · '+cleanHistory(read()).length+' records';}
+      catch(e){exportButton.title='Export';}
+    };
+    exportButton.addEventListener('mouseenter',updateExportTooltip);
+    exportButton.addEventListener('focus',updateExportTooltip);
   }
   if(exportButton)exportButton.addEventListener('click',()=>{
     try{
