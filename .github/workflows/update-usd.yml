@@ -1,401 +1,169 @@
-name: Update USD Price
+name: Update Financial Chart History
 
 on:
-
   workflow_dispatch:
-
   schedule:
     - cron: "*/5 * * * *"
 
-
 permissions:
-
   contents: write
 
-
 jobs:
-
-  update-usd:
-
+  update-history:
     runs-on: ubuntu-latest
 
-
     steps:
-
-
       - name: Checkout repository
-
         uses: actions/checkout@v4
 
-
-
-      - name: Get USD price from TGJU
-
+      - name: Update FinancialChartHistoryauto.json
         run: |
-
           python - <<'PY'
-
-          import urllib.request
-          import re
-          import time
+          import json
           import os
+          import time
+          import urllib.request
+          import statistics
 
+          FILE = "FinancialChartHistoryauto.json"
 
+          APIS = {
+              "Nobitex": "https://apiv2.nobitex.ir/v3/orderbook/USDTIRT",
+              "Exir": "https://api.exir.io/v2/orderbook?symbol=usdt-irt",
+              "Bitpin": "https://api.bitpin.org/api/v1/mth/orderbook/USDT_IRT/",
+          }
 
-          url = "https://www.tgju.org/"
+          def fetch_json(url):
+              request = urllib.request.Request(
+                  url,
+                  headers={
+                      "User-Agent": "Mozilla/5.0",
+                      "Accept": "application/json",
+                      "Cache-Control": "no-cache"
+                  }
+              )
 
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  return json.loads(
+                      response.read().decode("utf-8")
+                  )
 
+          def extract_price(levels):
+              if not isinstance(levels, list) or not levels:
+                  return None
 
-          html = None
+              level = levels[0]
 
-
-
-          # -------------------------------
-          # Download TGJU
-          # -------------------------------
-
-
-          for attempt in range(3):
+              if isinstance(level, dict):
+                  value = level.get("price")
+              elif isinstance(level, (list, tuple)) and level:
+                  value = level[0]
+              else:
+                  return None
 
               try:
+                  value = float(value)
+                  return value if value > 0 else None
+              except (TypeError, ValueError):
+                  return None
 
+          def get_price(name, url):
+              data = fetch_json(url)
 
-                  request = urllib.request.Request(
+              if name == "Nobitex":
+                  if data.get("status") != "ok":
+                      raise ValueError("Invalid Nobitex response")
+                  book = data
 
-                      url,
+              elif name == "Exir":
+                  book = data.get("usdt-irt")
+                  if not isinstance(book, dict):
+                      book = data.get("USDT-IRT")
+                  if not isinstance(book, dict):
+                      book = data
 
-                      headers={
+              else:
+                  book = data
 
-                          "User-Agent":
-                          "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+              bids = book.get("bids", book.get("bid"))
+              asks = book.get("asks", book.get("ask"))
 
-                          "Cache-Control":
-                          "no-cache",
+              bid = extract_price(bids)
+              ask = extract_price(asks)
 
-                          "Pragma":
-                          "no-cache"
+              if bid is None or ask is None or bid > ask:
+                  raise ValueError("Invalid bid/ask")
 
-                      }
+              return (bid + ask) / 2
 
-                  )
+          prices = []
 
+          for name, url in APIS.items():
+              try:
+                  price = get_price(name, url)
+                  prices.append(price)
+                  print(f"{name}: {price}")
+              except Exception as error:
+                  print(f"{name} failed: {error}")
 
-                  with urllib.request.urlopen(
-
-                      request,
-
-                      timeout=30
-
-                  ) as response:
-
-
-                      html = response.read().decode(
-
-                          "utf-8",
-
-                          errors="ignore"
-
-                      )
-
-
-                  break
-
-
-
-              except Exception as e:
-
-
-                  print(
-                      "Retry:",
-                      attempt + 1,
-                      e
-                  )
-
-
-                  time.sleep(5)
-
-
-
-
-          if not html:
-
-
-              raise Exception(
-                  "TGJU connection failed"
+          if not prices:
+              raise RuntimeError(
+                  "All APIs failed; history was not modified."
               )
 
+          average = statistics.mean(prices)
+          timestamp = int(time.time() * 1000)
 
+          data = {
+              "format": "FinancialChartHistory",
+              "version": 2,
+              "encoding": "pairs",
+              "count": 0,
+              "history": []
+          }
 
+          if os.path.exists(FILE):
+              with open(FILE, "r", encoding="utf-8") as f:
+                  existing = json.load(f)
 
+              if (
+                  existing.get("format") != "FinancialChartHistory"
+                  or existing.get("version") != 2
+                  or existing.get("encoding") != "pairs"
+                  or not isinstance(existing.get("history"), list)
+              ):
+                  raise ValueError("Invalid existing history file")
 
-          # -------------------------------
-          # Find Dollar Free Market Price
-          # -------------------------------
+              data = existing
 
+          history = data["history"]
 
-          patterns = [
+          history.append([timestamp, average])
+          data["count"] = len(history)
 
-
-              r'price_dollar_rl.*?([0-9۰-۹,]{6,})',
-
-
-              r'"price_dollar_rl".*?([0-9۰-۹,]{6,})',
-
-
-              r'dollar_rl.*?([0-9۰-۹,]{6,})',
-
-
-              r'دلار.*?([0-9۰-۹,]{6,})'
-
-
-          ]
-
-
-
-          rial_price = None
-
-
-
-          persian = "۰۱۲۳۴۵۶۷۸۹"
-
-
-
-          for pattern in patterns:
-
-
-              matches = re.findall(
-
-                  pattern,
-
-                  html,
-
-                  re.DOTALL
-
+          with open(FILE, "w", encoding="utf-8") as f:
+              json.dump(
+                  data,
+                  f,
+                  ensure_ascii=False,
+                  separators=(",", ":")
               )
-
-
-
-              for value in matches:
-
-
-                  for i,d in enumerate(persian):
-
-
-                      value = value.replace(
-
-                          d,
-
-                          str(i)
-
-                      )
-
-
-
-                  value = value.replace(
-
-                      ",",
-
-                      ""
-
-                  )
-
-
-
-                  try:
-
-
-                      number = int(value)
-
-
-
-                      # valid rial USD range
-
-                      if 1000000 < number < 10000000:
-
-
-                          rial_price = number
-
-                          break
-
-
-
-                  except:
-
-
-                      pass
-
-
-
-              if rial_price:
-
-
-                  break
-
-
-
-
-
-          if not rial_price:
-
-
-              # Debug file if failed
-
-              with open(
-
-                  "tgju_debug.html",
-
-                  "w",
-
-                  encoding="utf-8"
-
-              ) as f:
-
-                  f.write(html)
-
-
-
-              raise Exception(
-
-                  "Dollar price not found"
-
-              )
-
-
-
-
-
-          # -------------------------------
-          # Rial to Toman
-          # -------------------------------
-
-
-          toman_price = round(
-
-              rial_price / 10
-
-          )
-
-
-
-          print(
-              "TGJU Rial:",
-              rial_price
-          )
-
-
-          print(
-              "TGJU Toman:",
-              toman_price
-          )
-
-
-
-
-
-          # -------------------------------
-          # Update file only if changed
-          # -------------------------------
-
-
-          old = ""
-
-
-
-          if os.path.exists(
-
-              "usd.txt"
-
-          ):
-
-
-              with open(
-
-                  "usd.txt",
-
-                  encoding="utf-8"
-
-              ) as f:
-
-
-                  old = f.read().strip()
-
-
-
-
-
-          if old != str(toman_price):
-
-
-              with open(
-
-                  "usd.txt",
-
-                  "w",
-
-                  encoding="utf-8"
-
-              ) as f:
-
-
-                  f.write(
-
-                      str(toman_price)
-
-                  )
-
-
-              print(
-                  "USD updated"
-              )
-
-
-          else:
-
-
-              print(
-                  "No change"
-              )
-
-
+              f.write("\n")
+
+          print("Average price:", average)
+          print("Valid APIs:", len(prices))
+          print("Total records:", data["count"])
           PY
 
-
-
-
-
-      - name: Commit USD price
-
-
+      - name: Commit FinancialChartHistoryauto.json
         run: |
-
-
-          git config user.name \
-          "github-actions[bot]"
-
-
-          git config user.email \
-          "41898282+github-actions[bot]@users.noreply.github.com"
-
-
-
-          git add usd.txt
-
-
+          git add FinancialChartHistoryauto.json
 
           if git diff --cached --quiet; then
-
-
-              echo "No changes"
-
-
+            echo "No changes"
           else
-
-
-              git commit \
-              -m "Update USD price"
-
-
-              git push
-
-
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Update financial chart history"
+            git push
           fi
