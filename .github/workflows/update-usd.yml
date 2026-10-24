@@ -17,10 +17,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Fetch USDT prices and update history
+      - name: Fetch USDT sell prices and update history
         run: |
           python - <<'PY'
           import json
+          import math
           import os
           import time
           import urllib.request
@@ -34,6 +35,9 @@ jobs:
               "Bitpin": "https://api.bitpin.org/api/v1/mth/orderbook/USDT_IRT/",
           }
 
+          MIN_TOMAN = 200_000
+          MAX_TOMAN = 400_000
+
           def fetch_json(url):
               request = urllib.request.Request(
                   url,
@@ -46,96 +50,115 @@ jobs:
               )
 
               with urllib.request.urlopen(request, timeout=25) as response:
-                  return json.loads(
-                      response.read().decode("utf-8")
-                  )
+                  return json.loads(response.read().decode("utf-8"))
 
-          def get_levels(book, side):
-              aliases = {
-                  "bids": ("bids", "bid"),
-                  "asks": ("asks", "ask"),
-              }
+          def find_orderbook(data, name):
+              if not isinstance(data, dict):
+                  raise ValueError("Response is not a JSON object")
 
-              for key in aliases[side]:
-                  value = book.get(key)
-                  if isinstance(value, list) and value:
-                      return value
+              if name == "Nobitex":
+                  if data.get("status") != "ok":
+                      raise ValueError("Nobitex status is not ok")
+                  return data
 
-              raise ValueError(f"Missing {side} levels")
+              # Support common nested orderbook response formats.
+              candidates = [data]
 
-          def parse_level(level):
+              for key in ("data", "result", "orderbook", "usdt-irt", "USDT-IRT"):
+                  value = data.get(key)
+                  if isinstance(value, dict):
+                      candidates.append(value)
+
+              for candidate in candidates:
+                  if isinstance(candidate.get("asks"), list):
+                      return candidate
+
+              raise ValueError("Sell orders (asks) not found")
+
+          def first_sell_price(book):
+              asks = book.get("asks")
+
+              if not isinstance(asks, list) or not asks:
+                  raise ValueError("No sell orders available")
+
+              level = asks[0]
+
               if isinstance(level, dict):
-                  value = level.get("price")
+                  raw = level.get("price")
               elif isinstance(level, (list, tuple)) and level:
-                  value = level[0]
+                  # Orderbook entry: [price, amount]
+                  raw = level[0]
               else:
-                  value = None
+                  raw = None
 
-              if value is None:
-                  raise ValueError("Missing order price")
+              if raw is None:
+                  raise ValueError("Sell price missing")
 
-              price = float(value)
+              price = float(raw)
 
-              if not (price > 0 and price < float("inf")):
-                  raise ValueError("Invalid order price")
+              if not math.isfinite(price) or price <= 0:
+                  raise ValueError("Invalid sell price")
 
               return price
 
-          def get_price(name, url):
-              response = fetch_json(url)
+          def normalize_toman(raw_price):
+              # Keep prices already near the expected toman range.
+              if MIN_TOMAN <= raw_price <= MAX_TOMAN:
+                  toman = raw_price
 
-              if not isinstance(response, dict):
-                  raise ValueError("Invalid API response")
-
-              if name == "Nobitex":
-                  if response.get("status") != "ok":
-                      raise ValueError("Nobitex status is not ok")
-                  book = response
-
-              elif name == "Exir":
-                  book = response.get("usdt-irt")
-                  if not isinstance(book, dict):
-                      book = response.get("USDT-IRT")
-                  if not isinstance(book, dict):
-                      book = response
+              # Convert rial-denominated prices to toman only when
+              # dividing by ten produces a plausible USDT price.
+              elif (
+                  raw_price > MAX_TOMAN
+                  and MIN_TOMAN <= raw_price / 10 <= MAX_TOMAN
+              ):
+                  toman = raw_price / 10
 
               else:
-                  book = response
+                  raise ValueError(
+                      f"Price outside expected range: {raw_price}"
+                  )
 
-              bids = get_levels(book, "bids")
-              asks = get_levels(book, "asks")
+              if not MIN_TOMAN <= toman <= MAX_TOMAN:
+                  raise ValueError(f"Invalid toman price: {toman}")
 
-              bid = parse_level(bids[0])
-              ask = parse_level(asks[0])
-
-              if bid > ask:
-                  raise ValueError("Bid is greater than ask")
-
-              # Midpoint of the best bid and best ask
-              return (bid + ask) / 2
+              return toman
 
           prices = {}
 
           for name, url in APIS.items():
               try:
-                  price = get_price(name, url)
-                  prices[name] = price
-                  print(f"{name} USDT/IRT: {price}")
-              except Exception as error:
-                  print(f"{name} API failed: {error}")
+                  response = fetch_json(url)
+                  book = find_orderbook(response, name)
+                  raw_price = first_sell_price(book)
+                  toman_price = normalize_toman(raw_price)
 
-          # Require all three sources for a true three-source average.
+                  prices[name] = toman_price
+
+                  print(
+                      f"{name}: raw sell={raw_price}, "
+                      f"sell Toman={toman_price}"
+                  )
+
+              except Exception as error:
+                  print(f"{name} FAILED: {error}")
+
+          # Do not store a partial or unreliable average.
           if len(prices) != 3:
               raise RuntimeError(
-                  f"Expected 3 valid API prices; received {len(prices)}. "
-                  "History was not modified."
+                  f"Only {len(prices)}/3 valid sell prices. "
+                  "History was not changed."
               )
 
           average_price = mean(prices.values())
-          timestamp = int(time.time() * 1000)
 
-          if not (average_price > 0 and average_price < float("inf")):
-              raise RuntimeError("Invalid average price")
+          # Guard against a large disagreement between exchanges.
+          if max(prices.values()) / min(prices.values()) > 1.03:
+              raise RuntimeError(
+                  f"Sell prices differ by more than 3%: {prices}"
+              )
+
+          timestamp = int(time.time() * 1000)
 
           data = {
               "format": "FinancialChartHistory",
@@ -146,8 +169,8 @@ jobs:
           }
 
           if os.path.exists(FILE):
-              with open(FILE, "r", encoding="utf-8") as file:
-                  existing = json.load(file)
+              with open(FILE, "r", encoding="utf-8") as f:
+                  existing = json.load(f)
 
               if (
                   existing.get("format") != "FinancialChartHistory"
@@ -155,9 +178,7 @@ jobs:
                   or existing.get("encoding") != "pairs"
                   or not isinstance(existing.get("history"), list)
               ):
-                  raise ValueError(
-                      "Existing history file has an invalid format"
-                  )
+                  raise ValueError("Existing history format is invalid")
 
               data = existing
 
@@ -169,22 +190,21 @@ jobs:
           history.append([timestamp, average_price])
           data["count"] = len(history)
 
-          with open(FILE, "w", encoding="utf-8") as file:
+          with open(FILE, "w", encoding="utf-8") as f:
               json.dump(
                   data,
-                  file,
+                  f,
                   ensure_ascii=False,
                   separators=(",", ":"),
                   allow_nan=False,
               )
-              file.write("\n")
+              f.write("\n")
 
-          print("Nobitex:", prices["Nobitex"])
-          print("Exir:", prices["Exir"])
-          print("Bitpin:", prices["Bitpin"])
-          print("Three-source average:", average_price)
-          print("Timestamp:", timestamp)
-          print("Total history records:", data["count"])
+          print("Nobitex sell Toman:", prices["Nobitex"])
+          print("Exir sell Toman:", prices["Exir"])
+          print("Bitpin sell Toman:", prices["Bitpin"])
+          print("Average sell Toman:", average_price)
+          print("History count:", data["count"])
           PY
 
       - name: Commit FinancialChartHistoryauto.json
@@ -192,7 +212,7 @@ jobs:
           git add FinancialChartHistoryauto.json
 
           if git diff --cached --quiet; then
-            echo "No changes to commit"
+            echo "No changes"
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
