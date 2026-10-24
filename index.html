@@ -6623,9 +6623,9 @@ h1 {
 <!-- =================================================
      CHART PRICE — Live Average history
 ================================================= -->
-<section class="card average-price-chart-card" id="averagePriceChartCard" aria-label="Price Chart">
+<section class="card average-price-chart-card" id="averagePriceChartCard" aria-label="Chart">
   <div class="average-price-chart-head">
-    <div class="average-price-chart-title"><span class="average-price-chart-icon">⌁</span><span>Price Chart</span><span class="average-price-chart-tools" aria-label="Price chart history tools"><button type="button" class="average-chart-tool export" id="averageChartExport" title="Export full history backup" aria-label="Export history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-5 5 5-5 5 5M5 14v6h14v-6"/></svg></button></span></div>
+    <div class="average-price-chart-title"><span>Chart</span><span class="average-price-chart-tools" aria-label="Chart history tools"><button type="button" class="average-chart-tool export" id="averageChartExport" title="Download full history backup" aria-label="Download history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 17v3h14v-3"/></svg></button></span></div>
     <div class="average-price-chart-range" role="group" aria-label="Time range">
       <button type="button" data-average-range="hour">Hour</button>
       <button type="button" data-average-range="day" class="active">Day</button>
@@ -6635,7 +6635,7 @@ h1 {
     </div>
   </div>
   <div class="average-price-chart-plot" id="averagePriceChartPlot">
-    <div class="average-price-chart-empty"><span class="average-price-chart-empty-icon">⌁</span><span>No cached price data</span></div>
+    <div class="average-price-chart-empty"><span>No cached price data</span></div>
   </div>
 </section>
 <!-- =================================================
@@ -17128,10 +17128,10 @@ if (
     let pts=rawPts;
     if(rawPts.length>3000){const stride=(rawPts.length-1)/2999;pts=Array.from({length:3000},(_,i)=>rawPts[Math.round(i*stride)]);}
     card.querySelectorAll('[data-average-range]').forEach(b=>b.classList.toggle('active',b.dataset.averageRange===range));
-    if(!pts.length){plot.innerHTML='<div class="average-price-chart-empty"><span class="average-price-chart-empty-icon">⌁</span><span>No cached price data</span></div>';return;}
+    if(!pts.length){plot.innerHTML='<div class="average-price-chart-empty"><span>No cached price data</span></div>';return;}
     // Zero and invalid values are never used in min/max or the mean. The first real cached point is the first chart value.
     const vals=pts.map(p=>p.v).filter(v=>Number.isFinite(v)&&v>0);
-    if(!vals.length){plot.innerHTML='<div class="average-price-chart-empty"><span class="average-price-chart-empty-icon">⌁</span><span>No cached price data</span></div>';return;}
+    if(!vals.length){plot.innerHTML='<div class="average-price-chart-empty"><span>No cached price data</span></div>';return;}
     const dataMin=Math.min(...vals),dataMax=Math.max(...vals),mean=dataMin+(dataMax-dataMin)/2;
     // Keep approximately 5% headroom, then round axis endpoints to thousands (or a smaller unit for small prices).
     const unit=Math.pow(10,Math.max(0,Math.floor(Math.log10(Math.max(dataMax,1)))-2));
@@ -17264,7 +17264,19 @@ if (
       record();
       const history=cleanHistory(read());
       const payload={format:'FinancialChartHistory',version:2,encoding:'pairs',count:history.length,history:history.map(p=>[Number(p.t),Number(p.v)])};
-      const blob=new Blob([JSON.stringify(payload)],{type:'application/json;charset=utf-8'});
+      const json=JSON.stringify(payload);
+      // Android WebView does not reliably honor anchor downloads for blob: URLs.
+      // Use the native bridge to save directly into Android's Downloads folder.
+      if(window.AndroidNotifications && typeof window.AndroidNotifications.saveTextFile==='function'){
+        const result=window.AndroidNotifications.saveTextFile('FinancialChartHistory.json',json);
+        if(typeof result==='string' && result.indexOf('OK:')===0){
+          exportButton.title='Saved to Downloads ('+history.length+' points)';
+          alert('History backup saved to Downloads/FinancialChartHistory.json');
+          return;
+        }
+        throw new Error(typeof result==='string'?result:'Native download failed');
+      }
+      const blob=new Blob([json],{type:'application/json;charset=utf-8'});
       const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='FinancialChartHistory.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
       exportButton.title='Exported '+history.length+' numeric points';
     }catch(err){alert('Export failed. Browser storage may be full. '+(err&&err.message?err.message:''));}
@@ -17881,24 +17893,25 @@ if (
    CHART PRICE — isolated section only
 ===================================================== */
 .average-price-chart-card{grid-column:1 / -1;min-width:0;overflow:hidden;padding:14px 14px 10px;}
-.average-price-chart-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
-.average-price-chart-title{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:800;color:var(--text-color,#fff);}
+.average-price-chart-head{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:8px;flex-wrap:nowrap;min-width:0;}
+.average-price-chart-title{display:flex;align-items:center;gap:5px;font-size:15px;font-weight:800;color:var(--text-color,#fff);min-width:0;flex:0 1 auto;white-space:nowrap;}
 .average-price-chart-tools{display:inline-flex;align-items:center;gap:5px;margin-left:2px;vertical-align:middle;}
 .average-price-chart-tools .average-chart-tool{appearance:none!important;-webkit-appearance:none!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;width:27px!important;height:27px!important;min-width:27px!important;min-height:27px!important;padding:0!important;margin:0!important;border:1px solid rgba(125,165,205,.32)!important;border-radius:8px!important;background-color:rgba(125,165,205,.12)!important;background-image:none!important;color:#b9d7f5!important;box-shadow:none!important;cursor:pointer!important;line-height:1!important;text-transform:none!important;transition:background-color .15s,border-color .15s,transform .15s;}
 .average-price-chart-tools .average-chart-tool svg{display:block!important;width:15px!important;height:15px!important;min-width:15px!important;min-height:15px!important;fill:none!important;stroke:currentColor!important;stroke-width:2!important;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;}
 .average-price-chart-tools .average-chart-tool.import{color:#72c5ff!important;background-color:rgba(55,145,220,.16)!important;border-color:rgba(85,170,245,.38)!important;}
-.average-price-chart-tools .average-chart-tool.export{color:#65ddb0!important;background-color:rgba(35,170,115,.16)!important;border-color:rgba(65,205,145,.38)!important;}
+.average-price-chart-tools .average-chart-tool.export{color:#42a5ff!important;background-color:rgba(45,135,245,.15)!important;border-color:rgba(65,155,255,.42)!important;}
 .average-price-chart-tools .average-chart-tool:hover{filter:brightness(1.15);transform:translateY(-1px);}
 .average-price-chart-tools .average-chart-tool:active{transform:scale(.94);}
 .average-price-chart-tools .average-chart-tool:focus-visible{outline:2px solid #70b5ff;outline-offset:2px;}
 .average-price-chart-tools .average-chart-tool:disabled{cursor:wait;opacity:.5;}
-.average-price-chart-icon{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:8px;background:rgba(70,150,255,.13);color:#70b5ff;font-size:22px;line-height:1;}
-.average-price-chart-range{display:flex;gap:4px;padding:3px;border-radius:10px;background:rgba(128,128,128,.10);}
-.average-price-chart-range button{border:0;border-radius:7px;padding:6px 10px;background:transparent;color:var(--muted-color,#9ca3af);font:inherit;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.average-price-chart-icon{display:none!important;}
+.average-price-chart-range{display:flex;flex:1 1 auto;min-width:0;gap:2px;padding:2px;border-radius:8px;background:rgba(128,128,128,.10);white-space:nowrap;justify-content:flex-end;}
+.average-price-chart-range button{flex:1 1 0;min-width:0;border:0;border-radius:6px;padding:5px 4px;background:transparent;color:var(--muted-color,#9ca3af);font:inherit;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
 .average-price-chart-range button.active{background:rgba(75,145,255,.20);color:#76b6ff;box-shadow:inset 0 0 0 1px rgba(90,155,255,.18);}
 .average-price-chart-plot{height:150px;width:100%;min-width:0;position:relative;}
 .average-price-chart-plot svg{display:block;width:100%;height:150px;overflow:hidden;}
 .average-price-chart-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:var(--muted-color,#9ca3af);font-size:12px;}
-.average-price-chart-empty-icon{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(128,128,128,.10);font-size:30px;color:#7aaeff;}
-@media(max-width:480px){.average-price-chart-card{padding:11px 9px 8px}.average-price-chart-title{font-size:13px}.average-price-chart-range button{padding:6px 8px;font-size:10px}.average-price-chart-head{gap:7px}.average-price-chart-tools{gap:4px}.average-price-chart-tools .average-chart-tool{width:25px!important;height:25px!important;min-width:25px!important;min-height:25px!important;border-radius:7px!important}.average-price-chart-tools .average-chart-tool svg{width:14px!important;height:14px!important;min-width:14px!important;min-height:14px!important}.average-price-chart-plot,.average-price-chart-plot svg{height:150px}}
+.average-price-chart-empty-icon{display:none!important;}
+@media(max-width:360px){.average-price-chart-title{font-size:11px}.average-price-chart-range button{font-size:8px;padding-left:1px;padding-right:1px}.average-price-chart-tools .average-chart-tool{width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important}}
+@media(max-width:480px){.average-price-chart-card{padding:11px 9px 8px}.average-price-chart-title{font-size:12px}.average-price-chart-range button{padding:5px 2px;font-size:9px;letter-spacing:-.2px}.average-price-chart-head{gap:5px;flex-wrap:nowrap}.average-price-chart-tools{gap:4px}.average-price-chart-tools .average-chart-tool{width:25px!important;height:25px!important;min-width:25px!important;min-height:25px!important;border-radius:7px!important}.average-price-chart-tools .average-chart-tool svg{width:14px!important;height:14px!important;min-width:14px!important;min-height:14px!important}.average-price-chart-plot,.average-price-chart-plot svg{height:150px}}
 </style>
