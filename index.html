@@ -6625,7 +6625,7 @@ h1 {
 ================================================= -->
 <section class="card average-price-chart-card" id="averagePriceChartCard" aria-label="Price Chart">
   <div class="average-price-chart-head">
-    <div class="average-price-chart-title"><span class="average-price-chart-icon">⌁</span><span>Price Chart</span></div>
+    <div class="average-price-chart-title"><span class="average-price-chart-icon">⌁</span><span>Price Chart</span><span class="average-price-chart-tools" aria-label="Price chart history tools"><button type="button" class="average-chart-tool export" id="averageChartExport" title="Export full history backup" aria-label="Export history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-5 5 5-5 5 5M5 14v6h14v-6"/></svg></button></span></div>
     <div class="average-price-chart-range" role="group" aria-label="Time range">
       <button type="button" data-average-range="hour">Hour</button>
       <button type="button" data-average-range="day" class="active">Day</button>
@@ -17099,14 +17099,34 @@ if (
   let range='day';
   try{const savedRange=localStorage.getItem(RANGE_KEY);if(['hour','day','week','month','year'].includes(savedRange))range=savedRange;}catch(e){}
 
+  // No application-level record cap: retain and export every valid numeric point in IndexedDB.
+  // IndexedDB is used because localStorage cannot reliably hold large histories.
+  const DB_NAME='FinancialDashboardPriceChartDB', DB_STORE='numericHistory';
+  let historyCache=[];
   function valid(p){const v=Number(p&&p.v),t=Number(p&&p.t);return Number.isFinite(v)&&v>0&&Number.isFinite(t)&&t>0;}
-  function read(){try{const a=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');return Array.isArray(a)?a.filter(valid).map(p=>({t:Number(p.t),v:Number(p.v)})).sort((a,b)=>a.t-b.t):[]}catch(e){return []}}
-  function record(){try{const v=Number(localStorage.getItem('financialDashboardAveragePrice'));if(!Number.isFinite(v)||v<=0)return;const a=read(),now=Date.now(),last=a[a.length-1];if(!last||now-Number(last.t)>=60000||Number(last.v)!==v){a.push({t:now,v});const cutoff=now-366*86400000;localStorage.setItem(HISTORY_KEY,JSON.stringify(a.filter(p=>p.t>=cutoff).slice(-30000)));}}catch(e){}}
+  function cleanHistory(arr){const map=new Map();for(const p of (Array.isArray(arr)?arr:[])){if(valid(p)){const q={t:Number(p.t),v:Number(p.v)};map.set(q.t+':'+q.v,q);}}return Array.from(map.values()).sort((a,b)=>a.t-b.t);}
+  function read(){return historyCache;}
+  function openHistoryDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('IndexedDB unavailable'));return;}const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(DB_STORE))db.createObjectStore(DB_STORE,{keyPath:'id'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('IndexedDB open failed'));});}
+  async function persistPoints(points){
+    const db=await openHistoryDB();
+    try{const tx=db.transaction(DB_STORE,'readwrite'),store=tx.objectStore(DB_STORE);for(const p of points){if(valid(p))store.put({id:Number(p.t)+':'+Number(p.v),t:Number(p.t),v:Number(p.v)});}await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('IndexedDB write failed'));tx.onabort=()=>reject(tx.error||new Error('IndexedDB write aborted'));});}finally{db.close();}
+  }
+  async function loadHistory(){
+    let legacy=[];try{const a=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');if(Array.isArray(a))legacy=a.filter(valid).map(p=>({t:Number(p.t),v:Number(p.v)}));}catch(e){}
+    try{const db=await openHistoryDB();let saved=[];try{saved=await new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readonly'),req=tx.objectStore(DB_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error);});}finally{db.close();}
+      historyCache=cleanHistory(saved.concat(legacy));if(legacy.length)await persistPoints(legacy);
+    }catch(e){historyCache=cleanHistory(legacy);}
+    scheduleDraw();
+  }
+  function record(){try{const v=Number(localStorage.getItem('financialDashboardAveragePrice'));if(!Number.isFinite(v)||v<=0)return;const a=read(),now=Date.now(),last=a[a.length-1];if(!last||now-Number(last.t)>=60000||Number(last.v)!==v){const point={t:now,v};historyCache=cleanHistory(a.concat(point));persistPoints([point]).catch(()=>{});}}catch(e){}}
   function fmt(v){return Math.round(Number(v)).toLocaleString('en-US',{maximumFractionDigits:0});}
   function niceStep(raw){const power=Math.pow(10,Math.floor(Math.log10(Math.max(raw,1))));const n=raw/power;return (n<=1?1:n<=2?2:n<=5?5:10)*power;}
   function draw(){
     record();const now=Date.now(),span=range==='hour'?3600000:range==='day'?86400000:range==='week'?7*86400000:range==='month'?30*86400000:365*86400000;
-    const pts=read().filter(p=>p.t>=now-span&&p.t<=now+60000);
+    const rawPts=read().filter(p=>p.t>=now-span&&p.t<=now+60000);
+    // Keep every raw point in storage/export, but render at most 3,000 representative points for smooth charts.
+    let pts=rawPts;
+    if(rawPts.length>3000){const stride=(rawPts.length-1)/2999;pts=Array.from({length:3000},(_,i)=>rawPts[Math.round(i*stride)]);}
     card.querySelectorAll('[data-average-range]').forEach(b=>b.classList.toggle('active',b.dataset.averageRange===range));
     if(!pts.length){plot.innerHTML='<div class="average-price-chart-empty"><span class="average-price-chart-empty-icon">⌁</span><span>No cached price data</span></div>';return;}
     // Zero and invalid values are never used in min/max or the mean. The first real cached point is the first chart value.
@@ -17186,6 +17206,75 @@ if (
     try{localStorage.setItem(RANGE_KEY,range);}catch(e){}
     draw();
   }));
+  // Automatically synchronize additional numeric history from the GitHub raw file.
+  // The manual Import control is intentionally removed; Export remains available.
+  const HISTORY_URL='https://raw.githubusercontent.com/test1800/test1800.github.io/main/FinancialChartHistory.json';
+  const REMOTE_META_KEY='financialDashboardPriceChartRemoteMetaV1';
+  const exportButton=document.getElementById('averageChartExport');
+  function normalizeImported(payload){
+    let arr=Array.isArray(payload)?payload:(payload&&Array.isArray(payload.history)?payload.history:(payload&&Array.isArray(payload.data)?payload.data:[]));
+    return arr.map(p=>Array.isArray(p)?({t:Number(p[0]),v:Number(p[1])}):({t:Number(p&&(p.t??p.timestamp??p.time)),v:Number(p&&(p.v??p.value??p.price))})).filter(valid);
+  }
+  function remoteMeta(){try{return JSON.parse(localStorage.getItem(REMOTE_META_KEY)||'{}')||{};}catch(e){return {};}}
+  function saveRemoteMeta(meta){try{localStorage.setItem(REMOTE_META_KEY,JSON.stringify(meta));}catch(e){}}
+  let autoSyncRunning=false, lastSyncAt=0;
+  async function checkRemoteHistory(force){
+    if(autoSyncRunning || (!force && Date.now()-lastSyncAt<60000))return;
+    if(!navigator.onLine)return;
+    autoSyncRunning=true;lastSyncAt=Date.now();
+    try{
+      const previous=remoteMeta();
+      // First use a lightweight HEAD request where supported, so large JSON files
+      // are not downloaded repeatedly when the published backup has not changed.
+      let shouldDownload=force || !previous.etag && !previous.lastModified;
+      let remoteHeaders={};
+      try{
+        const head=await fetch(HISTORY_URL+'?_='+Date.now(),{method:'HEAD',cache:'no-store'});
+        if(head.ok){
+          remoteHeaders={etag:head.headers.get('ETag')||'',lastModified:head.headers.get('Last-Modified')||'',length:head.headers.get('Content-Length')||''};
+          if(previous.etag && remoteHeaders.etag)shouldDownload=previous.etag!==remoteHeaders.etag;
+          else if(previous.lastModified && remoteHeaders.lastModified)shouldDownload=previous.lastModified!==remoteHeaders.lastModified;
+          else if(previous.length && remoteHeaders.length)shouldDownload=previous.length!==remoteHeaders.length;
+          else if(!previous.etag && !previous.lastModified && !previous.length)shouldDownload=true;
+        }else if(!previous.etag && !previous.lastModified && !previous.length)shouldDownload=true;
+      }catch(e){if(!previous.etag && !previous.lastModified && !previous.length)shouldDownload=true;}
+      if(!shouldDownload)return;
+      const response=await fetch(HISTORY_URL+'?_='+Date.now(),{cache:'no-store'});
+      if(!response.ok)throw new Error('GitHub returned HTTP '+response.status);
+      const payload=await response.json(), incoming=normalizeImported(payload);
+      if(!incoming.length)return;
+      const existing=new Set(read().map(p=>String(Number(p.t))+':'+String(Number(p.v))));
+      const additions=[];
+      for(const p of incoming){const key=String(Number(p.t))+':'+String(Number(p.v));if(!existing.has(key)){existing.add(key);additions.push({t:Number(p.t),v:Number(p.v)});}}
+      if(additions.length){
+        await persistPoints(additions);
+        historyCache=cleanHistory(read().concat(additions));
+        scheduleDraw();
+      }
+      saveRemoteMeta({etag:response.headers.get('ETag')||remoteHeaders.etag||'',lastModified:response.headers.get('Last-Modified')||remoteHeaders.lastModified||'',length:response.headers.get('Content-Length')||remoteHeaders.length||'',checkedAt:Date.now(),count:incoming.length});
+      const card=document.getElementById('averagePriceChartCard');
+      if(card)card.dataset.historySync='ok';
+    }catch(err){
+      // Keep local chart usable if GitHub is offline or the file is temporarily invalid.
+      console.warn('Price Chart automatic history sync failed:',err);
+    }finally{autoSyncRunning=false;}
+  }
+  if(exportButton)exportButton.addEventListener('click',()=>{
+    try{
+      record();
+      const history=cleanHistory(read());
+      const payload={format:'FinancialChartHistory',version:2,encoding:'pairs',count:history.length,history:history.map(p=>[Number(p.t),Number(p.v)])};
+      const blob=new Blob([JSON.stringify(payload)],{type:'application/json;charset=utf-8'});
+      const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='FinancialChartHistory.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+      exportButton.title='Exported '+history.length+' numeric points';
+    }catch(err){alert('Export failed. Browser storage may be full. '+(err&&err.message?err.message:''));}
+  });
+  // Hydrate persistent history from IndexedDB before the next chart redraw.
+  loadHistory().then(()=>checkRemoteHistory(false)).catch(()=>checkRemoteHistory(false));
+  // Check for a newer remote backup periodically; HEAD avoids repeatedly downloading unchanged large files.
+  setInterval(()=>checkRemoteHistory(false),5*60*1000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemoteHistory(false);});
+  window.addEventListener('online',()=>checkRemoteHistory(true));
   // First render after layout, then redraw whenever the chart container itself changes size
   // (including WebView startup, orientation changes, and page refresh).
   let resizeFrame=0;
@@ -17794,6 +17883,15 @@ if (
 .average-price-chart-card{grid-column:1 / -1;min-width:0;overflow:hidden;padding:14px 14px 10px;}
 .average-price-chart-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
 .average-price-chart-title{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:800;color:var(--text-color,#fff);}
+.average-price-chart-tools{display:inline-flex;align-items:center;gap:5px;margin-left:2px;vertical-align:middle;}
+.average-price-chart-tools .average-chart-tool{appearance:none!important;-webkit-appearance:none!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;width:27px!important;height:27px!important;min-width:27px!important;min-height:27px!important;padding:0!important;margin:0!important;border:1px solid rgba(125,165,205,.32)!important;border-radius:8px!important;background-color:rgba(125,165,205,.12)!important;background-image:none!important;color:#b9d7f5!important;box-shadow:none!important;cursor:pointer!important;line-height:1!important;text-transform:none!important;transition:background-color .15s,border-color .15s,transform .15s;}
+.average-price-chart-tools .average-chart-tool svg{display:block!important;width:15px!important;height:15px!important;min-width:15px!important;min-height:15px!important;fill:none!important;stroke:currentColor!important;stroke-width:2!important;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;}
+.average-price-chart-tools .average-chart-tool.import{color:#72c5ff!important;background-color:rgba(55,145,220,.16)!important;border-color:rgba(85,170,245,.38)!important;}
+.average-price-chart-tools .average-chart-tool.export{color:#65ddb0!important;background-color:rgba(35,170,115,.16)!important;border-color:rgba(65,205,145,.38)!important;}
+.average-price-chart-tools .average-chart-tool:hover{filter:brightness(1.15);transform:translateY(-1px);}
+.average-price-chart-tools .average-chart-tool:active{transform:scale(.94);}
+.average-price-chart-tools .average-chart-tool:focus-visible{outline:2px solid #70b5ff;outline-offset:2px;}
+.average-price-chart-tools .average-chart-tool:disabled{cursor:wait;opacity:.5;}
 .average-price-chart-icon{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:8px;background:rgba(70,150,255,.13);color:#70b5ff;font-size:22px;line-height:1;}
 .average-price-chart-range{display:flex;gap:4px;padding:3px;border-radius:10px;background:rgba(128,128,128,.10);}
 .average-price-chart-range button{border:0;border-radius:7px;padding:6px 10px;background:transparent;color:var(--muted-color,#9ca3af);font:inherit;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
@@ -17802,5 +17900,5 @@ if (
 .average-price-chart-plot svg{display:block;width:100%;height:150px;overflow:hidden;}
 .average-price-chart-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:var(--muted-color,#9ca3af);font-size:12px;}
 .average-price-chart-empty-icon{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(128,128,128,.10);font-size:30px;color:#7aaeff;}
-@media(max-width:480px){.average-price-chart-card{padding:11px 9px 8px}.average-price-chart-title{font-size:13px}.average-price-chart-range button{padding:6px 8px;font-size:10px}.average-price-chart-head{gap:7px}.average-price-chart-plot,.average-price-chart-plot svg{height:150px}}
+@media(max-width:480px){.average-price-chart-card{padding:11px 9px 8px}.average-price-chart-title{font-size:13px}.average-price-chart-range button{padding:6px 8px;font-size:10px}.average-price-chart-head{gap:7px}.average-price-chart-tools{gap:4px}.average-price-chart-tools .average-chart-tool{width:25px!important;height:25px!important;min-width:25px!important;min-height:25px!important;border-radius:7px!important}.average-price-chart-tools .average-chart-tool svg{width:14px!important;height:14px!important;min-width:14px!important;min-height:14px!important}.average-price-chart-plot,.average-price-chart-plot svg{height:150px}}
 </style>
