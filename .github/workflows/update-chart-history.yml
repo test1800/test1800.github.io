@@ -160,7 +160,7 @@ jobs:
           # One API works: use one price.
           # Two APIs work: average two prices.
           # Three APIs work: average all three prices.
-          average_price = mean(valid_prices.values())
+          average_price = round(mean(valid_prices.values()))
 
           print(f"Valid APIs: {len(valid_prices)}/3")
           print("Prices used in average:", valid_prices)
