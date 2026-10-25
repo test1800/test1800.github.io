@@ -4,7 +4,7 @@ name: Update Financial Chart History
 on:
   workflow_dispatch:
   schedule:
-    - cron: "5 * * * *"
+    - cron: "*/5 * * * *"
 
 permissions:
   contents: write
@@ -42,7 +42,7 @@ jobs:
               request = urllib.request.Request(
                   url,
                   headers={
-                      "User-Agent": "Mozilla/5.0",
+                      "User-Agent": "TraderBot/FinancialChartHistory",
                       "Accept": "application/json",
                       "Cache-Control": "no-cache",
                       "Pragma": "no-cache",
@@ -58,13 +58,17 @@ jobs:
 
               if name == "Nobitex":
                   if data.get("status") != "ok":
-                      raise ValueError("Nobitex status is not ok")
+                      raise ValueError(
+                          f"Nobitex status: {data.get('status')}"
+                      )
                   return data
 
-              # Support common nested orderbook response formats.
               candidates = [data]
 
-              for key in ("data", "result", "orderbook", "usdt-irt", "USDT-IRT"):
+              for key in (
+                  "data", "result", "orderbook",
+                  "usdt-irt", "USDT-IRT"
+              ):
                   value = data.get(key)
                   if isinstance(value, dict):
                       candidates.append(value)
@@ -86,7 +90,6 @@ jobs:
               if isinstance(level, dict):
                   raw = level.get("price")
               elif isinstance(level, (list, tuple)) and level:
-                  # Orderbook entry: [price, amount]
                   raw = level[0]
               else:
                   raw = None
@@ -102,27 +105,18 @@ jobs:
               return price
 
           def normalize_toman(raw_price):
-              # Keep prices already near the expected toman range.
               if MIN_TOMAN <= raw_price <= MAX_TOMAN:
-                  toman = raw_price
+                  return raw_price
 
-              # Convert rial-denominated prices to toman only when
-              # dividing by ten produces a plausible USDT price.
-              elif (
+              if (
                   raw_price > MAX_TOMAN
                   and MIN_TOMAN <= raw_price / 10 <= MAX_TOMAN
               ):
-                  toman = raw_price / 10
+                  return raw_price / 10
 
-              else:
-                  raise ValueError(
-                      f"Price outside expected range: {raw_price}"
-                  )
-
-              if not MIN_TOMAN <= toman <= MAX_TOMAN:
-                  raise ValueError(f"Invalid toman price: {toman}")
-
-              return toman
+              raise ValueError(
+                  f"Price outside expected Toman range: {raw_price}"
+              )
 
           prices = {}
 
@@ -133,59 +127,86 @@ jobs:
                   raw_price = first_sell_price(book)
                   toman_price = normalize_toman(raw_price)
 
-                  prices[name] = toman_price
-
-                  print(
-                      f"{name}: raw sell={raw_price}, "
-                      f"sell Toman={toman_price}"
-                  )
+                  if (
+                      math.isfinite(toman_price)
+                      and toman_price > 0
+                  ):
+                      prices[name] = toman_price
+                      print(
+                          f"{name}: raw sell={raw_price}, "
+                          f"sell Toman={toman_price}"
+                      )
+                  else:
+                      print(f"{name} FAILED: invalid or zero price")
 
               except Exception as error:
                   print(f"{name} FAILED: {error}")
 
-          # Do not store a partial or unreliable average.
-          if len(prices) != 3:
+          # Use every available valid price; ignore zeros and negatives.
+          valid_prices = {
+              name: price
+              for name, price in prices.items()
+              if isinstance(price, (int, float))
+              and math.isfinite(price)
+              and price > 0
+          }
+
+          if not valid_prices:
               raise RuntimeError(
-                  f"Only {len(prices)}/3 valid sell prices. "
+                  "No valid positive prices received. "
                   "History was not changed."
               )
 
-          average_price = mean(prices.values())
+          # One API works: use one price.
+          # Two APIs work: average two prices.
+          # Three APIs work: average all three prices.
+          average_price = mean(valid_prices.values())
 
-          # Guard against a large disagreement between exchanges.
-          if max(prices.values()) / min(prices.values()) > 1.03:
-              raise RuntimeError(
-                  f"Sell prices differ by more than 3%: {prices}"
-              )
+          print(f"Valid APIs: {len(valid_prices)}/3")
+          print("Prices used in average:", valid_prices)
+          print("Average sell Toman:", average_price)
 
-          timestamp = int(time.time() * 1000)
-
-          data = {
-              "format": "FinancialChartHistory",
-              "version": 2,
-              "encoding": "pairs",
-              "count": 0,
-              "history": [],
-          }
-
+          # Load existing history or create a new file.
           if os.path.exists(FILE):
               with open(FILE, "r", encoding="utf-8") as f:
-                  existing = json.load(f)
+                  data = json.load(f)
 
               if (
-                  existing.get("format") != "FinancialChartHistory"
-                  or existing.get("version") != 2
-                  or existing.get("encoding") != "pairs"
-                  or not isinstance(existing.get("history"), list)
+                  not isinstance(data, dict)
+                  or data.get("format") != "FinancialChartHistory"
+                  or data.get("version") != 2
+                  or data.get("encoding") != "pairs"
+                  or not isinstance(data.get("history"), list)
               ):
-                  raise ValueError("Existing history format is invalid")
-
-              data = existing
+                  raise ValueError(
+                      "Existing history format is invalid; "
+                      "file was not overwritten."
+                  )
+          else:
+              data = {
+                  "format": "FinancialChartHistory",
+                  "version": 2,
+                  "encoding": "pairs",
+                  "count": 0,
+                  "history": [],
+              }
 
           history = data["history"]
+          timestamp = int(time.time() * 1000)
 
-          if history and timestamp <= history[-1][0]:
-              timestamp = history[-1][0] + 1
+          if history:
+              last_record = history[-1]
+
+              if (
+                  not isinstance(last_record, list)
+                  or len(last_record) < 2
+              ):
+                  raise ValueError(
+                      "Last history record is invalid."
+                  )
+
+              if timestamp <= last_record[0]:
+                  timestamp = last_record[0] + 1
 
           history.append([timestamp, average_price])
           data["count"] = len(history)
@@ -200,19 +221,16 @@ jobs:
               )
               f.write("\n")
 
-          print("Nobitex sell Toman:", prices["Nobitex"])
-          print("Exir sell Toman:", prices["Exir"])
-          print("Bitpin sell Toman:", prices["Bitpin"])
-          print("Average sell Toman:", average_price)
+          print("History updated successfully.")
           print("History count:", data["count"])
           PY
 
       - name: Commit FinancialChartHistoryauto.json
         run: |
-          git add FinancialChartHistoryauto.json
+          git add -- FinancialChartHistoryauto.json
 
           if git diff --cached --quiet; then
-            echo "No changes"
+            echo "No changes to commit"
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
