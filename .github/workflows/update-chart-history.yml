@@ -36,7 +36,7 @@ jobs:
           }
 
           MIN_TOMAN = 200_000
-          MAX_TOMAN = 400_000
+          MAX_TOMAN = 400_000_000
 
           def fetch_json(url):
               request = urllib.request.Request(
