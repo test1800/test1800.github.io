@@ -6625,12 +6625,13 @@ h1 {
 ================================================= -->
 <section class="card average-price-chart-card" id="averagePriceChartCard" aria-label="Chart">
   <div class="average-price-chart-head">
-    <div class="average-price-chart-title"><span>Chart</span></div>
+    <div class="average-price-chart-title"><span id="averageChartProgressLabel" class="average-chart-progress-label" role="status" aria-label="Chart data status" title="Chart data is current">Chart</span></div>
     <div class="average-price-chart-range" role="group" aria-label="Time range">
       <button type="button" data-average-range="hour">Hour</button>
       <button type="button" data-average-range="day" class="active">Day</button>
       <button type="button" data-average-range="week">Week</button>
       <button type="button" data-average-range="month">Month</button>
+      <button type="button" data-average-range="sixMonths">6M</button>
       <button type="button" data-average-range="year">Year</button>
       <button type="button" data-average-range="fiveYears">5Y</button>
       <button type="button" data-average-range="all">All</button>
@@ -9568,6 +9569,9 @@ function jalaliToGregorian(
     }
     days +=
         jd - 1;
+    // The Jalali epoch is 79 days ahead of the Gregorian day count.
+    // Omitting this offset shifts every transaction marker by about 79 days.
+    days += 79;
     let gy =
         1600
         +
@@ -17098,6 +17102,17 @@ if (
   const RANGE_KEY='financialDashboardAveragePriceRangeV1';
   const card=document.getElementById('averagePriceChartCard'); if(!card)return;
   const plot=document.getElementById('averagePriceChartPlot');
+  const chartProgressLabel=document.getElementById('averageChartProgressLabel');
+  let chartProgress=0;
+  function setChartProgress(value,state){
+    chartProgress=Math.max(0,Math.min(100,Number(value)||0));
+    if(!chartProgressLabel)return;
+    chartProgressLabel.style.setProperty('--chart-progress',chartProgress+'%');
+    chartProgressLabel.dataset.progress=String(chartProgress);
+    chartProgressLabel.dataset.state=state||'processing';
+    chartProgressLabel.setAttribute('aria-label',state==='complete'?'Chart data updated':state==='error'?'Chart data refresh failed':'Chart data update in progress');
+    chartProgressLabel.title=state==='complete'?'Chart data is current':state==='error'?'Chart refresh failed; showing the last saved data':'Updating chart data: '+Math.round(chartProgress)+'%';
+  }
   // Keep the download control alive when chart redraws replace the plot contents.
   function setPlotContent(markup){
     const exportControl=plot.querySelector('.average-chart-export-bottom');
@@ -17106,14 +17121,37 @@ if (
   }
   // Restore the user's last selected chart range before the first render.
   let range='day';
-  try{const savedRange=localStorage.getItem(RANGE_KEY);if(['hour','day','week','month','year','fiveYears','all'].includes(savedRange))range=savedRange;}catch(e){}
+  try{const savedRange=localStorage.getItem(RANGE_KEY);if(['hour','day','week','month','sixMonths','year','fiveYears','all'].includes(savedRange))range=savedRange;}catch(e){}
 
   // No application-level record cap: retain and export every valid numeric point in IndexedDB.
   // IndexedDB is used because localStorage cannot reliably hold large histories.
   const DB_NAME='FinancialDashboardPriceChartDB', DB_STORE='numericHistory';
   let historyCache=[];
+  // Reuse the dashboard's existing data.json cache; refresh quietly in the background.
+  let chartTransactions=[];
+  let selectedTransactionId=null;
+  let selectedHistoryPointT=null;
+  let transactionsLoadStarted=false;
+  function normalizeTransactions(data){
+    const rows=Array.isArray(data&&data.transactions)?data.transactions:[];
+    return rows.map((t,index)=>{
+      if(!t||!/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(String(t.date||'')))return null;
+      const parts=String(t.date).split('/').map(Number);
+      if(typeof jalaliToGregorian!=='function')return null;
+      const d=jalaliToGregorian(parts[0],parts[1],parts[2]);
+      const type=String(t.type||'').toLowerCase(),amount=Number(t.amount),price=Number(t.price);
+      if(!d||!Number.isFinite(d.getTime())||!['buy','sell'].includes(type)||!Number.isFinite(amount)||amount<=0||!Number.isFinite(price)||price<=0)return null;
+      return {id:index,date:String(t.date),t:new Date(d.getFullYear(),d.getMonth(),d.getDate(),13,0,0,0).getTime(),type,amount,price};
+    }).filter(Boolean).sort((a,b)=>a.t-b.t);
+  }
+  function refreshChartTransactions(){
+    if(transactionsLoadStarted)return;transactionsLoadStarted=true;
+    try{const cached=typeof loadCachedDashboardData==='function'?loadCachedDashboardData():null;if(cached)chartTransactions=normalizeTransactions(cached);}catch(e){}
+    scheduleDraw();
+    fetch('https://test1800.github.io/data.json',{cache:'default'}).then(r=>{if(!r.ok)throw new Error('data.json HTTP '+r.status);return r.json();}).then(data=>{chartTransactions=normalizeTransactions(data);try{if(typeof saveLocalData==='function')saveLocalData(data);}catch(e){}scheduleDraw();}).catch(()=>{});
+  }
   function valid(p){const v=Number(p&&p.v),t=Number(p&&p.t);return Number.isFinite(v)&&v>0&&Number.isFinite(t)&&t>0;}
-  function cleanHistory(arr){const map=new Map();for(const p of (Array.isArray(arr)?arr:[])){if(valid(p)){const q={t:Number(p.t),v:Number(p.v)};map.set(q.t+':'+q.v,q);}}return Array.from(map.values()).sort((a,b)=>a.t-b.t);}
+  function cleanHistory(arr){const map=new Map();for(const p of (Array.isArray(arr)?arr:[])){if(valid(p)){const t=Number(p.t),v=Number(p.v);let q=map.get(t);if(!q){q={t,sum:0,n:0};map.set(t,q);}q.sum+=v;q.n++;}}return Array.from(map.values()).map(q=>({t:q.t,v:q.sum/q.n})).sort((a,b)=>a.t-b.t);}
   function read(){return historyCache;}
   function openHistoryDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('IndexedDB unavailable'));return;}const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(DB_STORE))db.createObjectStore(DB_STORE,{keyPath:'id'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('IndexedDB open failed'));});}
   async function persistPoints(points){
@@ -17127,19 +17165,39 @@ if (
     }catch(e){historyCache=cleanHistory(legacy);}
     scheduleDraw();
   }
-  function record(){try{const v=Number(localStorage.getItem('financialDashboardAveragePrice'));if(!Number.isFinite(v)||v<=0)return;const a=read(),now=Date.now(),last=a[a.length-1];if(!last||now-Number(last.t)>=60000||Number(last.v)!==v){const point={t:now,v};historyCache=cleanHistory(a.concat(point));persistPoints([point]).catch(()=>{});}}catch(e){}}
+  let lastRecordedLiveValue=null;
+  function getCurrentLiveValue(){try{const v=Number(localStorage.getItem('financialDashboardAveragePrice'));return Number.isFinite(v)&&v>0?v:null;}catch(e){return null;}}
+  function record(){try{const v=getCurrentLiveValue();if(v===null)return;const a=read(),now=Date.now(),last=a[a.length-1];if(lastRecordedLiveValue===v&&last&&Number(last.v)===v)return;if(!last||Number(last.v)!==v){const point={t:now,v};historyCache=cleanHistory(a.concat(point));persistPoints([point]).catch(()=>{});}lastRecordedLiveValue=v;}catch(e){}}
   function fmt(v){return Math.round(Number(v)).toLocaleString('en-US',{maximumFractionDigits:0});}
   function niceStep(raw){const power=Math.pow(10,Math.floor(Math.log10(Math.max(raw,1))));const n=raw/power;return (n<=1?1:n<=2?2:n<=5?5:10)*power;}
   function draw(){
-    record();const now=Date.now(),span=range==='hour'?3600000:range==='day'?86400000:range==='week'?7*86400000:range==='month'?30*86400000:range==='year'?365*86400000:range==='fiveYears'?5*365*86400000:Math.max(0,now-(read().length?Math.min(...read().map(p=>p.t)):now));
-    const rawPts=read().filter(p=>p.t>=now-span&&p.t<=now+60000);
-    // Keep every raw point in storage/export, but render at most 3,000 representative points for smooth charts.
+    record();const now=Date.now(),span=range==='hour'?3600000:range==='day'?86400000:range==='week'?7*86400000:range==='month'?30*86400000:range==='sixMonths'?183*86400000:range==='year'?365*86400000:range==='fiveYears'?5*365*86400000:Math.max(0,now-Math.min(read().length?Math.min(...read().map(p=>p.t)):now,chartTransactions.length?Math.min(...chartTransactions.map(t=>t.t)):now));
+    const rawPts=read().filter(p=>p.t>=now-span&&p.t<=now+60000).sort((a,b)=>a.t-b.t);
+    // Keep full-fidelity records in IndexedDB; aggregate only the plotted view into fixed time buckets.
+    const bucketMs=range==='hour'?0:range==='day'?5*60000:range==='week'?3600000:range==='month'?4*3600000:86400000;
     let pts=rawPts;
-    if(rawPts.length>3000){const stride=(rawPts.length-1)/2999;pts=Array.from({length:3000},(_,i)=>rawPts[Math.round(i*stride)]);}
+    if(bucketMs>0){
+      const buckets=new Map();
+      for(const p of rawPts){const key=Math.floor(p.t/bucketMs)*bucketMs;let b=buckets.get(key);if(!b){b={t:key,v:0,n:0};buckets.set(key,b);}b.v+=p.v;b.n++;}
+      pts=Array.from(buckets.values()).map(b=>({t:b.t,v:b.v/b.n})).sort((a,b)=>a.t-b.t);
+    }
+    // The on-page live average is the authoritative endpoint in every timeframe.
+    // Keep historical buckets aggregated, but replace any current bucket endpoint with
+    // the exact live value so the right-side live badge and chart react immediately.
+    const liveValue=getCurrentLiveValue();
+    if(liveValue!==null){
+      const currentPoint={t:now,v:liveValue};
+      if(pts.length&&pts[pts.length-1].t>=now-bucketMs&&bucketMs>0)pts[pts.length-1]=currentPoint;
+      else if(!pts.length||pts[pts.length-1].t<now)pts.push(currentPoint);
+      else pts[pts.length-1]=currentPoint;
+    }
+    // Limit extremely dense hourly plots only; keep the selected time buckets intact.
+    if(range==='hour'&&pts.length>3000){const stride=(pts.length-1)/2999;pts=Array.from({length:3000},(_,i)=>pts[Math.round(i*stride)]);}
     card.querySelectorAll('[data-average-range]').forEach(b=>b.classList.toggle('active',b.dataset.averageRange===range));
     if(!pts.length){setPlotContent('<div class="average-price-chart-empty"><span>No cached price data</span></div>');return;}
     // Zero and invalid values are never used in min/max or the mean. The first real cached point is the first chart value.
-    const vals=pts.map(p=>p.v).filter(v=>Number.isFinite(v)&&v>0);
+    const visibleTransactions=chartTransactions.filter(t=>t.t>=now-span&&t.t<=now&&Number.isFinite(t.price)&&t.price>0);
+    const vals=pts.map(p=>p.v).filter(v=>Number.isFinite(v)&&v>0).concat(visibleTransactions.map(t=>t.price));
     if(!vals.length){setPlotContent('<div class="average-price-chart-empty"><span>No cached price data</span></div>');return;}
     const dataMin=Math.min(...vals),dataMax=Math.max(...vals),mean=dataMin+(dataMax-dataMin)/2;
     // Keep the vertical axis tight to this range's actual low/high, using tidy tick intervals.
@@ -17148,8 +17206,12 @@ if (
     const rawMin=dataMin-pad,rawMax=dataMax+pad;
     const rawStep=niceStep((rawMax-rawMin)/4);
     const step=rawStep>=1000?Math.max(1000,Math.round(rawStep/1000)*1000):rawStep;
-    let min=Math.floor(rawMin/step)*step,max=Math.ceil(rawMax/step)*step;
-    if(!(max>min)){min-=step;max+=step;}
+    // Price axis must never display negative values, regardless of selected range.
+    let min=Math.max(0,Math.floor(rawMin/step)*step),max=Math.ceil(rawMax/step)*step;
+    if(!(max>min)){max=min+step;}
+    // Guard against any negative tick caused by rounding or unusually small values.
+    min=Math.max(0,min);
+    if(!(max>min)){max=step;}
     // Wait for the container to have its real layout width. A guessed width on first paint
     // makes the SVG stretch until a timeframe change triggers a redraw.
     const measuredWidth=Math.round(plot.getBoundingClientRect().width);
@@ -17162,7 +17224,7 @@ if (
     const ticks=range==='hour'?[0,.25,.5,.75,1]:range==='day'?[0,.25,.5,.75,1]:[0,.2,.4,.6,.8,1];let times='';
     const jalaliFmt=new Intl.DateTimeFormat('en-u-ca-persian',{day:'2-digit',month:'short'});
     ticks.forEach((f,i)=>{const d=new Date(now-span+span*f);const label=range==='hour'||range==='day'?d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false}):range==='week'?new Intl.DateTimeFormat('en-GB',{weekday:'short'}).format(d):jalaliFmt.format(d);times+=`<text x="${L+pw*f}" y="${H-7}" text-anchor="${i===0?'start':i===ticks.length-1?'end':'middle'}" fill="currentColor" opacity=".72" font-size="10.5">${label}</text>`;});
-    const baseGap=range==='hour'?120000:range==='day'?5*60000:range==='week'?30*60000:range==='month'?2*3600000:12*3600000;
+    const baseGap=range==='hour'?60000:range==='day'?5*60000:range==='week'?3600000:range==='month'?4*3600000:86400000;
     let segments='',areaFills='',gradients='';
     for(let i=1;i<pts.length;i++){
       const a=pts[i-1],b=pts[i],ax=x(a.t),ay=y(a.v),bx=x(b.t),by=y(b.v);
@@ -17187,10 +17249,37 @@ if (
     // The vertical start marker is only a baseline guide, not a price sample and never affects calculations.
     const first=pts[0],fx=x(first.t),fy=y(first.v),mobileBadge=true,badgeX=W-28,badgeY=Math.max(T,Math.min(T+ph-19,ly-9.5));
     const fillPath=pts.map((p,i)=>(i?'L':'M')+x(p.t).toFixed(1)+' '+y(p.v).toFixed(1)).join(' ');
-    setPlotContent(`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Live Average price history">${grid}<defs>${gradients}<clipPath id="meanLabelTopClip"><rect x="${meanLabelX-2}" y="${meanLabelY-10}" width="90" height="6"/></clipPath><clipPath id="meanLabelBottomClip"><rect x="${meanLabelX-2}" y="${meanLabelY-4}" width="90" height="7"/></clipPath></defs>${areaFills}<text x="${meanLabelX}" y="${meanLabelY}" fill="#ffffff" opacity="1" font-size="12" font-weight="700" clip-path="url(#meanLabelTopClip)">${fmt(mean)}</text><text x="${meanLabelX}" y="${meanLabelY}" fill="#79bdff" opacity="1" font-size="12" font-weight="700" clip-path="url(#meanLabelBottomClip)">${fmt(mean)}</text><text x="${W-3}" y="${T-7}" text-anchor="end" fill="#ffffff" opacity=".98" font-size="12" font-weight="700">${fmt(dataMax)}</text><text x="${W-3}" y="${T+ph+15}" text-anchor="end" fill="#58a6ff" opacity="1" font-size="12" font-weight="700">${fmt(dataMin)}</text>${segments}<circle cx="${lx}" cy="${ly}" r="3" fill="${last.v>=mean?'#62aaff':'#ffffff'}" stroke="#18202b" stroke-width="1"/><line x1="${W-R+2}" y1="${T}" x2="${W-R+2}" y2="${T+ph}" stroke="currentColor" opacity=".12"/>${mobileBadge?`<g transform="rotate(-90 ${W-12} ${Math.max(T+35,Math.min(T+ph-35,ly))})"><rect x="${W-47}" y="${Math.max(T+35,Math.min(T+ph-35,ly))-9.5}" width="70" height="19" rx="6" fill="${last.v>=mean?'#2878d8':'#59616d'}"/><text x="${W-12}" y="${Math.max(T+35,Math.min(T+ph-35,ly))+3.5}" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${fmt(last.v)}</text></g>`:`<rect x="${badgeX}" y="${badgeY}" width="70" height="19" rx="6" fill="${last.v>=mean?'#2878d8':'#59616d'}"/><text x="${badgeX+35}" y="${badgeY+12.5}" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${fmt(last.v)}</text>`}${times}</svg>`);
+    // Put each transaction marker at its actual transaction date AND transaction price
+    // inside the plotting area, rather than on the bottom axis. Keep the Jalali date
+    // in an explicit left-to-right YYYY/MM/DD run so browser RTL rules cannot reorder it.
+    const transactionMarkers=visibleTransactions.map(t=>{
+      const cx=x(t.t),cy=y(t.price),buy=t.type==='buy',color=buy?'#20d889':'#ff5368';
+      const parts=String(t.date).split('/');
+      const jalaliDate=parts.length===3?`${parts[0].padStart(4,'0')}/${parts[1].padStart(2,'0')}/${parts[2].padStart(2,'0')}`:String(t.date);
+      const kind=buy?'خرید':'فروش',tipText=`${kind} • ${jalaliDate} • تعداد: ${fmt(t.amount)} • قیمت: ${fmt(t.price)}`;
+      const selected=String(selectedTransactionId)===String(t.id);
+      const amountX=cx+((cx+46<W-R)?9:-9),amountAnchor=(cx+46<W-R)?'start':'end';
+      const selection=selected?`<line x1="${cx}" y1="${T}" x2="${cx}" y2="${T+ph}" stroke="${color}" stroke-width="1.2" stroke-dasharray="4 4" opacity=".95" pointer-events="none"/><text x="${Math.max(L+24,Math.min(W-R-24,cx))}" y="12" text-anchor="middle" fill="${color}" stroke="#111827" stroke-width="2.8" paint-order="stroke" font-size="11.5" font-weight="800" pointer-events="none">${fmt(t.price)}</text><text x="${amountX}" y="${Math.max(T+11,Math.min(T+ph-3,cy+4))}" text-anchor="${amountAnchor}" fill="${color}" stroke="#111827" stroke-width="2.8" paint-order="stroke" font-size="10.5" font-weight="800" pointer-events="none">${fmt(t.amount)}</text><text x="${Math.max(L+35,Math.min(W-R-35,cx))}" y="${H-27}" text-anchor="middle" fill="${color}" stroke="#111827" stroke-width="3" paint-order="stroke" font-size="11.5" font-weight="800" pointer-events="none">${jalaliDate}</text>`:'';
+      return `<g class="chart-transaction-marker ${buy?'is-buy':'is-sell'}${selected?' is-selected':''}" data-transaction-id="${t.id}" tabindex="0" role="button" aria-label="انتخاب ${tipText}" style="cursor:pointer"><title>${tipText}</title>${selection}<circle class="transaction-dot" cx="${cx}" cy="${cy}" r="3.5" fill="${color}" stroke="#101820" stroke-width=".7"/><circle class="transaction-hit-area" cx="${cx}" cy="${cy}" r="7" fill="transparent" stroke="transparent" pointer-events="all"/></g>`;
+    }).join('');
+    setPlotContent(`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Live Average price history">${grid}<defs>${gradients}<clipPath id="meanLabelTopClip"><rect x="${meanLabelX-2}" y="${meanLabelY-10}" width="90" height="6"/></clipPath><clipPath id="meanLabelBottomClip"><rect x="${meanLabelX-2}" y="${meanLabelY-4}" width="90" height="7"/></clipPath></defs>${areaFills}<text x="${meanLabelX}" y="${meanLabelY}" fill="#ffffff" opacity="1" font-size="12" font-weight="700" clip-path="url(#meanLabelTopClip)">${fmt(mean)}</text><text x="${meanLabelX}" y="${meanLabelY}" fill="#79bdff" opacity="1" font-size="12" font-weight="700" clip-path="url(#meanLabelBottomClip)">${fmt(mean)}</text><text x="${W-3}" y="${T-7}" text-anchor="end" fill="#ffffff" opacity=".98" font-size="12" font-weight="700">${fmt(dataMax)}</text><text x="${W-3}" y="${T+ph+15}" text-anchor="end" fill="#58a6ff" opacity="1" font-size="12" font-weight="700">${fmt(dataMin)}</text>${segments}<circle cx="${lx}" cy="${ly}" r="3" fill="${last.v>=mean?'#62aaff':'#ffffff'}" stroke="#18202b" stroke-width="1"/><line x1="${W-R+2}" y1="${T}" x2="${W-R+2}" y2="${T+ph}" stroke="currentColor" opacity=".12"/>${mobileBadge?`<g transform="rotate(-90 ${W-12} ${Math.max(T+35,Math.min(T+ph-35,ly))})"><rect x="${W-47}" y="${Math.max(T+35,Math.min(T+ph-35,ly))-9.5}" width="70" height="19" rx="6" fill="${last.v>=mean?'#2878d8':'#59616d'}"/><text x="${W-12}" y="${Math.max(T+35,Math.min(T+ph-35,ly))+3.5}" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${fmt(last.v)}</text></g>`:`<rect x="${badgeX}" y="${badgeY}" width="70" height="19" rx="6" fill="${last.v>=mean?'#2878d8':'#59616d'}"/><text x="${badgeX+35}" y="${badgeY+12.5}" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${fmt(last.v)}</text>`}${transactionMarkers}${times}</svg>`);
     // Interactive price tooltip: hover with a mouse or tap/drag on touch screens.
     const svg=plot.querySelector('svg');
     if(svg){
+      // Transaction markers are independently selectable; selecting one pins its values
+      // and vertical dashed guide until another marker is selected or the same one is toggled off.
+      svg.querySelectorAll('.chart-transaction-marker').forEach(marker=>{
+        const activate=ev=>{
+          ev.preventDefault();ev.stopPropagation();
+          const id=String(marker.getAttribute('data-transaction-id'));
+          // Toggle off only when the already-selected marker itself is clicked again.
+          selectedTransactionId=String(selectedTransactionId)===id?null:id;
+          selectedHistoryPointT=null;
+          scheduleDraw();
+        };
+        marker.addEventListener('click',activate);
+        marker.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){activate(ev);}});
+      });
       const tip=document.createElement('div');
       tip.className='average-price-chart-tooltip';
       Object.assign(tip.style,{position:'absolute',zIndex:'5',display:'none',pointerEvents:'none',padding:'3px 7px',borderRadius:'6px',background:'#111827',color:'#fff',fontSize:'15px',fontWeight:'800',boxShadow:'0 2px 8px rgba(0,0,0,.22)',whiteSpace:'nowrap',transform:'translateX(-50%)',top:'1px'});
@@ -17202,12 +17291,16 @@ if (
       cross.setAttribute('stroke','currentColor');cross.setAttribute('stroke-dasharray','3 3');cross.setAttribute('opacity','.65');cross.style.display='none';cross.style.pointerEvents='none';svg.appendChild(cross);
       const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
       dot.setAttribute('r','4');dot.setAttribute('fill','#58a6ff');dot.setAttribute('stroke','#fff');dot.setAttribute('stroke-width','1.5');dot.style.display='none';dot.style.pointerEvents='none';svg.appendChild(dot);
-      function showAt(ev){
+      function nearestPointAt(ev){
         const rect=svg.getBoundingClientRect();
         const px=Math.max(0,Math.min(W,(ev.clientX-rect.left)/rect.width*W));
         const targetT=(now-span)+((px-L)/pw)*span;
         let best=pts[0],dist=Infinity;
         for(const p of pts){const d=Math.abs(p.t-targetT);if(d<dist){dist=d;best=p;}}
+        return best;
+      }
+      function displayPoint(best){
+        if(!best)return;
         const cx=x(best.t),cy=y(best.v);
         cross.setAttribute('x1',cx);cross.setAttribute('x2',cx);cross.style.display='';
         dot.setAttribute('cx',cx);dot.setAttribute('cy',cy);dot.style.display='';
@@ -17216,106 +17309,110 @@ if (
         if(range==='hour') dateText=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
         else if(range==='day') dateText=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
         else if(range==='week') dateText=new Intl.DateTimeFormat('en-GB',{weekday:'short'}).format(d)+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
-        else if(range==='month') dateText=new Intl.DateTimeFormat('en-u-ca-persian',{day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(d);
-        else {const parts=new Intl.DateTimeFormat('en-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const dp={};for(const part of parts)if(part.type==='day'||part.type==='month'||part.type==='year')dp[part.type]=part.value;dateText=dp.day+'/'+dp.month+'/'+dp.year+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});}
+        else if(range==='month') dateText=new Intl.DateTimeFormat('en-u-ca-persian',{day:'numeric'}).format(d)+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+        else {const parts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const dp={};for(const part of parts)if(part.type==='day'||part.type==='month'||part.type==='year')dp[part.type]=part.value;dateText=dp.year+'/'+dp.month+'/'+dp.day;}
         dateTip.textContent=dateText;
-        const plotRect=plot.getBoundingClientRect();
+        const rect=svg.getBoundingClientRect(),plotRect=plot.getBoundingClientRect();
         const labelX=Math.max(42,Math.min(plotRect.width-42,rect.left-plotRect.left+cx/W*rect.width));
         tip.style.left=labelX+'px';tip.style.display='block';dateTip.style.left=labelX+'px';dateTip.style.display='block';
       }
+      function hidePoint(){tip.style.display='none';dateTip.style.display='none';cross.style.display='none';dot.style.display='none';}
+      function showAt(ev){
+        // A selected transaction owns the annotations; ordinary chart points must not cover it.
+        if(selectedTransactionId!==null || (ev.target&&ev.target.closest&&ev.target.closest('.chart-transaction-marker'))){hidePoint();return;}
+        const best=selectedHistoryPointT!==null?pts.find(p=>Number(p.t)===Number(selectedHistoryPointT)):nearestPointAt(ev);
+        if(best)displayPoint(best);else hidePoint();
+      }
+      function pinAt(ev){
+        if(ev.button!==undefined&&ev.button!==0)return;
+        if(selectedTransactionId!==null || (ev.target&&ev.target.closest&&ev.target.closest('.chart-transaction-marker')))return;
+        const best=nearestPointAt(ev);if(!best)return;
+        selectedHistoryPointT=Number(selectedHistoryPointT)===Number(best.t)?null:Number(best.t);
+        if(selectedHistoryPointT===null)hidePoint();else displayPoint(best);
+        ev.preventDefault();
+      }
       svg.addEventListener('pointermove',showAt);
-      svg.addEventListener('pointerdown',showAt);
-      svg.addEventListener('pointerleave',()=>{if(!('ontouchstart' in window)){tip.style.display='none';dateTip.style.display='none';cross.style.display='none';dot.style.display='none';}});
+      svg.addEventListener('pointerdown',pinAt);
+      // Keep a clicked regular history point pinned across pointer movement and chart redraws.
+      if(selectedHistoryPointT!==null){const pinned=pts.find(p=>Number(p.t)===Number(selectedHistoryPointT));if(pinned)displayPoint(pinned);else{selectedHistoryPointT=null;hidePoint();}}
+      svg.addEventListener('pointerleave',()=>{if(!('ontouchstart' in window)&&selectedHistoryPointT===null){hidePoint();}});
     }
   }
   card.querySelectorAll('[data-average-range]').forEach(b=>b.addEventListener('click',()=>{
     const nextRange=b.dataset.averageRange;
-    if(!['hour','day','week','month','year','fiveYears','all'].includes(nextRange))return;
+    if(!['hour','day','week','month','sixMonths','year','fiveYears','all'].includes(nextRange))return;
     range=nextRange;
+    selectedHistoryPointT=null;
     try{localStorage.setItem(RANGE_KEY,range);}catch(e){}
     draw();
+    checkRemoteHistory(true);
   }));
   // Automatically merge all remote chart sources into the same persistent IndexedDB store.
   // The Worker is first because it is the most frequently updated source.
-  const HISTORY_URLS=[
-    'https://financial-chart-history.rahdatair.workers.dev/history',
-    'https://raw.githubusercontent.com/rahdata/FinancialChartHistoryauto/main/FinancialChartHistoryauto.json',
-    'https://raw.githubusercontent.com/test1800/test1800.github.io/main/FinancialChartHistoryauto.json',
-    'https://raw.githubusercontent.com/test1800/test1800.github.io/main/FinancialChartHistory.json'
-  ];
-  const REMOTE_META_KEY='financialDashboardPriceChartRemoteMetaV3';
+  const WORKER_URL='https://financial-chart-history.rahdatair.workers.dev/history';
+  const GITHUB_URL='https://raw.githubusercontent.com/test1800/test1800.github.io/main/FinancialChartHistory.json';
+  const HISTORY_URLS=[WORKER_URL,GITHUB_URL];
+  const REMOTE_META_KEY='financialDashboardPriceChartRemoteMetaV4';
   const exportButton=document.getElementById('averageChartExport');
   function normalizeTimestamp(value){
-    if(typeof value==='string' && !/^\d+(\.\d+)?$/.test(value.trim())){
-      const parsed=Date.parse(value);return Number.isFinite(parsed)?parsed:NaN;
-    }
-    let t=Number(value);
-    if(!Number.isFinite(t)||t<=0)return NaN;
-    // Accept Unix timestamps in seconds as well as milliseconds.
-    if(t<100000000000)t*=1000;
-    return t;
+    if(typeof value==='string' && !/^\d+(\.\d+)?$/.test(value.trim())){const parsed=Date.parse(value);return Number.isFinite(parsed)?parsed:NaN;}
+    let t=Number(value);if(!Number.isFinite(t)||t<=0)return NaN;if(t<100000000000)t*=1000;return t;
   }
   function normalizeImported(payload){
     let arr=[];
-    if(Array.isArray(payload))arr=payload;
-    else if(payload&&Array.isArray(payload.history))arr=payload.history;
-    else if(payload&&Array.isArray(payload.records))arr=payload.records;
-    else if(payload&&Array.isArray(payload.points))arr=payload.points;
-    else if(payload&&Array.isArray(payload.data))arr=payload.data;
-    else if(payload&&payload.data&&Array.isArray(payload.data.history))arr=payload.data.history;
-    else if(payload&&payload.data&&Array.isArray(payload.data.records))arr=payload.data.records;
-    else if(payload&&payload.result&&Array.isArray(payload.result.history))arr=payload.result.history;
-    return arr.map(p=>{
-      if(Array.isArray(p))return {t:normalizeTimestamp(p[0]),v:Number(p[1])};
-      if(!p||typeof p!=='object')return {t:NaN,v:NaN};
-      return {
-        t:normalizeTimestamp(p.t??p.timestamp??p.time??p.date??p.createdAt??p.created_at),
-        v:Number(p.v??p.value??p.price??p.average??p.avg??p.averagePrice??p.average_price??p.priceAverage??p.price_average??p.liveAverage??p.live_average)
-      };
-    }).filter(valid);
+    if(Array.isArray(payload))arr=payload;else if(payload&&Array.isArray(payload.history))arr=payload.history;else if(payload&&Array.isArray(payload.records))arr=payload.records;else if(payload&&Array.isArray(payload.points))arr=payload.points;else if(payload&&Array.isArray(payload.data))arr=payload.data;else if(payload&&payload.data&&Array.isArray(payload.data.history))arr=payload.data.history;else if(payload&&payload.data&&Array.isArray(payload.data.records))arr=payload.data.records;else if(payload&&payload.result&&Array.isArray(payload.result.history))arr=payload.result.history;
+    return arr.map(p=>{if(Array.isArray(p))return {t:normalizeTimestamp(p[0]),v:Number(p[1])};if(!p||typeof p!=='object')return {t:NaN,v:NaN};return {t:normalizeTimestamp(p.t??p.timestamp??p.time??p.date??p.createdAt??p.created_at),v:Number(p.v??p.value??p.price??p.average??p.avg??p.averagePrice??p.average_price??p.priceAverage??p.price_average??p.liveAverage??p.live_average)};}).filter(valid);
   }
   function saveRemoteMeta(meta){try{localStorage.setItem(REMOTE_META_KEY,JSON.stringify(meta));}catch(e){}}
-  let autoSyncRunning=false, lastSyncAt=0;
+  // Refresh priority: Hour > Day > Month > 6M > Year > 5Y > All.
+  // Poll cadence follows the currently selected range; the Hour range always gets the fastest check.
+  const RANGE_PRIORITY=['hour','day','month','sixMonths','year','fiveYears','all'];
+  function cadenceForRange(){return range==='hour'?60000:range==='day'?5*60000:range==='week'?60*60000:range==='month'?4*3600000:86400000;}
+  let autoSyncRunning=false,lastSyncAt=0,lastScheduledSyncAt=0;
   async function checkRemoteHistory(force){
-    if(autoSyncRunning || (!force && Date.now()-lastSyncAt<60000))return;
+    const cadence=cadenceForRange();
+    if(autoSyncRunning||(!force&&Date.now()-lastSyncAt<Math.min(cadence,60000)))return;
     if(!navigator.onLine)return;
     autoSyncRunning=true;lastSyncAt=Date.now();
+    setChartProgress(0,'processing');
+    let successfulSources=0;
     try{
       let meta={};try{meta=JSON.parse(localStorage.getItem(REMOTE_META_KEY)||'{}')||{};}catch(e){}
+      const sources=range==='hour'?[WORKER_URL]:HISTORY_URLS;
       const existing=new Set(read().map(p=>String(Number(p.t))+':'+String(Number(p.v))));
       const additions=[];
-      // Fetch each source on every scheduled sync instead of trusting HEAD/ETag:
-      // some Workers do not expose validators and may append a new record every 2 minutes.
-      for(let sourceIndex=0;sourceIndex<HISTORY_URLS.length;sourceIndex++){
-        const url=HISTORY_URLS[sourceIndex];
+      for(let sourceIndex=0;sourceIndex<sources.length;sourceIndex++){
+        const url=sources[sourceIndex],key=url===WORKER_URL?'worker':'github';
+        const sourceStart=(sourceIndex/sources.length)*88;
+        const sourceWidth=88/sources.length;
+        setChartProgress(sourceStart,'processing');
         try{
-          const response=await fetch(url+(url.includes('?')?'&':'?')+'_chartSync='+Date.now(),{
-            method:'GET',cache:'no-store'
-          });
+          const response=await fetch(url+(url.includes('?')?'&':'?')+'_chartSync='+Date.now(),{method:'GET',cache:'no-store'});
           if(!response.ok)throw new Error('HTTP '+response.status);
+          setChartProgress(sourceStart+sourceWidth*.28,'processing');
           const payload=await response.json();
+          successfulSources++;
+          setChartProgress(sourceStart+sourceWidth*.48,'processing');
+          const advertisedCount=Number(payload&&payload.count);
+          const incomingCount=Number.isFinite(advertisedCount)&&advertisedCount>=0?advertisedCount:normalizeImported(payload).length;
+          const old=meta[key]||{};
+          // If the publisher's count has not changed, skip processing this source's history.
+          if(old.count===incomingCount&&old.initialized){old.checkedAt=Date.now();meta[key]=old;setChartProgress(sourceStart+sourceWidth*.94,'processing');continue;}
           const incoming=normalizeImported(payload);
-          for(const point of incoming){
-            const key=String(Number(point.t))+':'+String(Number(point.v));
-            if(!existing.has(key)){existing.add(key);additions.push({t:Number(point.t),v:Number(point.v)});}
-          }
-          meta['source'+sourceIndex]={url,checkedAt:Date.now(),count:incoming.length,added:incoming.length};
-        }catch(sourceError){
-          meta['source'+sourceIndex]={...(meta['source'+sourceIndex]||{}),url,lastError:String(sourceError&&sourceError.message||sourceError),failedAt:Date.now()};
-          console.warn('Price Chart history sync failed for '+url+':',sourceError);
-        }
+          setChartProgress(sourceStart+sourceWidth*.72,'processing');
+          for(const point of incoming){const k=String(Number(point.t))+':'+String(Number(point.v));if(!existing.has(k)){existing.add(k);additions.push({t:Number(point.t),v:Number(point.v)});}}
+          meta[key]={url,count:incomingCount,initialized:true,checkedAt:Date.now(),processed:incoming.length,added:incoming.length};
+          setChartProgress(sourceStart+sourceWidth*.94,'processing');
+        }catch(sourceError){meta[key]={...(meta[key]||{}),url,lastError:String(sourceError&&sourceError.message||sourceError),failedAt:Date.now()};console.warn('Price Chart history sync failed for '+url+':',sourceError);}
       }
-      if(additions.length){
-        await persistPoints(additions);
-        historyCache=cleanHistory(read().concat(additions));
-        scheduleDraw();
-      }
-      meta.lastSyncAt=Date.now();meta.lastAdded=additions.length;
-      saveRemoteMeta(meta);
-      const syncCard=document.getElementById('averagePriceChartCard');
-      if(syncCard){syncCard.dataset.historySync='ok';syncCard.dataset.historySyncAt=String(Date.now());}
-    }catch(err){console.warn('Price Chart automatic history sync failed:',err);}
-    finally{autoSyncRunning=false;}
+      setChartProgress(92,'processing');
+      if(additions.length){await persistPoints(additions);historyCache=cleanHistory(read().concat(additions));scheduleDraw();}
+      setChartProgress(97,'processing');
+      meta.lastSyncAt=Date.now();meta.lastAdded=additions.length;meta.lastRange=range;saveRemoteMeta(meta);
+      const syncCard=document.getElementById('averagePriceChartCard');if(syncCard){syncCard.dataset.historySync=successfulSources?'ok':'error';syncCard.dataset.historySyncAt=String(Date.now());}
+      if(successfulSources>0)setChartProgress(100,'complete');
+      else setChartProgress(0,'error');
+    }catch(err){setChartProgress(0,'error');console.warn('Price Chart automatic history sync failed:',err);}finally{autoSyncRunning=false;}
   }
   if(exportButton){
     const updateExportTooltip=()=>{
@@ -17347,11 +17444,15 @@ if (
       exportButton.title='Exported '+history.length+' numeric points';
     }catch(err){alert('Export failed. Browser storage may be full. '+(err&&err.message?err.message:''));}
   });
-  // Hydrate persistent history from IndexedDB before the next chart redraw.
-  loadHistory().then(()=>checkRemoteHistory(false)).catch(()=>checkRemoteHistory(false));
-  // Poll all four sources every 10 minutes and merge newly found records into the durable local repository.
-  setInterval(()=>checkRemoteHistory(true),10*60*1000);
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemoteHistory(false);});
+  // Hydrate the local repository first, then sync sources using the selected range's cadence.
+  loadHistory().then(()=>{refreshChartTransactions();checkRemoteHistory(true);}).catch(()=>{refreshChartTransactions();checkRemoteHistory(true);});
+  // The live page average is sampled frequently; remote checks are throttled according to range.
+  // Keep recording live values every 500 ms, but do not rebuild the SVG while the
+  // pointer is over the chart: replacing its DOM repeatedly makes hover labels blink.
+  // The chart catches up immediately after the pointer leaves the plot.
+  setInterval(()=>{record();if(!plot.matches(':hover'))scheduleDraw();if(Date.now()-lastScheduledSyncAt>=cadenceForRange()){lastScheduledSyncAt=Date.now();checkRemoteHistory(true);}},500);
+  plot.addEventListener('pointerleave',()=>scheduleDraw(),{passive:true});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemoteHistory(true);});
   window.addEventListener('online',()=>checkRemoteHistory(true));
   // First render after layout, then redraw whenever the chart container itself changes size
   // (including WebView startup, orientation changes, and page refresh).
@@ -17367,6 +17468,13 @@ if (
 </script>
 
 <style>
+
+/* The Chart label fills blue from bottom to top as remote history processing advances. */
+.average-chart-progress-label{--chart-progress:0%;display:inline-block;color:#fff;background-color:#fff;background-image:linear-gradient(to top,#42a5ff,#42a5ff);background-repeat:no-repeat;background-position:left bottom;background-size:100% var(--chart-progress);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;transition:background-size .28s ease;}
+.average-chart-progress-label[data-state="complete"]{--chart-progress:100%;}
+.average-chart-progress-label[data-state="error"]{--chart-progress:0%;}
+@media(prefers-reduced-motion:reduce){.average-chart-progress-label{transition:none;}}
+
 /* Keep the export control at the chart's bottom-left, aligned with the time-axis labels. */
 .average-price-chart-plot .average-chart-export-bottom{position:absolute!important;left:0!important;bottom:1px!important;z-index:8!important;display:inline-flex!important;align-items:center!important;justify-content:flex-start!important;margin:0!important;gap:0!important;}
 .average-price-chart-plot .average-chart-export-bottom .average-chart-tool{width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important;padding:3px!important;border-radius:6px!important;}
@@ -17935,6 +18043,9 @@ if (
     0%,100%{box-shadow:0 0 7px rgba(16,185,129,.16);}
     50%{box-shadow:0 0 13px rgba(16,185,129,.52);}
 }
+.average-price-chart-plot .chart-transaction-marker:hover .transaction-dot,.average-price-chart-plot .chart-transaction-marker:focus .transaction-dot{r:4.5;filter:drop-shadow(0 0 2px currentColor)}
+.average-price-chart-plot .chart-transaction-marker:focus{outline:none}
+.average-price-chart-plot .chart-transaction-marker.is-selected .transaction-dot{r:4.6;stroke-width:1.2}
 </style>
 
 <style id="B05-dollar-weight">
