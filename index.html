@@ -9232,6 +9232,7 @@ function pageIssueLabel(key, issue) {
 
     // Keep the error box compact: API/source name + short state.
     // These labels are intentionally short so an issue can be identified at a glance.
+    if (k === "chart-history-sync") return "Chart";
     if (k === "connection") return "Internet Error";
     if (k === "data-json") return "Data JSON";
     if (k === "usd") return "USD API";
@@ -17100,19 +17101,34 @@ if (
 (function(){
   const HISTORY_KEY='financialDashboardAveragePriceHistoryV1';
   const RANGE_KEY='financialDashboardAveragePriceRangeV1';
+  const SYNC_UI_KEY='financialDashboardChartSyncUiStateV1';
   const card=document.getElementById('averagePriceChartCard'); if(!card)return;
   const plot=document.getElementById('averagePriceChartPlot');
   const chartProgressLabel=document.getElementById('averageChartProgressLabel');
   let chartProgress=0;
+  const VALID_RANGES=['hour','day','week','month','sixMonths','year','fiveYears','all'];
+  let savedSyncUi={ranges:{}};
+  try{
+    const saved=JSON.parse(localStorage.getItem(SYNC_UI_KEY)||'{}');
+    if(saved&&saved.ranges&&typeof saved.ranges==='object'){
+      for(const name of VALID_RANGES){const item=saved.ranges[name];if(item&&Number.isFinite(Number(item.completedAt))&&Number.isFinite(Number(item.nextSyncAt)))savedSyncUi.ranges[name]={completedAt:Number(item.completedAt),nextSyncAt:Number(item.nextSyncAt)};}
+    }else if(saved&&Number.isFinite(Number(saved.completedAt))&&Number.isFinite(Number(saved.nextSyncAt))){
+      // Migrate the old shared status into the default Day range only.
+      savedSyncUi.ranges.day={completedAt:Number(saved.completedAt),nextSyncAt:Number(saved.nextSyncAt)};
+    }
+  }catch(e){}
+  function syncStateFor(name=range){if(!savedSyncUi.ranges[name])savedSyncUi.ranges[name]={completedAt:0,nextSyncAt:0};return savedSyncUi.ranges[name];}
+  function saveSyncUi(){try{localStorage.setItem(SYNC_UI_KEY,JSON.stringify(savedSyncUi));}catch(e){}}
   function setChartProgress(value,state){
     chartProgress=Math.max(0,Math.min(100,Number(value)||0));
     if(!chartProgressLabel)return;
     chartProgressLabel.style.setProperty('--chart-progress',chartProgress+'%');
     chartProgressLabel.dataset.progress=String(chartProgress);
     chartProgressLabel.dataset.state=state||'processing';
-    chartProgressLabel.setAttribute('aria-label',state==='complete'?'Chart data updated':state==='error'?'Chart data refresh failed':'Chart data update in progress');
-    chartProgressLabel.title=state==='complete'?'Chart data is current':state==='error'?'Chart refresh failed; showing the last saved data':'Updating chart data: '+Math.round(chartProgress)+'%';
+    chartProgressLabel.setAttribute('aria-label',state==='complete'?'Chart data updated':state==='error'?'Chart data refresh failed':state==='idle'?'Waiting for the next chart update':'Chart data update in progress');
+    chartProgressLabel.title=state==='complete'?'Chart data is current':state==='error'?'Chart refresh failed; showing the last saved data':state==='idle'?'Waiting for the next chart update':'Updating chart data: '+Math.round(chartProgress)+'%';
   }
+  // Each chart range restores its own saved processing state after range is loaded.
   // Keep the download control alive when chart redraws replace the plot contents.
   function setPlotContent(markup){
     const exportControl=plot.querySelector('.average-chart-export-bottom');
@@ -17121,7 +17137,17 @@ if (
   }
   // Restore the user's last selected chart range before the first render.
   let range='day';
-  try{const savedRange=localStorage.getItem(RANGE_KEY);if(['hour','day','week','month','sixMonths','year','fiveYears','all'].includes(savedRange))range=savedRange;}catch(e){}
+  try{const savedRange=localStorage.getItem(RANGE_KEY);if(VALID_RANGES.includes(savedRange))range=savedRange;}catch(e){}
+  function restoreRangeProgress(){
+    const state=syncStateFor(range),now=Date.now();
+    // Keep the last successful state blue across reloads and range changes. White is
+    // reserved for the five-second window immediately before that range's next sync.
+    if(state.completedAt&&state.nextSyncAt>now+5000)setChartProgress(100,'complete');
+    else if(state.completedAt&&state.nextSyncAt>now)setChartProgress(0,'idle');
+    else if(state.completedAt&&state.nextSyncAt&&now>=state.nextSyncAt)setChartProgress(3,'processing');
+    else setChartProgress(0,'idle');
+  }
+  restoreRangeProgress();
 
   // No application-level record cap: retain and export every valid numeric point in IndexedDB.
   // IndexedDB is used because localStorage cannot reliably hold large histories.
@@ -17343,9 +17369,10 @@ if (
     if(!['hour','day','week','month','sixMonths','year','fiveYears','all'].includes(nextRange))return;
     range=nextRange;
     selectedHistoryPointT=null;
+    selectedTransactionId=null;
     try{localStorage.setItem(RANGE_KEY,range);}catch(e){}
+    restoreRangeProgress();
     draw();
-    checkRemoteHistory(true);
   }));
   // Automatically merge all remote chart sources into the same persistent IndexedDB store.
   // The Worker is first because it is the most frequently updated source.
@@ -17366,16 +17393,28 @@ if (
   function saveRemoteMeta(meta){try{localStorage.setItem(REMOTE_META_KEY,JSON.stringify(meta));}catch(e){}}
   // Refresh priority: Hour > Day > Month > 6M > Year > 5Y > All.
   // Poll cadence follows the currently selected range; the Hour range always gets the fastest check.
-  const RANGE_PRIORITY=['hour','day','month','sixMonths','year','fiveYears','all'];
-  function cadenceForRange(){return range==='hour'?60000:range==='day'?5*60000:range==='week'?60*60000:range==='month'?4*3600000:86400000;}
-  let autoSyncRunning=false,lastSyncAt=0,lastScheduledSyncAt=0;
+  function cadenceForRange(name=range){return name==='hour'?60000:name==='day'?5*60000:name==='week'?60*60000:name==='month'?4*3600000:86400000;}
+  let autoSyncRunning=false,lastSyncAt=syncStateFor(range).completedAt||0,lastScheduledSyncAt=syncStateFor(range).completedAt||0;
   async function checkRemoteHistory(force){
-    const cadence=cadenceForRange();
-    if(autoSyncRunning||(!force&&Date.now()-lastSyncAt<Math.min(cadence,60000)))return;
-    if(!navigator.onLine)return;
-    autoSyncRunning=true;lastSyncAt=Date.now();
-    setChartProgress(0,'processing');
+    const syncRange=range;
+    const syncState=syncStateFor(syncRange);
+    const cadence=cadenceForRange(syncRange);
+    if(autoSyncRunning)return;
+    if(!force&&syncState.nextSyncAt&&Date.now()<syncState.nextSyncAt)return;
+    if(!force&&Date.now()-(syncState.completedAt||0)<Math.min(cadence,60000))return;
+    if(!navigator.onLine){
+      const message='Offline';
+      if(typeof setPageIssue==='function')setPageIssue('chart-history-sync',message,'error');
+      // Back off until the next cadence without discarding the last successful blue state.
+      syncState.nextSyncAt=Date.now()+cadence;saveSyncUi();
+      if(range===syncRange){if(syncState.completedAt)setChartProgress(100,'complete');else setChartProgress(0,'error');}
+      return;
+    }
+    autoSyncRunning=true;syncState.startedAt=Date.now();
+    // Start visibly and immediately, including first syncs and overdue work after days away.
+    if(range===syncRange)setChartProgress(3,'processing');
     let successfulSources=0;
+    const sourceErrors=[];
     try{
       let meta={};try{meta=JSON.parse(localStorage.getItem(REMOTE_META_KEY)||'{}')||{};}catch(e){}
       const sources=range==='hour'?[WORKER_URL]:HISTORY_URLS;
@@ -17383,36 +17422,56 @@ if (
       const additions=[];
       for(let sourceIndex=0;sourceIndex<sources.length;sourceIndex++){
         const url=sources[sourceIndex],key=url===WORKER_URL?'worker':'github';
-        const sourceStart=(sourceIndex/sources.length)*88;
-        const sourceWidth=88/sources.length;
-        setChartProgress(sourceStart,'processing');
+        // Keep the opening few percent visible instead of resetting to white while fetch is pending.
+        const sourceStart=3+(sourceIndex/sources.length)*85;
+        const sourceWidth=85/sources.length;
+        if(range===syncRange)setChartProgress(sourceStart,'processing');
         try{
           const response=await fetch(url+(url.includes('?')?'&':'?')+'_chartSync='+Date.now(),{method:'GET',cache:'no-store'});
           if(!response.ok)throw new Error('HTTP '+response.status);
-          setChartProgress(sourceStart+sourceWidth*.28,'processing');
+          if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.28,'processing');
           const payload=await response.json();
           successfulSources++;
-          setChartProgress(sourceStart+sourceWidth*.48,'processing');
+          if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.48,'processing');
           const advertisedCount=Number(payload&&payload.count);
           const incomingCount=Number.isFinite(advertisedCount)&&advertisedCount>=0?advertisedCount:normalizeImported(payload).length;
           const old=meta[key]||{};
           // If the publisher's count has not changed, skip processing this source's history.
-          if(old.count===incomingCount&&old.initialized){old.checkedAt=Date.now();meta[key]=old;setChartProgress(sourceStart+sourceWidth*.94,'processing');continue;}
+          if(old.count===incomingCount&&old.initialized){old.checkedAt=Date.now();meta[key]=old;if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.94,'processing');continue;}
           const incoming=normalizeImported(payload);
-          setChartProgress(sourceStart+sourceWidth*.72,'processing');
+          if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.72,'processing');
           for(const point of incoming){const k=String(Number(point.t))+':'+String(Number(point.v));if(!existing.has(k)){existing.add(k);additions.push({t:Number(point.t),v:Number(point.v)});}}
           meta[key]={url,count:incomingCount,initialized:true,checkedAt:Date.now(),processed:incoming.length,added:incoming.length};
-          setChartProgress(sourceStart+sourceWidth*.94,'processing');
-        }catch(sourceError){meta[key]={...(meta[key]||{}),url,lastError:String(sourceError&&sourceError.message||sourceError),failedAt:Date.now()};console.warn('Price Chart history sync failed for '+url+':',sourceError);}
+          if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.94,'processing');
+        }catch(sourceError){const detail=String(sourceError&&sourceError.message||sourceError||'Request failed');sourceErrors.push((key==='worker'?'Worker':'GitHub')+': '+detail);meta[key]={...(meta[key]||{}),url,lastError:detail,failedAt:Date.now()};console.warn('Price Chart history sync failed for '+url+':',sourceError);}
       }
-      setChartProgress(92,'processing');
+      if(range===syncRange)setChartProgress(92,'processing');
       if(additions.length){await persistPoints(additions);historyCache=cleanHistory(read().concat(additions));scheduleDraw();}
-      setChartProgress(97,'processing');
-      meta.lastSyncAt=Date.now();meta.lastAdded=additions.length;meta.lastRange=range;saveRemoteMeta(meta);
+      if(range===syncRange)setChartProgress(97,'processing');
+      meta.lastSyncAt=Date.now();meta.lastAdded=additions.length;meta.lastRange=syncRange;saveRemoteMeta(meta);
       const syncCard=document.getElementById('averagePriceChartCard');if(syncCard){syncCard.dataset.historySync=successfulSources?'ok':'error';syncCard.dataset.historySyncAt=String(Date.now());}
-      if(successfulSources>0)setChartProgress(100,'complete');
-      else setChartProgress(0,'error');
-    }catch(err){setChartProgress(0,'error');console.warn('Price Chart automatic history sync failed:',err);}finally{autoSyncRunning=false;}
+      if(successfulSources>0){
+        syncState.completedAt=Date.now();syncState.nextSyncAt=Date.now()+cadenceForRange(syncRange);delete syncState.startedAt;
+        if(sourceErrors.length){
+          if(typeof setPageIssue==='function')setPageIssue('chart-history-sync',sourceErrors.join(' | '),'error');
+        }else if(typeof clearPageIssue==='function')clearPageIssue('chart-history-sync');
+        if(range===syncRange)setChartProgress(100,'complete');
+        saveSyncUi();
+      }else{
+        syncState.nextSyncAt=Date.now()+cadenceForRange(syncRange);delete syncState.startedAt;
+        if(typeof setPageIssue==='function')setPageIssue('chart-history-sync',sourceErrors.join(' | ')||'Request failed','error');
+        // A failed refresh must not erase the last successful state. If this range
+        // has never synced successfully, keep the label white and report the error.
+        if(range===syncRange){if(syncState.completedAt)setChartProgress(100,'complete');else setChartProgress(0,'error');}
+        saveSyncUi();
+      }
+    }catch(err){
+      syncState.nextSyncAt=Date.now()+cadenceForRange(syncRange);delete syncState.startedAt;
+      if(typeof setPageIssue==='function')setPageIssue('chart-history-sync',String(err&&err.message||err||'Request failed'),'error');
+      if(range===syncRange){if(syncState.completedAt)setChartProgress(100,'complete');else setChartProgress(0,'error');}
+      saveSyncUi();
+      console.warn('Price Chart automatic history sync failed:',err);
+    }finally{autoSyncRunning=false;if(range!==syncRange)restoreRangeProgress();}
   }
   if(exportButton){
     const updateExportTooltip=()=>{
@@ -17445,15 +17504,30 @@ if (
     }catch(err){alert('Export failed. Browser storage may be full. '+(err&&err.message?err.message:''));}
   });
   // Hydrate the local repository first, then sync sources using the selected range's cadence.
-  loadHistory().then(()=>{refreshChartTransactions();checkRemoteHistory(true);}).catch(()=>{refreshChartTransactions();checkRemoteHistory(true);});
+  // A missing local history is an initial sync even if an old saved schedule says the next peak is later.
+  // This also repairs empty storage after a long period away from the page.
+  loadHistory().then(()=>{
+    refreshChartTransactions();const state=syncStateFor(range);
+    if(!read().length||!state.nextSyncAt||Date.now()>=state.nextSyncAt){setChartProgress(3,'processing');checkRemoteHistory(true);}
+    else restoreRangeProgress();
+  }).catch(err=>{
+    refreshChartTransactions();if(typeof setPageIssue==='function')setPageIssue('chart-history-sync',String(err&&err.message||err||'Storage failed'),'error');
+    const state=syncStateFor(range);if(!read().length||!state.nextSyncAt||Date.now()>=state.nextSyncAt){setChartProgress(3,'processing');checkRemoteHistory(true);}else restoreRangeProgress();
+  });
   // The live page average is sampled frequently; remote checks are throttled according to range.
   // Keep recording live values every 500 ms, but do not rebuild the SVG while the
   // pointer is over the chart: replacing its DOM repeatedly makes hover labels blink.
   // The chart catches up immediately after the pointer leaves the plot.
-  setInterval(()=>{record();if(!plot.matches(':hover'))scheduleDraw();if(Date.now()-lastScheduledSyncAt>=cadenceForRange()){lastScheduledSyncAt=Date.now();checkRemoteHistory(true);}},500);
+  setInterval(()=>{
+    record();if(!plot.matches(':hover'))scheduleDraw();
+    const now=Date.now(),rangeState=syncStateFor(range);
+    if(rangeState.nextSyncAt&&now>=rangeState.nextSyncAt-5000&&now<rangeState.nextSyncAt&&chartProgressLabel&&chartProgressLabel.dataset.state==='complete')setChartProgress(0,'idle');
+    if(!autoSyncRunning&&rangeState.nextSyncAt&&now>=rangeState.nextSyncAt)checkRemoteHistory(true);
+    else if(!rangeState.nextSyncAt&&now-(rangeState.completedAt||0)>=cadenceForRange(range))checkRemoteHistory(true);
+  },500);
   plot.addEventListener('pointerleave',()=>scheduleDraw(),{passive:true});
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemoteHistory(true);});
-  window.addEventListener('online',()=>checkRemoteHistory(true));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){const state=syncStateFor(range),now=Date.now();if(state.nextSyncAt&&now>=state.nextSyncAt-5000&&now<state.nextSyncAt&&state.completedAt)setChartProgress(0,'idle');if(!state.nextSyncAt||now>=state.nextSyncAt)checkRemoteHistory(true);}});
+  window.addEventListener('online',()=>{const state=syncStateFor(range);if(!state.nextSyncAt||Date.now()>=state.nextSyncAt)checkRemoteHistory(true);});
   // First render after layout, then redraw whenever the chart container itself changes size
   // (including WebView startup, orientation changes, and page refresh).
   let resizeFrame=0;
@@ -17470,7 +17544,7 @@ if (
 <style>
 
 /* The Chart label fills blue from bottom to top as remote history processing advances. */
-.average-chart-progress-label{--chart-progress:0%;display:inline-block;color:#fff;background-color:#fff;background-image:linear-gradient(to top,#42a5ff,#42a5ff);background-repeat:no-repeat;background-position:left bottom;background-size:100% var(--chart-progress);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;transition:background-size .28s ease;}
+.average-chart-progress-label{--chart-progress:0%;display:inline-block;color:#fff;background-color:#fff;background-image:linear-gradient(to top,#42a5ff,#42a5ff);background-repeat:no-repeat;background-position:left bottom;background-size:100% var(--chart-progress);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;transition:background-size .9s ease-in-out;}
 .average-chart-progress-label[data-state="complete"]{--chart-progress:100%;}
 .average-chart-progress-label[data-state="error"]{--chart-progress:0%;}
 @media(prefers-reduced-motion:reduce){.average-chart-progress-label{transition:none;}}
