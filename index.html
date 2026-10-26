@@ -17247,9 +17247,29 @@ if (
     const last=pts[pts.length-1],lx=x(last.t),ly=y(last.v),meanY=y(mean);
     let grid='';const levels=4;
     for(let i=0;i<=levels;i++){const val=min+(max-min)*i/levels,yy=y(val);grid+=`<line x1="${L}" y1="${yy}" x2="${W-R+5}" y2="${yy}" stroke="currentColor" opacity=".14"/><text x="${L-3}" y="${yy+3.5}" text-anchor="end" fill="currentColor" opacity=".82" font-size="10">${fmt(val)}</text>`;}
-    const ticks=range==='hour'?[0,.25,.5,.75,1]:range==='day'?[0,.25,.5,.75,1]:[0,.2,.4,.6,.8,1];let times='';
+    const compactMobileAxis=(measuredWidth<=520 || window.innerWidth<=520 || document.documentElement.clientWidth<=520) && ['month','sixMonths','year','fiveYears','all'].includes(range);
+    // Six-month and longer ranges use Jalali month/year labels on both desktop and mobile.
+    // Mobile gets seven evenly spaced ticks; desktop gets nine for these longer ranges.
+    const monthYearAxis=['sixMonths','year','fiveYears','all'].includes(range);
+    const ticks=compactMobileAxis?[0,1/6,2/6,3/6,4/6,5/6,1]:monthYearAxis?[0,1/8,2/8,3/8,4/8,5/8,6/8,7/8,1]:(range==='hour'||range==='day'?[0,.25,.5,.75,1]:[0,.2,.4,.6,.8,1]);let times='';
     const jalaliFmt=new Intl.DateTimeFormat('en-u-ca-persian',{day:'2-digit',month:'short'});
-    ticks.forEach((f,i)=>{const d=new Date(now-span+span*f);const label=range==='hour'||range==='day'?d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false}):range==='week'?new Intl.DateTimeFormat('en-GB',{weekday:'short'}).format(d):jalaliFmt.format(d);times+=`<text x="${L+pw*f}" y="${H-7}" text-anchor="${i===0?'start':i===ticks.length-1?'end':'middle'}" fill="currentColor" opacity=".72" font-size="10.5">${label}</text>`;});
+    ticks.forEach((f,i)=>{
+      const d=new Date(now-span+span*f);
+      let label;
+      if(range==='hour'||range==='day')label=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+      else if(range==='week')label=new Intl.DateTimeFormat('en-GB',{weekday:'short'}).format(d);
+      else if(monthYearAxis){
+        const parts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'2-digit'}).formatToParts(d),dp={};
+        for(const part of parts)if(part.type==='month'||part.type==='year')dp[part.type]=part.value;
+        // Year on the left, month on the right (e.g. 1405/02).
+        label=String(dp.year||'')+'/'+String(dp.month||'').padStart(2,'0');
+      }else if(compactMobileAxis){
+        const parts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'2-digit'}).formatToParts(d),dp={};
+        for(const part of parts)if(part.type==='month'||part.type==='year')dp[part.type]=part.value;
+        label=String(dp.year||'')+'/'+String(dp.month||'').padStart(2,'0');
+      }else label=jalaliFmt.format(d);
+      times+=`<text x="${L+pw*f}" y="${H-7}" text-anchor="${i===0?'start':i===ticks.length-1?'end':'middle'}" fill="currentColor" opacity=".72" font-size="${compactMobileAxis?'9':'10.5'}">${label}</text>`;
+    });
     const baseGap=range==='hour'?60000:range==='day'?5*60000:range==='week'?3600000:range==='month'?4*3600000:86400000;
     let segments='',areaFills='',gradients='';
     for(let i=1;i<pts.length;i++){
