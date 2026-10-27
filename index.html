@@ -17288,7 +17288,7 @@ if (
       const dashed=(b.t-a.t)>baseGap;
       const addFill=(x1,y1,x2,y2,above,id)=>{
         const color=above?'#ffffff':'#168cff';
-        gradients+=`<linearGradient id="meanFill${id}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x1}" y2="${meanY}"><stop offset="0%" stop-color="${color}" stop-opacity="${above?'.30':'.78'}"/><stop offset="55%" stop-color="${color}" stop-opacity="${above?'.14':'.42'}"/><stop offset="100%" stop-color="${color}" stop-opacity="${above?'.025':'.10'}"/></linearGradient>`;
+        gradients+=`<linearGradient id="meanFill${id}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x1}" y2="${meanY}"><stop offset="0%" stop-color="${color}" stop-opacity=".30"/><stop offset="55%" stop-color="${color}" stop-opacity=".14"/><stop offset="100%" stop-color="${color}" stop-opacity=".025"/></linearGradient>`;
         areaFills+=`<polygon points="${x1},${y1} ${x2},${y2} ${x2},${meanY} ${x1},${meanY}" fill="url(#meanFill${id})"/>`;
       };
       if(aAbove===bAbove){
