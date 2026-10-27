@@ -17466,12 +17466,13 @@ if (
         cross.setAttribute('x1',cx);cross.setAttribute('x2',cx);cross.style.display='';
         dot.setAttribute('cx',cx);dot.setAttribute('cy',cy);dot.style.display='';
         tip.textContent=fmt(best.v);
-        const d=new Date(best.t);let dateText='';
-        if(range==='hour') dateText=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
-        else if(range==='day') dateText=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
-        else if(range==='week') dateText=new Intl.DateTimeFormat('en-GB',{weekday:'short'}).format(d)+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
-        else if(range==='month') dateText=new Intl.DateTimeFormat('en-u-ca-persian',{day:'numeric'}).format(d)+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
-        else {const parts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const dp={};for(const part of parts)if(part.type==='day'||part.type==='month'||part.type==='year')dp[part.type]=part.value;dateText=dp.year+'/'+dp.month+'/'+dp.day;}
+        const d=new Date(best.t);
+        // Always show the full Jalali date and time, independent of the selected range.
+        // Keep the year first (left), then month/day, followed by a small visual gap and HH:mm.
+        const dateParts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);
+        const dp={};for(const part of dateParts)if(part.type==='day'||part.type==='month'||part.type==='year')dp[part.type]=part.value;
+        const timeText=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+        const dateText=`${String(dp.year).padStart(4,'0')}/${dp.month}/${dp.day}  ${timeText}`;
         dateTip.textContent=dateText;
         const rect=svg.getBoundingClientRect(),plotRect=plot.getBoundingClientRect();
         const labelX=Math.max(42,Math.min(plotRect.width-42,rect.left-plotRect.left+cx/W*rect.width));
