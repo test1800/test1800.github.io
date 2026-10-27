@@ -6642,6 +6642,14 @@ h1 {
     <span class="average-price-chart-tools average-chart-export-bottom" aria-label="Chart history tools"><button type="button" class="average-chart-tool export" id="averageChartExport" title="Download full history backup" aria-label="Download history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 17v3h14v-3"/></svg></button></span>
     <div class="average-price-chart-empty"><span>No cached price data</span></div>
   </div>
+  <div class="average-chart-navigator" id="averageChartNavigator" aria-label="Select chart time range">
+    <div class="average-chart-navigator-track" id="averageChartNavigatorTrack">
+      <div class="average-chart-navigator-selection" id="averageChartNavigatorSelection">
+        <button type="button" class="average-chart-navigator-handle left" id="averageChartNavigatorStart" aria-label="Move range start" title="Move range start"><span></span></button>
+        <button type="button" class="average-chart-navigator-handle right" id="averageChartNavigatorEnd" aria-label="Move range end" title="Move range end"><span></span></button>
+      </div>
+    </div>
+  </div>
 </section>
 <!-- =================================================
      CRYPTO PORTFOLIO
@@ -17180,6 +17188,45 @@ if (
   function valid(p){const v=Number(p&&p.v),t=Number(p&&p.t);return Number.isFinite(v)&&v>0&&Number.isFinite(t)&&t>0;}
   function cleanHistory(arr){const map=new Map();for(const p of (Array.isArray(arr)?arr:[])){if(valid(p)){const t=Number(p.t),v=Number(p.v);let q=map.get(t);if(!q){q={t,sum:0,n:0};map.set(t,q);}q.sum+=v;q.n++;}}return Array.from(map.values()).map(q=>({t:q.t,v:q.sum/q.n})).sort((a,b)=>a.t-b.t);}
   function read(){return historyCache;}
+  // Lightweight range navigator: it reads the existing in-memory history only.
+  const navigatorEl=document.getElementById('averageChartNavigator');
+  const navigatorTrack=document.getElementById('averageChartNavigatorTrack');
+  const navigatorSelection=document.getElementById('averageChartNavigatorSelection');
+  let customRange=null,navigatorDrag=null;
+  function presetSpan(name,now=Date.now()){
+    if(name==='hour')return 3600000;if(name==='day')return 86400000;if(name==='week')return 7*86400000;if(name==='month')return 30*86400000;if(name==='threeMonths')return 91*86400000;if(name==='sixMonths')return 183*86400000;if(name==='year')return 365*86400000;if(name==='fiveYears')return 5*365*86400000;
+    const a=read();return Math.max(1,now-(a.length?Number(a[0].t):now));
+  }
+  function navigatorDomain(){const a=read();if(!a.length)return null;const start=Number(a[0].t),end=Number(a[a.length-1].t);return {start,end:Math.max(start+1,end)};}
+  function updateNavigator(){
+    if(!navigatorEl||!navigatorTrack||!navigatorSelection)return;
+    const domain=navigatorDomain();if(!domain){navigatorEl.hidden=true;return;}navigatorEl.hidden=false;
+    const now=Date.now(),span=presetSpan(range,now);let start=customRange?customRange.start:Math.max(domain.start,now-span),end=customRange?customRange.end:Math.min(domain.end,now+60000);
+    if(range==='all'&&!customRange){start=domain.start;end=domain.end;}
+    start=Math.max(domain.start,Math.min(domain.end,start));end=Math.max(start+1,Math.min(domain.end,end));
+    const total=Math.max(1,domain.end-domain.start),left=(start-domain.start)/total*100,right=(end-domain.start)/total*100;
+    navigatorSelection.style.left=Math.max(0,Math.min(100,left))+'%';navigatorSelection.style.width=Math.max(.35,Math.min(100-left,right-left))+'%';
+    navigatorSelection.dataset.start=String(start);navigatorSelection.dataset.end=String(end);navigatorSelection.setAttribute('aria-label','Selected range '+new Date(start).toLocaleString()+' to '+new Date(end).toLocaleString());
+    const sh=document.getElementById('averageChartNavigatorStart'),eh=document.getElementById('averageChartNavigatorEnd');if(sh)sh.setAttribute('aria-valuetext',new Date(start).toLocaleString());if(eh)eh.setAttribute('aria-valuetext',new Date(end).toLocaleString());
+  }
+  if(navigatorTrack){
+    navigatorTrack.addEventListener('pointerdown',ev=>{
+      const domain=navigatorDomain();if(!domain)return;const target=ev.target.closest('.average-chart-navigator-handle'),bounds=navigatorTrack.getBoundingClientRect(),total=Math.max(1,domain.end-domain.start),span=presetSpan(range);
+      const start=Math.max(domain.start,Math.min(domain.end,customRange?customRange.start:Date.now()-span)),end=Math.max(start+1,Math.min(domain.end,customRange?customRange.end:Date.now()+60000));
+      navigatorDrag={mode:target?(target.classList.contains('left')?'left':'right'):'move',pointerId:ev.pointerId,x:ev.clientX,start,end,domain,total,width:Math.max(1,bounds.width)};navigatorTrack.setPointerCapture(ev.pointerId);ev.preventDefault();
+    });
+    navigatorTrack.addEventListener('pointermove',ev=>{
+      const d=navigatorDrag;if(!d||d.pointerId!==ev.pointerId)return;const delta=(ev.clientX-d.x)/d.width*d.total,minGap=Math.min(d.total,Math.max(60000,d.total*.001));let start=d.start,end=d.end;
+      if(d.mode==='left')start=Math.max(d.domain.start,Math.min(end-minGap,d.start+delta));else if(d.mode==='right')end=Math.min(d.domain.end,Math.max(start+minGap,d.end+delta));else{const width=end-start;start=Math.max(d.domain.start,Math.min(d.domain.end-width,d.start+delta));end=start+width;}
+      customRange={start,end};updateNavigator();draw();ev.preventDefault();
+    });
+    const stop=ev=>{if(navigatorDrag&&navigatorDrag.pointerId===ev.pointerId)navigatorDrag=null;};navigatorTrack.addEventListener('pointerup',stop);navigatorTrack.addEventListener('pointercancel',stop);
+    navigatorTrack.addEventListener('keydown',ev=>{
+      const target=ev.target.closest('.average-chart-navigator-handle');if(!target||!['ArrowLeft','ArrowRight','Home','End'].includes(ev.key))return;const domain=navigatorDomain();if(!domain)return;const span=presetSpan(range),start=customRange?customRange.start:Math.max(domain.start,Date.now()-span),end=customRange?customRange.end:Math.min(domain.end,Date.now()+60000),step=Math.max(60000,(domain.end-domain.start)*.01);let a=start,b=end;
+      if(target.classList.contains('left'))a=ev.key==='Home'?domain.start:ev.key==='End'?b-step:start+(ev.key==='ArrowRight'?step:-step);else b=ev.key==='End'?domain.end:ev.key==='Home'?a+step:end+(ev.key==='ArrowRight'?step:-step);
+      const gap=Math.min(domain.end-domain.start,60000);a=Math.max(domain.start,Math.min(b-gap,a));b=Math.min(domain.end,Math.max(a+gap,b));customRange={start:a,end:b};updateNavigator();draw();ev.preventDefault();
+    });
+  }
   function openHistoryDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('IndexedDB unavailable'));return;}const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(DB_STORE))db.createObjectStore(DB_STORE,{keyPath:'id'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('IndexedDB open failed'));});}
   async function persistPoints(points){
     const db=await openHistoryDB();
@@ -17198,8 +17245,9 @@ if (
   function fmt(v){return Math.round(Number(v)).toLocaleString('en-US',{maximumFractionDigits:0});}
   function niceStep(raw){const power=Math.pow(10,Math.floor(Math.log10(Math.max(raw,1))));const n=raw/power;return (n<=1?1:n<=2?2:n<=5?5:10)*power;}
   function draw(){
-    record();const now=Date.now(),span=range==='hour'?3600000:range==='day'?86400000:range==='week'?7*86400000:range==='month'?30*86400000:range==='threeMonths'?91*86400000:range==='sixMonths'?183*86400000:range==='year'?365*86400000:range==='fiveYears'?5*365*86400000:Math.max(0,now-Math.min(read().length?Math.min(...read().map(p=>p.t)):now,chartTransactions.length?Math.min(...chartTransactions.map(t=>t.t)):now));
-    const rawPts=read().filter(p=>p.t>=now-span&&p.t<=now+60000).sort((a,b)=>a.t-b.t);
+    record();const now=Date.now(),defaultSpan=range==='hour'?3600000:range==='day'?86400000:range==='week'?7*86400000:range==='month'?30*86400000:range==='threeMonths'?91*86400000:range==='sixMonths'?183*86400000:range==='year'?365*86400000:range==='fiveYears'?5*365*86400000:Math.max(0,now-Math.min(read().length?Math.min(...read().map(p=>p.t)):now,chartTransactions.length?Math.min(...chartTransactions.map(t=>t.t)):now));
+    const chartStart=customRange?customRange.start:now-defaultSpan,chartEnd=customRange?customRange.end:now+60000,span=Math.max(1,chartEnd-chartStart);updateNavigator();
+    const rawPts=read().filter(p=>p.t>=chartStart&&p.t<=chartEnd).sort((a,b)=>a.t-b.t);
     // Keep full-fidelity records in IndexedDB; aggregate only the plotted view into fixed time buckets.
     const bucketMs=range==='hour'?0:range==='day'?5*60000:range==='week'?3600000:range==='month'?4*3600000:86400000;
     let pts=rawPts;
@@ -17212,7 +17260,7 @@ if (
     // Keep historical buckets aggregated, but replace any current bucket endpoint with
     // the exact live value so the right-side live badge and chart react immediately.
     const liveValue=getCurrentLiveValue();
-    if(liveValue!==null){
+    if(liveValue!==null&&now>=chartStart&&now<=chartEnd){
       const currentPoint={t:now,v:liveValue};
       if(pts.length&&pts[pts.length-1].t>=now-bucketMs&&bucketMs>0)pts[pts.length-1]=currentPoint;
       else if(!pts.length||pts[pts.length-1].t<now)pts.push(currentPoint);
@@ -17223,7 +17271,7 @@ if (
     card.querySelectorAll('[data-average-range]').forEach(b=>b.classList.toggle('active',b.dataset.averageRange===range));
     if(!pts.length){setPlotContent('<div class="average-price-chart-empty"><span>No cached price data</span></div>');return;}
     // Zero and invalid values are never used in min/max or the mean. The first real cached point is the first chart value.
-    const visibleTransactions=chartTransactions.filter(t=>t.t>=now-span&&t.t<=now&&Number.isFinite(t.price)&&t.price>0);
+    const visibleTransactions=chartTransactions.filter(t=>t.t>=chartStart&&t.t<=chartEnd&&Number.isFinite(t.price)&&t.price>0);
     const vals=pts.map(p=>p.v).filter(v=>Number.isFinite(v)&&v>0).concat(visibleTransactions.map(t=>t.price));
     if(!vals.length){setPlotContent('<div class="average-price-chart-empty"><span>No cached price data</span></div>');return;}
     const dataMin=Math.min(...vals),dataMax=Math.max(...vals),mean=dataMin+(dataMax-dataMin)/2;
@@ -17244,7 +17292,7 @@ if (
     const measuredWidth=Math.round(plot.getBoundingClientRect().width);
     if(measuredWidth<100)return;
     const W=Math.max(300,measuredWidth),H=174,L=58,R=measuredWidth<=480?27:42,T=25,B=48,pw=W-L-R,ph=H-T-B;
-    const x=t=>L+((Number(t)-(now-span))/span)*pw,y=v=>T+(max-Number(v))/(max-min)*ph;
+    const x=t=>L+((Number(t)-chartStart)/span)*pw,y=v=>T+(max-Number(v))/(max-min)*ph;
     const last=pts[pts.length-1],lx=x(last.t),ly=y(last.v),meanY=y(mean);
     let grid='';const levels=4;
     for(let i=0;i<=levels;i++){const val=min+(max-min)*i/levels,yy=y(val);grid+=`<line x1="${L}" y1="${yy}" x2="${W-R+5}" y2="${yy}" stroke="currentColor" opacity=".14"/><text x="${L-3}" y="${yy+3.5}" text-anchor="end" fill="currentColor" opacity=".82" font-size="10">${fmt(val)}</text>`;}
@@ -17255,7 +17303,7 @@ if (
     const ticks=compactMobileAxis?[0,.25,.5,.75,1]:monthYearAxis?[0,1/8,2/8,3/8,4/8,5/8,6/8,7/8,1]:(range==='hour'||range==='day'?[0,.25,.5,.75,1]:[0,.2,.4,.6,.8,1]);let times='',verticalGrid='';
     const jalaliFmt=new Intl.DateTimeFormat('en-u-ca-persian',{day:'2-digit',month:'short'});
     ticks.forEach((f,i)=>{
-      const d=new Date(now-span+span*f);
+      const d=new Date(chartStart+span*f);
       let label;
       if(range==='hour'||range==='day')label=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
       else if(range==='week')label=new Intl.DateTimeFormat('en-GB',{weekday:'short'}).format(d);
@@ -17355,7 +17403,7 @@ if (
       function nearestPointAt(ev){
         const rect=svg.getBoundingClientRect();
         const px=Math.max(0,Math.min(W,(ev.clientX-rect.left)/rect.width*W));
-        const targetT=(now-span)+((px-L)/pw)*span;
+        const targetT=chartStart+((px-L)/pw)*span;
         let best=pts[0],dist=Infinity;
         for(const p of pts){const d=Math.abs(p.t-targetT);if(d<dist){dist=d;best=p;}}
         return best;
@@ -17410,6 +17458,7 @@ if (
     const nextRange=b.dataset.averageRange;
     if(!['hour','day','week','month','threeMonths','sixMonths','year','fiveYears','all'].includes(nextRange))return;
     range=nextRange;
+    customRange=null;
     selectedHistoryPointT=null;
     selectedTransactionId=null;
     try{localStorage.setItem(RANGE_KEY,range);}catch(e){}
@@ -18241,10 +18290,19 @@ if (
 .average-price-chart-range button.active{background:rgba(75,145,255,.20);color:#76b6ff;box-shadow:inset 0 0 0 1px rgba(90,155,255,.18);}
 .average-price-chart-plot{height:174px;width:100%;min-width:0;position:relative;}
 .average-price-chart-plot svg{display:block;width:100%;height:174px;overflow:hidden;}
+.average-chart-navigator{height:20px;width:100%;padding:5px 2px 7px;box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+.average-chart-navigator[hidden]{display:none!important;}
+.average-chart-navigator-track{position:relative;width:100%;height:4px;border-radius:3px;background:rgba(135,155,180,.22);cursor:ew-resize;touch-action:none;}
+.average-chart-navigator-selection{position:absolute;top:-3px;height:10px;min-width:4px;box-sizing:border-box;border:1px solid #68aaff;background:rgba(63,145,255,.16);border-radius:2px;cursor:grab;touch-action:none;}
+.average-chart-navigator-selection:active{cursor:grabbing;}
+.average-chart-navigator-handle{position:absolute;top:-4px;width:9px;height:16px;padding:0;border:1px solid #8fc4ff;border-radius:3px;background:#1d5e9f;box-shadow:0 0 0 1px rgba(4,14,28,.35);cursor:ew-resize;touch-action:none;display:flex;align-items:center;justify-content:center;z-index:2;}
+.average-chart-navigator-handle span{display:block;width:1px;height:8px;background:#d9edff;box-shadow:2px 0 #d9edff;}
+.average-chart-navigator-handle.left{left:-5px}.average-chart-navigator-handle.right{right:-5px}
+.average-chart-navigator-handle:focus-visible{outline:2px solid #9acbff;outline-offset:2px;}
 .average-price-chart-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:var(--muted-color,#9ca3af);font-size:12px;}
 .average-price-chart-empty-icon{display:none!important;}
 @media(max-width:360px){.average-price-chart-title{font-size:11px}.average-price-chart-range button{font-size:8px;padding-left:1px;padding-right:1px}.average-price-chart-tools .average-chart-tool{width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important}}
-@media(max-width:480px){.average-price-chart-card{padding:11px 9px 8px}.average-price-chart-title{font-size:12px}.average-price-chart-range button{padding:5px 2px;font-size:9px;letter-spacing:-.2px}.average-price-chart-head{gap:5px;flex-wrap:nowrap}.average-price-chart-tools{gap:4px}.average-price-chart-tools .average-chart-tool{width:25px!important;height:25px!important;min-width:25px!important;min-height:25px!important;border-radius:7px!important}.average-price-chart-tools .average-chart-tool svg{width:14px!important;height:14px!important;min-width:14px!important;min-height:14px!important}.average-price-chart-plot,.average-price-chart-plot svg{height:150px}}
+@media(max-width:480px){.average-chart-navigator{height:18px;padding-top:4px;padding-bottom:6px}.average-price-chart-card{padding:11px 9px 8px}.average-price-chart-title{font-size:12px}.average-price-chart-range button{padding:5px 2px;font-size:9px;letter-spacing:-.2px}.average-price-chart-head{gap:5px;flex-wrap:nowrap}.average-price-chart-tools{gap:4px}.average-price-chart-tools .average-chart-tool{width:25px!important;height:25px!important;min-width:25px!important;min-height:25px!important;border-radius:7px!important}.average-price-chart-tools .average-chart-tool svg{width:14px!important;height:14px!important;min-width:14px!important;min-height:14px!important}.average-price-chart-plot,.average-price-chart-plot svg{height:150px}}
 </style>
 <style>
 /* Remove the empty strip below the chart time axis. */
