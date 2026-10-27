@@ -6631,6 +6631,7 @@ h1 {
       <button type="button" data-average-range="day" class="active">Day</button>
       <button type="button" data-average-range="week">Week</button>
       <button type="button" data-average-range="month">Month</button>
+      <button type="button" data-average-range="threeMonths">3M</button>
       <button type="button" data-average-range="sixMonths">6M</button>
       <button type="button" data-average-range="year">Year</button>
       <button type="button" data-average-range="fiveYears">5Y</button>
@@ -17106,7 +17107,7 @@ if (
   const plot=document.getElementById('averagePriceChartPlot');
   const chartProgressLabel=document.getElementById('averageChartProgressLabel');
   let chartProgress=0;
-  const VALID_RANGES=['hour','day','week','month','sixMonths','year','fiveYears','all'];
+  const VALID_RANGES=['hour','day','week','month','threeMonths','sixMonths','year','fiveYears','all'];
   let savedSyncUi={ranges:{}};
   try{
     const saved=JSON.parse(localStorage.getItem(SYNC_UI_KEY)||'{}');
@@ -17197,7 +17198,7 @@ if (
   function fmt(v){return Math.round(Number(v)).toLocaleString('en-US',{maximumFractionDigits:0});}
   function niceStep(raw){const power=Math.pow(10,Math.floor(Math.log10(Math.max(raw,1))));const n=raw/power;return (n<=1?1:n<=2?2:n<=5?5:10)*power;}
   function draw(){
-    record();const now=Date.now(),span=range==='hour'?3600000:range==='day'?86400000:range==='week'?7*86400000:range==='month'?30*86400000:range==='sixMonths'?183*86400000:range==='year'?365*86400000:range==='fiveYears'?5*365*86400000:Math.max(0,now-Math.min(read().length?Math.min(...read().map(p=>p.t)):now,chartTransactions.length?Math.min(...chartTransactions.map(t=>t.t)):now));
+    record();const now=Date.now(),span=range==='hour'?3600000:range==='day'?86400000:range==='week'?7*86400000:range==='month'?30*86400000:range==='threeMonths'?91*86400000:range==='sixMonths'?183*86400000:range==='year'?365*86400000:range==='fiveYears'?5*365*86400000:Math.max(0,now-Math.min(read().length?Math.min(...read().map(p=>p.t)):now,chartTransactions.length?Math.min(...chartTransactions.map(t=>t.t)):now));
     const rawPts=read().filter(p=>p.t>=now-span&&p.t<=now+60000).sort((a,b)=>a.t-b.t);
     // Keep full-fidelity records in IndexedDB; aggregate only the plotted view into fixed time buckets.
     const bucketMs=range==='hour'?0:range==='day'?5*60000:range==='week'?3600000:range==='month'?4*3600000:86400000;
@@ -17247,11 +17248,11 @@ if (
     const last=pts[pts.length-1],lx=x(last.t),ly=y(last.v),meanY=y(mean);
     let grid='';const levels=4;
     for(let i=0;i<=levels;i++){const val=min+(max-min)*i/levels,yy=y(val);grid+=`<line x1="${L}" y1="${yy}" x2="${W-R+5}" y2="${yy}" stroke="currentColor" opacity=".14"/><text x="${L-3}" y="${yy+3.5}" text-anchor="end" fill="currentColor" opacity=".82" font-size="10">${fmt(val)}</text>`;}
-    const compactMobileAxis=(measuredWidth<=768 || window.innerWidth<=768 || document.documentElement.clientWidth<=768) && ['month','sixMonths','year','fiveYears','all'].includes(range);
+    const compactMobileAxis=(measuredWidth<=768 || window.innerWidth<=768 || document.documentElement.clientWidth<=768) && ['month','threeMonths','sixMonths','year','fiveYears','all'].includes(range);
     // Six-month and longer ranges use Jalali month/year labels on both desktop and mobile.
     // Mobile and tablet get five evenly spaced ticks; desktop gets nine for these longer ranges.
-    const monthYearAxis=['sixMonths','year','fiveYears','all'].includes(range);
-    const ticks=compactMobileAxis?[0,.25,.5,.75,1]:monthYearAxis?[0,1/8,2/8,3/8,4/8,5/8,6/8,7/8,1]:(range==='hour'||range==='day'?[0,.25,.5,.75,1]:[0,.2,.4,.6,.8,1]);let times='';
+    const monthYearAxis=['threeMonths','sixMonths','year','fiveYears','all'].includes(range);
+    const ticks=compactMobileAxis?[0,.25,.5,.75,1]:monthYearAxis?[0,1/8,2/8,3/8,4/8,5/8,6/8,7/8,1]:(range==='hour'||range==='day'?[0,.25,.5,.75,1]:[0,.2,.4,.6,.8,1]);let times='',verticalGrid='';
     const jalaliFmt=new Intl.DateTimeFormat('en-u-ca-persian',{day:'2-digit',month:'short'});
     ticks.forEach((f,i)=>{
       const d=new Date(now-span+span*f);
@@ -17263,12 +17264,21 @@ if (
         for(const part of parts)if(part.type==='month'||part.type==='year')dp[part.type]=part.value;
         // Year on the left, month on the right (e.g. 1405/02).
         label=String(dp.year||'')+'/'+String(dp.month||'').padStart(2,'0');
+      }else if(range==='month'&&compactMobileAxis){
+        const parts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{day:'2-digit',month:'2-digit'}).formatToParts(d),dp={};
+        for(const part of parts)if(part.type==='day'||part.type==='month')dp[part.type]=part.value;
+        // Mobile/tablet monthly axis: month on the left, day on the right.
+        label=String(dp.month||'').padStart(2,'0')+'/'+String(dp.day||'').padStart(2,'0');
       }else if(compactMobileAxis){
         const parts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'2-digit'}).formatToParts(d),dp={};
         for(const part of parts)if(part.type==='month'||part.type==='year')dp[part.type]=part.value;
         label=String(dp.year||'')+'/'+String(dp.month||'').padStart(2,'0');
       }else label=jalaliFmt.format(d);
-      times+=`<text x="${L+pw*f}" y="${H-7}" text-anchor="${i===0?'start':i===ticks.length-1?'end':'middle'}" fill="currentColor" opacity=".72" font-size="${compactMobileAxis?'9':'10.5'}">${label}</text>`;
+      const tickX=L+pw*f;
+      // Subtle vertical guide aligned exactly with each time-axis label, for every range.
+      // Keep these guides thinner and lighter than the horizontal price-axis grid lines.
+      verticalGrid+=`<line x1="${tickX}" y1="${T}" x2="${tickX}" y2="${T+ph}" stroke="currentColor" stroke-width=".7" opacity=".09" pointer-events="none"/>`;
+      times+=`<text x="${tickX}" y="${H-7}" text-anchor="${i===0?'start':i===ticks.length-1?'end':'middle'}" fill="currentColor" opacity=".72" font-size="${compactMobileAxis?'9':'10.5'}">${label}</text>`;
     });
     const baseGap=range==='hour'?60000:range==='day'?5*60000:range==='week'?3600000:range==='month'?4*3600000:86400000;
     let segments='',areaFills='',gradients='';
@@ -17313,7 +17323,7 @@ if (
       const cx=x(t.t),buy=t.type==='buy',color=buy?'#20d889':'#ff5368';
       return `<text x="${Math.max(L+24,Math.min(W-R-24,cx))}" y="28" text-anchor="middle" fill="${color}" stroke="#111827" stroke-width="2.8" paint-order="stroke" font-size="10.5" font-weight="800" pointer-events="none">${fmt(t.amount)}</text>`;
     }).join('');
-    setPlotContent(`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Live Average price history">${grid}<defs>${gradients}<clipPath id="meanLabelTopClip"><rect x="${meanLabelX-2}" y="${meanLabelY-10}" width="90" height="6"/></clipPath><clipPath id="meanLabelBottomClip"><rect x="${meanLabelX-2}" y="${meanLabelY-4}" width="90" height="7"/></clipPath></defs>${areaFills}<text x="${meanLabelX}" y="${meanLabelY}" fill="#ffffff" opacity="1" font-size="12" font-weight="700" clip-path="url(#meanLabelTopClip)">${fmt(mean)}</text><text x="${meanLabelX}" y="${meanLabelY}" fill="#79bdff" opacity="1" font-size="12" font-weight="700" clip-path="url(#meanLabelBottomClip)">${fmt(mean)}</text><text x="${W-3}" y="${T-7}" text-anchor="end" fill="#ffffff" opacity=".98" font-size="12" font-weight="700">${fmt(dataMax)}</text><text x="${W-3}" y="${T+ph+15}" text-anchor="end" fill="#58a6ff" opacity="1" font-size="12" font-weight="700">${fmt(dataMin)}</text>${segments}<circle cx="${lx}" cy="${ly}" r="3" fill="${last.v>=mean?'#62aaff':'#ffffff'}" stroke="#18202b" stroke-width="1"/><line x1="${W-R+2}" y1="${T}" x2="${W-R+2}" y2="${T+ph}" stroke="currentColor" opacity=".12"/>${mobileBadge?`<g transform="rotate(-90 ${W-12} ${Math.max(T+35,Math.min(T+ph-35,ly))})"><rect x="${W-47}" y="${Math.max(T+35,Math.min(T+ph-35,ly))-9.5}" width="70" height="19" rx="6" fill="${last.v>=mean?'#2878d8':'#59616d'}"/><text x="${W-12}" y="${Math.max(T+35,Math.min(T+ph-35,ly))+3.5}" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${fmt(last.v)}</text></g>`:`<rect x="${badgeX}" y="${badgeY}" width="70" height="19" rx="6" fill="${last.v>=mean?'#2878d8':'#59616d'}"/><text x="${badgeX+35}" y="${badgeY+12.5}" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${fmt(last.v)}</text>`}${transactionMarkers}${transactionCountLabels}${times}</svg>`);
+    setPlotContent(`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Live Average price history">${grid}${verticalGrid}<defs>${gradients}<clipPath id="meanLabelTopClip"><rect x="${meanLabelX-2}" y="${meanLabelY-10}" width="90" height="6"/></clipPath><clipPath id="meanLabelBottomClip"><rect x="${meanLabelX-2}" y="${meanLabelY-4}" width="90" height="7"/></clipPath></defs>${areaFills}<text x="${meanLabelX}" y="${meanLabelY}" fill="#ffffff" opacity="1" font-size="12" font-weight="700" clip-path="url(#meanLabelTopClip)">${fmt(mean)}</text><text x="${meanLabelX}" y="${meanLabelY}" fill="#79bdff" opacity="1" font-size="12" font-weight="700" clip-path="url(#meanLabelBottomClip)">${fmt(mean)}</text><text x="${W-3}" y="${T-7}" text-anchor="end" fill="#ffffff" opacity=".98" font-size="12" font-weight="700">${fmt(dataMax)}</text><text x="${W-3}" y="${T+ph+15}" text-anchor="end" fill="#58a6ff" opacity="1" font-size="12" font-weight="700">${fmt(dataMin)}</text>${segments}<circle cx="${lx}" cy="${ly}" r="3" fill="${last.v>=mean?'#62aaff':'#ffffff'}" stroke="#18202b" stroke-width="1"/><line x1="${W-R+2}" y1="${T}" x2="${W-R+2}" y2="${T+ph}" stroke="currentColor" opacity=".12"/>${mobileBadge?`<g transform="rotate(-90 ${W-12} ${Math.max(T+35,Math.min(T+ph-35,ly))})"><rect x="${W-47}" y="${Math.max(T+35,Math.min(T+ph-35,ly))-9.5}" width="70" height="19" rx="6" fill="${last.v>=mean?'#2878d8':'#59616d'}"/><text x="${W-12}" y="${Math.max(T+35,Math.min(T+ph-35,ly))+3.5}" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${fmt(last.v)}</text></g>`:`<rect x="${badgeX}" y="${badgeY}" width="70" height="19" rx="6" fill="${last.v>=mean?'#2878d8':'#59616d'}"/><text x="${badgeX+35}" y="${badgeY+12.5}" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${fmt(last.v)}</text>`}${transactionMarkers}${transactionCountLabels}${times}</svg>`);
     // Interactive price tooltip: hover with a mouse or tap/drag on touch screens.
     const svg=plot.querySelector('svg');
     if(svg){
@@ -17333,10 +17343,10 @@ if (
       });
       const tip=document.createElement('div');
       tip.className='average-price-chart-tooltip';
-      Object.assign(tip.style,{position:'absolute',zIndex:'5',display:'none',pointerEvents:'none',padding:'3px 7px',borderRadius:'6px',background:'#111827',color:'#fff',fontSize:'15px',fontWeight:'800',boxShadow:'0 2px 8px rgba(0,0,0,.22)',whiteSpace:'nowrap',transform:'translateX(-50%)',top:'1px'});
+      Object.assign(tip.style,{position:'absolute',zIndex:'5',display:'none',pointerEvents:'none',padding:'2px 6px',borderRadius:'5px',background:'#111827',color:'#fff',fontSize:'12px',fontWeight:'800',boxShadow:'0 2px 8px rgba(0,0,0,.22)',whiteSpace:'nowrap',transform:'translateX(-50%)'});
       plot.appendChild(tip);
       const dateTip=document.createElement('div');dateTip.className='average-price-chart-date-tooltip';
-      Object.assign(dateTip.style,{position:'absolute',zIndex:'5',display:'none',pointerEvents:'none',padding:'2px 6px',borderRadius:'5px',background:'#111827',color:'#fff',fontSize:'12px',fontWeight:'600',whiteSpace:'nowrap',transform:'translateX(-50%)',bottom:'1px'});plot.appendChild(dateTip);
+      Object.assign(dateTip.style,{position:'absolute',zIndex:'5',display:'none',pointerEvents:'none',padding:'1px 5px',borderRadius:'4px',background:'#111827',color:'#fff',fontSize:'12px',fontWeight:'600',whiteSpace:'nowrap',transform:'translateX(-50%)'});plot.appendChild(dateTip);
       const cross=document.createElementNS('http://www.w3.org/2000/svg','line');
       cross.setAttribute('y1',String(T));cross.setAttribute('y2',String(T+ph));
       cross.setAttribute('stroke','currentColor');cross.setAttribute('stroke-dasharray','3 3');cross.setAttribute('opacity','.65');cross.style.display='none';cross.style.pointerEvents='none';svg.appendChild(cross);
@@ -17365,7 +17375,14 @@ if (
         dateTip.textContent=dateText;
         const rect=svg.getBoundingClientRect(),plotRect=plot.getBoundingClientRect();
         const labelX=Math.max(42,Math.min(plotRect.width-42,rect.left-plotRect.left+cx/W*rect.width));
-        tip.style.left=labelX+'px';tip.style.display='block';dateTip.style.left=labelX+'px';dateTip.style.display='block';
+        // Keep the smaller price badge just above the highest horizontal price-axis line.
+        const plotTop=rect.top-plotRect.top,scaleY=rect.height/H;
+        tip.style.left=labelX+'px';tip.style.display='block';
+        tip.style.top=Math.max(0,plotTop+T*scaleY-tip.offsetHeight-2)+'px';
+        // Place the compact time badge just below the lowest horizontal price-axis line,
+        // well clear of the chart's time-axis labels near the bottom.
+        dateTip.style.left=labelX+'px';dateTip.style.display='block';
+        dateTip.style.top=Math.min(plotRect.height-dateTip.offsetHeight,plotTop+(T+ph)*scaleY+3)+'px';
       }
       function hidePoint(){tip.style.display='none';dateTip.style.display='none';cross.style.display='none';dot.style.display='none';}
       function showAt(ev){
@@ -17391,7 +17408,7 @@ if (
   }
   card.querySelectorAll('[data-average-range]').forEach(b=>b.addEventListener('click',()=>{
     const nextRange=b.dataset.averageRange;
-    if(!['hour','day','week','month','sixMonths','year','fiveYears','all'].includes(nextRange))return;
+    if(!['hour','day','week','month','threeMonths','sixMonths','year','fiveYears','all'].includes(nextRange))return;
     range=nextRange;
     selectedHistoryPointT=null;
     selectedTransactionId=null;
@@ -17410,11 +17427,21 @@ if (
     if(typeof value==='string' && !/^\d+(\.\d+)?$/.test(value.trim())){const parsed=Date.parse(value);return Number.isFinite(parsed)?parsed:NaN;}
     let t=Number(value);if(!Number.isFinite(t)||t<=0)return NaN;if(t<100000000000)t*=1000;return t;
   }
-  function normalizeImported(payload){
-    let arr=[];
-    if(Array.isArray(payload))arr=payload;else if(payload&&Array.isArray(payload.history))arr=payload.history;else if(payload&&Array.isArray(payload.records))arr=payload.records;else if(payload&&Array.isArray(payload.points))arr=payload.points;else if(payload&&Array.isArray(payload.data))arr=payload.data;else if(payload&&payload.data&&Array.isArray(payload.data.history))arr=payload.data.history;else if(payload&&payload.data&&Array.isArray(payload.data.records))arr=payload.data.records;else if(payload&&payload.result&&Array.isArray(payload.result.history))arr=payload.result.history;
-    return arr.map(p=>{if(Array.isArray(p))return {t:normalizeTimestamp(p[0]),v:Number(p[1])};if(!p||typeof p!=='object')return {t:NaN,v:NaN};return {t:normalizeTimestamp(p.t??p.timestamp??p.time??p.date??p.createdAt??p.created_at),v:Number(p.v??p.value??p.price??p.average??p.avg??p.averagePrice??p.average_price??p.priceAverage??p.price_average??p.liveAverage??p.live_average)};}).filter(valid);
+  function importedRows(payload){
+    if(Array.isArray(payload))return payload;
+    if(payload&&Array.isArray(payload.history))return payload.history;
+    if(payload&&Array.isArray(payload.records))return payload.records;
+    if(payload&&Array.isArray(payload.points))return payload.points;
+    if(payload&&Array.isArray(payload.data))return payload.data;
+    if(payload&&payload.data&&Array.isArray(payload.data.history))return payload.data.history;
+    if(payload&&payload.data&&Array.isArray(payload.data.records))return payload.data.records;
+    if(payload&&payload.result&&Array.isArray(payload.result.history))return payload.result.history;
+    return [];
   }
+  function normalizeImportedRows(arr){
+    return (Array.isArray(arr)?arr:[]).map(p=>{if(Array.isArray(p))return {t:normalizeTimestamp(p[0]),v:Number(p[1])};if(!p||typeof p!=='object')return {t:NaN,v:NaN};return {t:normalizeTimestamp(p.t??p.timestamp??p.time??p.date??p.createdAt??p.created_at),v:Number(p.v??p.value??p.price??p.average??p.avg??p.averagePrice??p.average_price??p.priceAverage??p.price_average??p.liveAverage??p.live_average)};}).filter(valid);
+  }
+  function normalizeImported(payload){return normalizeImportedRows(importedRows(payload));}
   function saveRemoteMeta(meta){try{localStorage.setItem(REMOTE_META_KEY,JSON.stringify(meta));}catch(e){}}
   // Refresh priority: Hour > Day > Month > 6M > Year > 5Y > All.
   // Poll cadence follows the currently selected range; the Hour range always gets the fastest check.
@@ -17458,12 +17485,33 @@ if (
           const payload=await response.json();
           successfulSources++;
           if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.48,'processing');
-          const advertisedCount=Number(payload&&payload.count);
-          const incomingCount=Number.isFinite(advertisedCount)&&advertisedCount>=0?advertisedCount:normalizeImported(payload).length;
           const old=meta[key]||{};
-          // If the publisher's count has not changed, skip processing this source's history.
-          if(old.count===incomingCount&&old.initialized){old.checkedAt=Date.now();meta[key]=old;if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.94,'processing');continue;}
-          const incoming=normalizeImported(payload);
+          let incoming=[];
+          let incomingCount;
+          if(syncRange==='hour'){
+            // Hour-only repair: keep the count-based fast path, but verify the newest
+            // 35 Worker records exist locally before skipping. If any are missing,
+            // reprocess the Worker payload and restore them. Other chart ranges retain
+            // the original v52 processing path below.
+            const rows=importedRows(payload);
+            const advertisedCount=Number(payload&&payload.count);
+            incomingCount=Number.isFinite(advertisedCount)&&advertisedCount>=0?advertisedCount:rows.length;
+            // The one-hour chart only needs the newest 35 Worker records (about
+            // 70 minutes at the current 2-minute cadence). Do not normalize and
+            // scan the entire remote history on every hourly refresh.
+            const tail=normalizeImportedRows(rows.slice(-35));
+            if(old.count===incomingCount&&old.initialized){
+              const tailMissing=tail.some(point=>!existing.has(String(Number(point.t))+':'+String(Number(point.v))));
+              if(!tailMissing){old.checkedAt=Date.now();meta[key]=old;if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.94,'processing');continue;}
+            }
+            incoming=tail;
+          }else{
+            // Original v52 behavior for every non-hour range; deliberately unchanged.
+            const advertisedCount=Number(payload&&payload.count);
+            incomingCount=Number.isFinite(advertisedCount)&&advertisedCount>=0?advertisedCount:normalizeImported(payload).length;
+            if(old.count===incomingCount&&old.initialized){old.checkedAt=Date.now();meta[key]=old;if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.94,'processing');continue;}
+            incoming=normalizeImported(payload);
+          }
           if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.72,'processing');
           for(const point of incoming){const k=String(Number(point.t))+':'+String(Number(point.v));if(!existing.has(k)){existing.add(k);additions.push({t:Number(point.t),v:Number(point.v)});}}
           meta[key]={url,count:incomingCount,initialized:true,checkedAt:Date.now(),processed:incoming.length,added:incoming.length};
