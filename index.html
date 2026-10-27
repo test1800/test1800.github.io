@@ -6644,6 +6644,7 @@ h1 {
   </div>
   <div class="average-chart-navigator" id="averageChartNavigator" aria-label="Select chart time range">
     <div class="average-chart-navigator-track" id="averageChartNavigatorTrack">
+      <div class="average-chart-navigator-ticks" id="averageChartNavigatorTicks" aria-hidden="true"></div>
       <div class="average-chart-navigator-selection" id="averageChartNavigatorSelection">
         <button type="button" class="average-chart-navigator-handle left" id="averageChartNavigatorStart" aria-label="Move range start" title="Move range start"><span></span></button>
         <button type="button" class="average-chart-navigator-handle right" id="averageChartNavigatorEnd" aria-label="Move range end" title="Move range end"><span></span></button>
@@ -17192,15 +17193,66 @@ if (
   const navigatorEl=document.getElementById('averageChartNavigator');
   const navigatorTrack=document.getElementById('averageChartNavigatorTrack');
   const navigatorSelection=document.getElementById('averageChartNavigatorSelection');
-  let customRange=null,navigatorDrag=null;
+  const navigatorTicks=document.getElementById('averageChartNavigatorTicks');
+  let customRange=null,navigatorDrag=null,navigatorTickSignature='',chartPan=null;
+  // Dragging anywhere on the main plot pans the visible time window horizontally.
+  // Window-level listeners survive SVG redraws during a drag.
+  window.addEventListener('pointermove',ev=>{
+    const d=chartPan;if(!d||d.pointerId!==ev.pointerId)return;
+    const dx=ev.clientX-d.x;
+    if(!d.moved&&Math.abs(dx)<4)return;
+    d.moved=true;
+    const domain=navigatorDomain();if(!domain)return;
+    const delta=-(dx/Math.max(1,d.width))*(d.end-d.start);
+    const width=Math.min(domain.end-domain.start,d.end-d.start);
+    let start=d.start+delta,end=start+width;
+    if(start<domain.start){start=domain.start;end=start+width;}
+    if(end>domain.end){end=domain.end;start=end-width;}
+    customRange={start,end};updateNavigator();draw();
+    ev.preventDefault();
+  },{passive:false});
+  window.addEventListener('pointerup',ev=>{
+    const d=chartPan;if(!d||d.pointerId!==ev.pointerId)return;
+    chartPan=null;
+    if(!d.moved&&typeof d.pin==='function')d.pin();
+  });
+  window.addEventListener('pointercancel',ev=>{if(chartPan&&chartPan.pointerId===ev.pointerId)chartPan=null;});
   function presetSpan(name,now=Date.now()){
     if(name==='hour')return 3600000;if(name==='day')return 86400000;if(name==='week')return 7*86400000;if(name==='month')return 30*86400000;if(name==='threeMonths')return 91*86400000;if(name==='sixMonths')return 183*86400000;if(name==='year')return 365*86400000;if(name==='fiveYears')return 5*365*86400000;
     const a=read();return Math.max(1,now-(a.length?Number(a[0].t):now));
   }
   function navigatorDomain(){const a=read();if(!a.length)return null;const start=Number(a[0].t),end=Number(a[a.length-1].t);return {start,end:Math.max(start+1,end)};}
+  function updateNavigatorTicks(domain){
+    if(!navigatorTicks||!navigatorTrack||!domain)return;
+    const width=Math.max(1,navigatorTrack.clientWidth||navigatorTrack.getBoundingClientRect().width||1);
+    const yearOf=ts=>{try{const parts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric'}).formatToParts(new Date(ts));const part=parts.find(x=>x.type==='year');return part?Number(part.value):new Date(ts).getFullYear();}catch(e){return new Date(ts).getFullYear();}};
+    const firstYear=yearOf(domain.start),lastYear=yearOf(domain.end),yearSpan=Math.max(0,lastYear-firstYear);
+    const signature=[Math.round(width),domain.start,domain.end,firstYear,lastYear].join(':');if(signature===navigatorTickSignature)return;navigatorTickSignature=signature;
+    const total=Math.max(1,domain.end-domain.start),marks=[];
+    if(yearSpan===0){for(let i=0;i<12;i++)marks.push({pos:i/12,label:null,major:false});marks.push({pos:1,label:null,major:false});marks.push({pos:.5,label:String(firstYear),yearLabel:true});}
+    else if(yearSpan===1){for(let i=0;i<=5;i++)marks.push({pos:i/5,label:null,major:true});marks.push({pos:0,label:String(firstYear),yearLabel:true});marks.push({pos:1,label:String(lastYear),yearLabel:true});}
+    else {
+      const maxYearLabels=Math.max(2,Math.floor(width/29));
+      const labelStep=Math.max(1,Math.ceil(yearSpan/Math.max(1,maxYearLabels-1)));
+      const maxTicks=Math.max(3,Math.floor(width/7));
+      const tickStep=Math.max(1,Math.ceil(yearSpan/Math.max(1,maxTicks-1)));
+      const monthStep=Math.max(1,Math.ceil(4/(width/(yearSpan*12))));
+      for(let y=0;y<=yearSpan;y+=tickStep){const pos=y/yearSpan,year=firstYear+y;marks.push({pos,label:null,major:true});if(y%labelStep===0||y===yearSpan)marks.push({pos,label:String(year),yearLabel:true});}
+      // Small, unlabeled month ticks between yearly marks; reduce their density on narrow screens.
+      for(let y=0;y<yearSpan;y+=tickStep){for(let m=monthStep;m<12;m+=monthStep){const pos=(y+m/12)/yearSpan;if(pos>0&&pos<1)marks.push({pos,label:null,major:false});}}
+      if(!marks.some(m=>m.yearLabel&&m.pos===1))marks.push({pos:1,label:String(lastYear),yearLabel:true});
+    }
+    navigatorTicks.replaceChildren();
+    for(const mark of marks){
+      const el=document.createElement('span');el.className=mark.yearLabel?'average-chart-navigator-year':'average-chart-navigator-tick';el.style.left=(Math.max(0,Math.min(1,mark.pos))*100)+'%';
+      if(mark.yearLabel){el.textContent=mark.label;el.setAttribute('aria-hidden','true');if(mark.pos<=.001)el.classList.add('edge-start');else if(mark.pos>=.999)el.classList.add('edge-end');}
+      else el.classList.add(mark.major?'major':'minor');
+      navigatorTicks.appendChild(el);
+    }
+  }
   function updateNavigator(){
     if(!navigatorEl||!navigatorTrack||!navigatorSelection)return;
-    const domain=navigatorDomain();if(!domain){navigatorEl.hidden=true;return;}navigatorEl.hidden=false;
+    const domain=navigatorDomain();if(!domain){navigatorEl.hidden=true;return;}navigatorEl.hidden=false;updateNavigatorTicks(domain);
     const now=Date.now(),span=presetSpan(range,now);let start=customRange?customRange.start:Math.max(domain.start,now-span),end=customRange?customRange.end:Math.min(domain.end,now+60000);
     if(range==='all'&&!customRange){start=domain.start;end=domain.end;}
     start=Math.max(domain.start,Math.min(domain.end,start));end=Math.max(start+1,Math.min(domain.end,end));
@@ -17445,10 +17497,21 @@ if (
         const best=nearestPointAt(ev);if(!best)return;
         selectedHistoryPointT=Number(selectedHistoryPointT)===Number(best.t)?null:Number(best.t);
         if(selectedHistoryPointT===null)hidePoint();else displayPoint(best);
-        ev.preventDefault();
       }
-      svg.addEventListener('pointermove',showAt);
-      svg.addEventListener('pointerdown',pinAt);
+      svg.style.cursor='grab';
+      svg.style.touchAction='pan-y';
+      svg.addEventListener('pointermove',ev=>{
+        showAt(ev);
+      });
+      svg.addEventListener('pointerdown',ev=>{
+        if(ev.button!==undefined&&ev.button!==0)return;
+        if(ev.target&&ev.target.closest&&ev.target.closest('.chart-transaction-marker'))return;
+        const rect=svg.getBoundingClientRect();
+        chartPan={pointerId:ev.pointerId,x:ev.clientX,start:chartStart,end:chartEnd,width:Math.max(1,rect.width),moved:false,pin:()=>pinAt(ev)};
+        svg.style.cursor='grabbing';
+        ev.preventDefault();
+      });
+      svg.addEventListener('pointerup',()=>{svg.style.cursor='grab';});
       // Keep a clicked regular history point pinned across pointer movement and chart redraws.
       if(selectedHistoryPointT!==null){const pinned=pts.find(p=>Number(p.t)===Number(selectedHistoryPointT));if(pinned)displayPoint(pinned);else{selectedHistoryPointT=null;hidePoint();}}
       svg.addEventListener('pointerleave',()=>{if(!('ontouchstart' in window)&&selectedHistoryPointT===null){hidePoint();}});
@@ -18293,6 +18356,12 @@ if (
 .average-chart-navigator{height:20px;width:100%;padding:5px 2px 7px;box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
 .average-chart-navigator[hidden]{display:none!important;}
 .average-chart-navigator-track{position:relative;width:100%;height:4px;border-radius:3px;background:rgba(135,155,180,.22);cursor:ew-resize;touch-action:none;}
+.average-chart-navigator-ticks{position:absolute;inset:0;overflow:visible;pointer-events:none;z-index:3;}
+.average-chart-navigator-tick{position:absolute;top:-1px;width:.5px;height:5px;background:rgba(135,155,180,.48);transform:translateX(-.25px);pointer-events:none;}
+.average-chart-navigator-tick.major{height:7px;background:rgba(135,155,180,.62);}
+.average-chart-navigator-year{position:absolute;top:5px;transform:translateX(-50%);font-size:8px;line-height:9px;font-weight:600;letter-spacing:-.15px;color:var(--muted-color,#9ca3af);white-space:nowrap;text-shadow:0 0 2px var(--card-bg,#fff);pointer-events:none;}
+.average-chart-navigator-year.edge-start{transform:translateX(0);}
+.average-chart-navigator-year.edge-end{transform:translateX(-100%);}
 .average-chart-navigator-selection{position:absolute;top:-3px;height:10px;min-width:4px;box-sizing:border-box;border:1px solid #68aaff;background:rgba(63,145,255,.16);border-radius:2px;cursor:grab;touch-action:none;}
 .average-chart-navigator-selection:active{cursor:grabbing;}
 .average-chart-navigator-handle{position:absolute;top:-4px;width:9px;height:16px;padding:0;border:1px solid #8fc4ff;border-radius:3px;background:#1d5e9f;box-shadow:0 0 0 1px rgba(4,14,28,.35);cursor:ew-resize;touch-action:none;display:flex;align-items:center;justify-content:center;z-index:2;}
