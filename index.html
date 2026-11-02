@@ -327,12 +327,12 @@ h1 {
 ===================================================== */
 .connection-status {
     display: none;
-    margin-top: 8px;
+    margin-top: 4px;
     padding: 0 8px;
     box-sizing: border-box;
-    height: 30px;
-    min-height: 30px;
-    max-height: 30px;
+    height: 22px;
+    min-height: 22px;
+    max-height: 22px;
     border-radius: 9px;
     font-size: 9px;
     font-weight: 800;
@@ -19304,151 +19304,3 @@ if (
 .average-price-chart-card{padding-bottom:8px!important;}
 @media(max-width:480px){.average-price-chart-card{padding-bottom:6px!important;}}
 </style>
-
-
-<style id="v3-compact-vertical-spacing">
-/* V3 visual-only pass: reduce unused vertical padding/gaps without changing
-   chart plot heights, data, controls, typography scale, or dashboard behavior. */
-.container{
-    padding:8px 16px 12px !important;
-}
-header{
-    padding:10px 14px !important;
-    margin-bottom:7px !important;
-}
-.today{margin-top:3px !important;}
-.live-price{
-    margin-top:8px !important;
-    padding:8px 12px !important;
-    gap:6px !important;
-}
-.live-market-header{gap:7px !important;}
-.connection-status{
-    margin-top:5px !important;
-    height:24px !important;
-    min-height:24px !important;
-    max-height:24px !important;
-    padding:0 7px !important;
-}
-#dashboard{gap:9px !important;}
-.card{
-    padding:10px !important;
-}
-.card-header{margin-bottom:6px !important;}
-.main-price{
-    padding:7px !important;
-    margin-bottom:7px !important;
-}
-.pl-container{
-    gap:6px !important;
-    margin-top:6px !important;
-}
-.pl-box{
-    min-height:54px !important;
-    padding:5px !important;
-}
-.comparison{gap:6px !important;}
-.compare-box{padding:7px !important;}
-.metrics{
-    gap:6px !important;
-    margin-top:6px !important;
-}
-.metric{
-    min-height:51px !important;
-    padding:7px !important;
-}
-.result{margin-top:5px !important;}
-.error{
-    padding:8px 10px !important;
-    margin-bottom:8px !important;
-}
-.error.page-status-report{line-height:1.35 !important;}
-.page-status-report-title{margin-bottom:3px !important;}
-.page-status-report-summary{margin-bottom:5px !important;}
-.page-status-report-detail{margin-top:2px !important;line-height:1.3 !important;}
-.page-status-report-list{gap:3px 8px !important;}
-.loading{padding:20px !important;}
-.crypto-card{padding:7px 11px !important;}
-.signal-board{
-    margin-top:7px !important;
-    padding:8px !important;
-}
-.signal-header{margin-bottom:4px !important;}
-.signal-grid{gap:4px !important;}
-.crypto-portfolio-header{margin-bottom:6px !important;}
-.crypto-portfolio-grid{gap:6px !important;}
-.crypto-portfolio-item{padding:7px 8px !important;}
-.crypto-portfolio-item-top{margin-bottom:4px !important;}
-.rfkj-card{padding:10px 12px 9px !important;}
-.rfkj-header{margin-bottom:5px !important;}
-.rfkj-controls{gap:5px !important;}
-.rfkj-status{
-    margin:4px auto 0 !important;
-    min-height:20px !important;
-    padding:2px 8px !important;
-}
-.rfkj-signals{gap:4px !important;margin-top:3px !important;}
-.rfkj-signal-rows{gap:2px !important;margin-top:3px !important;}
-.rfkj-action-row{margin-top:3px !important;gap:5px !important;}
-.rfkj-matrix-grid{gap:5px !important;}
-.rfkj-slot-bar,.crossover-slot-bar{margin-bottom:5px !important;}
-.crossover-card{padding:7px 9px 7px !important;}
-.crossover-header{min-height:20px !important;margin-bottom:4px !important;}
-.crossover-controls{gap:5px !important;}
-.crossover-grid{gap:5px !important;}
-.global-pulse-section{padding:7px !important;}
-.global-pulse-head{margin-bottom:5px !important;}
-.global-pulse-grid{gap:6px !important;}
-.global-pulse-card{padding:6px 7px 5px !important;}
-.global-pulse-price-row{margin-top:4px !important;}
-.global-pulse-economic{gap:3px !important;}
-.average-price-chart-card{
-    padding:10px 12px 6px !important;
-}
-.average-price-chart-head{margin-bottom:6px !important;}
-
-/* Tablet: keep a little more breathing room than phone, less than desktop. */
-@media (min-width:651px) and (max-width:1100px){
-    .container{padding:8px 12px 12px !important;}
-    header{padding:9px 12px !important;}
-    #dashboard{gap:8px !important;}
-    .card{padding:9px !important;}
-}
-
-/* Mobile: tighten outer whitespace while preserving touch targets and chart height. */
-@media (max-width:650px){
-    .container{padding:6px 7px 12px !important;}
-    header{padding:8px 9px !important;margin-bottom:6px !important;}
-    .live-price{margin-top:6px !important;padding:7px 8px !important;gap:5px !important;}
-    .connection-status{margin-top:4px !important;height:23px !important;min-height:23px !important;max-height:23px !important;}
-    #dashboard{gap:7px !important;}
-    .card{padding:8px !important;}
-    .card-header{margin-bottom:5px !important;}
-    .main-price{padding:6px !important;margin-bottom:6px !important;}
-    .pl-container,.metrics{gap:5px !important;margin-top:5px !important;}
-    .pl-box{min-height:51px !important;padding:4px !important;}
-    .compare-box,.metric{padding:6px !important;}
-    .signal-board{margin-top:6px !important;padding:7px !important;}
-    .crypto-portfolio-header{margin-bottom:5px !important;}
-    .crypto-portfolio-item{padding:6px !important;}
-    .rfkj-card{padding:8px 9px 7px !important;}
-    .rfkj-header{margin-bottom:4px !important;}
-    .rfkj-status{margin-top:3px !important;}
-    .crossover-card{padding:6px 7px !important;}
-    .crossover-header{margin-bottom:3px !important;}
-    .global-pulse-section{padding:6px !important;}
-    .global-pulse-head{margin-bottom:4px !important;}
-    .global-pulse-card{padding:5px 6px !important;}
-    .average-price-chart-card{padding:8px 8px 5px !important;}
-    .average-price-chart-head{margin-bottom:5px !important;}
-}
-
-@media (max-width:380px){
-    .container{padding-left:5px !important;padding-right:5px !important;}
-    header{padding-left:7px !important;padding-right:7px !important;}
-    #dashboard{gap:6px !important;}
-    .card{padding:7px !important;}
-    .average-price-chart-card{padding:7px 6px 5px !important;}
-}
-</style>
-
