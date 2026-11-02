@@ -5066,6 +5066,13 @@ h1 {
     .crossover-action .crossover-buffett-guide{flex:1.2 1 0 !important;}
     .crossover-action .crossover-status{flex:0.8 1 0 !important;}
 }
+
+/* Coin chart: preserve the original chart geometry while replacing blue accents with violet. */
+#coinPriceChartCard .average-price-chart-range button.active{background:rgba(168,85,247,.22)!important;color:#d8b4fe!important;box-shadow:inset 0 0 0 1px rgba(192,132,252,.24)!important;}
+#coinPriceChartCard .average-price-chart-tools .average-chart-tool.export{color:#c084fc!important;background-color:rgba(168,85,247,.16)!important;border-color:rgba(192,132,252,.42)!important;}
+#coinPriceChartCard .average-price-chart-tools .average-chart-tool.import{color:#c084fc!important;background-color:rgba(168,85,247,.16)!important;border-color:rgba(192,132,252,.38)!important;}
+#coinPriceChartCard .average-chart-progress-label{background-image:linear-gradient(to top,#a855f7,#c084fc)!important;}
+
 </style>
 
 
@@ -6671,6 +6678,35 @@ h1 {
       <div class="average-chart-navigator-selection" id="averageChartNavigatorSelection">
         <button type="button" class="average-chart-navigator-handle left" id="averageChartNavigatorStart" aria-label="Move range start" title="Move range start"><span></span></button>
         <button type="button" class="average-chart-navigator-handle right" id="averageChartNavigatorEnd" aria-label="Move range end" title="Move range end"><span></span></button>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="card average-price-chart-card" id="coinPriceChartCard" aria-label="Coin">
+  <div class="average-price-chart-head">
+    <div class="average-price-chart-title"><span id="coinChartProgressLabel" class="average-chart-progress-label" role="status" aria-label="Chart data status" title="Chart data is current">Coin</span></div>
+    <div class="average-price-chart-range" role="group" aria-label="Time range">
+      <button type="button" data-coin-range="hour">Hour</button>
+      <button type="button" data-coin-range="day" class="active">Day</button>
+      <button type="button" data-coin-range="week">Week</button>
+      <button type="button" data-coin-range="month">Month</button>
+      <button type="button" data-coin-range="threeMonths">3M</button>
+      <button type="button" data-coin-range="sixMonths">6M</button>
+      <button type="button" data-coin-range="year">Year</button>
+      <button type="button" data-coin-range="fiveYears">5Y</button>
+      <button type="button" data-coin-range="all">All</button>
+    </div>
+  </div>
+  <div class="average-price-chart-plot" id="coinPriceChartPlot">
+    <span class="average-price-chart-tools average-chart-export-bottom" aria-label="Chart history tools"><button type="button" class="average-chart-tool export" id="coinChartExport" title="Download full history backup" aria-label="Download history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 17v3h14v-3"/></svg></button></span>
+    <div class="average-price-chart-empty"><span>No cached price data</span></div>
+  </div>
+  <div class="average-chart-navigator" id="coinChartNavigator" aria-label="Select chart time range">
+    <div class="average-chart-navigator-track" id="coinChartNavigatorTrack">
+      <div class="average-chart-navigator-ticks" id="coinChartNavigatorTicks" aria-hidden="true"></div>
+      <div class="average-chart-navigator-selection" id="coinChartNavigatorSelection">
+        <button type="button" class="average-chart-navigator-handle left" id="coinChartNavigatorStart" aria-label="Move range start" title="Move range start"><span></span></button>
+        <button type="button" class="average-chart-navigator-handle right" id="coinChartNavigatorEnd" aria-label="Move range end" title="Move range end"><span></span></button>
       </div>
     </div>
   </div>
@@ -9269,6 +9305,9 @@ function pageIssueLabel(key, issue) {
     // Keep the error box compact: API/source name + short state.
     // These labels are intentionally short so an issue can be identified at a glance.
     if (k === "chart-history-sync") return "Chart";
+    if (k === "coin-chart-history-sync") return "Coin History";
+    if (k === "coin-live-api") return "Coin API";
+    if (k === "coin-live-fallback") return "Coin Fallback";
     if (k === "connection") return "Internet Error";
     if (k === "data-json") return "Data JSON";
     if (k === "usd") return "USD API";
@@ -9313,6 +9352,15 @@ function pageIssueDescription(key, issue) {
     const message = String(issue?.message || "");
     if (k === "connection") {
         return "Internet connection is offline; new data cannot be fetched from online sources.";
+    }
+    if (k === "coin-live-api") {
+        return "The primary Coin price API did not return a valid price. The chart is using its dedicated latest-history fallback when available.";
+    }
+    if (k === "coin-live-fallback") {
+        return "The Coin latest-history fallback API is unavailable or returned invalid data. The chart is retaining its last valid cached price when possible.";
+    }
+    if (k === "coin-chart-history-sync") {
+        return "Coin chart history could not be synchronized from its dedicated history sources. Existing local history is retained.";
     }
     if (k === "usd") {
         return "A fresh USD price was not received; the previously cached value may be shown.";
@@ -17774,6 +17822,737 @@ if (
   setInterval(scheduleDraw,60000);
 })();
 </script>
+<script>
+(function(){
+  const HISTORY_KEY='financialDashboardCoinPriceHistoryV1';
+  const RANGE_KEY='financialDashboardCoinPriceRangeV1';
+  const SYNC_UI_KEY='financialDashboardCoinChartSyncUiStateV1';
+  const card=document.getElementById('coinPriceChartCard'); if(!card)return;
+  const plot=document.getElementById('coinPriceChartPlot');
+  const chartProgressLabel=document.getElementById('coinChartProgressLabel');
+  let chartProgress=0;
+  const VALID_RANGES=['hour','day','week','month','threeMonths','sixMonths','year','fiveYears','all'];
+  let savedSyncUi={ranges:{}};
+  try{
+    const saved=JSON.parse(localStorage.getItem(SYNC_UI_KEY)||'{}');
+    if(saved&&saved.ranges&&typeof saved.ranges==='object'){
+      for(const name of VALID_RANGES){const item=saved.ranges[name];if(item&&Number.isFinite(Number(item.completedAt))&&Number.isFinite(Number(item.nextSyncAt)))savedSyncUi.ranges[name]={completedAt:Number(item.completedAt),nextSyncAt:Number(item.nextSyncAt)};}
+    }else if(saved&&Number.isFinite(Number(saved.completedAt))&&Number.isFinite(Number(saved.nextSyncAt))){
+      // Migrate the old shared status into the default Day range only.
+      savedSyncUi.ranges.day={completedAt:Number(saved.completedAt),nextSyncAt:Number(saved.nextSyncAt)};
+    }
+  }catch(e){}
+  function syncStateFor(name=range){if(!savedSyncUi.ranges[name])savedSyncUi.ranges[name]={completedAt:0,nextSyncAt:0};return savedSyncUi.ranges[name];}
+  function saveSyncUi(){try{localStorage.setItem(SYNC_UI_KEY,JSON.stringify(savedSyncUi));}catch(e){}}
+  function setChartProgress(value,state){
+    chartProgress=Math.max(0,Math.min(100,Number(value)||0));
+    if(!chartProgressLabel)return;
+    chartProgressLabel.style.setProperty('--chart-progress',chartProgress+'%');
+    chartProgressLabel.dataset.progress=String(chartProgress);
+    chartProgressLabel.dataset.state=state||'processing';
+    chartProgressLabel.setAttribute('aria-label',state==='complete'?'Chart data updated':state==='error'?'Chart data refresh failed':state==='idle'?'Waiting for the next chart update':'Chart data update in progress');
+    chartProgressLabel.title=state==='complete'?'Chart data is current':state==='error'?'Chart refresh failed; showing the last saved data':state==='idle'?'Waiting for the next chart update':'Updating chart data: '+Math.round(chartProgress)+'%';
+  }
+  // Each chart range restores its own saved processing state after range is loaded.
+  // Keep the download control alive when chart redraws replace the plot contents.
+  function setPlotContent(markup){
+    const exportControl=plot.querySelector('.average-chart-export-bottom');
+    plot.innerHTML=markup;
+    if(exportControl)plot.appendChild(exportControl);
+  }
+  // Restore the user's last selected chart range before the first render.
+  let range='day';
+  try{const savedRange=localStorage.getItem(RANGE_KEY);if(VALID_RANGES.includes(savedRange))range=savedRange;}catch(e){}
+  function restoreRangeProgress(){
+    const state=syncStateFor(range),now=Date.now();
+    // Keep the last successful state blue across reloads and range changes. White is
+    // reserved for the five-second window immediately before that range's next sync.
+    if(state.completedAt&&state.nextSyncAt>now+5000)setChartProgress(100,'complete');
+    else if(state.completedAt&&state.nextSyncAt>now)setChartProgress(0,'idle');
+    else if(state.completedAt&&state.nextSyncAt&&now>=state.nextSyncAt)setChartProgress(3,'processing');
+    else setChartProgress(0,'idle');
+  }
+  restoreRangeProgress();
+
+  // No application-level record cap: retain and export every valid numeric point in IndexedDB.
+  // IndexedDB is used because localStorage cannot reliably hold large histories.
+  const DB_NAME='FinancialDashboardCoinChartDB', DB_STORE='coinNumericHistory';
+  let historyCache=[];
+  // Coin chart uses only its dedicated history store and Coin endpoints.
+  let chartTransactions=[];
+  let selectedTransactionId=null;
+  let selectedHistoryPointT=null;
+  let transactionsLoadStarted=false;
+  function normalizeTransactions(data){
+    const rows=Array.isArray(data&&data.transactions)?data.transactions:[];
+    return rows.map((t,index)=>{
+      if(!t||!/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(String(t.date||'')))return null;
+      const parts=String(t.date).split('/').map(Number);
+      if(typeof jalaliToGregorian!=='function')return null;
+      const d=jalaliToGregorian(parts[0],parts[1],parts[2]);
+      const type=String(t.type||'').toLowerCase(),amount=Number(t.amount),price=Number(t.price);
+      if(!d||!Number.isFinite(d.getTime())||!['buy','sell'].includes(type)||!Number.isFinite(amount)||amount<=0||!Number.isFinite(price)||price<=0)return null;
+      return {id:index,date:String(t.date),t:new Date(d.getFullYear(),d.getMonth(),d.getDate(),13,0,0,0).getTime(),type,amount,price};
+    }).filter(Boolean).sort((a,b)=>a.t-b.t);
+  }
+  function refreshChartTransactions(){ chartTransactions=[]; }
+  function valid(p){const v=Number(p&&p.v),t=Number(p&&p.t);return Number.isFinite(v)&&v>0&&Number.isFinite(t)&&t>0;}
+  // Price history is stored as whole integers throughout the local cache and export.
+  function cleanHistory(arr){const map=new Map();for(const p of (Array.isArray(arr)?arr:[])){if(valid(p)){const t=Number(p.t),v=Math.round(Number(p.v));let q=map.get(t);if(!q){q={t,sum:0,n:0};map.set(t,q);}q.sum+=v;q.n++;}}return Array.from(map.values()).map(q=>({t:q.t,v:Math.round(q.sum/q.n)})).sort((a,b)=>a.t-b.t);}
+  function read(){return historyCache;}
+  // Lightweight range navigator: it reads the existing in-memory history only.
+  const navigatorEl=document.getElementById('coinChartNavigator');
+  const navigatorTrack=document.getElementById('coinChartNavigatorTrack');
+  const navigatorSelection=document.getElementById('coinChartNavigatorSelection');
+  const navigatorTicks=document.getElementById('coinChartNavigatorTicks');
+  let customRange=null,navigatorDrag=null,navigatorTickSignature='',chartPan=null;
+  // Dragging anywhere on the main plot pans the visible time window horizontally.
+  // Window-level listeners survive SVG redraws during a drag.
+  window.addEventListener('pointermove',ev=>{
+    const d=chartPan;if(!d||d.pointerId!==ev.pointerId)return;
+    const dx=ev.clientX-d.x;
+    if(!d.moved&&Math.abs(dx)<4)return;
+    d.moved=true;
+    const domain=navigatorDomain();if(!domain)return;
+    const delta=-(dx/Math.max(1,d.width))*(d.end-d.start);
+    const width=Math.min(domain.end-domain.start,d.end-d.start);
+    let start=d.start+delta,end=start+width;
+    if(start<domain.start){start=domain.start;end=start+width;}
+    if(end>domain.end){end=domain.end;start=end-width;}
+    customRange={start,end};updateNavigator();draw();
+    ev.preventDefault();
+  },{passive:false});
+  window.addEventListener('pointerup',ev=>{
+    const d=chartPan;if(!d||d.pointerId!==ev.pointerId)return;
+    chartPan=null;
+    if(!d.moved&&typeof d.pin==='function')d.pin();
+  });
+  window.addEventListener('pointercancel',ev=>{if(chartPan&&chartPan.pointerId===ev.pointerId)chartPan=null;});
+  function presetSpan(name,now=Date.now()){
+    if(name==='hour')return 3600000;if(name==='day')return 86400000;if(name==='week')return 7*86400000;if(name==='month')return 30*86400000;if(name==='threeMonths')return 91*86400000;if(name==='sixMonths')return 183*86400000;if(name==='year')return 365*86400000;if(name==='fiveYears')return 5*365*86400000;
+    const a=read();return Math.max(1,now-(a.length?Number(a[0].t):now));
+  }
+  function navigatorDomain(){const a=read();if(!a.length)return null;const start=Number(a[0].t),end=Number(a[a.length-1].t);return {start,end:Math.max(start+1,end)};}
+  function updateNavigatorTicks(domain){
+    if(!navigatorTicks||!navigatorTrack||!domain)return;
+    const width=Math.max(1,navigatorTrack.clientWidth||navigatorTrack.getBoundingClientRect().width||1);
+    const yearOf=ts=>{try{const parts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric'}).formatToParts(new Date(ts));const part=parts.find(x=>x.type==='year');return part?Number(part.value):new Date(ts).getFullYear();}catch(e){return new Date(ts).getFullYear();}};
+    const firstYear=yearOf(domain.start),lastYear=yearOf(domain.end),yearSpan=Math.max(0,lastYear-firstYear);
+    const signature=[Math.round(width),domain.start,domain.end,firstYear,lastYear].join(':');if(signature===navigatorTickSignature)return;navigatorTickSignature=signature;
+    const total=Math.max(1,domain.end-domain.start),marks=[];
+    if(yearSpan===0){for(let i=0;i<12;i++)marks.push({pos:i/12,label:null,major:false});marks.push({pos:1,label:null,major:false});marks.push({pos:.5,label:String(firstYear),yearLabel:true});}
+    else if(yearSpan===1){for(let i=0;i<=5;i++)marks.push({pos:i/5,label:null,major:true});marks.push({pos:0,label:String(firstYear),yearLabel:true});marks.push({pos:1,label:String(lastYear),yearLabel:true});}
+    else {
+      const maxYearLabels=Math.max(2,Math.floor(width/29));
+      const labelStep=Math.max(1,Math.ceil(yearSpan/Math.max(1,maxYearLabels-1)));
+      const maxTicks=Math.max(3,Math.floor(width/7));
+      const tickStep=Math.max(1,Math.ceil(yearSpan/Math.max(1,maxTicks-1)));
+      const monthStep=Math.max(1,Math.ceil(4/(width/(yearSpan*12))));
+      for(let y=0;y<=yearSpan;y+=tickStep){const pos=y/yearSpan,year=firstYear+y;marks.push({pos,label:null,major:true});if(y%labelStep===0||y===yearSpan)marks.push({pos,label:String(year),yearLabel:true});}
+      // Small, unlabeled month ticks between yearly marks; reduce their density on narrow screens.
+      for(let y=0;y<yearSpan;y+=tickStep){for(let m=monthStep;m<12;m+=monthStep){const pos=(y+m/12)/yearSpan;if(pos>0&&pos<1)marks.push({pos,label:null,major:false});}}
+      if(!marks.some(m=>m.yearLabel&&m.pos===1))marks.push({pos:1,label:String(lastYear),yearLabel:true});
+    }
+    navigatorTicks.replaceChildren();
+    for(const mark of marks){
+      const el=document.createElement('span');el.className=mark.yearLabel?'average-chart-navigator-year':'average-chart-navigator-tick';el.style.left=(Math.max(0,Math.min(1,mark.pos))*100)+'%';
+      if(mark.yearLabel){el.textContent=mark.label;el.setAttribute('aria-hidden','true');if(mark.pos<=.001)el.classList.add('edge-start');else if(mark.pos>=.999)el.classList.add('edge-end');}
+      else el.classList.add(mark.major?'major':'minor');
+      navigatorTicks.appendChild(el);
+    }
+  }
+  function updateNavigator(){
+    if(!navigatorEl||!navigatorTrack||!navigatorSelection)return;
+    const domain=navigatorDomain();if(!domain){navigatorEl.hidden=true;return;}navigatorEl.hidden=false;updateNavigatorTicks(domain);
+    const now=Date.now(),span=presetSpan(range,now);let start=customRange?customRange.start:Math.max(domain.start,now-span),end=customRange?customRange.end:Math.min(domain.end,now+60000);
+    if(range==='all'&&!customRange){start=domain.start;end=domain.end;}
+    start=Math.max(domain.start,Math.min(domain.end,start));end=Math.max(start+1,Math.min(domain.end,end));
+    const total=Math.max(1,domain.end-domain.start),left=(start-domain.start)/total*100,right=(end-domain.start)/total*100;
+    navigatorSelection.style.left=Math.max(0,Math.min(100,left))+'%';navigatorSelection.style.width=Math.max(.35,Math.min(100-left,right-left))+'%';
+    navigatorSelection.dataset.start=String(start);navigatorSelection.dataset.end=String(end);navigatorSelection.setAttribute('aria-label','Selected range '+new Date(start).toLocaleString()+' to '+new Date(end).toLocaleString());
+    const sh=document.getElementById('coinChartNavigatorStart'),eh=document.getElementById('coinChartNavigatorEnd');if(sh)sh.setAttribute('aria-valuetext',new Date(start).toLocaleString());if(eh)eh.setAttribute('aria-valuetext',new Date(end).toLocaleString());
+  }
+  if(navigatorTrack){
+    navigatorTrack.addEventListener('pointerdown',ev=>{
+      const domain=navigatorDomain();if(!domain)return;const target=ev.target.closest('.average-chart-navigator-handle'),bounds=navigatorTrack.getBoundingClientRect(),total=Math.max(1,domain.end-domain.start),span=presetSpan(range);
+      const start=Math.max(domain.start,Math.min(domain.end,customRange?customRange.start:Date.now()-span)),end=Math.max(start+1,Math.min(domain.end,customRange?customRange.end:Date.now()+60000));
+      navigatorDrag={mode:target?(target.classList.contains('left')?'left':'right'):'move',pointerId:ev.pointerId,x:ev.clientX,start,end,domain,total,width:Math.max(1,bounds.width)};navigatorTrack.setPointerCapture(ev.pointerId);ev.preventDefault();
+    });
+    navigatorTrack.addEventListener('pointermove',ev=>{
+      const d=navigatorDrag;if(!d||d.pointerId!==ev.pointerId)return;const delta=(ev.clientX-d.x)/d.width*d.total,minGap=Math.min(d.total,Math.max(60000,d.total*.001));let start=d.start,end=d.end;
+      if(d.mode==='left')start=Math.max(d.domain.start,Math.min(end-minGap,d.start+delta));else if(d.mode==='right')end=Math.min(d.domain.end,Math.max(start+minGap,d.end+delta));else{const width=end-start;start=Math.max(d.domain.start,Math.min(d.domain.end-width,d.start+delta));end=start+width;}
+      customRange={start,end};updateNavigator();draw();ev.preventDefault();
+    });
+    const stop=ev=>{if(navigatorDrag&&navigatorDrag.pointerId===ev.pointerId)navigatorDrag=null;};navigatorTrack.addEventListener('pointerup',stop);navigatorTrack.addEventListener('pointercancel',stop);
+    navigatorTrack.addEventListener('keydown',ev=>{
+      const target=ev.target.closest('.average-chart-navigator-handle');if(!target||!['ArrowLeft','ArrowRight','Home','End'].includes(ev.key))return;const domain=navigatorDomain();if(!domain)return;const span=presetSpan(range),start=customRange?customRange.start:Math.max(domain.start,Date.now()-span),end=customRange?customRange.end:Math.min(domain.end,Date.now()+60000),step=Math.max(60000,(domain.end-domain.start)*.01);let a=start,b=end;
+      if(target.classList.contains('left'))a=ev.key==='Home'?domain.start:ev.key==='End'?b-step:start+(ev.key==='ArrowRight'?step:-step);else b=ev.key==='End'?domain.end:ev.key==='Home'?a+step:end+(ev.key==='ArrowRight'?step:-step);
+      const gap=Math.min(domain.end-domain.start,60000);a=Math.max(domain.start,Math.min(b-gap,a));b=Math.min(domain.end,Math.max(a+gap,b));customRange={start:a,end:b};updateNavigator();draw();ev.preventDefault();
+    });
+  }
+  function openHistoryDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('IndexedDB unavailable'));return;}const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(DB_STORE))db.createObjectStore(DB_STORE,{keyPath:'id'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('IndexedDB open failed'));});}
+  async function persistPoints(points){
+    const db=await openHistoryDB();
+    try{const tx=db.transaction(DB_STORE,'readwrite'),store=tx.objectStore(DB_STORE);for(const p of points){if(valid(p)){const t=Number(p.t),v=Math.round(Number(p.v));store.put({id:t+':'+v,t,v});}}await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('IndexedDB write failed'));tx.onabort=()=>reject(tx.error||new Error('IndexedDB write aborted'));});}finally{db.close();}
+  }
+  async function migrateHistoryToRoundedIntegers(db, points){
+    const migrationKey='financialDashboardPriceHistoryRoundedIntegersV1';
+    try{if(localStorage.getItem(migrationKey)==='1')return;}catch(e){}
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction(DB_STORE,'readwrite'),store=tx.objectStore(DB_STORE);
+      store.clear();
+      for(const p of points){if(valid(p)){const t=Number(p.t),v=Math.round(Number(p.v));store.put({id:t+':'+v,t,v});}}
+      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Rounded-history migration failed'));tx.onabort=()=>reject(tx.error||new Error('Rounded-history migration aborted'));
+    });
+    try{localStorage.setItem(migrationKey,'1');}catch(e){}
+  }
+  async function loadHistory(){
+    let legacy=[];try{const a=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');if(Array.isArray(a))legacy=a.filter(valid).map(p=>({t:Number(p.t),v:Math.round(Number(p.v))}));}catch(e){}
+    try{const db=await openHistoryDB();let saved=[];try{saved=await new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readonly'),req=tx.objectStore(DB_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error);});
+        historyCache=cleanHistory(saved.concat(legacy));
+        // One-time rewrite removes old decimal-valued cache entries and rekeys them by rounded price.
+        await migrateHistoryToRoundedIntegers(db,historyCache);
+      }finally{db.close();}
+      if(legacy.length){try{localStorage.removeItem(HISTORY_KEY);}catch(e){}}
+    }catch(e){historyCache=cleanHistory(legacy);}
+    scheduleDraw();
+  }
+  let lastRecordedLiveValue=null;
+  let coinLatestValue=null;
+  function getCurrentLiveValue(){return Number.isFinite(coinLatestValue)&&coinLatestValue>0?coinLatestValue:null;}
+  function parseCoinPricePayload(payload){
+    let data=payload;
+    if(typeof data==='string'){
+      const trimmed=data.trim();
+      if(!trimmed)throw new Error('Empty Coin API response');
+      try{data=JSON.parse(trimmed);}catch(_){data=trimmed;}
+    }
+    let value=null,timestamp=Date.now();
+    for(let depth=0;depth<5;depth++){
+      if(typeof data==='number'||typeof data==='string'){
+        const numeric=Number(String(data).replace(/,/g,'').trim());
+        if(Number.isFinite(numeric)&&numeric>0){value=numeric;break;}
+        throw new Error('Invalid Coin price value');
+      }
+      if(!data||typeof data!=='object')break;
+      const rawTime=data.timestamp??data.t??data.time??data.updatedAt??data.updated_at;
+      if(rawTime!==undefined){const normalized=normalizeTimestamp(rawTime);if(Number.isFinite(normalized))timestamp=normalized;}
+      const candidate=data.totalUSDT??data.price??data.value??data.v??data.coin??data.rate;
+      if(candidate!==undefined){data=candidate;continue;}
+      if(data.data!==undefined){data=data.data;continue;}
+      if(data.result!==undefined){data=data.result;continue;}
+      break;
+    }
+    if(value===null)throw new Error('Coin API response has no valid price');
+    return {value,timestamp};
+  }
+  async function fetchCoinPriceEndpoint(url,label){
+    const controller=typeof AbortController!=='undefined'?new AbortController():null;
+    const timeout=controller?setTimeout(()=>controller.abort(),10000):null;
+    try{
+      const options={method:'GET',cache:'no-store'};
+      if(controller)options.signal=controller.signal;
+      const response=await fetch(url+(url.includes('?')?'&':'?')+'_coinSync='+Date.now(),options);
+      if(!response.ok)throw new Error(label+' HTTP '+response.status);
+      const body=await response.text();
+      return parseCoinPricePayload(body);
+    }catch(error){
+      if(error&&error.name==='AbortError')throw new Error(label+' timeout (10s)');
+      throw error;
+    }finally{if(timeout)clearTimeout(timeout);}
+  }
+  function saveCoinLatest(value,timestamp){
+    coinLatestValue=value;
+    try{
+      localStorage.setItem('financialDashboardCoinLatestValue',String(value));
+      localStorage.setItem('financialDashboardCoinLatestTimestamp',String(Number.isFinite(timestamp)?timestamp:Date.now()));
+    }catch(e){}
+    scheduleDraw();
+  }
+  function getCachedCoinFallback(){
+    try{
+      const cachedLatest=Number(localStorage.getItem('financialDashboardCoinLatestValue'));
+      const topPageCoin=Number(localStorage.getItem('financialDashboardCryptoPrice'));
+      const topElement=document.getElementById('cryptoValue');
+      const topText=topElement?Number(String(topElement.textContent||'').replace(/[^0-9.\-]/g,'')):NaN;
+      if(Number.isFinite(cachedLatest)&&cachedLatest>0)return cachedLatest;
+      if(Number.isFinite(topPageCoin)&&topPageCoin>0)return topPageCoin;
+      if(Number.isFinite(topText)&&topText>0)return topText;
+    }catch(e){}
+    return null;
+  }
+  async function refreshCoinLatest(){
+    let primaryError=null;
+    // Primary source: coin.rxw.workers.dev returns the live Coin price.
+    try{
+      const result=await fetchCoinPriceEndpoint('https://coin.rxw.workers.dev/','Coin primary API');
+      saveCoinLatest(result.value,result.timestamp);
+      if(typeof clearPageIssue==='function'){
+        clearPageIssue('coin-live-api');
+        clearPageIssue('coin-live-fallback');
+      }
+      return;
+    }catch(error){
+      primaryError=error;
+      console.warn('Coin primary price API failed; trying latest-history fallback:',error);
+    }
+    // Dedicated fallback: same price field is read from the history Worker response.
+    try{
+      const result=await fetchCoinPriceEndpoint('https://coin-chart-history.info-intoken.workers.dev/latest','Coin latest fallback');
+      saveCoinLatest(result.value,result.timestamp);
+      if(typeof setPageIssue==='function')setPageIssue('coin-live-api','Primary API unavailable; using latest-history fallback','cache');
+      if(typeof clearPageIssue==='function')clearPageIssue('coin-live-fallback');
+      return;
+    }catch(fallbackError){
+      console.warn('Coin latest-history fallback failed:',fallbackError);
+      if(typeof setPageIssue==='function'){
+        setPageIssue('coin-live-api',String(primaryError&&primaryError.message||primaryError||'Primary API unavailable'),'error');
+        setPageIssue('coin-live-fallback',String(fallbackError&&fallbackError.message||fallbackError||'Fallback API unavailable'),'error');
+      }
+      const cachedFallback=getCachedCoinFallback();
+      if(Number.isFinite(cachedFallback)&&cachedFallback>0){coinLatestValue=cachedFallback;scheduleDraw();}
+    }
+  }
+  try{
+    const fallback=getCachedCoinFallback();
+    if(Number.isFinite(fallback)&&fallback>0)coinLatestValue=fallback;
+  }catch(e){}
+  refreshCoinLatest();
+  setInterval(refreshCoinLatest,5*60*1000);
+  function record(){try{const v=getCurrentLiveValue();if(v===null)return;const a=read(),now=Date.now(),last=a[a.length-1];if(lastRecordedLiveValue===v&&last&&Number(last.v)===v)return;if(!last||Number(last.v)!==v){const point={t:now,v};historyCache=cleanHistory(a.concat(point));persistPoints([point]).catch(()=>{});}lastRecordedLiveValue=v;}catch(e){}}
+  function fmt(v){return Math.round(Number(v)).toLocaleString('en-US',{maximumFractionDigits:0});}
+  function niceStep(raw){const power=Math.pow(10,Math.floor(Math.log10(Math.max(raw,1))));const n=raw/power;return (n<=1?1:n<=2?2:n<=5?5:10)*power;}
+  function draw(){
+    record();const now=Date.now(),defaultSpan=range==='hour'?3600000:range==='day'?86400000:range==='week'?7*86400000:range==='month'?30*86400000:range==='threeMonths'?91*86400000:range==='sixMonths'?183*86400000:range==='year'?365*86400000:range==='fiveYears'?5*365*86400000:Math.max(0,now-Math.min(read().length?Math.min(...read().map(p=>p.t)):now,chartTransactions.length?Math.min(...chartTransactions.map(t=>t.t)):now));
+    const chartStart=customRange?customRange.start:now-defaultSpan,chartEnd=customRange?customRange.end:now+60000,span=Math.max(1,chartEnd-chartStart);updateNavigator();
+    const rawPts=read().filter(p=>p.t>=chartStart&&p.t<=chartEnd).sort((a,b)=>a.t-b.t);
+    // Keep full-fidelity records in IndexedDB; aggregate only the plotted view into fixed time buckets.
+    const bucketMs=range==='hour'?0:range==='day'?5*60000:range==='week'?3600000:range==='month'?4*3600000:86400000;
+    let pts=rawPts;
+    if(bucketMs>0){
+      const buckets=new Map();
+      for(const p of rawPts){const key=Math.floor(p.t/bucketMs)*bucketMs;let b=buckets.get(key);if(!b){b={t:key,v:0,n:0};buckets.set(key,b);}b.v+=p.v;b.n++;}
+      pts=Array.from(buckets.values()).map(b=>({t:b.t,v:b.v/b.n})).sort((a,b)=>a.t-b.t);
+    }
+    // The on-page live average is the authoritative endpoint in every timeframe.
+    // Keep historical buckets aggregated, but replace any current bucket endpoint with
+    // the exact live value so the right-side live badge and chart react immediately.
+    const liveValue=getCurrentLiveValue();
+    if(liveValue!==null&&now>=chartStart&&now<=chartEnd){
+      const currentPoint={t:now,v:liveValue};
+      if(pts.length&&pts[pts.length-1].t>=now-bucketMs&&bucketMs>0)pts[pts.length-1]=currentPoint;
+      else if(!pts.length||pts[pts.length-1].t<now)pts.push(currentPoint);
+      else pts[pts.length-1]=currentPoint;
+    }
+    // Limit extremely dense hourly plots only; keep the selected time buckets intact.
+    if(range==='hour'&&pts.length>3000){const stride=(pts.length-1)/2999;pts=Array.from({length:3000},(_,i)=>pts[Math.round(i*stride)]);}
+    card.querySelectorAll('[data-coin-range]').forEach(b=>b.classList.toggle('active',b.dataset.coinRange===range));
+    if(!pts.length){setPlotContent('<div class="average-price-chart-empty"><span>No cached price data</span></div>');return;}
+    // Zero and invalid values are never used in min/max or the mean. The first real cached point is the first chart value.
+    const visibleTransactions=chartTransactions.filter(t=>t.t>=chartStart&&t.t<=chartEnd&&Number.isFinite(t.price)&&t.price>0);
+    const vals=pts.map(p=>p.v).filter(v=>Number.isFinite(v)&&v>0).concat(visibleTransactions.map(t=>t.price));
+    if(!vals.length){setPlotContent('<div class="average-price-chart-empty"><span>No cached price data</span></div>');return;}
+    const dataMin=Math.min(...vals),dataMax=Math.max(...vals),mean=dataMin+(dataMax-dataMin)/2;
+    // Keep the vertical axis tight to this range's actual low/high, using tidy tick intervals.
+    const dataSpan=dataMax-dataMin;
+    const pad=dataSpan>0?dataSpan*.015:Math.max(Math.abs(dataMax)*.002,1);
+    const rawMin=dataMin-pad,rawMax=dataMax+pad;
+    const rawStep=niceStep((rawMax-rawMin)/4);
+    const step=rawStep>=1000?Math.max(1000,Math.round(rawStep/1000)*1000):rawStep;
+    // Price axis must never display negative values, regardless of selected range.
+    let min=Math.max(0,Math.floor(rawMin/step)*step),max=Math.ceil(rawMax/step)*step;
+    if(!(max>min)){max=min+step;}
+    // Guard against any negative tick caused by rounding or unusually small values.
+    min=Math.max(0,min);
+    if(!(max>min)){max=step;}
+    // Wait for the container to have its real layout width. A guessed width on first paint
+    // makes the SVG stretch until a timeframe change triggers a redraw.
+    const measuredWidth=Math.round(plot.getBoundingClientRect().width);
+    if(measuredWidth<100)return;
+    const W=Math.max(300,measuredWidth),H=174,L=58,R=measuredWidth<=480?27:42,T=25,B=48,pw=W-L-R,ph=H-T-B;
+    const x=t=>L+((Number(t)-chartStart)/span)*pw,y=v=>T+(max-Number(v))/(max-min)*ph;
+    const last=pts[pts.length-1],lx=x(last.t),ly=y(last.v),meanY=y(mean);
+    let grid='';const levels=4;
+    for(let i=0;i<=levels;i++){const val=min+(max-min)*i/levels,yy=y(val);grid+=`<line x1="${L}" y1="${yy}" x2="${W-R+5}" y2="${yy}" stroke="currentColor" opacity=".14"/><text x="${L-3}" y="${yy+3.5}" text-anchor="end" fill="currentColor" opacity=".82" font-size="10">${fmt(val)}</text>`;}
+    const compactMobileAxis=(measuredWidth<=768 || window.innerWidth<=768 || document.documentElement.clientWidth<=768) && ['month','threeMonths','sixMonths','year','fiveYears','all'].includes(range);
+    // Six-month and longer ranges use Jalali month/year labels on both desktop and mobile.
+    // Mobile and tablet get five evenly spaced ticks; desktop gets nine for these longer ranges.
+    const monthYearAxis=['threeMonths','sixMonths','year','fiveYears','all'].includes(range);
+    const ticks=compactMobileAxis?[0,.25,.5,.75,1]:monthYearAxis?[0,1/8,2/8,3/8,4/8,5/8,6/8,7/8,1]:(range==='hour'||range==='day'?[0,.25,.5,.75,1]:[0,.2,.4,.6,.8,1]);let times='',verticalGrid='';
+    const jalaliFmt=new Intl.DateTimeFormat('en-u-ca-persian',{day:'2-digit',month:'short'});
+    ticks.forEach((f,i)=>{
+      const d=new Date(chartStart+span*f);
+      let label;
+      if(range==='hour'||range==='day')label=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+      else if(range==='week')label=new Intl.DateTimeFormat('en-GB',{weekday:'short'}).format(d);
+      else if(monthYearAxis){
+        const parts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'2-digit'}).formatToParts(d),dp={};
+        for(const part of parts)if(part.type==='month'||part.type==='year')dp[part.type]=part.value;
+        // Year on the left, month on the right (e.g. 1405/02).
+        label=String(dp.year||'')+'/'+String(dp.month||'').padStart(2,'0');
+      }else if(range==='month'&&compactMobileAxis){
+        const parts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{day:'2-digit',month:'2-digit'}).formatToParts(d),dp={};
+        for(const part of parts)if(part.type==='day'||part.type==='month')dp[part.type]=part.value;
+        // Mobile/tablet monthly axis: month on the left, day on the right.
+        label=String(dp.month||'').padStart(2,'0')+'/'+String(dp.day||'').padStart(2,'0');
+      }else if(compactMobileAxis){
+        const parts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'2-digit'}).formatToParts(d),dp={};
+        for(const part of parts)if(part.type==='month'||part.type==='year')dp[part.type]=part.value;
+        label=String(dp.year||'')+'/'+String(dp.month||'').padStart(2,'0');
+      }else label=jalaliFmt.format(d);
+      const tickX=L+pw*f;
+      // Subtle vertical guide aligned exactly with each time-axis label, for every range.
+      // Keep these guides thinner and lighter than the horizontal price-axis grid lines.
+      verticalGrid+=`<line x1="${tickX}" y1="${T}" x2="${tickX}" y2="${T+ph}" stroke="currentColor" stroke-width=".7" opacity=".09" pointer-events="none"/>`;
+      times+=`<text x="${tickX}" y="${H-7}" text-anchor="${i===0?'start':i===ticks.length-1?'end':'middle'}" fill="currentColor" opacity=".72" font-size="${compactMobileAxis?'9':'10.5'}">${label}</text>`;
+    });
+    const baseGap=range==='hour'?60000:range==='day'?5*60000:range==='week'?3600000:range==='month'?4*3600000:86400000;
+    let segments='',areaFills='',gradients='';
+    for(let i=1;i<pts.length;i++){
+      const a=pts[i-1],b=pts[i],ax=x(a.t),ay=y(a.v),bx=x(b.t),by=y(b.v);
+      const aAbove=a.v>mean,bAbove=b.v>mean;
+      const dashed=(b.t-a.t)>baseGap;
+      const addFill=(x1,y1,x2,y2,above,id)=>{
+        const color=above?'#ffffff':'#a855f7';
+        gradients+=`<linearGradient id="coinMeanFill${id}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x1}" y2="${meanY}"><stop offset="0%" stop-color="${color}" stop-opacity=".30"/><stop offset="55%" stop-color="${color}" stop-opacity=".14"/><stop offset="100%" stop-color="${color}" stop-opacity=".025"/></linearGradient>`;
+        areaFills+=`<polygon points="${x1},${y1} ${x2},${y2} ${x2},${meanY} ${x1},${meanY}" fill="url(#coinMeanFill${id})"/>`;
+      };
+      if(aAbove===bAbove){
+        addFill(ax,ay,bx,by,aAbove,i);
+        segments+=`<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="${aAbove?'#ffffff':'#c084fc'}" stroke-width="2" stroke-linecap="round" ${dashed?'stroke-dasharray="3 4" opacity=".8"':''}/>`;
+      }else{
+        const ratio=(mean-a.v)/(b.v-a.v),cx=ax+(bx-ax)*ratio;
+        addFill(ax,ay,cx,meanY,aAbove,`${i}a`);
+        addFill(cx,meanY,bx,by,bAbove,`${i}b`);
+        segments+=`<line x1="${ax}" y1="${ay}" x2="${cx}" y2="${meanY}" stroke="${aAbove?'#ffffff':'#c084fc'}" stroke-width="2" stroke-linecap="round" ${dashed?'stroke-dasharray="3 4" opacity=".8"':''}/><line x1="${cx}" y1="${meanY}" x2="${bx}" y2="${by}" stroke="${bAbove?'#ffffff':'#c084fc'}" stroke-width="2" stroke-linecap="round" ${dashed?'stroke-dasharray="3 4" opacity=".8"':''}/>`;
+      }
+    }
+    const meanLabelX=L+3,meanLabelY=T+10;
+    // The vertical start marker is only a baseline guide, not a price sample and never affects calculations.
+    const first=pts[0],fx=x(first.t),fy=y(first.v),mobileBadge=true,badgeX=W-28,badgeY=Math.max(T,Math.min(T+ph-19,ly-9.5));
+    const fillPath=pts.map((p,i)=>(i?'L':'M')+x(p.t).toFixed(1)+' '+y(p.v).toFixed(1)).join(' ');
+    // Put each transaction marker at its actual transaction date AND transaction price
+    // inside the plotting area, rather than on the bottom axis. Keep the Jalali date
+    // in an explicit left-to-right YYYY/MM/DD run so browser RTL rules cannot reorder it.
+    const transactionMarkers=visibleTransactions.map(t=>{
+      const cx=x(t.t),cy=y(t.price),buy=t.type==='buy',color=buy?'#20d889':'#ff5368';
+      const parts=String(t.date).split('/');
+      const jalaliDate=parts.length===3?`${parts[0].padStart(4,'0')}/${parts[1].padStart(2,'0')}/${parts[2].padStart(2,'0')}`:String(t.date);
+      const kind=buy?'خرید':'فروش',tipText=`${kind} • ${jalaliDate} • تعداد: ${fmt(t.amount)} • قیمت: ${fmt(t.price)}`;
+      const selected=String(selectedTransactionId)===String(t.id);
+      const selection=selected?`<line x1="${cx}" y1="${T}" x2="${cx}" y2="${T+ph}" stroke="${color}" stroke-width="1.2" stroke-dasharray="4 4" opacity=".95" pointer-events="none"/><text x="${Math.max(L+24,Math.min(W-R-24,cx))}" y="12" text-anchor="middle" fill="${color}" stroke="#111827" stroke-width="2.8" paint-order="stroke" font-size="11.5" font-weight="800" pointer-events="none">${fmt(t.price)}</text><text x="${Math.max(L+35,Math.min(W-R-35,cx))}" y="${H-27}" text-anchor="middle" fill="${color}" stroke="#111827" stroke-width="3" paint-order="stroke" font-size="11.5" font-weight="800" pointer-events="none">${jalaliDate}</text>`:'';
+      return `<g class="chart-transaction-marker ${buy?'is-buy':'is-sell'}${selected?' is-selected':''}" data-transaction-id="${t.id}" tabindex="0" role="button" aria-label="انتخاب ${tipText}" style="cursor:pointer"><title>${tipText}</title>${selection}<circle class="transaction-dot" cx="${cx}" cy="${cy}" r="3.5" fill="${color}" stroke="#101820" stroke-width=".7"/><circle class="transaction-hit-area" cx="${cx}" cy="${cy}" r="7" fill="transparent" stroke="transparent" pointer-events="all"/></g>`;
+    }).join('');
+    // Render the selected transaction amount in a dedicated top overlay, after every
+    // marker, so other buy/sell dots can never cover the quantity label.
+    const transactionCountLabels=visibleTransactions.filter(t=>String(selectedTransactionId)===String(t.id)).map(t=>{
+      const cx=x(t.t),buy=t.type==='buy',color=buy?'#20d889':'#ff5368';
+      return `<text x="${Math.max(L+24,Math.min(W-R-24,cx))}" y="28" text-anchor="middle" fill="${color}" stroke="#111827" stroke-width="2.8" paint-order="stroke" font-size="10.5" font-weight="800" pointer-events="none">${fmt(t.amount)}</text>`;
+    }).join('');
+    setPlotContent(`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Coin price history">${grid}${verticalGrid}<defs>${gradients}<clipPath id="coinMeanLabelTopClip"><rect x="${meanLabelX-2}" y="${meanLabelY-10}" width="90" height="6"/></clipPath><clipPath id="coinMeanLabelBottomClip"><rect x="${meanLabelX-2}" y="${meanLabelY-4}" width="90" height="7"/></clipPath></defs>${areaFills}<text x="${meanLabelX}" y="${meanLabelY}" fill="#ffffff" opacity="1" font-size="12" font-weight="700" clip-path="url(#coinMeanLabelTopClip)">${fmt(mean)}</text><text x="${meanLabelX}" y="${meanLabelY}" fill="#d8b4fe" opacity="1" font-size="12" font-weight="700" clip-path="url(#coinMeanLabelBottomClip)">${fmt(mean)}</text><text x="${W-3}" y="${T-7}" text-anchor="end" fill="#ffffff" opacity=".98" font-size="12" font-weight="700">${fmt(dataMax)}</text><text x="${W-3}" y="${T+ph+15}" text-anchor="end" fill="#c084fc" opacity="1" font-size="12" font-weight="700">${fmt(dataMin)}</text>${segments}<circle cx="${lx}" cy="${ly}" r="3" fill="${last.v>=mean?'#c084fc':'#ffffff'}" stroke="#18202b" stroke-width="1"/><line x1="${W-R+2}" y1="${T}" x2="${W-R+2}" y2="${T+ph}" stroke="currentColor" opacity=".12"/>${mobileBadge?`<g transform="rotate(-90 ${W-12} ${Math.max(T+35,Math.min(T+ph-35,ly))})"><rect x="${W-47}" y="${Math.max(T+35,Math.min(T+ph-35,ly))-9.5}" width="70" height="19" rx="6" fill="${last.v>=mean?'#9333ea':'#59616d'}"/><text x="${W-12}" y="${Math.max(T+35,Math.min(T+ph-35,ly))+3.5}" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${fmt(last.v)}</text></g>`:`<rect x="${badgeX}" y="${badgeY}" width="70" height="19" rx="6" fill="${last.v>=mean?'#9333ea':'#59616d'}"/><text x="${badgeX+35}" y="${badgeY+12.5}" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${fmt(last.v)}</text>`}${transactionMarkers}${transactionCountLabels}${times}</svg>`);
+    // Interactive price tooltip: hover with a mouse or tap/drag on touch screens.
+    const svg=plot.querySelector('svg');
+    if(svg){
+      // Transaction markers are independently selectable; selecting one pins its values
+      // and vertical dashed guide until another marker is selected or the same one is toggled off.
+      svg.querySelectorAll('.chart-transaction-marker').forEach(marker=>{
+        const activate=ev=>{
+          ev.preventDefault();ev.stopPropagation();
+          const id=String(marker.getAttribute('data-transaction-id'));
+          // Toggle off only when the already-selected marker itself is clicked again.
+          selectedTransactionId=String(selectedTransactionId)===id?null:id;
+          selectedHistoryPointT=null;
+          scheduleDraw();
+        };
+        marker.addEventListener('click',activate);
+        marker.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){activate(ev);}});
+      });
+      const tip=document.createElement('div');
+      tip.className='average-price-chart-tooltip';
+      Object.assign(tip.style,{position:'absolute',zIndex:'5',display:'none',pointerEvents:'none',padding:'2px 6px',borderRadius:'5px',background:'#111827',color:'#fff',fontSize:'12px',fontWeight:'800',boxShadow:'0 2px 8px rgba(0,0,0,.22)',whiteSpace:'nowrap',transform:'translateX(-50%)'});
+      plot.appendChild(tip);
+      const dateTip=document.createElement('div');dateTip.className='average-price-chart-date-tooltip';
+      Object.assign(dateTip.style,{position:'absolute',zIndex:'5',display:'none',pointerEvents:'none',padding:'1px 5px',borderRadius:'4px',background:'#111827',color:'#fff',fontSize:'12px',fontWeight:'600',whiteSpace:'nowrap',transform:'translateX(-50%)'});plot.appendChild(dateTip);
+      const cross=document.createElementNS('http://www.w3.org/2000/svg','line');
+      cross.setAttribute('y1',String(T));cross.setAttribute('y2',String(T+ph));
+      cross.setAttribute('stroke','currentColor');cross.setAttribute('stroke-dasharray','3 3');cross.setAttribute('opacity','.65');cross.style.display='none';cross.style.pointerEvents='none';svg.appendChild(cross);
+      const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('r','4');dot.setAttribute('fill','#c084fc');dot.setAttribute('stroke','#fff');dot.setAttribute('stroke-width','1.5');dot.style.display='none';dot.style.pointerEvents='none';svg.appendChild(dot);
+      function nearestPointAt(ev){
+        const rect=svg.getBoundingClientRect();
+        const px=Math.max(0,Math.min(W,(ev.clientX-rect.left)/rect.width*W));
+        const targetT=chartStart+((px-L)/pw)*span;
+        let best=pts[0],dist=Infinity;
+        for(const p of pts){const d=Math.abs(p.t-targetT);if(d<dist){dist=d;best=p;}}
+        return best;
+      }
+      function displayPoint(best){
+        if(!best)return;
+        const cx=x(best.t),cy=y(best.v);
+        cross.setAttribute('x1',cx);cross.setAttribute('x2',cx);cross.style.display='';
+        dot.setAttribute('cx',cx);dot.setAttribute('cy',cy);dot.style.display='';
+        tip.textContent=fmt(best.v);
+        const d=new Date(best.t);
+        // Always show the full Jalali date and time, independent of the selected range.
+        // Keep the year first (left), then month/day, followed by a small visual gap and HH:mm.
+        const dateParts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);
+        const dp={};for(const part of dateParts)if(part.type==='day'||part.type==='month'||part.type==='year')dp[part.type]=part.value;
+        const timeText=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+        const dateText=`${String(dp.year).padStart(4,'0')}/${dp.month}/${dp.day}  ${timeText}`;
+        dateTip.textContent=dateText;
+        const rect=svg.getBoundingClientRect(),plotRect=plot.getBoundingClientRect();
+        const labelX=Math.max(42,Math.min(plotRect.width-42,rect.left-plotRect.left+cx/W*rect.width));
+        // Keep the smaller price badge just above the highest horizontal price-axis line.
+        const plotTop=rect.top-plotRect.top,scaleY=rect.height/H;
+        tip.style.left=labelX+'px';tip.style.display='block';
+        tip.style.top=Math.max(0,plotTop+T*scaleY-tip.offsetHeight-2)+'px';
+        // Place the compact time badge just below the lowest horizontal price-axis line,
+        // well clear of the chart's time-axis labels near the bottom.
+        dateTip.style.left=labelX+'px';dateTip.style.display='block';
+        dateTip.style.top=Math.min(plotRect.height-dateTip.offsetHeight,plotTop+(T+ph)*scaleY+3)+'px';
+      }
+      function hidePoint(){tip.style.display='none';dateTip.style.display='none';cross.style.display='none';dot.style.display='none';}
+      function showAt(ev){
+        // A selected transaction owns the annotations; ordinary chart points must not cover it.
+        if(selectedTransactionId!==null || (ev.target&&ev.target.closest&&ev.target.closest('.chart-transaction-marker'))){hidePoint();return;}
+        const best=selectedHistoryPointT!==null?pts.find(p=>Number(p.t)===Number(selectedHistoryPointT)):nearestPointAt(ev);
+        if(best)displayPoint(best);else hidePoint();
+      }
+      function pinAt(ev){
+        if(ev.button!==undefined&&ev.button!==0)return;
+        if(selectedTransactionId!==null || (ev.target&&ev.target.closest&&ev.target.closest('.chart-transaction-marker')))return;
+        const best=nearestPointAt(ev);if(!best)return;
+        selectedHistoryPointT=Number(selectedHistoryPointT)===Number(best.t)?null:Number(best.t);
+        if(selectedHistoryPointT===null)hidePoint();else displayPoint(best);
+      }
+      svg.style.cursor='grab';
+      svg.style.touchAction='pan-y';
+      svg.addEventListener('pointermove',ev=>{
+        showAt(ev);
+      });
+      svg.addEventListener('pointerdown',ev=>{
+        if(ev.button!==undefined&&ev.button!==0)return;
+        if(ev.target&&ev.target.closest&&ev.target.closest('.chart-transaction-marker'))return;
+        const rect=svg.getBoundingClientRect();
+        chartPan={pointerId:ev.pointerId,x:ev.clientX,start:chartStart,end:chartEnd,width:Math.max(1,rect.width),moved:false,pin:()=>pinAt(ev)};
+        svg.style.cursor='grabbing';
+        ev.preventDefault();
+      });
+      svg.addEventListener('pointerup',()=>{svg.style.cursor='grab';});
+      // Keep a clicked regular history point pinned across pointer movement and chart redraws.
+      if(selectedHistoryPointT!==null){const pinned=pts.find(p=>Number(p.t)===Number(selectedHistoryPointT));if(pinned)displayPoint(pinned);else{selectedHistoryPointT=null;hidePoint();}}
+      svg.addEventListener('pointerleave',()=>{if(!('ontouchstart' in window)&&selectedHistoryPointT===null){hidePoint();}});
+    }
+  }
+  card.querySelectorAll('[data-coin-range]').forEach(b=>b.addEventListener('click',()=>{
+    const nextRange=b.dataset.coinRange;
+    if(!['hour','day','week','month','threeMonths','sixMonths','year','fiveYears','all'].includes(nextRange))return;
+    range=nextRange;
+    customRange=null;
+    selectedHistoryPointT=null;
+    selectedTransactionId=null;
+    try{localStorage.setItem(RANGE_KEY,range);}catch(e){}
+    restoreRangeProgress();
+    draw();
+  }));
+  // Automatically merge all remote chart sources into the same persistent IndexedDB store.
+  // The Worker is first because it is the most frequently updated source.
+  const WORKER_URL='https://coin-chart-history.info-intoken.workers.dev/history';
+  const GITHUB_URL='https://raw.githubusercontent.com/test1800/test1800.github.io/main/CoinChartHistory.json';
+  const HISTORY_URLS=[WORKER_URL,GITHUB_URL];
+  const REMOTE_META_KEY='financialDashboardCoinPriceChartRemoteMetaV1';
+  const exportButton=document.getElementById('coinChartExport');
+  function normalizeTimestamp(value){
+    if(typeof value==='string' && !/^\d+(\.\d+)?$/.test(value.trim())){const parsed=Date.parse(value);return Number.isFinite(parsed)?parsed:NaN;}
+    let t=Number(value);if(!Number.isFinite(t)||t<=0)return NaN;if(t<100000000000)t*=1000;return t;
+  }
+  function importedRows(payload){
+    if(Array.isArray(payload))return payload;
+    if(payload&&Array.isArray(payload.history))return payload.history;
+    if(payload&&Array.isArray(payload.records))return payload.records;
+    if(payload&&Array.isArray(payload.points))return payload.points;
+    if(payload&&Array.isArray(payload.data))return payload.data;
+    if(payload&&payload.data&&Array.isArray(payload.data.history))return payload.data.history;
+    if(payload&&payload.data&&Array.isArray(payload.data.records))return payload.data.records;
+    if(payload&&payload.result&&Array.isArray(payload.result.history))return payload.result.history;
+    return [];
+  }
+  function normalizeImportedRows(arr){
+    return (Array.isArray(arr)?arr:[]).map(p=>{if(Array.isArray(p))return {t:normalizeTimestamp(p[0]),v:Math.round(Number(p[1]))};if(!p||typeof p!=='object')return {t:NaN,v:NaN};return {t:normalizeTimestamp(p.t??p.timestamp??p.time??p.date??p.createdAt??p.created_at),v:Math.round(Number(p.v??p.value??p.price??p.average??p.avg??p.averagePrice??p.average_price??p.priceAverage??p.price_average??p.liveAverage??p.live_average))};}).filter(valid);
+  }
+  function normalizeImported(payload){return normalizeImportedRows(importedRows(payload));}
+  function saveRemoteMeta(meta){try{localStorage.setItem(REMOTE_META_KEY,JSON.stringify(meta));}catch(e){}}
+  // Refresh priority: Hour > Day > Month > 6M > Year > 5Y > All.
+  // Poll cadence follows the currently selected range; the Hour range always gets the fastest check.
+  function cadenceForRange(name=range){return 5*60000;}
+  let autoSyncRunning=false,lastSyncAt=syncStateFor(range).completedAt||0,lastScheduledSyncAt=syncStateFor(range).completedAt||0;
+  async function checkRemoteHistory(force){
+    const syncRange=range;
+    const syncState=syncStateFor(syncRange);
+    const cadence=cadenceForRange(syncRange);
+    if(autoSyncRunning)return;
+    if(!force&&syncState.nextSyncAt&&Date.now()<syncState.nextSyncAt)return;
+    if(!force&&Date.now()-(syncState.completedAt||0)<Math.min(cadence,60000))return;
+    if(!navigator.onLine){
+      const message='Offline';
+      if(typeof setPageIssue==='function')setPageIssue('coin-chart-history-sync',message,'error');
+      // Back off until the next cadence without discarding the last successful blue state.
+      syncState.nextSyncAt=Date.now()+cadence;saveSyncUi();
+      if(range===syncRange){if(syncState.completedAt)setChartProgress(100,'complete');else setChartProgress(0,'error');}
+      return;
+    }
+    autoSyncRunning=true;syncState.startedAt=Date.now();
+    // Start visibly and immediately, including first syncs and overdue work after days away.
+    if(range===syncRange)setChartProgress(3,'processing');
+    let successfulSources=0;
+    const sourceErrors=[];
+    try{
+      let meta={};try{meta=JSON.parse(localStorage.getItem(REMOTE_META_KEY)||'{}')||{};}catch(e){}
+      const sources=range==='hour'?[WORKER_URL]:HISTORY_URLS;
+      const existing=new Set(read().map(p=>String(Number(p.t))+':'+String(Number(p.v))));
+      const additions=[];
+      for(let sourceIndex=0;sourceIndex<sources.length;sourceIndex++){
+        const url=sources[sourceIndex],key=url===WORKER_URL?'worker':'github';
+        // Keep the opening few percent visible instead of resetting to white while fetch is pending.
+        const sourceStart=3+(sourceIndex/sources.length)*85;
+        const sourceWidth=85/sources.length;
+        if(range===syncRange)setChartProgress(sourceStart,'processing');
+        try{
+          const response=await fetch(url+(url.includes('?')?'&':'?')+'_chartSync='+Date.now(),{method:'GET',cache:'no-store'});
+          if(!response.ok)throw new Error('HTTP '+response.status);
+          if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.28,'processing');
+          const payload=await response.json();
+          successfulSources++;
+          if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.48,'processing');
+          const old=meta[key]||{};
+          let incoming=[];
+          let incomingCount;
+          if(syncRange==='hour'){
+            // Hour-only repair: keep the count-based fast path, but verify the newest
+            // 35 Worker records exist locally before skipping. If any are missing,
+            // reprocess the Worker payload and restore them. Other chart ranges retain
+            // the original v52 processing path below.
+            const rows=importedRows(payload);
+            const advertisedCount=Number(payload&&payload.count);
+            incomingCount=Number.isFinite(advertisedCount)&&advertisedCount>=0?advertisedCount:rows.length;
+            // The one-hour chart only needs the newest 35 Worker records (about
+            // 70 minutes at the current 2-minute cadence). Do not normalize and
+            // scan the entire remote history on every hourly refresh.
+            const tail=normalizeImportedRows(rows.slice(-35));
+            if(old.count===incomingCount&&old.initialized){
+              const tailMissing=tail.some(point=>!existing.has(String(Number(point.t))+':'+String(Number(point.v))));
+              if(!tailMissing){old.checkedAt=Date.now();meta[key]=old;if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.94,'processing');continue;}
+            }
+            incoming=tail;
+          }else{
+            // Original v52 behavior for every non-hour range; deliberately unchanged.
+            const advertisedCount=Number(payload&&payload.count);
+            incomingCount=Number.isFinite(advertisedCount)&&advertisedCount>=0?advertisedCount:normalizeImported(payload).length;
+            if(old.count===incomingCount&&old.initialized){old.checkedAt=Date.now();meta[key]=old;if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.94,'processing');continue;}
+            incoming=normalizeImported(payload);
+          }
+          if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.72,'processing');
+          for(const point of incoming){const k=String(Number(point.t))+':'+String(Number(point.v));if(!existing.has(k)){existing.add(k);additions.push({t:Number(point.t),v:Number(point.v)});}}
+          meta[key]={url,count:incomingCount,initialized:true,checkedAt:Date.now(),processed:incoming.length,added:incoming.length};
+          if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.94,'processing');
+        }catch(sourceError){const detail=String(sourceError&&sourceError.message||sourceError||'Request failed');sourceErrors.push((key==='worker'?'Worker':'GitHub')+': '+detail);meta[key]={...(meta[key]||{}),url,lastError:detail,failedAt:Date.now()};console.warn('Price Chart history sync failed for '+url+':',sourceError);}
+      }
+      if(range===syncRange)setChartProgress(92,'processing');
+      if(additions.length){await persistPoints(additions);historyCache=cleanHistory(read().concat(additions));scheduleDraw();}
+      if(range===syncRange)setChartProgress(97,'processing');
+      meta.lastSyncAt=Date.now();meta.lastAdded=additions.length;meta.lastRange=syncRange;saveRemoteMeta(meta);
+      const syncCard=document.getElementById('coinPriceChartCard');if(syncCard){syncCard.dataset.historySync=successfulSources?'ok':'error';syncCard.dataset.historySyncAt=String(Date.now());}
+      if(successfulSources>0){
+        syncState.completedAt=Date.now();syncState.nextSyncAt=Date.now()+cadenceForRange(syncRange);delete syncState.startedAt;
+        if(sourceErrors.length){
+          if(typeof setPageIssue==='function')setPageIssue('coin-chart-history-sync',sourceErrors.join(' | '),'error');
+        }else if(typeof clearPageIssue==='function')clearPageIssue('coin-chart-history-sync');
+        if(range===syncRange)setChartProgress(100,'complete');
+        saveSyncUi();
+      }else{
+        syncState.nextSyncAt=Date.now()+cadenceForRange(syncRange);delete syncState.startedAt;
+        if(typeof setPageIssue==='function')setPageIssue('coin-chart-history-sync',sourceErrors.join(' | ')||'Request failed','error');
+        // A failed refresh must not erase the last successful state. If this range
+        // has never synced successfully, keep the label white and report the error.
+        if(range===syncRange){if(syncState.completedAt)setChartProgress(100,'complete');else setChartProgress(0,'error');}
+        saveSyncUi();
+      }
+    }catch(err){
+      syncState.nextSyncAt=Date.now()+cadenceForRange(syncRange);delete syncState.startedAt;
+      if(typeof setPageIssue==='function')setPageIssue('coin-chart-history-sync',String(err&&err.message||err||'Request failed'),'error');
+      if(range===syncRange){if(syncState.completedAt)setChartProgress(100,'complete');else setChartProgress(0,'error');}
+      saveSyncUi();
+      console.warn('Price Chart automatic history sync failed:',err);
+    }finally{autoSyncRunning=false;if(range!==syncRange)restoreRangeProgress();}
+  }
+  if(exportButton){
+    const updateExportTooltip=()=>{
+      try{exportButton.title='Export · '+cleanHistory(read()).length+' records';}
+      catch(e){exportButton.title='Export';}
+    };
+    exportButton.addEventListener('mouseenter',updateExportTooltip);
+    exportButton.addEventListener('focus',updateExportTooltip);
+  }
+  if(exportButton)exportButton.addEventListener('click',()=>{
+    try{
+      record();
+      const history=cleanHistory(read());
+      const payload={format:'CoinChartHistory',version:2,encoding:'pairs',count:history.length,history:history.map(p=>[Number(p.t),Math.round(Number(p.v))])};
+      const json=JSON.stringify(payload);
+      // Android WebView does not reliably honor anchor downloads for blob: URLs.
+      // Use the native bridge to save directly into Android's Downloads folder.
+      if(window.AndroidNotifications && typeof window.AndroidNotifications.saveTextFile==='function'){
+        const result=window.AndroidNotifications.saveTextFile('CoinChartHistory.json',json);
+        if(typeof result==='string' && result.indexOf('OK:')===0){
+          exportButton.title='Saved to Downloads ('+history.length+' points)';
+          alert('History backup saved to Downloads/CoinChartHistory.json');
+          return;
+        }
+        throw new Error(typeof result==='string'?result:'Native download failed');
+      }
+      const blob=new Blob([json],{type:'application/json;charset=utf-8'});
+      const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='CoinChartHistory.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+      exportButton.title='Exported '+history.length+' numeric points';
+    }catch(err){alert('Export failed. Browser storage may be full. '+(err&&err.message?err.message:''));}
+  });
+  // Hydrate the local repository first, then sync sources using the selected range's cadence.
+  // A missing local history is an initial sync even if an old saved schedule says the next peak is later.
+  // This also repairs empty storage after a long period away from the page.
+  loadHistory().then(()=>{
+    const state=syncStateFor(range);
+    if(!read().length||!state.nextSyncAt||Date.now()>=state.nextSyncAt){setChartProgress(3,'processing');checkRemoteHistory(true);}
+    else restoreRangeProgress();
+  }).catch(err=>{
+    if(typeof setPageIssue==='function')setPageIssue('coin-chart-history-sync',String(err&&err.message||err||'Storage failed'),'error');
+    const state=syncStateFor(range);if(!read().length||!state.nextSyncAt||Date.now()>=state.nextSyncAt){setChartProgress(3,'processing');checkRemoteHistory(true);}else restoreRangeProgress();
+  });
+  // The live page average is sampled frequently; remote checks are throttled according to range.
+  // Keep recording live values every 500 ms, but do not rebuild the SVG while the
+  // pointer is over the chart: replacing its DOM repeatedly makes hover labels blink.
+  // The chart catches up immediately after the pointer leaves the plot.
+  setInterval(()=>{
+    record();if(!plot.matches(':hover'))scheduleDraw();
+    const now=Date.now(),rangeState=syncStateFor(range);
+    if(rangeState.nextSyncAt&&now>=rangeState.nextSyncAt-5000&&now<rangeState.nextSyncAt&&chartProgressLabel&&chartProgressLabel.dataset.state==='complete')setChartProgress(0,'idle');
+    if(!autoSyncRunning&&rangeState.nextSyncAt&&now>=rangeState.nextSyncAt)checkRemoteHistory(true);
+    else if(!rangeState.nextSyncAt&&now-(rangeState.completedAt||0)>=cadenceForRange(range))checkRemoteHistory(true);
+  },500);
+  plot.addEventListener('pointerleave',()=>scheduleDraw(),{passive:true});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){const state=syncStateFor(range),now=Date.now();if(state.nextSyncAt&&now>=state.nextSyncAt-5000&&now<state.nextSyncAt&&state.completedAt)setChartProgress(0,'idle');if(!state.nextSyncAt||now>=state.nextSyncAt)checkRemoteHistory(true);}});
+  window.addEventListener('online',()=>{const state=syncStateFor(range);if(!state.nextSyncAt||Date.now()>=state.nextSyncAt)checkRemoteHistory(true);});
+  // First render after layout, then redraw whenever the chart container itself changes size
+  // (including WebView startup, orientation changes, and page refresh).
+  let resizeFrame=0;
+  const scheduleDraw=()=>{if(resizeFrame)cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;draw()})};
+  if(typeof ResizeObserver!=='undefined'){const ro=new ResizeObserver(scheduleDraw);ro.observe(plot);}
+  window.addEventListener('resize',scheduleDraw,{passive:true});
+  window.addEventListener('load',scheduleDraw,{once:true});
+  window.addEventListener('storage',e=>{if(e.key==='financialDashboardCoinLatestValue'||e.key===HISTORY_KEY)scheduleDraw()});
+  requestAnimationFrame(()=>requestAnimationFrame(scheduleDraw));
+  setInterval(scheduleDraw,5*60000);
+})();
+
+</script>
 
 <style>
 
@@ -17788,7 +18567,105 @@ if (
 .average-price-chart-plot .average-chart-export-bottom .average-chart-tool{width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important;padding:3px!important;border-radius:6px!important;}
 .average-price-chart-plot .average-chart-export-bottom .average-chart-tool svg{width:14px!important;height:14px!important;min-width:14px!important;min-height:14px!important;}
 </style>
+<style id="coin-chart-violet-palette-v3">
+/* v3: complete Coin-only violet palette. The shared Dollar chart keeps its original blue theme. */
+#coinPriceChartCard .average-chart-navigator-selection{
+    border-color:#c084fc!important;
+    background:rgba(168,85,247,.20)!important;
+}
+#coinPriceChartCard .average-chart-navigator-handle{
+    border-color:#d8b4fe!important;
+    background:#9333ea!important;
+    box-shadow:0 0 0 1px rgba(4,14,28,.35),0 0 7px rgba(168,85,247,.28)!important;
+}
+#coinPriceChartCard .average-chart-navigator-handle span{
+    background:#ffffff!important;
+    box-shadow:2px 0 #ffffff!important;
+}
+#coinPriceChartCard .average-chart-navigator-selection:active{
+    background:rgba(168,85,247,.30)!important;
+}
+#coinPriceChartCard .average-chart-navigator-handle:focus-visible{
+    outline:2px solid #d8b4fe!important;
+    outline-offset:2px!important;
+}
+#coinPriceChartCard .average-price-chart-range button.active{
+    background:rgba(168,85,247,.24)!important;
+    color:#e9d5ff!important;
+    box-shadow:inset 0 0 0 1px rgba(192,132,252,.34),0 0 8px rgba(168,85,247,.10)!important;
+}
+#coinPriceChartCard .average-price-chart-tools .average-chart-tool:focus-visible{
+    outline:2px solid #c084fc!important;
+    outline-offset:2px!important;
+}
+#coinPriceChartCard .average-chart-progress-label{
+    background-image:linear-gradient(to top,#9333ea,#c084fc)!important;
+}
+
+/* Coin chart V3 final palette: every former blue chart accent is violet. */
+#coinPriceChartCard,
+#coinPriceChartCard * {
+  --coin-violet: #a855f7;
+  --coin-violet-light: #c084fc;
+  --coin-violet-pale: #e9d5ff;
+}
+#coinPriceChartCard .average-chart-progress-label {
+  background-image: linear-gradient(to top, #9333ea, #c084fc) !important;
+}
+#coinPriceChartCard .average-price-chart-range button.active,
+#coinPriceChartCard .average-price-chart-range button[aria-pressed="true"] {
+  color: #e9d5ff !important;
+  background: rgba(168,85,247,.24) !important;
+  border-color: rgba(192,132,252,.48) !important;
+  box-shadow: inset 0 0 0 1px rgba(192,132,252,.34), 0 0 8px rgba(168,85,247,.10) !important;
+}
+#coinPriceChartCard .average-price-chart-range button:focus-visible,
+#coinPriceChartCard .average-price-chart-tools .average-chart-tool:focus-visible {
+  outline: 2px solid #c084fc !important;
+  outline-offset: 2px !important;
+}
+#coinPriceChartCard .average-price-chart-range button:hover,
+#coinPriceChartCard .average-price-chart-tools .average-chart-tool:hover {
+  border-color: rgba(192,132,252,.58) !important;
+}
+#coinPriceChartCard .average-price-chart-tools .average-chart-tool.export,
+#coinPriceChartCard .average-price-chart-tools .average-chart-tool.import {
+  color: #c084fc !important;
+  background-color: rgba(168,85,247,.16) !important;
+  border-color: rgba(192,132,252,.42) !important;
+}
+#coinPriceChartCard .average-chart-navigator-selection {
+  border-color: #c084fc !important;
+  background: rgba(168,85,247,.20) !important;
+}
+#coinPriceChartCard .average-chart-navigator-selection:active {
+  background: rgba(168,85,247,.30) !important;
+}
+#coinPriceChartCard .average-chart-navigator-handle {
+  border-color: #d8b4fe !important;
+  background: #9333ea !important;
+  box-shadow: 0 0 0 1px rgba(4,14,28,.35), 0 0 7px rgba(168,85,247,.28) !important;
+}
+#coinPriceChartCard .average-chart-navigator-handle span {
+  background: #fff !important;
+  box-shadow: 2px 0 #fff !important;
+}
+#coinPriceChartCard .average-chart-navigator-handle:focus-visible {
+  outline: 2px solid #d8b4fe !important;
+  outline-offset: 2px !important;
+}
+#coinPriceChartCard .average-chart-navigator-ticks,
+#coinPriceChartCard .average-chart-navigator-ticks * {
+  accent-color: #a855f7 !important;
+}
+#coinPriceChartCard .average-chart-export-bottom .average-chart-tool {
+  color: #c084fc !important;
+}
+
+</style>
 </body>
+
+
 
 </html>
 
@@ -18427,3 +19304,151 @@ if (
 .average-price-chart-card{padding-bottom:8px!important;}
 @media(max-width:480px){.average-price-chart-card{padding-bottom:6px!important;}}
 </style>
+
+
+<style id="v3-compact-vertical-spacing">
+/* V3 visual-only pass: reduce unused vertical padding/gaps without changing
+   chart plot heights, data, controls, typography scale, or dashboard behavior. */
+.container{
+    padding:8px 16px 12px !important;
+}
+header{
+    padding:10px 14px !important;
+    margin-bottom:7px !important;
+}
+.today{margin-top:3px !important;}
+.live-price{
+    margin-top:8px !important;
+    padding:8px 12px !important;
+    gap:6px !important;
+}
+.live-market-header{gap:7px !important;}
+.connection-status{
+    margin-top:5px !important;
+    height:24px !important;
+    min-height:24px !important;
+    max-height:24px !important;
+    padding:0 7px !important;
+}
+#dashboard{gap:9px !important;}
+.card{
+    padding:10px !important;
+}
+.card-header{margin-bottom:6px !important;}
+.main-price{
+    padding:7px !important;
+    margin-bottom:7px !important;
+}
+.pl-container{
+    gap:6px !important;
+    margin-top:6px !important;
+}
+.pl-box{
+    min-height:54px !important;
+    padding:5px !important;
+}
+.comparison{gap:6px !important;}
+.compare-box{padding:7px !important;}
+.metrics{
+    gap:6px !important;
+    margin-top:6px !important;
+}
+.metric{
+    min-height:51px !important;
+    padding:7px !important;
+}
+.result{margin-top:5px !important;}
+.error{
+    padding:8px 10px !important;
+    margin-bottom:8px !important;
+}
+.error.page-status-report{line-height:1.35 !important;}
+.page-status-report-title{margin-bottom:3px !important;}
+.page-status-report-summary{margin-bottom:5px !important;}
+.page-status-report-detail{margin-top:2px !important;line-height:1.3 !important;}
+.page-status-report-list{gap:3px 8px !important;}
+.loading{padding:20px !important;}
+.crypto-card{padding:7px 11px !important;}
+.signal-board{
+    margin-top:7px !important;
+    padding:8px !important;
+}
+.signal-header{margin-bottom:4px !important;}
+.signal-grid{gap:4px !important;}
+.crypto-portfolio-header{margin-bottom:6px !important;}
+.crypto-portfolio-grid{gap:6px !important;}
+.crypto-portfolio-item{padding:7px 8px !important;}
+.crypto-portfolio-item-top{margin-bottom:4px !important;}
+.rfkj-card{padding:10px 12px 9px !important;}
+.rfkj-header{margin-bottom:5px !important;}
+.rfkj-controls{gap:5px !important;}
+.rfkj-status{
+    margin:4px auto 0 !important;
+    min-height:20px !important;
+    padding:2px 8px !important;
+}
+.rfkj-signals{gap:4px !important;margin-top:3px !important;}
+.rfkj-signal-rows{gap:2px !important;margin-top:3px !important;}
+.rfkj-action-row{margin-top:3px !important;gap:5px !important;}
+.rfkj-matrix-grid{gap:5px !important;}
+.rfkj-slot-bar,.crossover-slot-bar{margin-bottom:5px !important;}
+.crossover-card{padding:7px 9px 7px !important;}
+.crossover-header{min-height:20px !important;margin-bottom:4px !important;}
+.crossover-controls{gap:5px !important;}
+.crossover-grid{gap:5px !important;}
+.global-pulse-section{padding:7px !important;}
+.global-pulse-head{margin-bottom:5px !important;}
+.global-pulse-grid{gap:6px !important;}
+.global-pulse-card{padding:6px 7px 5px !important;}
+.global-pulse-price-row{margin-top:4px !important;}
+.global-pulse-economic{gap:3px !important;}
+.average-price-chart-card{
+    padding:10px 12px 6px !important;
+}
+.average-price-chart-head{margin-bottom:6px !important;}
+
+/* Tablet: keep a little more breathing room than phone, less than desktop. */
+@media (min-width:651px) and (max-width:1100px){
+    .container{padding:8px 12px 12px !important;}
+    header{padding:9px 12px !important;}
+    #dashboard{gap:8px !important;}
+    .card{padding:9px !important;}
+}
+
+/* Mobile: tighten outer whitespace while preserving touch targets and chart height. */
+@media (max-width:650px){
+    .container{padding:6px 7px 12px !important;}
+    header{padding:8px 9px !important;margin-bottom:6px !important;}
+    .live-price{margin-top:6px !important;padding:7px 8px !important;gap:5px !important;}
+    .connection-status{margin-top:4px !important;height:23px !important;min-height:23px !important;max-height:23px !important;}
+    #dashboard{gap:7px !important;}
+    .card{padding:8px !important;}
+    .card-header{margin-bottom:5px !important;}
+    .main-price{padding:6px !important;margin-bottom:6px !important;}
+    .pl-container,.metrics{gap:5px !important;margin-top:5px !important;}
+    .pl-box{min-height:51px !important;padding:4px !important;}
+    .compare-box,.metric{padding:6px !important;}
+    .signal-board{margin-top:6px !important;padding:7px !important;}
+    .crypto-portfolio-header{margin-bottom:5px !important;}
+    .crypto-portfolio-item{padding:6px !important;}
+    .rfkj-card{padding:8px 9px 7px !important;}
+    .rfkj-header{margin-bottom:4px !important;}
+    .rfkj-status{margin-top:3px !important;}
+    .crossover-card{padding:6px 7px !important;}
+    .crossover-header{margin-bottom:3px !important;}
+    .global-pulse-section{padding:6px !important;}
+    .global-pulse-head{margin-bottom:4px !important;}
+    .global-pulse-card{padding:5px 6px !important;}
+    .average-price-chart-card{padding:8px 8px 5px !important;}
+    .average-price-chart-head{margin-bottom:5px !important;}
+}
+
+@media (max-width:380px){
+    .container{padding-left:5px !important;padding-right:5px !important;}
+    header{padding-left:7px !important;padding-right:7px !important;}
+    #dashboard{gap:6px !important;}
+    .card{padding:7px !important;}
+    .average-price-chart-card{padding:7px 6px 5px !important;}
+}
+</style>
+
