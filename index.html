@@ -17996,28 +17996,41 @@ if (
     try{const tx=db.transaction(DB_STORE,'readwrite'),store=tx.objectStore(DB_STORE);for(const p of points){if(valid(p)){const t=Number(p.t),v=Math.round(Number(p.v));store.put({id:t+':'+v,t,v});}}await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('IndexedDB write failed'));tx.onabort=()=>reject(tx.error||new Error('IndexedDB write aborted'));});}finally{db.close();}
   }
   async function migrateHistoryToRoundedIntegers(db, points){
-    const migrationKey='financialDashboardPriceHistoryRoundedIntegersV1';
-    try{if(localStorage.getItem(migrationKey)==='1')return;}catch(e){}
+    // Coin previously called record() from its 500ms draw loop. Compact that legacy
+    // over-sampling once, retaining no more than one point in any rolling 2-minute span.
+    // Use a Coin-only key so the dollar Chart's migration state cannot skip this repair.
+    const migrationKey='financialDashboardCoinHistoryTwoMinuteSamplingV1';
+    try{if(localStorage.getItem(migrationKey)==='1')return points;}catch(e){}
+    const compacted=[];
+    for(const p of points){
+      if(!valid(p))continue;
+      const t=Number(p.t),v=Math.round(Number(p.v));
+      if(!compacted.length||t-Number(compacted[compacted.length-1].t)>=120000)compacted.push({t,v});
+    }
     await new Promise((resolve,reject)=>{
       const tx=db.transaction(DB_STORE,'readwrite'),store=tx.objectStore(DB_STORE);
       store.clear();
-      for(const p of points){if(valid(p)){const t=Number(p.t),v=Math.round(Number(p.v));store.put({id:t+':'+v,t,v});}}
-      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Rounded-history migration failed'));tx.onabort=()=>reject(tx.error||new Error('Rounded-history migration aborted'));
+      for(const p of compacted){if(valid(p)){const t=Number(p.t),v=Math.round(Number(p.v));store.put({id:t+':'+v,t,v});}}
+      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Coin history compaction failed'));tx.onabort=()=>reject(tx.error||new Error('Coin history compaction aborted'));
     });
     try{localStorage.setItem(migrationKey,'1');}catch(e){}
+    return compacted;
   }
   async function loadHistory(){
     let legacy=[];try{const a=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');if(Array.isArray(a))legacy=a.filter(valid).map(p=>({t:Number(p.t),v:Math.round(Number(p.v))}));}catch(e){}
     try{const db=await openHistoryDB();let saved=[];try{saved=await new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readonly'),req=tx.objectStore(DB_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error);});
         historyCache=cleanHistory(saved.concat(legacy));
-        // One-time rewrite removes old decimal-valued cache entries and rekeys them by rounded price.
-        await migrateHistoryToRoundedIntegers(db,historyCache);
+        // One-time repair removes 500ms legacy over-sampling and enforces a 2-minute minimum spacing.
+        historyCache=cleanHistory(await migrateHistoryToRoundedIntegers(db,historyCache));
       }finally{db.close();}
       if(legacy.length){try{localStorage.removeItem(HISTORY_KEY);}catch(e){}}
     }catch(e){historyCache=cleanHistory(legacy);}
     scheduleDraw();
   }
   let lastRecordedLiveValue=null;
+  let lastCoinRecordAt=0;
+  let coinHistoryReady=false;
+  const COIN_RECORD_INTERVAL_MS=120000;
   let coinLatestValue=null;
   function getCurrentLiveValue(){return Number.isFinite(coinLatestValue)&&coinLatestValue>0?coinLatestValue:null;}
   function parseCoinPricePayload(payload){
@@ -18067,6 +18080,7 @@ if (
       localStorage.setItem('financialDashboardCoinLatestValue',String(value));
       localStorage.setItem('financialDashboardCoinLatestTimestamp',String(Number.isFinite(timestamp)?timestamp:Date.now()));
     }catch(e){}
+    record();
     scheduleDraw();
   }
   function getCachedCoinFallback(){
@@ -18118,12 +18132,35 @@ if (
     if(Number.isFinite(fallback)&&fallback>0)coinLatestValue=fallback;
   }catch(e){}
   refreshCoinLatest();
-  setInterval(refreshCoinLatest,5*60*1000);
-  function record(){try{const v=getCurrentLiveValue();if(v===null)return;const a=read(),now=Date.now(),last=a[a.length-1];if(lastRecordedLiveValue===v&&last&&Number(last.v)===v)return;if(!last||Number(last.v)!==v){const point={t:now,v};historyCache=cleanHistory(a.concat(point));persistPoints([point]).catch(()=>{});}lastRecordedLiveValue=v;}catch(e){}}
+  // The Coin source updates every 2 minutes; keep its fetch aligned with that cadence.
+  setInterval(refreshCoinLatest,2*60*1000);
+  function record(){
+    try{
+      if(!coinHistoryReady)return;
+      const live=getCurrentLiveValue();
+      if(live===null)return;
+      const now=Date.now();
+      // Coin remains visually live, but history is sampled at most once every 2 minutes.
+      // Match the dollar Chart's whole-integer comparison to prevent decimal jitter writes.
+      if(lastCoinRecordAt&&now-lastCoinRecordAt<COIN_RECORD_INTERVAL_MS)return;
+      lastCoinRecordAt=now;
+      const v=Math.round(live);
+      if(!Number.isFinite(v)||v<=0)return;
+      const a=read(),last=a[a.length-1];
+      if(last&&now-Number(last.t)<COIN_RECORD_INTERVAL_MS)return;
+      if(lastRecordedLiveValue===v&&last&&Number(last.v)===v)return;
+      if(!last||Number(last.v)!==v){
+        const point={t:now,v};
+        historyCache=cleanHistory(a.concat(point));
+        persistPoints([point]).catch(()=>{});
+      }
+      lastRecordedLiveValue=v;
+    }catch(e){}
+  }
   function fmt(v){return Math.round(Number(v)).toLocaleString('en-US',{maximumFractionDigits:0});}
   function niceStep(raw){const power=Math.pow(10,Math.floor(Math.log10(Math.max(raw,1))));const n=raw/power;return (n<=1?1:n<=2?2:n<=5?5:10)*power;}
   function draw(){
-    record();const now=Date.now(),defaultSpan=range==='hour'?3600000:range==='day'?86400000:range==='week'?7*86400000:range==='month'?30*86400000:range==='threeMonths'?91*86400000:range==='sixMonths'?183*86400000:range==='year'?365*86400000:range==='fiveYears'?5*365*86400000:Math.max(0,now-Math.min(read().length?Math.min(...read().map(p=>p.t)):now,chartTransactions.length?Math.min(...chartTransactions.map(t=>t.t)):now));
+    const now=Date.now(),defaultSpan=range==='hour'?3600000:range==='day'?86400000:range==='week'?7*86400000:range==='month'?30*86400000:range==='threeMonths'?91*86400000:range==='sixMonths'?183*86400000:range==='year'?365*86400000:range==='fiveYears'?5*365*86400000:Math.max(0,now-Math.min(read().length?Math.min(...read().map(p=>p.t)):now,chartTransactions.length?Math.min(...chartTransactions.map(t=>t.t)):now));
     const chartStart=customRange?customRange.start:now-defaultSpan,chartEnd=customRange?customRange.end:now+60000,span=Math.max(1,chartEnd-chartStart);updateNavigator();
     const rawPts=read().filter(p=>p.t>=chartStart&&p.t<=chartEnd).sort((a,b)=>a.t-b.t);
     // Keep full-fidelity records in IndexedDB; aggregate only the plotted view into fixed time buckets.
@@ -18384,7 +18421,7 @@ if (
   function saveRemoteMeta(meta){try{localStorage.setItem(REMOTE_META_KEY,JSON.stringify(meta));}catch(e){}}
   // Refresh priority: Hour > Day > Month > 6M > Year > 5Y > All.
   // Poll cadence follows the currently selected range; the Hour range always gets the fastest check.
-  function cadenceForRange(name=range){return 5*60000;}
+  function cadenceForRange(name=range){return name==='hour'?60000:name==='day'?5*60000:name==='week'?60*60000:name==='month'?4*3600000:86400000;}
   let autoSyncRunning=false,lastSyncAt=syncStateFor(range).completedAt||0,lastScheduledSyncAt=syncStateFor(range).completedAt||0;
   async function checkRemoteHistory(force){
     const syncRange=range;
@@ -18410,6 +18447,10 @@ if (
       let meta={};try{meta=JSON.parse(localStorage.getItem(REMOTE_META_KEY)||'{}')||{};}catch(e){}
       const sources=range==='hour'?[WORKER_URL]:HISTORY_URLS;
       const existing=new Set(read().map(p=>String(Number(p.t))+':'+String(Number(p.v))));
+      const timeBuckets=new Map();
+      const rememberTime=t=>{const bucket=Math.floor(Number(t)/60000);if(!timeBuckets.has(bucket))timeBuckets.set(bucket,[]);timeBuckets.get(bucket).push(Number(t));};
+      const hasNearbyTime=t=>{const bucket=Math.floor(Number(t)/60000);for(let b=bucket-2;b<=bucket+2;b++){for(const known of (timeBuckets.get(b)||[])){if(Math.abs(known-Number(t))<120000)return true;}}return false;};
+      for(const point of read())rememberTime(point.t);
       const additions=[];
       for(let sourceIndex=0;sourceIndex<sources.length;sourceIndex++){
         const url=sources[sourceIndex],key=url===WORKER_URL?'worker':'github';
@@ -18452,7 +18493,12 @@ if (
             incoming=normalizeImported(payload);
           }
           if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.72,'processing');
-          for(const point of incoming){const k=String(Number(point.t))+':'+String(Number(point.v));if(!existing.has(k)){existing.add(k);additions.push({t:Number(point.t),v:Number(point.v)});}}
+          for(const point of incoming){
+            const t=Number(point.t),v=Number(point.v),k=String(t)+':'+String(v);
+            if(!existing.has(k)&&!hasNearbyTime(t)){
+              existing.add(k);additions.push({t,v});rememberTime(t);
+            }
+          }
           meta[key]={url,count:incomingCount,initialized:true,checkedAt:Date.now(),processed:incoming.length,added:incoming.length};
           if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.94,'processing');
         }catch(sourceError){const detail=String(sourceError&&sourceError.message||sourceError||'Request failed');sourceErrors.push((key==='worker'?'Worker':'GitHub')+': '+detail);meta[key]={...(meta[key]||{}),url,lastError:detail,failedAt:Date.now()};console.warn('Price Chart history sync failed for '+url+':',sourceError);}
@@ -18495,7 +18541,6 @@ if (
   }
   if(exportButton)exportButton.addEventListener('click',()=>{
     try{
-      record();
       const history=cleanHistory(read());
       const payload={format:'CoinChartHistory',version:2,encoding:'pairs',count:history.length,history:history.map(p=>[Number(p.t),Math.round(Number(p.v))])};
       const json=JSON.stringify(payload);
@@ -18519,26 +18564,32 @@ if (
   // A missing local history is an initial sync even if an old saved schedule says the next peak is later.
   // This also repairs empty storage after a long period away from the page.
   loadHistory().then(()=>{
+    coinHistoryReady=true;
+    record();
     const state=syncStateFor(range);
     if(!read().length||!state.nextSyncAt||Date.now()>=state.nextSyncAt){setChartProgress(3,'processing');checkRemoteHistory(true);}
     else restoreRangeProgress();
   }).catch(err=>{
+    coinHistoryReady=true;
+    record();
     if(typeof setPageIssue==='function')setPageIssue('coin-chart-history-sync',String(err&&err.message||err||'Storage failed'),'error');
     const state=syncStateFor(range);if(!read().length||!state.nextSyncAt||Date.now()>=state.nextSyncAt){setChartProgress(3,'processing');checkRemoteHistory(true);}else restoreRangeProgress();
   });
-  // The live page average is sampled frequently; remote checks are throttled according to range.
-  // Keep recording live values every 500 ms, but do not rebuild the SVG while the
-  // pointer is over the chart: replacing its DOM repeatedly makes hover labels blink.
+  // Keep the Coin chart UI refreshing at 500ms; history sampling is independently throttled to 2 minutes.
+  // Do not rebuild the SVG while the pointer is over the chart: replacing its DOM repeatedly makes hover labels blink.
   // The chart catches up immediately after the pointer leaves the plot.
+  // Persist a changed Coin value at most once every 2 minutes.
+  setInterval(record,COIN_RECORD_INTERVAL_MS);
+  // The chart UI and live value continue refreshing at 500ms; history sampling is separate.
   setInterval(()=>{
-    record();if(!plot.matches(':hover'))scheduleDraw();
+    if(!plot.matches(':hover'))scheduleDraw();
     const now=Date.now(),rangeState=syncStateFor(range);
     if(rangeState.nextSyncAt&&now>=rangeState.nextSyncAt-5000&&now<rangeState.nextSyncAt&&chartProgressLabel&&chartProgressLabel.dataset.state==='complete')setChartProgress(0,'idle');
     if(!autoSyncRunning&&rangeState.nextSyncAt&&now>=rangeState.nextSyncAt)checkRemoteHistory(true);
     else if(!rangeState.nextSyncAt&&now-(rangeState.completedAt||0)>=cadenceForRange(range))checkRemoteHistory(true);
   },500);
   plot.addEventListener('pointerleave',()=>scheduleDraw(),{passive:true});
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){const state=syncStateFor(range),now=Date.now();if(state.nextSyncAt&&now>=state.nextSyncAt-5000&&now<state.nextSyncAt&&state.completedAt)setChartProgress(0,'idle');if(!state.nextSyncAt||now>=state.nextSyncAt)checkRemoteHistory(true);}});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){record();const state=syncStateFor(range),now=Date.now();if(state.nextSyncAt&&now>=state.nextSyncAt-5000&&now<state.nextSyncAt&&state.completedAt)setChartProgress(0,'idle');if(!state.nextSyncAt||now>=state.nextSyncAt)checkRemoteHistory(true);}});
   window.addEventListener('online',()=>{const state=syncStateFor(range);if(!state.nextSyncAt||Date.now()>=state.nextSyncAt)checkRemoteHistory(true);});
   // First render after layout, then redraw whenever the chart container itself changes size
   // (including WebView startup, orientation changes, and page refresh).
