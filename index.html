@@ -6963,23 +6963,25 @@ h1 {
 const WORKER_URLS = {
     crypto: [
         "https://coin.rxw.workers.dev/",
-        "https://api.cors.syrins.tech/?url=https%3A%2F%2Fcoin.rxw.workers.dev%2F"
+        "https://proxy.cors.dev/https://coin.rxw.workers.dev/"
     ],
     email:
         "https://email.rxw.workers.dev/",
-    // First top dollar price: YEKUSD rate worker.
+    // First top dollar price: USDD + YEKUSD workers.
     usd: [
+        "https://usdd.rxw.workers.dev/",
+        "https://proxy.cors.dev/https://usdd.rxw.workers.dev/",
         "https://yekusd-rateusd.rxw.workers.dev/",
-        "https://api.cors.syrins.tech/?url=https%3A%2F%2Fyekusd-rateusd.rxw.workers.dev%2F"
+        "https://proxy.cors.dev/https://yekusd-rateusd.rxw.workers.dev/"
     ],
     // Second top dollar price: BahaUSD worker.
     yekusd: [
         "https://bahausd.rxw.workers.dev/",
-        "https://api.cors.syrins.tech/?url=https%3A%2F%2Fbahausd.rxw.workers.dev%2F"
+        "https://proxy.cors.dev/https://bahausd.rxw.workers.dev/"
     ],
     signal: [
         "https://coinsignaltable.rxw.workers.dev/",
-        "https://api.cors.syrins.tech/?url=https%3A%2F%2Fcoinsignaltable.rxw.workers.dev%2F"
+        "https://proxy.cors.dev/https://coinsignaltable.rxw.workers.dev/"
     ]
 };
 function buildApiProxyFallbacks(targetUrl) {
@@ -6987,11 +6989,9 @@ function buildApiProxyFallbacks(targetUrl) {
     if (!target) {
         return [];
     }
-    const encoded = encodeURIComponent(target);
     return [
         target,
-        `https://api.cors.syrins.tech/?url=${encoded}`,
-        `https://api.allorigins.win/raw?url=${encoded}`
+        `https://proxy.cors.dev/${target}`
     ].filter((url, index, list) => list.indexOf(url) === index);
 }
 async function fetchWithFallback(urls, options = {}) {
@@ -8782,34 +8782,53 @@ function updateYekusdConnectionColor(
     );
 }
 /* =====================================================
+   VALID TOP DOLLAR PRICE FETCH
+   A source is accepted only when its body is a positive finite number.
+   HTTP 200 with an empty/zero/non-numeric body advances to the next URL.
+===================================================== */
+function parseValidTopDollarPrice(raw) {
+    const value = String(raw ?? "").trim();
+    if (!value) return null;
+    // Accept plain numbers, including thousands separators; reject JSON,
+    // labels, NaN, Infinity, zero and negative values.
+    const normalized = value.replace(/,/g, "");
+    if (!/^(?:\d+\.?\d*|\.\d+)$/.test(normalized)) return null;
+    const number = Number(normalized);
+    return Number.isFinite(number) && number > 0 ? value : null;
+}
+async function fetchValidTopDollarPrice(urls) {
+    let lastError = null;
+    for (const url of (Array.isArray(urls) ? urls : [])) {
+        try {
+            const response = await fetchWithTimeout(url, { cache: "no-store" });
+            if (!response.ok) {
+                lastError = new Error(`HTTP ${response.status}`);
+                continue;
+            }
+            const body = await response.text();
+            const validValue = parseValidTopDollarPrice(body);
+            if (validValue !== null) return validValue;
+            lastError = new Error("Empty, zero or non-numeric price response");
+            console.warn("Invalid top dollar price; trying next source:", url);
+        } catch (error) {
+            lastError = error;
+            console.warn("Top dollar price source failed; trying next source:", url, error);
+        }
+    }
+    throw lastError || new Error("All top dollar price sources unavailable");
+}
+/* =====================================================
    LOAD YEKUSD
 ===================================================== */
 async function loadYekusd() {
     // Cache-first: show the last valid value immediately, then fetch fresh data.
     const cachedFirst = loadCachedYekusdPrice();
-    if (cachedFirst) {
+    if (parseValidTopDollarPrice(cachedFirst) !== null) {
         safeText("yekusd", cachedFirst);
         updateYekusdConnectionColor(false);
     }
     try {
-         const response =
-            await fetchWithFallback(
-                WORKER_URLS.yekusd
-            );
-        if (!response.ok) {
-            throw new Error(
-                "YEKUSD worker unavailable"
-            );
-        }
-        const text =
-            await response.text();
-        const value =
-            text.trim();
-        if (!value) {
-            throw new Error(
-                "YEKUSD empty response"
-            );
-        }
+        const value = await fetchValidTopDollarPrice(WORKER_URLS.yekusd);
         safeText(
             "yekusd",
             value
@@ -8830,7 +8849,7 @@ async function loadYekusd() {
             loadCachedYekusdPrice();
         safeText(
             "yekusd",
-            cached || "-"
+            parseValidTopDollarPrice(cached) !== null ? cached : "-"
         );
         updateYekusdConnectionColor(
             false
@@ -8882,29 +8901,12 @@ function updateUsdTxtConnectionColor(
 async function loadUsdTxt() {
     // Cache-first: show the last valid value immediately, then fetch fresh data.
     const cachedFirst = loadCachedUsdTxtPrice();
-    if (cachedFirst) {
+    if (parseValidTopDollarPrice(cachedFirst) !== null) {
         safeText("usdTxtPrice", cachedFirst);
         updateUsdTxtConnectionColor(false);
     }
     try {
-const response =
-    await fetchWithFallback(
-        WORKER_URLS.usd
-    );
-        if (!response.ok) {
-            throw new Error(
-                "USD worker unavailable"
-            );
-        }
-        const text =
-            await response.text();
-        const value =
-            text.trim();
-        if (!value) {
-            throw new Error(
-                "USD empty response"
-            );
-        }
+const value = await fetchValidTopDollarPrice(WORKER_URLS.usd);
         safeText(
             "usdTxtPrice",
             value
@@ -8925,7 +8927,7 @@ const response =
             loadCachedUsdTxtPrice();
         safeText(
             "usdTxtPrice",
-            cached || "-"
+            parseValidTopDollarPrice(cached) !== null ? cached : "-"
         );
         updateUsdTxtConnectionColor(
             false
@@ -10821,12 +10823,9 @@ async function getExirPrice(apiUrl = EXIR_ORDERBOOK_API) {
     // EXIR-specific fallback order. Do not depend on a generic proxy list: if
     // the direct EXIR host is unreachable on the current network, cors.dev is
     // the first server-side HTTPS fallback, followed by the legacy proxies.
-    const encodedTarget = encodeURIComponent(target);
     const exirUrls = [
         target,
-        `https://proxy.cors.dev/${target}`,
-        `https://api.cors.syrins.tech/?url=${encodedTarget}`,
-        `https://api.allorigins.win/raw?url=${encodedTarget}`
+        `https://proxy.cors.dev/${target}`
     ];
     /* EXIR has its own fallback queue. Do NOT pass the array to
        fetchApiWithProxyFallback(), which accepts one URL string.
@@ -11024,14 +11023,13 @@ async function loadDashboardData(options = {}) {
     dashboardLoadInProgress =
         (async () => {
             /*
-               These requests are intentionally independent.
-               Dashboard does not wait for them.
+               Top-of-page dollar prices are refreshed by the dedicated
+               startup/refresh path before other dashboard market requests.
+               Keep only the independent crypto-value request here.
             */
-            Promise.allSettled([
-                loadUsdTxt(),
-                loadYekusd(),
-                loadCryptoValue()
-            ]);
+            void loadCryptoValue().catch(error =>
+                console.warn("Crypto value refresh failed:", error)
+            );
             let data =
                 loadCachedDashboardData();
             let usingCachedData =
@@ -12729,6 +12727,12 @@ function startAutoRefresh() {
                     seconds =
                         10;
                     try {
+                        // Keep the two top-of-page dollar prices at the front
+                        // of each refresh cycle; do not wait for other APIs.
+                        void Promise.allSettled([
+                            loadUsdTxt(),
+                            loadYekusd()
+                        ]);
                         await loadDashboardData();
                         await loadCryptoSignals();
                     }
@@ -12960,6 +12964,10 @@ window.addEventListener(
             clearPageIssue("connection");
         }, 2000);
         try {
+            void Promise.allSettled([
+                loadUsdTxt(),
+                loadYekusd()
+            ]);
             await loadDashboardData();
         }
         catch (error) {
@@ -13026,9 +13034,7 @@ const CRYPTO_COINGECKO_IDS = {
     AVAX: "avalanche-2"
 };
 const MEXC_CORS_PROXY =
-    "https://api.cors.syrins.tech/?url=";
-const MEXC_CORS_PROXY_2 =
-    "https://api.allorigins.win/raw?url=";
+    "https://proxy.cors.dev/";
 
 function cryptoSpotSymbol(asset) {
     const raw = String(asset || "").replace(/[-_\/]/g, "").toUpperCase();
@@ -13081,13 +13087,10 @@ async function cryptoFetchSource(source, coin) {
     */
     let response;
     if (source.id === "mexc" || source.id === "binance") {
-        const encoded = encodeURIComponent(apiUrl);
         const exchangeName = source.id.toUpperCase();
         const exchangeUrls = [
             apiUrl,
-            `https://api.cors.syrins.tech/?url=${encoded}`,
-            `https://api.allorigins.win/raw?url=${encoded}`,
-            `https://corsproxy.io/?url=${encoded}`
+            `https://proxy.cors.dev/${apiUrl}`
         ];
         let lastError = null;
         for (const url of exchangeUrls) {
@@ -13482,14 +13485,7 @@ async function fetchMexcKlines(
     );
     const requestUrls = [
         directUrl.toString(),
-        MEXC_CORS_PROXY +
-            encodeURIComponent(
-                directUrl.toString()
-            ),
-        MEXC_CORS_PROXY_2 +
-            encodeURIComponent(
-                directUrl.toString()
-            )
+        MEXC_CORS_PROXY + directUrl.toString()
     ];
     for (const requestUrl of requestUrls) {
         try {
@@ -16174,10 +16170,9 @@ async function crossoverFetchDailyPercent(asset){
     const binanceUrl=`https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(symbol)}`;
     const urls=[
         mexcUrl,
-        `https://api.cors.syrins.tech/?url=${encodeURIComponent(mexcUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(mexcUrl)}`,
+        `https://proxy.cors.dev/${mexcUrl}`,
         binanceUrl,
-        `https://api.cors.syrins.tech/?url=${encodeURIComponent(binanceUrl)}`
+        `https://proxy.cors.dev/${binanceUrl}`
     ];
     for(const url of urls){
         try{
@@ -16824,6 +16819,13 @@ async function init() {
            2) Start every network refresh without blocking first paint.
            3) Never expose the old "Loading..." gate again.
         */
+        // TOP PRIORITY: paint cached dollar values and start both live price
+        // requests before GlobalPulse, crypto, dashboard and other APIs.
+        const topDollarBoot = Promise.allSettled([
+            loadUsdTxt(),
+            loadYekusd()
+        ]);
+
         startGlobalPulse();
 
         const cachedBoot = loadDashboardData({ cacheOnly: true })
@@ -16840,6 +16842,9 @@ async function init() {
         startCryptoPortfolioAutoRefresh();
 
         await cachedBoot;
+        // These requests run independently; this await only observes their
+        // completion and does not delay the cached dashboard first paint.
+        void topDollarBoot;
 
         /*
            Refresh live data only after the cached UI is already visible.
