@@ -11160,54 +11160,107 @@ function connectExirWebSocket() {
     };
 }
 
-/* Primary source: Fridnika worker's averaged USDT/IRT quote.
-   Fallback: the existing EXIR live orderbook WebSocket below. */
+/* Primary EXIR source: the worker returns a plain numeric USDT/IRT price.
+   If the worker is unavailable or returns an invalid value, fall back to the
+   existing EXIR WebSocket orderbook. No dashboard calculations or markup change. */
 const EXIR_WORKER_PRICE_URL = "https://tether.fridnika.workers.dev/";
 
-async function fetchExirWorkerPrice(timeoutMs = 7000) {
-    const response = await fetchWithTimeout(EXIR_WORKER_PRICE_URL, {
-        method: "GET",
-        headers: { "Accept": "text/plain, application/json" },
-        cache: "no-store"
-    }, timeoutMs);
-    if (!response?.ok) throw new Error("EXIR worker HTTP " + (response?.status ?? "unknown"));
-
-    const body = (await response.text()).trim();
-    let raw = body;
-    // Accept a plain numeric response (e.g. 257747), or a JSON number/string.
-    try {
-        const parsed = JSON.parse(body);
-        if (typeof parsed === "number" || typeof parsed === "string") raw = parsed;
-    } catch { /* The worker may return a plain text number. */ }
-
-    const price = exirNumber(raw);
-    if (!Number.isFinite(price) || price <= 0) throw new Error("Invalid EXIR worker price response");
-    return price;
-}
-
-/* Called by the dashboard's existing market-refresh cycle.
-   Try the averaged worker on every refresh; use the unchanged EXIR WebSocket
-   orderbook only when the worker cannot provide a valid price. */
 async function getExirPrice() {
+    // 1) Always retry the worker first on every normal price refresh.
+    // This means recovery is automatic: as soon as the worker responds again,
+    // its averaged/conversion price immediately becomes the displayed EXIR price.
     try {
-        const workerPrice = await fetchExirWorkerPrice();
+        const response = await fetchWithTimeout(EXIR_WORKER_PRICE_URL, {
+            method: "GET",
+            headers: { "Accept": "text/plain" },
+            cache: "no-store"
+        }, 4500);
+
+        if (!response || !response.ok) {
+            throw new Error("EXIR worker HTTP " + (response?.status ?? "unknown"));
+        }
+
+        const rawPrice = (await response.text()).trim();
+        // Worker returns a plain number, for example: 257747.
+        if (!/^\d+(?:\.\d+)?$/.test(rawPrice)) {
+            throw new Error("Invalid EXIR worker response");
+        }
+
+        const workerPrice = Number(rawPrice);
+        if (!Number.isFinite(workerPrice) || workerPrice <= 0) {
+            throw new Error("Invalid EXIR worker price");
+        }
+
         exirPublishLivePrice(workerPrice);
         return workerPrice;
-    } catch (error) {
+    } catch (workerError) {
         recordApiDiagnostic({
             url: EXIR_WORKER_PRICE_URL,
             outcome: "exir-worker-fallback",
-            detail: error?.message || String(error)
+            detail: workerError?.message || String(workerError)
         });
     }
 
+    // 2) Worker failed: use the original EXIR REST API price.
+    // Try ticker first, then the orderbook's lowest ask. Direct requests are
+    // preferred; the existing CORS proxy/native bridge are only fallbacks.
+    const exirRestSources = [
+        { url: EXIR_TICKER_API, parser: extractExirTickerPrice, name: "ticker" },
+        { url: EXIR_ORDERBOOK_API, parser: extractExirLowestAsk, name: "orderbook" }
+    ];
+
+    for (const source of exirRestSources) {
+        try {
+            let price;
+            try {
+                price = await fetchExirDirectPrice(source.url, source.parser, 5000);
+            } catch (directError) {
+                recordApiDiagnostic({
+                    url: source.url,
+                    outcome: "exir-rest-direct-fallback",
+                    detail: directError?.message || String(directError)
+                });
+                try {
+                    price = await fetchExirProxyPrice(source.url, source.parser, 4500);
+                } catch (proxyError) {
+                    if (window.AndroidNotifications &&
+                        typeof window.AndroidNotifications.fetchExirPriceAsync === "function") {
+                        price = await getNativeExirPrice(source.url);
+                    } else {
+                        throw proxyError;
+                    }
+                }
+            }
+
+            if (Number.isFinite(price) && price > 0) {
+                exirPublishLivePrice(price);
+                recordApiDiagnostic({
+                    url: source.url,
+                    outcome: "exir-rest-fallback-success",
+                    detail: "EXIR " + source.name + " is active while the primary worker is unavailable."
+                });
+                return price;
+            }
+        } catch (restError) {
+            recordApiDiagnostic({
+                url: source.url,
+                outcome: "exir-rest-source-failed",
+                detail: restError?.message || String(restError)
+            });
+        }
+    }
+
+    // 3) Last resort: retain the existing live EXIR WebSocket orderbook.
     if (!exirSocketStarted) {
         exirSocketStarted = true;
         connectExirWebSocket();
     }
 
     const current = exirBestAsk();
-    if (exirHasSnapshot && current !== null) return current;
+    if (exirHasSnapshot && current !== null) {
+        exirPublishLivePrice(current);
+        return current;
+    }
 
     return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
