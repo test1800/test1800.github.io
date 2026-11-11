@@ -11433,16 +11433,7 @@ async function loadDashboardData(options = {}) {
             );
             // Migrate any R01 bank-rate cache before saveLocalData narrows the
             // snapshot to transactions and cryptoHoldings only.
-            const bankRatePeriods = loadBankRatePeriodsCache();
-            if (bankRatePeriods.length) {
-                clearPageIssue("bank-rate-history");
-            } else {
-                setPageIssue(
-                    "bank-rate-history",
-                    "Bank-rate history is not configured; bank-adjusted figures currently exclude bank interest",
-                    "warn"
-                );
-            }
+            let bankRatePeriods = loadBankRatePeriodsCache();
             let data = loadCachedDashboardData();
             if (!isValidDashboardData(data)) data = null;
             let usingCachedData =
@@ -11489,6 +11480,31 @@ async function loadDashboardData(options = {}) {
             } else {
                 usingCachedData = true;
             }
+
+            // Restore the R00 source of truth for bank-adjusted performance:
+            // use bankRatePeriods delivered by data.json, then persist it in
+            // the dedicated R03 cache so later compact snapshots retain it.
+            if (Array.isArray(data?.bankRatePeriods) && data.bankRatePeriods.length) {
+                try {
+                    const freshBankRatePeriods = parseBankRatePeriods(data.bankRatePeriods);
+                    if (freshBankRatePeriods.length) {
+                        bankRatePeriods = freshBankRatePeriods;
+                        saveBankRatePeriodsCache(bankRatePeriods);
+                    }
+                } catch (error) {
+                    console.warn("Could not refresh bank-rate history; retaining the last valid cache:", error);
+                }
+            }
+            if (bankRatePeriods.length) {
+                clearPageIssue("bank-rate-history");
+            } else {
+                setPageIssue(
+                    "bank-rate-history",
+                    "Bank-rate history is not configured; bank-adjusted figures currently exclude bank interest",
+                    "warn"
+                );
+            }
+
             /*
                CRYPTO PORTFOLIO
                Independent MEXC market panel.
