@@ -13496,15 +13496,15 @@ const CRYPTO_PRICE_FAILOVER_RETRY_MS = 30 * 1000;
 const CRYPTO_PRICE_SOURCES = [
     {
         id: "mexc",
-        url: coin => `https://api.mexc.com/api/v3/ticker/price?symbol=${encodeURIComponent(cryptoSpotSymbol(coin))}`
+        url: coin => `https://api.mexc.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(cryptoSpotSymbol(coin))}`
     },
     {
         id: "binance",
-        url: coin => `https://api.binance.com/api/v3/ticker/price?symbol=${encodeURIComponent(cryptoSpotSymbol(coin))}`
+        url: coin => `https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(cryptoSpotSymbol(coin))}`
     },
     {
         id: "coingecko",
-        url: coin => `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(CRYPTO_COINGECKO_IDS[coin] || "")}&vs_currencies=usd`
+        url: coin => `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(CRYPTO_COINGECKO_IDS[coin] || "")}&vs_currencies=usd&include_24hr_change=true`
     },
     {
         id: "nestex",
@@ -13599,14 +13599,29 @@ async function cryptoFetchSource(source, coin) {
     }
 
     let price = null, previousClose = null, changePct = null;
-    if (source.id === "mexc" || source.id === "binance") price = Number(payload.price ?? payload.lastPrice);
-    else if (source.id === "coingecko") price = Number(payload?.[CRYPTO_COINGECKO_IDS[coin]]?.usd);
+    if (source.id === "mexc" || source.id === "binance") {
+        price = Number(payload.lastPrice ?? payload.price);
+        previousClose = Number(payload.prevClosePrice);
+        // Use only the percentage explicitly returned by the exchange API.
+        changePct =
+            payload.priceChangePercent == null ||
+            String(payload.priceChangePercent).trim() === ""
+                ? null
+                : Number(payload.priceChangePercent);
+    }
+    else if (source.id === "coingecko") {
+        const coinData = payload?.[CRYPTO_COINGECKO_IDS[coin]];
+        price = Number(coinData?.usd);
+        // CoinGecko supplies its own 24h percentage when requested.
+        changePct =
+            coinData?.usd_24h_change == null
+                ? null
+                : Number(coinData.usd_24h_change);
+    }
     else if (source.id === "nestex") {
         price = Number(payload.last_price ?? payload.lastPrice);
-        previousClose = Number(payload.oldltp24h);
-        if (Number.isFinite(price) && price > 0 && Number.isFinite(previousClose) && previousClose > 0) {
-            changePct = ((price - previousClose) / previousClose) * 100;
-        }
+        // oldltp24h is a reference price, not an API percentage.
+        // Do not derive a percentage from it.
     }
     if (!Number.isFinite(price) || price <= 0) throw new Error(`${source.id} returned invalid price`);
     return {
@@ -13998,34 +14013,21 @@ async function getMexcCryptoData(symbol) {
         .replace(/USDT$/i, "")
         .toUpperCase();
 
-    const cached = loadCryptoPortfolioCache(symbol);
     const live = await getUnifiedCryptoPrice(coin, { preferPrimary: true });
 
     /*
-       MEXC and CoinGecko's requested simple price endpoints intentionally
-       provide the current price only. Preserve a previously known daily
-       baseline when available; Nestex supplies oldltp24h directly.
+       Daily percentage must come directly from the active API source.
+       Do not calculate it from current/previous prices and do not reuse an
+       old cached percentage when the active API does not provide one.
     */
-    let previousClose = Number(live.previousClose);
-    let changePct = Number(live.changePct);
-    if (!Number.isFinite(previousClose) || previousClose <= 0) {
-        previousClose = Number(cached?.previousClose);
-    }
-    if (!Number.isFinite(changePct)) {
-        const cachedPct = Number(cached?.changePct);
-        if (Number.isFinite(cachedPct)) {
-            changePct = cachedPct;
-        } else if (
-            Number.isFinite(previousClose) && previousClose > 0 &&
-            Number.isFinite(live.price) && live.price > 0
-        ) {
-            changePct = ((live.price - previousClose) / previousClose) * 100;
-        }
-    }
+    const previousClose =
+        live.previousClose == null ? null : Number(live.previousClose);
+    const changePct =
+        live.changePct == null ? null : Number(live.changePct);
 
     return {
         price: live.price,
-        previousClose: Number.isFinite(previousClose) && previousClose > 0 ? previousClose : live.price,
+        previousClose: Number.isFinite(previousClose) && previousClose > 0 ? previousClose : null,
         changePct: Number.isFinite(changePct) ? changePct : null,
         time: live.time,
         source: live.source,
@@ -14043,7 +14045,8 @@ function renderCryptoPortfolio(
         return;
     }
     let totalValue = 0;
-    let totalPreviousValue = 0;
+    let previousTotalValue = 0;
+    let totalChangeComplete = true;
     const coins =
         Object.keys(holdings || {});
     // DOGE and BNB are swapped only in display order.
@@ -14079,6 +14082,9 @@ function renderCryptoPortfolio(
                         Number(market.price)
                     )
                 ) {
+                    if (Number.isFinite(amount) && amount > 0) {
+                        totalChangeComplete = false;
+                    }
                     return `
                         <div class="crypto-portfolio-item flat">
                             <div class="crypto-portfolio-item-top">
@@ -14107,21 +14113,23 @@ function renderCryptoPortfolio(
                     Number(
                         market.price
                     );
-                const previousClose =
-                    Number(
-                        market.previousClose
-                    );
                 const value =
                     Number.isFinite(amount)
                         ? amount * price
                         : 0;
-                const previousValue =
-                    Number.isFinite(amount) &&
-                    Number.isFinite(previousClose)
-                        ? amount * previousClose
-                        : value;
                 totalValue += value;
-                totalPreviousValue += previousValue;
+                // Total Value change is a weighted portfolio return. Each
+                // asset's 24h return itself must come directly from its API.
+                const assetChangePct =
+                    market.changePct == null ? NaN : Number(market.changePct);
+                if (
+                    Number.isFinite(amount) && amount > 0 &&
+                    Number.isFinite(assetChangePct) && assetChangePct > -100
+                ) {
+                    previousTotalValue += value / (1 + assetChangePct / 100);
+                } else if (Number.isFinite(amount) && amount > 0) {
+                    totalChangeComplete = false;
+                }
                 const className =
                     getCryptoPortfolioClass(
                         market.changePct
@@ -14180,39 +14188,19 @@ function renderCryptoPortfolio(
             totalValue
         )
     );
-    const totalChangePct =
-        totalPreviousValue > 0
-            ? (
-                (
-                    totalValue -
-                    totalPreviousValue
-                ) /
-                totalPreviousValue
-            ) *
-            100
-            :
-            null;
-    const totalChange =
-        $("cryptoPortfolioTotalChange");
+    // Derive the portfolio's weighted 24h return from the API-provided
+    // percentage for each holding. No per-coin percentage is synthesized.
+    const totalChange = $("cryptoPortfolioTotalChange");
     if (totalChange) {
-        totalChange.textContent =
-            formatCryptoPct(
-                totalChangePct
-            );
-        totalChange.classList.remove(
-            "profit",
-            "loss"
-        );
-        if (
-            Number.isFinite(
-                totalChangePct
-            )
-        ) {
-            totalChange.classList.add(
-                totalChangePct >= 0
-                    ? "profit"
-                    : "loss"
-            );
+        const totalPct =
+            totalChangeComplete && previousTotalValue > 0
+                ? ((totalValue / previousTotalValue) - 1) * 100
+                : null;
+        totalChange.textContent = formatCryptoPct(totalPct);
+        totalChange.classList.remove("profit", "loss");
+        if (Number.isFinite(totalPct)) {
+            if (totalPct > 0) totalChange.classList.add("profit");
+            else if (totalPct < 0) totalChange.classList.add("loss");
         }
     }
 }
