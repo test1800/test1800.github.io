@@ -6984,6 +6984,173 @@ const WORKER_URLS = {
         "https://proxy.cors.dev/https://coinsignaltable.rxw.workers.dev/"
     ]
 };
+/* =====================================================
+   API TRANSPORT / RELIABILITY LAYER (R01)
+   - Full-response timeout (headers AND body)
+   - Bounded concurrent network requests
+   - Identical in-flight request de-duplication
+   - Per-attempt diagnostics for troubleshooting
+===================================================== */
+const API_MAX_CONCURRENT_REQUESTS = 8;
+const API_QUEUE_TIMEOUT_MS = 15000;
+const API_DIAGNOSTIC_LIMIT = 100;
+let apiActiveRequests = 0;
+const apiRequestQueue = [];
+const apiInFlightRequests = new Map();
+const apiDiagnosticLog = [];
+let apiNonIdempotentRequestSequence = 0;
+try {
+    const savedDiagnostics = JSON.parse(sessionStorage.getItem("financialDashboardApiDiagnostics") || "[]");
+    if (Array.isArray(savedDiagnostics)) apiDiagnosticLog.push(...savedDiagnostics.slice(-API_DIAGNOSTIC_LIMIT));
+} catch (e) {}
+
+function recordApiDiagnostic(entry) {
+    const item = {
+        at: new Date().toISOString(),
+        durationMs: Math.max(0, Number(entry?.durationMs) || 0),
+        method: String(entry?.method || "GET"),
+        url: String(entry?.url || "").slice(0, 500),
+        status: entry?.status !== null && entry?.status !== undefined && Number.isFinite(Number(entry.status)) ? Number(entry.status) : null,
+        outcome: String(entry?.outcome || "unknown"),
+        detail: String(entry?.detail || "").slice(0, 240)
+    };
+    apiDiagnosticLog.push(item);
+    if (apiDiagnosticLog.length > API_DIAGNOSTIC_LIMIT) apiDiagnosticLog.shift();
+    try {
+        sessionStorage.setItem("financialDashboardApiDiagnostics", JSON.stringify(apiDiagnosticLog));
+    } catch (e) {}
+}
+
+function getApiDiagnostics() {
+    return apiDiagnosticLog.slice();
+}
+
+function acquireApiRequestSlot() {
+    if (apiActiveRequests < API_MAX_CONCURRENT_REQUESTS) {
+        apiActiveRequests++;
+        return Promise.resolve(makeReleaseApiSlot());
+    }
+    return new Promise((resolve, reject) => {
+        const waiter = { resolve, reject, timer: null, cancelled: false };
+        waiter.timer = setTimeout(() => {
+            waiter.cancelled = true;
+            reject(new Error(`API request queue timeout (${API_QUEUE_TIMEOUT_MS}ms)`));
+        }, API_QUEUE_TIMEOUT_MS);
+        apiRequestQueue.push(waiter);
+    });
+}
+
+function makeReleaseApiSlot() {
+    let released = false;
+    return function releaseApiSlot() {
+        if (released) return;
+        released = true;
+        while (apiRequestQueue.length) {
+            const next = apiRequestQueue.shift();
+            if (!next || next.cancelled) continue;
+            clearTimeout(next.timer);
+            next.resolve(makeReleaseApiSlot());
+            return;
+        }
+        apiActiveRequests = Math.max(0, apiActiveRequests - 1);
+    };
+}
+
+function apiRequestKey(url, options) {
+    const method = String(options?.method || "GET").toUpperCase();
+    const body = typeof options?.body === "string" ? options.body : "";
+    let headers = "";
+    try {
+        if (options?.headers instanceof Headers) headers = Array.from(options.headers.entries()).sort().map(([k,v]) => `${k}:${v}`).join("|");
+        else if (options?.headers && typeof options.headers === "object") headers = Object.entries(options.headers).sort(([a],[b]) => a.localeCompare(b)).map(([k,v]) => `${k}:${v}`).join("|");
+    } catch (e) {}
+    const requestContext = [options?.mode, options?.credentials, options?.redirect, options?.referrerPolicy, options?.integrity].map(v => String(v || "")).join("|");
+    const base = `${method} ${String(url)} ${body} ${headers} ${requestContext}`;
+    // Only safe/idempotent reads may share an in-flight request. Concurrent
+    // POSTs (email/remote commands) must each reach the server independently.
+    if (method !== "GET" && method !== "HEAD") return `${base} #${++apiNonIdempotentRequestSequence}`;
+    return base;
+}
+
+function responseFromApiSnapshot(snapshot) {
+    const noBodyStatus = [101, 204, 205, 304].includes(snapshot.status);
+    const body = noBodyStatus ? null : snapshot.body.slice(0);
+    return new Response(body, {
+        status: snapshot.status,
+        statusText: snapshot.statusText,
+        headers: snapshot.headers
+    });
+}
+
+function fetchWithTimeout(url, options = {}, timeout = PRICE_REQUEST_TIMEOUT) {
+    const target = String(url || "").trim();
+    if (!target) return Promise.reject(new Error("API URL is empty"));
+    const requestOptions = options || {};
+    const key = `${apiRequestKey(target, requestOptions)} timeout=${Math.max(1, Number(timeout) || PRICE_REQUEST_TIMEOUT)}`;
+    const existing = apiInFlightRequests.get(key);
+    const startedAt = Date.now();
+
+    let shared = existing;
+    if (!shared) {
+        shared = (async () => {
+            let releaseSlot = null;
+            const controller = typeof AbortController === "function" ? new AbortController() : null;
+            let timer = null;
+            let timedOut = false;
+            const timeoutError = new Error(`API timeout after ${timeout}ms`);
+            try {
+                try {
+                    releaseSlot = await acquireApiRequestSlot();
+                } catch (queueError) {
+                    recordApiDiagnostic({url: target, method: requestOptions.method, outcome: "queue-timeout", durationMs: Date.now() - startedAt, detail: queueError?.message || queueError});
+                    throw queueError;
+                }
+                const operation = (async () => {
+                    const response = await fetch(target, {
+                        ...requestOptions,
+                        cache: requestOptions.cache || "no-store",
+                        signal: controller ? controller.signal : requestOptions.signal
+                    });
+                    // Buffer the complete body before clearing the timeout. The old
+                    // implementation cleared its timer after headers, not after JSON/text.
+                    const body = await response.arrayBuffer();
+                    const headers = [];
+                    response.headers?.forEach((value, name) => headers.push([name, value]));
+                    return {
+                        body,
+                        status: response.status,
+                        statusText: response.statusText,
+                        headers
+                    };
+                })();
+                const timeoutPromise = new Promise((_, reject) => {
+                    timer = setTimeout(() => {
+                        timedOut = true;
+                        try { controller?.abort(); } catch (e) {}
+                        reject(timeoutError);
+                    }, Math.max(1, Number(timeout) || PRICE_REQUEST_TIMEOUT));
+                });
+                const snapshot = await Promise.race([operation, timeoutPromise]);
+                recordApiDiagnostic({url: target, method: requestOptions.method, status: snapshot.status, outcome: snapshot.status >= 200 && snapshot.status < 300 ? "http-ok" : "http-error", durationMs: Date.now() - startedAt, detail: snapshot.statusText});
+                return snapshot;
+            } catch (error) {
+                recordApiDiagnostic({url: target, method: requestOptions.method, outcome: timedOut || error?.name === "AbortError" ? "timeout" : "network-error", durationMs: Date.now() - startedAt, detail: error?.message || error});
+                throw error;
+            } finally {
+                if (timer) clearTimeout(timer);
+                if (releaseSlot) releaseSlot();
+            }
+        })();
+        apiInFlightRequests.set(key, shared);
+        shared.finally(() => {
+            if (apiInFlightRequests.get(key) === shared) apiInFlightRequests.delete(key);
+        }).catch(() => {});
+    }
+    return shared.then(responseFromApiSnapshot);
+}
+
+window.getApiDiagnostics = getApiDiagnostics;
+
 function buildApiProxyFallbacks(targetUrl) {
     const target = String(targetUrl || "").trim();
     if (!target) {
@@ -6994,100 +7161,98 @@ function buildApiProxyFallbacks(targetUrl) {
         `https://proxy.cors.dev/${target}`
     ].filter((url, index, list) => list.indexOf(url) === index);
 }
-async function fetchWithFallback(urls, options = {}) {
-    const queue = Array.isArray(urls)
-        ? urls
-        : buildApiProxyFallbacks(urls);
+async function fetchWithFallback(urls, options = {}, timeout = 7000, validateResponse = null) {
+    const queue = Array.isArray(urls) ? urls : buildApiProxyFallbacks(urls);
+    let lastError = null;
+    const chainStartedAt = Date.now();
+    const chainBudgetMs = Math.min(20000, Math.max(timeout, timeout * Math.min(queue.length || 1, 3)));
     for (const url of queue) {
+        const remainingMs = chainBudgetMs - (Date.now() - chainStartedAt);
+        if (remainingMs <= 0) break;
         try {
-            const response =
-                await fetch(url, {
-                    ...options,
-                    cache: "no-store"
-                });
-            if (response.ok) {
-                return response;
+            const response = await fetchWithTimeout(url, { ...options, cache: "no-store" }, Math.min(timeout, remainingMs));
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (typeof validateResponse === "function") {
+                const valid = await validateResponse(response.clone());
+                if (valid === false) throw new Error("Response validation failed");
+            } else {
+                const type = String(response.headers.get("content-type") || "").toLowerCase();
+                if (type.includes("json")) await response.clone().json();
+                else {
+                    const body = await response.clone().text();
+                    if (!body.trim()) throw new Error("Empty response body");
+                }
             }
+            return response;
         } catch (error) {
-            console.warn(
-                "API/proxy failed:",
-                url
-            );
+            lastError = error;
+            console.warn("API/proxy attempt failed; trying next source:", url, error);
+            recordApiDiagnostic({url, outcome: "fallback", detail: error?.message || error});
         }
     }
-    throw new Error(
-        "All API/proxy URLs unavailable"
-    );
+    throw lastError || new Error("All API/proxy URLs unavailable");
 }
-async function fetchApiWithProxyFallback(
-    apiUrl,
-    options = {},
-    timeout = PRICE_REQUEST_TIMEOUT
-) {
+
+
+async function fetchApiWithProxyFallback(apiUrl, options = {}, timeout = PRICE_REQUEST_TIMEOUT, validatePayload = null) {
     const target = String(apiUrl || "").trim();
+    if (!target) throw new Error("API URL is missing");
     let lastError = null;
 
-    /*
-       Android WebView CORS-safe path:
-       When the dashboard is running inside the Android app, use the native
-       network stack first for the actual public API URL. This avoids relying
-       on third-party CORS proxies for Exir/MEXC.
-    */
+    const validate = async response => {
+        const payload = await response.clone().json();
+        if (typeof validatePayload === "function") {
+            const valid = await validatePayload(payload);
+            if (valid === false) throw new Error("API payload validation failed");
+        }
+        return payload;
+    };
+
+    // Android native bridge first. Promise-returning bridges are bounded too.
     try {
-        if (
-            target &&
-            window.AndroidNotifications &&
-            typeof window.AndroidNotifications.fetchExternalMarketJson === "function"
-        ) {
-            const nativeBody =
-                window.AndroidNotifications.fetchExternalMarketJson(target);
-            if (nativeBody) {
-                return new Response(
-                    nativeBody,
-                    {
-                        status: 200,
-                        headers: {
-                            "Content-Type": "application/json"
-                        }
-                    }
-                );
+        if (window.AndroidNotifications && typeof window.AndroidNotifications.fetchExternalMarketJson === "function") {
+            let nativeResult = window.AndroidNotifications.fetchExternalMarketJson(target);
+            if (nativeResult && typeof nativeResult.then === "function") {
+                nativeResult = await Promise.race([
+                    Promise.resolve(nativeResult),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("Native market bridge timeout")), Math.min(timeout, 5000)))
+                ]);
+            }
+            if (nativeResult) {
+                const nativeResponse = new Response(String(nativeResult), {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" }
+                });
+                await validate(nativeResponse);
+                return nativeResponse;
             }
         }
     } catch (error) {
         lastError = error;
-        console.warn("Native market API request failed:", target, error);
+        console.warn("Native market API request failed; trying browser sources:", target, error);
+        recordApiDiagnostic({url: target, outcome: "native-fallback", detail: error?.message || error});
     }
 
-    /*
-       Browser/PWA fallback:
-       Keep the existing direct + proxy chain for non-Android environments
-       and as a recovery path if the native request is temporarily unavailable.
-    */
-    const urls = buildApiProxyFallbacks(target);
-    for (const url of urls) {
+    const browserUrls = buildApiProxyFallbacks(target);
+    const chainStartedAt = Date.now();
+    const chainBudgetMs = Math.min(16000, Math.max(timeout, timeout * Math.min(browserUrls.length || 1, 2)));
+    for (const url of browserUrls) {
+        const remainingMs = chainBudgetMs - (Date.now() - chainStartedAt);
+        if (remainingMs <= 0) break;
         try {
-            const response =
-                await fetchWithTimeout(
-                    url,
-                    options,
-                    timeout
-                );
-            if (response.ok) {
-                return response;
-            }
-            lastError = new Error(
-                `API HTTP ${response.status}`
-            );
-        }
-        catch (error) {
+            const response = await fetchWithTimeout(url, { ...options, cache: "no-store" }, Math.min(timeout, remainingMs));
+            if (!response.ok) throw new Error(`API HTTP ${response.status}`);
+            await validate(response);
+            return response;
+        } catch (error) {
             lastError = error;
+            console.warn("API source failed validation/request:", url, error);
+            recordApiDiagnostic({url, outcome: "fallback", detail: error?.message || error});
         }
     }
-    throw (
-        lastError ||
-        new Error("All API/proxy URLs unavailable")
-    );
+    throw lastError || new Error("All API/proxy URLs unavailable");
 }
+
 
 /* =====================================================
    INSTANT NATIVE WIDGET SYNC
@@ -7376,7 +7541,15 @@ function renderCryptoSignals(data, offline = false) {
 /* =====================================================
    LOAD CRYPTO SIGNALS
 ===================================================== */
-async function loadCryptoSignals() {
+let cryptoSignalsLoadInProgress = null;
+let cryptoSignalsRetryAt = 0;
+function loadCryptoSignals() {
+    if (cryptoSignalsLoadInProgress) return cryptoSignalsLoadInProgress;
+    if (Date.now() < cryptoSignalsRetryAt) return Promise.resolve(false);
+    cryptoSignalsLoadInProgress = loadCryptoSignalsInternal();
+    return cryptoSignalsLoadInProgress.finally(() => { cryptoSignalsLoadInProgress = null; });
+}
+async function loadCryptoSignalsInternal() {
     /*
        Always make the last known signal available first.
        This means the signal boxes do not disappear when
@@ -7391,16 +7564,19 @@ async function loadCryptoSignals() {
         );
     }
     try {
-        const res =
-            await fetchWithFallback(
-                WORKER_URLS.signal.map(
-                    url =>
-                        url +
-                        (url.includes("?") ? "&" : "?") +
-                        "t=" +
-                        Date.now()
-                )
-            );
+        const res = await fetchWithFallback(
+            WORKER_URLS.signal.map(url => url + (url.includes("?") ? "&" : "?") + "t=" + Date.now()),
+            { method: "GET", headers: { "Accept": "application/json" } },
+            7000,
+            async response => {
+                const payload = await response.json();
+                const keys = ["BTC", "BNB", "ETH", "DOGE", "ADA", "SOL", "ONE", "AVAX", "POL", "TRX"];
+                if (!payload || typeof payload !== "object" || Array.isArray(payload) || !keys.every(key => Object.prototype.hasOwnProperty.call(payload, key))) {
+                    throw new Error("Signal Worker returned incomplete signal fields");
+                }
+                return true;
+            }
+        );
         if (!res.ok) {
             throw new Error(
                 "Signal API HTTP " +
@@ -7483,12 +7659,14 @@ async function loadCryptoSignals() {
                 signalType
             );
         }
+        cryptoSignalsRetryAt = 0;
         saveSignalCache(data);
         renderCryptoSignals(data, false);
         clearPageIssue("signal-api");
         clearPageIssue("signal-cache");
     }
     catch (error) {
+        cryptoSignalsRetryAt = Date.now() + (/429/.test(String(error?.message || error)) ? 60000 : 15000);
         const cached =
             loadSignalCache();
         if (cached) {
@@ -8591,24 +8769,15 @@ async function sendEmailNotification(
         return false;
     }
     try {
-        const response =
-            await fetch(
-                WORKER_URLS.email,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-                    body:
-                        JSON.stringify({
-                            title:
-                                String(title),
-                            message:
-                                String(message)
-                        })
-                }
-            );
+        const response = await fetchWithTimeout(
+            WORKER_URLS.email,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify({ title: String(title), message: String(message) })
+            },
+            8000
+        );
         if (!response.ok) {
             console.warn(
                 "Email notification failed:",
@@ -8723,12 +8892,16 @@ function daysFromBuyToToday(
 const CACHE_KEYS = {
     DATA:
         "financialDashboardData",
+    DATA_TIME:
+        "financialDashboardDataSavedAt",
     NOBITEX_PRICE:
         "financialDashboardPrice",
     NOBITEX_TIME:
         "financialDashboardPriceTime",
     EXIR_PRICE:
         "financialDashboardExirPrice",
+    EXIR_TIME:
+        "financialDashboardExirPriceTime",
     BITPIN_PRICE:
         "financialDashboardBitpinPrice",
     BITPIN_TIME:
@@ -8739,8 +8912,12 @@ const CACHE_KEYS = {
         "financialDashboardAveragePriceTime",
     USD_TXT_PRICE:
         "financialDashboardUsdTxtPrice",
+    USD_TXT_TIME:
+        "financialDashboardUsdTxtPriceTime",
     YEKUSD_PRICE:
         "financialDashboardYekusdPrice",
+    YEKUSD_TIME:
+        "financialDashboardYekusdPriceTime",
     CRYPTO_PRICE:
         "financialDashboardCryptoPrice"
 };
@@ -8752,11 +8929,14 @@ let yekusdOnline = false;
    SAVE YEKUSD
 ===================================================== */
 function saveYekusdPrice(value) {
-    localStorage.setItem(
-        CACHE_KEYS.YEKUSD_PRICE,
-        value
-    );
+    if (parseValidTopDollarPrice(value) === null) return;
+    try {
+        localStorage.setItem(CACHE_KEYS.YEKUSD_PRICE, String(value));
+        localStorage.setItem(CACHE_KEYS.YEKUSD_TIME, String(Date.now()));
+    } catch (error) { console.warn("YEKUSD cache save failed:", error); }
 }
+
+
 /* =====================================================
    LOAD YEKUSD CACHE
 ===================================================== */
@@ -8798,9 +8978,14 @@ function parseValidTopDollarPrice(raw) {
 }
 async function fetchValidTopDollarPrice(urls) {
     let lastError = null;
-    for (const url of (Array.isArray(urls) ? urls : [])) {
+    const queue = Array.isArray(urls) ? urls : [];
+    const chainStartedAt = Date.now();
+    const chainBudgetMs = 20000;
+    for (const url of queue) {
+        const remainingMs = chainBudgetMs - (Date.now() - chainStartedAt);
+        if (remainingMs <= 0) break;
         try {
-            const response = await fetchWithTimeout(url, { cache: "no-store" });
+            const response = await fetchWithTimeout(url, { method: "GET", headers: { "Accept": "text/plain, application/json" }, cache: "no-store" }, Math.min(6500, remainingMs));
             if (!response.ok) {
                 lastError = new Error(`HTTP ${response.status}`);
                 continue;
@@ -8820,44 +9005,40 @@ async function fetchValidTopDollarPrice(urls) {
 /* =====================================================
    LOAD YEKUSD
 ===================================================== */
-async function loadYekusd() {
-    // Cache-first: show the last valid value immediately, then fetch fresh data.
-    const cachedFirst = loadCachedYekusdPrice();
-    if (parseValidTopDollarPrice(cachedFirst) !== null) {
-        safeText("yekusd", cachedFirst);
-        updateYekusdConnectionColor(false);
-    }
-    try {
-        const value = await fetchValidTopDollarPrice(WORKER_URLS.yekusd);
-        safeText(
-            "yekusd",
-            value
-        );
-        saveYekusdPrice(
-            value
-        );
-        yekusdOnline = true;
-        clearPageIssue("yekusd");
-        updateYekusdConnectionColor(
-            true
-        );
-        syncNativeWidgetSnapshot();
-    } catch (error) {
-        yekusdOnline =
-            false;
-        const cached =
-            loadCachedYekusdPrice();
-        safeText(
-            "yekusd",
-            parseValidTopDollarPrice(cached) !== null ? cached : "-"
-        );
-        updateYekusdConnectionColor(
-            false
-        );
-        setPageIssue("yekusd", "YEKUSD cached", "cache");
-        console.warn("YEKUSD Offline:", error);
-    }
+let yekusdLoadInProgress = null;
+let yekusdRetryAt = 0;
+function loadYekusd() {
+    if (yekusdLoadInProgress) return yekusdLoadInProgress;
+    if (Date.now() < yekusdRetryAt) return Promise.resolve(false);
+    yekusdLoadInProgress = (async () => {
+        const cachedFirst = loadCachedYekusdPrice();
+        if (parseValidTopDollarPrice(cachedFirst) !== null) {
+            safeText("yekusd", cachedFirst);
+            updateYekusdConnectionColor(false);
+        }
+        try {
+            const value = await fetchValidTopDollarPrice(WORKER_URLS.yekusd);
+            safeText("yekusd", value);
+            saveYekusdPrice(value);
+            yekusdOnline = true;
+            yekusdRetryAt = 0;
+            clearPageIssue("yekusd");
+            updateYekusdConnectionColor(true);
+            syncNativeWidgetSnapshot();
+        } catch (error) {
+            yekusdOnline = false;
+            yekusdRetryAt = Date.now() + (/429/.test(String(error?.message || error)) ? 60000 : 30000);
+            const cached = loadCachedYekusdPrice();
+            safeText("yekusd", parseValidTopDollarPrice(cached) !== null ? cached : "-");
+            updateYekusdConnectionColor(false);
+            setPageIssue("yekusd", parseValidTopDollarPrice(cached) !== null ? "YEKUSD cached" : "YEKUSD unavailable", parseValidTopDollarPrice(cached) !== null ? "cache" : "error");
+            console.warn("YEKUSD Offline:", error);
+        }
+    })();
+    return yekusdLoadInProgress.finally(() => { yekusdLoadInProgress = null; });
 }
+
+
 /* =====================================================
    USD TXT ONLINE / OFFLINE
 ===================================================== */
@@ -8866,11 +9047,14 @@ let usdTxtOnline = false;
    SAVE USD TXT
 ===================================================== */
 function saveUsdTxtPrice(value) {
-    localStorage.setItem(
-        CACHE_KEYS.USD_TXT_PRICE,
-        value
-    );
+    if (parseValidTopDollarPrice(value) === null) return;
+    try {
+        localStorage.setItem(CACHE_KEYS.USD_TXT_PRICE, String(value));
+        localStorage.setItem(CACHE_KEYS.USD_TXT_TIME, String(Date.now()));
+    } catch (error) { console.warn("USD cache save failed:", error); }
 }
+
+
 /* =====================================================
    LOAD USD TXT CACHE
 ===================================================== */
@@ -8898,44 +9082,40 @@ function updateUsdTxtConnectionColor(
 /* =====================================================
    LOAD USD TXT
 ===================================================== */
-async function loadUsdTxt() {
-    // Cache-first: show the last valid value immediately, then fetch fresh data.
-    const cachedFirst = loadCachedUsdTxtPrice();
-    if (parseValidTopDollarPrice(cachedFirst) !== null) {
-        safeText("usdTxtPrice", cachedFirst);
-        updateUsdTxtConnectionColor(false);
-    }
-    try {
-const value = await fetchValidTopDollarPrice(WORKER_URLS.usd);
-        safeText(
-            "usdTxtPrice",
-            value
-        );
-        saveUsdTxtPrice(
-            value
-        );
-        usdTxtOnline = true;
-        clearPageIssue("usd");
-        updateUsdTxtConnectionColor(
-            true
-        );
-        syncNativeWidgetSnapshot();
-    } catch (error) {
-        usdTxtOnline =
-            false;
-        const cached =
-            loadCachedUsdTxtPrice();
-        safeText(
-            "usdTxtPrice",
-            parseValidTopDollarPrice(cached) !== null ? cached : "-"
-        );
-        updateUsdTxtConnectionColor(
-            false
-        );
-        setPageIssue("usd", "USD cached", "cache");
-        console.warn("USD TXT Offline:", error);
-    }
+let usdTxtLoadInProgress = null;
+let usdTxtRetryAt = 0;
+function loadUsdTxt() {
+    if (usdTxtLoadInProgress) return usdTxtLoadInProgress;
+    if (Date.now() < usdTxtRetryAt) return Promise.resolve(false);
+    usdTxtLoadInProgress = (async () => {
+        const cachedFirst = loadCachedUsdTxtPrice();
+        if (parseValidTopDollarPrice(cachedFirst) !== null) {
+            safeText("usdTxtPrice", cachedFirst);
+            updateUsdTxtConnectionColor(false);
+        }
+        try {
+            const value = await fetchValidTopDollarPrice(WORKER_URLS.usd);
+            safeText("usdTxtPrice", value);
+            saveUsdTxtPrice(value);
+            usdTxtOnline = true;
+            usdTxtRetryAt = 0;
+            clearPageIssue("usd");
+            updateUsdTxtConnectionColor(true);
+            syncNativeWidgetSnapshot();
+        } catch (error) {
+            usdTxtOnline = false;
+            usdTxtRetryAt = Date.now() + (/429/.test(String(error?.message || error)) ? 60000 : 30000);
+            const cached = loadCachedUsdTxtPrice();
+            safeText("usdTxtPrice", parseValidTopDollarPrice(cached) !== null ? cached : "-");
+            updateUsdTxtConnectionColor(false);
+            setPageIssue("usd", parseValidTopDollarPrice(cached) !== null ? "USD cached" : "USD unavailable", parseValidTopDollarPrice(cached) !== null ? "cache" : "error");
+            console.warn("USD TXT Offline:", error);
+        }
+    })();
+    return usdTxtLoadInProgress.finally(() => { usdTxtLoadInProgress = null; });
 }
+
+
 /* =====================================================
    MARKET PRICE CONNECTION COLORS
 ===================================================== */
@@ -9067,49 +9247,65 @@ const PRICE_REQUEST_TIMEOUT =
     10000;
 let dashboardLoadInProgress =
     null;
-function fetchWithTimeout(
-    url,
-    options = {},
-    timeout = PRICE_REQUEST_TIMEOUT
-) {
-    const controller =
-        new AbortController();
-    const timer =
-        setTimeout(
-            () =>
-                controller.abort(),
-            timeout
-        );
-    return fetch(
-        url,
-        {
-            ...options,
-            signal:
-                controller.signal
-        }
-    )
-    .finally(
-        () =>
-            clearTimeout(timer)
-    );
-}
 function loadCachedDashboardData() {
     return loadLocalData();
 }
 function saveLocalData(data) {
-    try {
-        localStorage.setItem(
-            CACHE_KEYS.DATA,
-            JSON.stringify(data)
-        );
+    if (!isValidDashboardData(data)) {
+        console.warn("Refusing to cache invalid data.json payload");
+        return false;
     }
-    catch (error) {
-        console.warn(
-            "Could not save dashboard data",
-            error
-        );
+    try {
+        // Keep only user data from data.json. Exchange API endpoints and runtime
+        // configuration are defined in this HTML file, never in the data feed.
+        const previous = loadLocalData();
+        // Preserve the old bank-rate history in its own local cache before a
+        // legacy R01 snapshot is compacted and its unrelated fields are dropped.
+        if (Array.isArray(previous?.bankRatePeriods) &&
+            typeof saveBankRatePeriodsCache === "function" &&
+            typeof parseBankRatePeriods === "function") {
+            try {
+                const existingRates = parseBankRatePeriods(
+                    JSON.parse(localStorage.getItem("financialDashboardBankRatePeriods_v1") || "null")
+                );
+                const legacyRates = parseBankRatePeriods(previous.bankRatePeriods);
+                if (!existingRates.length && legacyRates.length) saveBankRatePeriodsCache(legacyRates);
+            } catch (error) {}
+        }
+        const compact = {};
+        if (Array.isArray(data.transactions)) {
+            compact.transactions = data.transactions;
+        } else if (Array.isArray(previous?.transactions)) {
+            compact.transactions = previous.transactions;
+        }
+        if (data.cryptoHoldings && typeof data.cryptoHoldings === "object" && !Array.isArray(data.cryptoHoldings)) {
+            compact.cryptoHoldings = data.cryptoHoldings;
+        } else if (previous?.cryptoHoldings && typeof previous.cryptoHoldings === "object" && !Array.isArray(previous.cryptoHoldings)) {
+            compact.cryptoHoldings = previous.cryptoHoldings;
+        }
+        localStorage.setItem(CACHE_KEYS.DATA, JSON.stringify(compact));
+        localStorage.setItem(CACHE_KEYS.DATA_TIME, String(Date.now()));
+        return true;
+    } catch (error) {
+        console.warn("Could not save dashboard data", error);
+        return false;
     }
 }
+function isValidDashboardData(data) {
+    if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+    const hasTransactions = Object.prototype.hasOwnProperty.call(data, "transactions") && Array.isArray(data.transactions);
+    const hasCryptoHoldings = Object.prototype.hasOwnProperty.call(data, "cryptoHoldings") &&
+        data.cryptoHoldings && typeof data.cryptoHoldings === "object" && !Array.isArray(data.cryptoHoldings);
+    return hasTransactions || Boolean(hasCryptoHoldings);
+}
+function getDashboardDataCacheAge() {
+    try {
+        const savedAt = Number(localStorage.getItem(CACHE_KEYS.DATA_TIME));
+        return Number.isFinite(savedAt) && savedAt > 0 ? Math.max(0, Date.now() - savedAt) : Infinity;
+    } catch (error) { return Infinity; }
+}
+
+
 function loadLocalData() {
     try {
         const saved =
@@ -9157,10 +9353,8 @@ function saveExirPrice(price) {
     const value = Number(price);
     if (!Number.isFinite(value) || value <= 0) return;
     try {
-        localStorage.setItem(
-            CACHE_KEYS.EXIR_PRICE,
-            String(value)
-        );
+        localStorage.setItem(CACHE_KEYS.EXIR_PRICE, String(value));
+        localStorage.setItem(CACHE_KEYS.EXIR_TIME, String(Date.now()));
     }
     catch (error) {}
 }
@@ -9184,14 +9378,8 @@ function loadExirPrice() {
    Nobitex and Bitpin. Do not clear it on page/app startup. */
 function saveBitpinPrice(price) {
     try {
-        localStorage.setItem(
-            CACHE_KEYS.BITPIN_PRICE,
-            String(price)
-        );
-        localStorage.setItem(
-            CACHE_KEYS.BITPIN_TIME,
-            new Date().toISOString()
-        );
+        localStorage.setItem(CACHE_KEYS.BITPIN_PRICE, String(price));
+        localStorage.setItem(CACHE_KEYS.BITPIN_TIME, new Date().toISOString());
     }
     catch (error) {}
 }
@@ -9203,7 +9391,7 @@ function loadBitpinPrice() {
             );
         const price =
             Number(saved);
-        return Number.isFinite(price)
+        return Number.isFinite(price) && price > 0
             ? price
             : null;
     }
@@ -9307,6 +9495,7 @@ function pageIssueLabel(key, issue) {
     // Keep the error box compact: API/source name + short state.
     // These labels are intentionally short so an issue can be identified at a glance.
     if (k === "chart-history-sync") return "Chart";
+    if (k === "chart-transactions") return "Chart Data";
     if (k === "coin-chart-history-sync") return "Coin History";
     if (k === "coin-live-api") return "Coin API";
     if (k === "coin-live-fallback") return "Coin Fallback";
@@ -9363,6 +9552,9 @@ function pageIssueDescription(key, issue) {
     }
     if (k === "coin-chart-history-sync") {
         return "Coin chart history could not be synchronized from its dedicated history sources. Existing local history is retained.";
+    }
+    if (k === "chart-transactions") {
+        return "The chart transaction feed could not be refreshed; its cached transaction snapshot is retained and will be retried.";
     }
     if (k === "usd") {
         return "A fresh USD price was not received; the previously cached value may be shown.";
@@ -9931,12 +10123,14 @@ function dateNumber(date) {
    Rates are effective from their Jalali "from" date.
    No single/fallback annual bank rate is used.
 ===================================================== */
+const BANK_RATE_PERIODS_CACHE_KEY = "financialDashboardBankRatePeriods_v1";
+function saveBankRatePeriodsCache(periods) {
+    try {
+        localStorage.setItem(BANK_RATE_PERIODS_CACHE_KEY, JSON.stringify(periods));
+    } catch (error) {}
+}
 function parseBankRatePeriods(rawPeriods) {
-    if (!Array.isArray(rawPeriods) || rawPeriods.length === 0) {
-        throw new Error(
-            "data.json must contain a non-empty bankRatePeriods array."
-        );
-    }
+    if (!Array.isArray(rawPeriods) || rawPeriods.length === 0) return [];
 
     const periods = rawPeriods
         .map((item) => ({
@@ -9950,11 +10144,7 @@ function parseBankRatePeriods(rawPeriods) {
         )
         .sort((a, b) => dateNumber(a.from) - dateNumber(b.from));
 
-    if (periods.length === 0) {
-        throw new Error(
-            "bankRatePeriods contains no valid rate periods."
-        );
-    }
+    if (periods.length === 0) return [];
 
     for (let i = 1; i < periods.length; i++) {
         if (periods[i].from === periods[i - 1].from) {
@@ -9967,7 +10157,26 @@ function parseBankRatePeriods(rawPeriods) {
     return periods;
 }
 
+function loadBankRatePeriodsCache() {
+    try {
+        const cached = JSON.parse(localStorage.getItem(BANK_RATE_PERIODS_CACHE_KEY) || "null");
+        const parsed = parseBankRatePeriods(cached);
+        if (parsed.length) return parsed;
+    } catch (error) {}
+    // One-time migration for users upgrading from R01: keep their previously
+    // cached bank-rate history without reading bankRatePeriods from new data.json.
+    try {
+        const legacy = loadLocalData();
+        const migrated = parseBankRatePeriods(legacy?.bankRatePeriods);
+        if (migrated.length) {
+            saveBankRatePeriodsCache(migrated);
+            return migrated;
+        }
+    } catch (error) {}
+    return [];
+}
 function getActiveBankRate(periods, date) {
+    if (!Array.isArray(periods) || periods.length === 0) return null;
     let active = periods[0];
     for (const period of periods) {
         if (dateNumber(period.from) <= dateNumber(date)) {
@@ -9976,7 +10185,7 @@ function getActiveBankRate(periods, date) {
             break;
         }
     }
-    return active.rate;
+    return active?.rate ?? null;
 }
 
 function formatBankRate(rate) {
@@ -10639,20 +10848,25 @@ function displayLastAction(
 }
 /* =====================================================
    NOBITEX API
-   Uses lowest ASK price
+   Direct public orderbook endpoint. data.json is never used for the URL.
 ===================================================== */
-async function getCurrentPrice(
-    apiUrl,
-    divisor
-) {
-    if (!apiUrl) {
-        throw new Error(
-            "Nobitex API URL is missing"
-        );
-    }
+const NOBITEX_ORDERBOOK_API = "https://apiv2.nobitex.ir/v3/orderbook/USDTIRT";
+const NOBITEX_PRICE_DIVISOR = 10; // Nobitex orderbook values are Rial; dashboard shows Toman.
+function parseBestAskPrice(payload) {
+    const asks = Array.isArray(payload?.asks) ? payload.asks :
+        Array.isArray(payload?.ask) ? payload.ask : [];
+    const values = asks.map(level => {
+        const raw = Array.isArray(level) ? level[0] : (level?.price ?? level?.rate ?? level?.value);
+        const normalized = typeof raw === "string" ? raw.replace(/[\s,٬،]/g, "") : raw;
+        const price = Number(normalized);
+        return Number.isFinite(price) && price > 0 ? price : null;
+    }).filter(value => value !== null);
+    return values.length ? Math.min(...values) : null;
+}
+async function getCurrentPrice() {
     const response =
         await fetchApiWithProxyFallback(
-            apiUrl,
+            NOBITEX_ORDERBOOK_API,
             {
                 method: "GET",
                 headers: {
@@ -10660,7 +10874,14 @@ async function getCurrentPrice(
                 },
                 cache: "no-store"
             },
-            PRICE_REQUEST_TIMEOUT
+            PRICE_REQUEST_TIMEOUT,
+            payload => {
+                const value = parseBestAskPrice(payload);
+                if (String(payload?.status || "ok").toLowerCase() !== "ok" || value === null) {
+                    throw new Error("Invalid Nobitex asks payload");
+                }
+                return true;
+            }
         );
     if (!response.ok) {
         throw new Error(
@@ -10670,40 +10891,12 @@ async function getCurrentPrice(
     const data =
         await response.json();
     /*
-       Nobitex Order Book structure:
-       {
-           "asks": [
-               ["1867820", "100"],
-               ["1867830", "571.29"],
-               ...
-           ]
-       }
-       We use the FIRST / LOWEST ASK price:
-       data.asks[0][0]
-       Example:
-       1867820
-       Then apply priceDivisor:
-       1867820 / 10 = 186782
+       Public orderbook asks are [price, amount] rows. Choose the lowest
+       positive ask regardless of the order returned by the provider.
+       Convert Rial to Toman after parsing.
     */
-    if (
-        !Array.isArray(data?.asks)
-        ||
-        data.asks.length === 0
-        ||
-        !Array.isArray(data.asks[0])
-        ||
-        data.asks[0].length === 0
-    ) {
-        throw new Error(
-            "Invalid Nobitex orderbook: asks not found"
-        );
-    }
-    const rawPrice =
-        data.asks[0][0];
-    const price =
-        Number(rawPrice)
-        /
-        Number(divisor || 1);
+    const rawPrice = parseBestAskPrice(data);
+    const price = Number(rawPrice) / NOBITEX_PRICE_DIVISOR;
     if (
         !Number.isFinite(price)
         ||
@@ -10717,11 +10910,10 @@ async function getCurrentPrice(
 }
 /* =====================================================
    EXIR API
-   Uses the lowest ASK price from the live Exir orderbook.
-   The Exir endpoint is mandatory for this price.
+   Direct public APIs. Ticker.last is primary; orderbook is the backup.
 ===================================================== */
-const EXIR_ORDERBOOK_API =
-    "https://api.exir.io/v2/orderbook?symbol=usdt-irt";
+const EXIR_ORDERBOOK_API = "https://api.exir.io/v2/orderbook?symbol=usdt-irt";
+const EXIR_TICKER_API = "https://api.exir.io/v2/ticker?symbol=usdt-irt";
 let nativeExirCallbacks = {};
 let nativeExirSequence = 0;
 window.__nativeExirPriceResult = function(callbackId, priceText) {
@@ -10733,36 +10925,23 @@ window.__nativeExirPriceResult = function(callbackId, priceText) {
 
 function getNativeExirPrice(apiUrl = EXIR_ORDERBOOK_API) {
     return new Promise((resolve, reject) => {
-        if (
-            !window.AndroidNotifications ||
-            typeof window.AndroidNotifications.fetchExirPriceAsync !== "function"
-        ) {
+        if (!window.AndroidNotifications || typeof window.AndroidNotifications.fetchExirPriceAsync !== "function") {
             reject(new Error("Native Exir bridge unavailable"));
             return;
         }
-
-        const callbackId =
-            "exir_" + Date.now() + "_" + (++nativeExirSequence);
+        const callbackId = "exir_" + Date.now() + "_" + (++nativeExirSequence);
         const timer = setTimeout(() => {
             delete nativeExirCallbacks[callbackId];
             reject(new Error("Native Exir timeout"));
-        }, 16000);
-
-        nativeExirCallbacks[callbackId] = (value) => {
+        }, 4500);
+        nativeExirCallbacks[callbackId] = value => {
             clearTimeout(timer);
-            const price = Number(value);
-            if (Number.isFinite(price) && price > 0) {
-                resolve(price);
-            } else {
-                reject(new Error("Invalid native Exir price"));
-            }
+            const price = Number(String(value || "").replace(/[\s,٬،]/g, ""));
+            if (Number.isFinite(price) && price > 0) resolve(price);
+            else reject(new Error("Invalid native Exir price"));
         };
-
         try {
-            window.AndroidNotifications.fetchExirPriceAsync(
-                callbackId,
-                apiUrl
-            );
+            window.AndroidNotifications.fetchExirPriceAsync(callbackId, apiUrl);
         } catch (error) {
             clearTimeout(timer);
             delete nativeExirCallbacks[callbackId];
@@ -10771,107 +10950,286 @@ function getNativeExirPrice(apiUrl = EXIR_ORDERBOOK_API) {
     });
 }
 
-async function parseExirLowestAskResponse(response) {
-    if (!response || !response.ok) {
-        throw new Error("Unable to get Exir price");
+function exirNumber(raw) {
+    if (raw === null || raw === undefined || raw === "") return null;
+    let value = raw;
+    if (typeof value === "string") {
+        value = value.trim().replace(/[\s,٬،]/g, "");
+        value = value.replace(/[۰-۹]/g, digit => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)));
+        value = value.replace(/[٠-٩]/g, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
     }
-    const data = await response.json();
-    const pair =
-        data?.["usdt-irt"] ||
-        data?.["USDT-IRT"] ||
-        data?.["USDT-IRT".toLowerCase()];
+    const number = Number(value);
+    return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function extractExirPair(payload) {
+    const roots = [payload, payload?.data, payload?.result, payload?.data?.result]
+        .filter(value => value && typeof value === "object");
+    for (const root of roots) {
+        const pair = root["usdt-irt"] || root["USDT-IRT"] || root["USDT_IRT"] || root["usdt_irt"];
+        if (pair && typeof pair === "object") return pair;
+        if (Array.isArray(root.asks)) return root;
+    }
+    return null;
+}
+
+function extractExirLowestAsk(payload) {
+    const pair = extractExirPair(payload);
     const asks = Array.isArray(pair?.asks) ? pair.asks : [];
-    let lowestAsk = Infinity;
-    for (const level of asks) {
-        const raw = Array.isArray(level) ? level[0] : level?.price;
-        const price = Number(raw);
-        if (Number.isFinite(price) && price > 0 && price < lowestAsk) {
-            lowestAsk = price;
-        }
-    }
-    if (!Number.isFinite(lowestAsk) || lowestAsk <= 0) {
-        throw new Error("Invalid Exir asks: no valid ask price");
-    }
-    return lowestAsk;
+    const values = asks.map(level => {
+        const raw = Array.isArray(level) ? level[0] : (level?.price ?? level?.rate ?? level?.value);
+        return exirNumber(raw);
+    }).filter(value => value !== null);
+    return values.length ? Math.min(...values) : null;
 }
 
-async function getExirPrice(apiUrl = EXIR_ORDERBOOK_API) {
-    const sourceUrl =
-        (typeof apiUrl === "string" && apiUrl.trim())
-            ? apiUrl.trim()
-            : EXIR_ORDERBOOK_API;
+function extractExirTickerPrice(payload) {
+    const roots = [payload, payload?.data, payload?.result, payload?.data?.result]
+        .filter(value => value && typeof value === "object");
+    for (const root of roots) {
+        const pair = root["usdt-irt"] || root["USDT-IRT"] || root["USDT_IRT"] || root["usdt_irt"] || root;
+        const price = exirNumber(pair?.last ?? pair?.close ?? pair?.price ?? pair?.lastPrice);
+        if (price !== null) return price;
+    }
+    return null;
+}
 
-    /* Android: try native first, but NEVER stop there. If direct EXIR is
-       blocked by the network, continue to the same proxy chain used by PWA. */
-    if (
-        window.AndroidNotifications &&
-        typeof window.AndroidNotifications.fetchExirPriceAsync === "function"
-    ) {
-        try {
-            return await getNativeExirPrice(sourceUrl);
-        } catch (nativeError) {
-            console.warn("Native Exir failed; trying proxy fallback", nativeError);
-        }
+async function fetchExirDirectPrice(url, parser, timeoutMs = 5000) {
+    const response = await fetchWithTimeout(url, {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+        cache: "no-store"
+    }, timeoutMs);
+    if (!response?.ok) throw new Error("EXIR HTTP " + (response?.status ?? "unknown"));
+    const payload = await response.json();
+    const price = parser(payload);
+    if (!Number.isFinite(price) || price <= 0) throw new Error("Invalid EXIR response payload");
+    return price;
+}
+
+async function fetchExirProxyPrice(url, parser, timeoutMs = 4500) {
+    const proxyUrl = "https://proxy.cors.dev/" + url;
+    const response = await fetchWithTimeout(proxyUrl, {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+        cache: "no-store"
+    }, timeoutMs);
+    if (!response?.ok) throw new Error("EXIR proxy HTTP " + (response?.status ?? "unknown"));
+    const payload = await response.json();
+    const price = parser(payload);
+    if (!Number.isFinite(price) || price <= 0) throw new Error("Invalid EXIR proxy payload");
+    return price;
+}
+
+/*
+   EXIR LIVE ORDERBOOK (WebSocket)
+   Keep the existing dashboard markup and cache keys unchanged.
+   Initial snapshot + incremental asks updates are applied to a local orderbook;
+   the lowest positive ask is the live USDT/IRT sell price.
+*/
+const EXIR_WS_URL = "wss://api.exir.io/stream";
+const EXIR_WS_SYMBOL = "usdt-irt";
+const EXIR_WS_CHANNEL = "orderbook:" + EXIR_WS_SYMBOL;
+
+let exirSocket = null;
+let exirPingTimer = null;
+let exirReconnectTimer = null;
+let exirReconnectDelay = 2000;
+let exirAsks = new Map();
+let exirHasSnapshot = false;
+let exirSocketStarted = false;
+let exirPendingResolvers = [];
+
+function exirApplyLevels(levels) {
+    if (!Array.isArray(levels)) return;
+    for (const level of levels) {
+        if (!Array.isArray(level) || level.length < 2) continue;
+        const price = exirNumber(level[0]);
+        const quantity = Number(level[1]);
+        if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(quantity)) continue;
+        if (quantity <= 0) exirAsks.delete(price);
+        else exirAsks.set(price, quantity);
+    }
+}
+
+function exirBestAsk() {
+    let best = Infinity;
+    for (const [price, quantity] of exirAsks) {
+        if (quantity > 0 && price > 0 && price < best) best = price;
+    }
+    return Number.isFinite(best) ? best : null;
+}
+
+function exirPublishLivePrice(price) {
+    if (!Number.isFinite(price) || price <= 0) return;
+
+    saveExirPrice(price);
+
+    // Update the existing dashboard value immediately, without changing its layout.
+    const element = document.getElementById("exirPrice");
+    if (element) {
+        const previous = Number(sessionStorage.getItem("previousExirPrice"));
+        animateLivePrice("exirPrice", price, Number.isFinite(previous) && previous > 0 ? previous : null);
+        setPriceArrow("exirPriceArrow", price, Number.isFinite(previous) && previous > 0 ? previous : null);
+        sessionStorage.setItem("previousExirPrice", String(price));
     }
 
-    // Exir's /v2/orderbook endpoint must be called with its documented
-    // query only.  A cache-buster such as &_=timestamp makes Exir return
-    // {"message":"Path not found","code":284}.  no-store below is used
-    // for browser/proxy caching control instead.
-    const target = sourceUrl;
+    clearPageIssue("exir");
+    if (typeof syncNativeWidgetSnapshot === "function") syncNativeWidgetSnapshot();
 
-    // EXIR-specific fallback order. Do not depend on a generic proxy list: if
-    // the direct EXIR host is unreachable on the current network, cors.dev is
-    // the first server-side HTTPS fallback, followed by the legacy proxies.
-    const exirUrls = [
-        target,
-        `https://proxy.cors.dev/${target}`
-    ];
-    /* EXIR has its own fallback queue. Do NOT pass the array to
-       fetchApiWithProxyFallback(), which accepts one URL string.
-       Passing the array there stringifies it into a comma-separated URL
-       and makes the browser path fail even though the native widget works. */
-    let lastError = null;
-    for (const url of exirUrls) {
-        try {
-            const response = await fetchWithTimeout(
-                url,
-                {
-                    method: "GET",
-                    headers: { "Accept": "application/json" },
-                    cache: "no-store"
-                },
-                PRICE_REQUEST_TIMEOUT
-            );
-            if (!response || !response.ok) {
-                lastError = new Error(
-                    "EXIR HTTP " + (response ? response.status : "unknown")
-                );
-                continue;
+    const pending = exirPendingResolvers.splice(0);
+    for (const resolve of pending) resolve(price);
+}
+
+function exirHandleWsMessage(raw) {
+    let msg;
+    try { msg = JSON.parse(raw); } catch { return; }
+
+    if (msg.error || msg.success === false) {
+        recordApiDiagnostic({
+            url: EXIR_WS_URL,
+            outcome: "exir-ws-error",
+            detail: String(msg.error || "Subscription failed")
+        });
+        return;
+    }
+
+    if (msg.topic !== "orderbook" || msg.symbol !== EXIR_WS_SYMBOL) return;
+    if (!msg.data || !Array.isArray(msg.data.asks)) return;
+
+    if (msg.action === "partial") {
+        exirAsks.clear();
+        exirApplyLevels(msg.data.asks);
+        exirHasSnapshot = true;
+    } else if (["insert", "update", "delete"].includes(msg.action)) {
+        if (!exirHasSnapshot) return;
+        exirApplyLevels(msg.data.asks);
+    } else {
+        return;
+    }
+
+    const price = exirBestAsk();
+    if (price !== null) exirPublishLivePrice(price);
+}
+
+function scheduleExirReconnect() {
+    clearInterval(exirPingTimer);
+    clearTimeout(exirReconnectTimer);
+    exirReconnectTimer = setTimeout(() => {
+        exirReconnectDelay = Math.min(exirReconnectDelay * 1.5, 30000);
+        connectExirWebSocket();
+    }, exirReconnectDelay);
+}
+
+function connectExirWebSocket() {
+    clearTimeout(exirReconnectTimer);
+    clearInterval(exirPingTimer);
+
+    exirAsks.clear();
+    exirHasSnapshot = false;
+
+    try {
+        exirSocket = new WebSocket(EXIR_WS_URL);
+    } catch (error) {
+        recordApiDiagnostic({url: EXIR_WS_URL, outcome: "exir-ws-connect-error", detail: error?.message || error});
+        scheduleExirReconnect();
+        return;
+    }
+
+    exirSocket.onopen = () => {
+        exirReconnectDelay = 2000;
+        exirSocket.send(JSON.stringify({op: "subscribe", args: [EXIR_WS_CHANNEL]}));
+
+        exirPingTimer = setInterval(() => {
+            if (exirSocket && exirSocket.readyState === WebSocket.OPEN) {
+                exirSocket.send(JSON.stringify({op: "ping"}));
             }
-            return await parseExirLowestAskResponse(response);
-        } catch (error) {
-            lastError = error;
-            console.warn("EXIR source failed:", url, error);
-        }
-    }
-    throw lastError || new Error("All EXIR sources unavailable");
+        }, 30000);
+    };
+
+    exirSocket.onmessage = event => exirHandleWsMessage(event.data);
+
+    exirSocket.onerror = () => {
+        recordApiDiagnostic({url: EXIR_WS_URL, outcome: "exir-ws-error", detail: "WebSocket connection error"});
+    };
+
+    exirSocket.onclose = () => {
+        clearInterval(exirPingTimer);
+        exirHasSnapshot = false;
+        scheduleExirReconnect();
+    };
 }
+
+/* Primary source: Fridnika worker's averaged USDT/IRT quote.
+   Fallback: the existing EXIR live orderbook WebSocket below. */
+const EXIR_WORKER_PRICE_URL = "https://tether.fridnika.workers.dev/";
+
+async function fetchExirWorkerPrice(timeoutMs = 7000) {
+    const response = await fetchWithTimeout(EXIR_WORKER_PRICE_URL, {
+        method: "GET",
+        headers: { "Accept": "text/plain, application/json" },
+        cache: "no-store"
+    }, timeoutMs);
+    if (!response?.ok) throw new Error("EXIR worker HTTP " + (response?.status ?? "unknown"));
+
+    const body = (await response.text()).trim();
+    let raw = body;
+    // Accept a plain numeric response (e.g. 257747), or a JSON number/string.
+    try {
+        const parsed = JSON.parse(body);
+        if (typeof parsed === "number" || typeof parsed === "string") raw = parsed;
+    } catch { /* The worker may return a plain text number. */ }
+
+    const price = exirNumber(raw);
+    if (!Number.isFinite(price) || price <= 0) throw new Error("Invalid EXIR worker price response");
+    return price;
+}
+
+/* Called by the dashboard's existing market-refresh cycle.
+   Try the averaged worker on every refresh; use the unchanged EXIR WebSocket
+   orderbook only when the worker cannot provide a valid price. */
+async function getExirPrice() {
+    try {
+        const workerPrice = await fetchExirWorkerPrice();
+        exirPublishLivePrice(workerPrice);
+        return workerPrice;
+    } catch (error) {
+        recordApiDiagnostic({
+            url: EXIR_WORKER_PRICE_URL,
+            outcome: "exir-worker-fallback",
+            detail: error?.message || String(error)
+        });
+    }
+
+    if (!exirSocketStarted) {
+        exirSocketStarted = true;
+        connectExirWebSocket();
+    }
+
+    const current = exirBestAsk();
+    if (exirHasSnapshot && current !== null) return current;
+
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            exirPendingResolvers = exirPendingResolvers.filter(fn => fn !== resolve);
+            reject(new Error("EXIR WebSocket snapshot timeout"));
+        }, 15000);
+        exirPendingResolvers.push(price => {
+            clearTimeout(timeout);
+            resolve(price);
+        });
+    });
+}
+
 /* =====================================================
    BITPIN API
-   Uses FIRST ASK price
+   Direct public USDT/IRT orderbook endpoint. data.json is never used for the URL.
 ===================================================== */
-async function getBitpinPrice(
-    apiUrl
-) {
-    if (!apiUrl) {
-        throw new Error(
-            "Bitpin API URL is missing"
-        );
-    }
+const BITPIN_ORDERBOOK_API = "https://api.bitpin.org/api/v1/mth/orderbook/USDT_IRT/";
+async function getBitpinPrice() {
     const response =
         await fetchApiWithProxyFallback(
-            apiUrl,
+            BITPIN_ORDERBOOK_API,
             {
                 method: "GET",
                 headers: {
@@ -10879,7 +11237,12 @@ async function getBitpinPrice(
                 },
                 cache: "no-store"
             },
-            PRICE_REQUEST_TIMEOUT
+            PRICE_REQUEST_TIMEOUT,
+            payload => {
+                const value = parseBestAskPrice(payload);
+                if (value === null) throw new Error("Invalid Bitpin asks payload");
+                return true;
+            }
         );
     if (!response.ok) {
         throw new Error(
@@ -10888,42 +11251,8 @@ async function getBitpinPrice(
     }
     const data =
         await response.json();
-    /*
-       Bitpin orderbook structure:
-       {
-           "asks": [
-               ["187380", "400.00"],
-               ["187414", "33.66"],
-               ...
-           ],
-           "bids": [
-               ["187379", "1.86"],
-               ...
-           ]
-       }
-       We use the FIRST ASK price:
-       asks[0][0]
-       Example:
-       ["187380", "400.00"]
-       price = 187380
-    */
-    if (
-        !Array.isArray(data?.asks)
-        ||
-        data.asks.length === 0
-        ||
-        !Array.isArray(data.asks[0])
-        ||
-        data.asks[0].length === 0
-    ) {
-        throw new Error(
-            "Invalid Bitpin orderbook: asks not found"
-        );
-    }
-    const rawPrice =
-        data.asks[0][0];
-    const price =
-        Number(rawPrice);
+    // Support both array rows [price, amount] and object rows {price}.
+    const price = parseBestAskPrice(data);
     if (
         !Number.isFinite(price)
         ||
@@ -10935,6 +11264,25 @@ async function getBitpinPrice(
     }
     return price;
 }
+/* =====================================================
+   MARKET SOURCE BACKOFF
+===================================================== */
+const MARKET_SOURCE_RETRY_MS = 15000;
+const marketSourceRetryAt = { nobitex: 0, exir: 0, bitpin: 0 };
+async function requestMarketSource(key, request){
+    const retryAt=Number(marketSourceRetryAt[key]||0);
+    if(Date.now()<retryAt)throw new Error(`${key} retry cooldown active`);
+    try{
+        const value=await request();
+        marketSourceRetryAt[key]=0;
+        return value;
+    }catch(error){
+        const retryDelay=/429/.test(String(error?.message||error))?60000:MARKET_SOURCE_RETRY_MS;
+        marketSourceRetryAt[key]=Date.now()+retryDelay;
+        throw error;
+    }
+}
+
 /* =====================================================
    AVERAGE LIVE PRICE
 ===================================================== */
@@ -11030,78 +11378,63 @@ async function loadDashboardData(options = {}) {
             void loadCryptoValue().catch(error =>
                 console.warn("Crypto value refresh failed:", error)
             );
-            let data =
-                loadCachedDashboardData();
+            // Migrate any R01 bank-rate cache before saveLocalData narrows the
+            // snapshot to transactions and cryptoHoldings only.
+            const bankRatePeriods = loadBankRatePeriodsCache();
+            if (bankRatePeriods.length) {
+                clearPageIssue("bank-rate-history");
+            } else {
+                setPageIssue(
+                    "bank-rate-history",
+                    "Bank-rate history is not configured; bank-adjusted figures currently exclude bank interest",
+                    "warn"
+                );
+            }
+            let data = loadCachedDashboardData();
+            if (!isValidDashboardData(data)) data = null;
             let usingCachedData =
                 Boolean(data);
             /* =================================================
                DATA.JSON
             ================================================= */
-            const dataRequest = cacheOnly
-                ? null
-                : fetchWithTimeout(
-                    REMOTE_DATA_JSON_URL,
-                    {
-                        cache:
-                            "default"
-                    },
-                    5000
-                )
-                .then(
-                    response => {
-                        if (!response.ok) {
-                            throw new Error(
-                                "Cannot load data.json"
-                            );
-                        }
-                        return response.json();
-                    }
-                )
-                .then(
-                    freshData => {
-                        saveLocalData(
-                            freshData
-                        );
+            const shouldRefreshRemoteData = !cacheOnly &&
+                (!data || getDashboardDataCacheAge() >= DATA_CACHE_MAX_AGE);
+            const dataRequest = shouldRefreshRemoteData
+                ? fetchWithTimeout(REMOTE_DATA_JSON_URL, { method: "GET", cache: "no-store", headers: { "Accept": "application/json" } }, 7000)
+                    .then(async response => {
+                        if (!response.ok) throw new Error(`data.json HTTP ${response.status}`);
+                        const freshData = await response.json();
+                        if (!isValidDashboardData(freshData)) throw new Error("data.json returned an invalid dashboard structure");
+                        saveLocalData(freshData);
                         clearPageIssue("data-json");
                         return freshData;
-                    }
-                )
-                .catch(error => {
-                    const hasCachedDashboard = Boolean(data);
-                    setPageIssue(
-                        "data-json",
-                        hasCachedDashboard
-                            ? "data.json cached"
-                            : "data.json unavailable",
-                        hasCachedDashboard ? "cache" : "error"
-                    );
-                    throw error;
-                });
+                    })
+                    .catch(error => {
+                        const hasCachedDashboard = Boolean(data);
+                        setPageIssue("data-json", hasCachedDashboard ? "data.json cached; refresh failed" : "data.json unavailable", hasCachedDashboard ? "cache" : "error");
+                        throw error;
+                    })
+                : null;
             if (!data) {
-                if (cacheOnly) {
-                    throw new Error(
-                        "No saved dashboard snapshot is available yet."
-                    );
-                }
+                if (cacheOnly) throw new Error("No saved dashboard snapshot is available yet.");
                 try {
-                    data =
-                        await dataRequest;
-                    usingCachedData =
-                        false;
+                    data = await dataRequest;
+                    usingCachedData = false;
+                } catch (error) {
+                    throw new Error("Offline and no saved dashboard data is available.");
                 }
-                catch (error) {
-                    throw new Error(
-                        "Offline and no saved dashboard data is available."
-                    );
+            } else if (dataRequest) {
+                // The saved snapshot is already visible; replace it with fresh data
+                // when the TTL expires. On failure, retain the saved snapshot.
+                try {
+                    data = await dataRequest;
+                    usingCachedData = false;
+                } catch (error) {
+                    usingCachedData = true;
+                    console.warn("Using last valid dashboard snapshot:", error);
                 }
-            }
-            else if (!cacheOnly) {
-                usingCachedData =
-                    true;
-                dataRequest
-                    .catch(
-                        () => {}
-                    );
+            } else {
+                usingCachedData = true;
             }
             /*
                CRYPTO PORTFOLIO
@@ -11120,20 +11453,8 @@ async function loadDashboardData(options = {}) {
                         error
                     )
             );
-            const bankRatePeriods =
-                parseBankRatePeriods(
-                    data.bankRatePeriods
-                );
-            const divisor =
-                Number(
-                    data.priceDivisor
-                )
-                ||
-                10;
-            const bitpinApi =
-                data.bitpinApi
-                ||
-                "https://api.bitpin.org/api/v1/mth/orderbook/USDT_IRT/";
+            // Exchange API URLs and Rial/Toman conversion are project config,
+            // not user data. Never read them from data.json.
             /* =================================================
                USE CACHE FIRST
             ================================================= */
@@ -11169,16 +11490,9 @@ async function loadDashboardData(options = {}) {
             if (!cacheOnly) {
                 const results =
                     await Promise.allSettled([
-                        getCurrentPrice(
-                            data.priceApi,
-                            divisor
-                        ),
-                        getExirPrice(
-                            data.exirApi || EXIR_ORDERBOOK_API
-                        ),
-                        getBitpinPrice(
-                            bitpinApi
-                        )
+                        requestMarketSource("nobitex", () => getCurrentPrice()),
+                        requestMarketSource("exir", () => getExirPrice()),
+                        requestMarketSource("bitpin", () => getBitpinPrice())
                     ]);
                 const nobitexResult =
                     results[0];
@@ -11791,20 +12105,26 @@ async function globalPulseCheckNotification(commodity, percent, currentPrice=nul
     }
     globalPulseSaveAlertState();
 }
-async function fetchGlobalPulseJson(url){
-    const freshUrl = url + (url.includes("?") ? "&" : "?") + "fresh=" + Date.now() + "&r=" + Math.random().toString(36).slice(2);
-    // TSETMC must always read a fresh response. The unique query string plus
-    // cache:"no-store" prevents browser/WebView and service-worker caching
-    // from serving an older Worker response. No custom headers are used so
-    // the request remains a simple CORS GET on older Android WebViews.
-    const response = await fetchWithTimeout(
-        freshUrl,
-        { method:"GET", cache:"no-store" },
-        PRICE_REQUEST_TIMEOUT
+async function fetchGlobalPulseJson(url, validatePayload = null){
+    const freshUrl = url + (url.includes("?") ? "&" : "?") + "fresh=" + Date.now();
+    const response = await fetchWithFallback(
+        [freshUrl, `https://proxy.cors.dev/${freshUrl}`],
+        { method: "GET", cache: "no-store", headers: { "Accept": "application/json" } },
+        8000,
+        async candidate => {
+            const payload = await candidate.json();
+            if (!payload || typeof payload !== "object") throw new Error("Global Pulse returned invalid JSON structure");
+            if (typeof validatePayload === "function") {
+                const valid = await validatePayload(payload);
+                if (valid === false) throw new Error("Global Pulse data validation failed");
+            }
+            return true;
+        }
     );
-    if (!response.ok) throw new Error(`Global Pulse API HTTP ${response.status}`);
-    return await response.json();
+    return response.json();
 }
+
+
 const GLOBAL_PULSE_IRAN_TZ = "Asia/Tehran";
 const GLOBAL_PULSE_SESSION_DEFS = {
     Sydney: { tz:"Australia/Sydney", open:[7,0], close:[16,0], stateId:"globalPulseSydneyState", timerId:"globalPulseSydneyTimer" },
@@ -12083,6 +12403,7 @@ function globalPulseEconomicExtractEvents(data){
     return [];
 }
 const GLOBAL_PULSE_ECONOMIC_CACHE_KEY = "globalPulseEconomicCache-v2";
+let globalPulseEconomicLoadInProgress = null;
 function globalPulseReadEconomicCache(){
     try{
         const data=JSON.parse(localStorage.getItem(GLOBAL_PULSE_ECONOMIC_CACHE_KEY)||"{}");
@@ -12097,11 +12418,28 @@ function globalPulseSetEconomicCacheMode(enabled){
     if(root) root.classList.toggle("cache-mode",!!enabled);
 }
 async function loadGlobalPulseEconomicEvents(force=false){
+    if (globalPulseEconomicLoadInProgress) return globalPulseEconomicLoadInProgress;
+    if(!force&&globalPulseEconomicEvents.length&&Date.now()-globalPulseEconomicLoadedAt<600000) return;
+    globalPulseEconomicLoadInProgress = loadGlobalPulseEconomicEventsInternal(force);
+    try { return await globalPulseEconomicLoadInProgress; }
+    finally { globalPulseEconomicLoadInProgress = null; }
+}
+async function loadGlobalPulseEconomicEventsInternal(force=false){
     if(!force&&globalPulseEconomicEvents.length&&Date.now()-globalPulseEconomicLoadedAt<600000) return;
     try{
         const separator=GLOBAL_PULSE_ECONOMIC_URL.includes("?")?"&":"?";
         const url=`${GLOBAL_PULSE_ECONOMIC_URL}${separator}_=${Date.now()}`;
-        const response=await fetchWithTimeout(url,{method:"GET",cache:"no-store",mode:"cors",headers:{"Accept":"application/json"}},12000);
+        const response=await fetchWithFallback(
+            [url, `https://proxy.cors.dev/${url}`],
+            {method:"GET",cache:"no-store",mode:"cors",headers:{"Accept":"application/json"}},
+            12000,
+            async candidate=>{
+                const payload=await candidate.json();
+                const rows=globalPulseEconomicExtractEvents(payload);
+                if(!rows.some(event=>globalPulseEconomicDate(event))) throw new Error("Economic calendar returned no valid event records");
+                return true;
+            }
+        );
         if(!response.ok) throw new Error(`Economic calendar HTTP ${response.status}`);
         const data=await response.json();
         const events=globalPulseEconomicExtractEvents(data);
@@ -12385,6 +12723,9 @@ const GLOBAL_PULSE_TSE_DEFAULT_RESULTS = [
     {symbol:"عیار",ok:true,lastPrice:6420210,lastPricePercent:0.28,closingPrice:6432340,closingPricePercent:0.47}
 ];
 let globalPulseTsetmcTimer = null;
+let globalPulseTsetmcLoopEnabled = false;
+let globalPulseTsetmcLoadInProgress = false;
+let globalPulseTsetmcFailureCount = 0;
 let globalPulseTsetmcLastFetchAt = 0;
 let globalPulseTsetmcAlertState = {};
 
@@ -12497,7 +12838,13 @@ function saveGlobalPulseTsetmcActiveApi(index){
     globalPulseTsetmcActiveApiIndex=index===1?1:0;
     try{localStorage.setItem(GLOBAL_PULSE_TSE_ACTIVE_API_KEY,String(globalPulseTsetmcActiveApiIndex));}catch(e){}
 }
-async function fetchGlobalPulseTsetmcWithFailover(requestStartedAt){
+let globalPulseTsetmcFetchInProgress = null;
+function fetchGlobalPulseTsetmcWithFailover(requestStartedAt){
+    if (globalPulseTsetmcFetchInProgress) return globalPulseTsetmcFetchInProgress;
+    globalPulseTsetmcFetchInProgress = fetchGlobalPulseTsetmcWithFailoverInternal(requestStartedAt);
+    return globalPulseTsetmcFetchInProgress.finally(() => { globalPulseTsetmcFetchInProgress = null; });
+}
+async function fetchGlobalPulseTsetmcWithFailoverInternal(requestStartedAt){
     const bases=[GLOBAL_PULSE_TSE_WORKER_URL,GLOBAL_PULSE_TSE_FALLBACK_URL];
     const active=readGlobalPulseTsetmcActiveApi();
     const order=[active,active===0?1:0];
@@ -12509,7 +12856,12 @@ async function fetchGlobalPulseTsetmcWithFailover(requestStartedAt){
             const response=await fetchApiWithProxyFallback(
                 url,
                 {method:"GET",headers:{"Accept":"application/json"},cache:"no-store"},
-                PRICE_REQUEST_TIMEOUT
+                PRICE_REQUEST_TIMEOUT,
+                payload => {
+                    const rows = Array.isArray(payload?.results) ? payload.results.filter(row => row && String(row.symbol || "").trim()) : [];
+                    if (!payload?.ok || !rows.length || !rows.some(row => Number(row.lastPrice) > 0)) throw new Error("TSETMC payload has no valid market rows");
+                    return true;
+                }
             );
             if(!response.ok)throw new Error(`HTTP ${response.status}`);
             const data=await response.json();
@@ -12526,12 +12878,14 @@ async function fetchGlobalPulseTsetmcWithFailover(requestStartedAt){
     throw firstError||new Error("TSETMC sources unavailable");
 }
 async function loadGlobalPulseTsetmc(force=false){
+    if (globalPulseTsetmcLoadInProgress) return;
     readGlobalPulseTsetmcAlertState();
     const cached=readGlobalPulseTsetmcCache();
     if(Array.isArray(cached.results)&&cached.results.length)globalPulseRenderTsetmc(cached.results);
     const now=Date.now();
     if(!force && now-globalPulseTsetmcLastFetchAt<GLOBAL_PULSE_TSE_REFRESH_MS-2000)return;
 
+    globalPulseTsetmcLoadInProgress = true;
     try{
         const requestStartedAt=Date.now();
         const failover=await fetchGlobalPulseTsetmcWithFailover(requestStartedAt);
@@ -12560,6 +12914,8 @@ async function loadGlobalPulseTsetmc(force=false){
         globalPulseRenderTsetmc(results);
         for(const row of results)await globalPulseCheckTsetmcNotification(row);
         clearPageIssue("global-tsetmc");
+        globalPulseTsetmcFailureCount = 0;
+        return true;
     }catch(error){
         console.warn("TSETMC worker unavailable:",error);
         if(Array.isArray(cached.results)&&cached.results.length){
@@ -12568,12 +12924,23 @@ async function loadGlobalPulseTsetmc(force=false){
         } else {
             setPageIssue("global-tsetmc", `TSETMC Worker error: ${error?.message || "current data unavailable"}`, "error");
         }
+        globalPulseTsetmcFailureCount++;
+        return false;
+    } finally {
+        globalPulseTsetmcLoadInProgress = false;
     }
 }
 function startGlobalPulseTsetmc(){
-    if(globalPulseTsetmcTimer)clearInterval(globalPulseTsetmcTimer);
-    loadGlobalPulseTsetmc(true);
-    globalPulseTsetmcTimer=setInterval(()=>loadGlobalPulseTsetmc(true),GLOBAL_PULSE_TSE_REFRESH_MS);
+    if(globalPulseTsetmcTimer)clearTimeout(globalPulseTsetmcTimer);
+    globalPulseTsetmcLoopEnabled = true;
+    const tick = async () => {
+        const succeeded = await loadGlobalPulseTsetmc(true);
+        const delay = succeeded
+            ? GLOBAL_PULSE_TSE_REFRESH_MS
+            : Math.min(60000, GLOBAL_PULSE_TSE_REFRESH_MS * Math.pow(2, Math.min(Math.max(0, globalPulseTsetmcFailureCount - 1), 3)));
+        if (globalPulseTsetmcLoopEnabled) globalPulseTsetmcTimer = setTimeout(tick, delay);
+    };
+    void tick();
 }
 
 const GLOBAL_PULSE_FREEZE_KEY = "globalPulseCommodityFreeze-v1";
@@ -12602,7 +12969,8 @@ function saveGlobalPulseCommodityCache(data){
 }
 function globalPulseCommodityValue(data,symbol){
     const row=data?.[symbol] || data?.symbols?.[symbol];
-    return row && Number.isFinite(Number(row.mid)) ? Number(row.mid) : null;
+    const price = Number(row?.mid);
+    return Number.isFinite(price) && price > 0 ? price : null;
 }
 function globalPulseCommodityDayChange(data,symbol){
     const row=data?.[symbol] || data?.symbols?.[symbol];
@@ -12610,13 +12978,21 @@ function globalPulseCommodityDayChange(data,symbol){
     return Number.isFinite(value) ? value : null;
 }
 function globalPulseCommodityBars(data){
-    const bars=Array.isArray(data?.bars)?data.bars:Array.isArray(data)?data:[];
-    return bars.map(b=>({
-        t:Date.parse(String(b?.openTime||b?.timestamp||b?.time||"")),
-        close:Number(b?.close),
-        open:Number(b?.open),
-        isOpen:Boolean(b?.isOpen)
-    })).filter(b=>Number.isFinite(b.t)&&Number.isFinite(b.close)&&b.close>0)
+    const bars=Array.isArray(data?.bars)?data.bars:
+        Array.isArray(data?.data?.bars)?data.data.bars:
+        Array.isArray(data?.data)?data.data:
+        Array.isArray(data?.result?.bars)?data.result.bars:
+        Array.isArray(data)?data:[];
+    return bars.map(b=>{
+        const rawTime=Array.isArray(b)?b[0]:(b?.openTime??b?.timestamp??b?.time??b?.date??"");
+        let t=Number(rawTime);
+        if(Number.isFinite(t)&&t>0){if(t<100000000000)t*=1000;}
+        else t=Date.parse(String(rawTime));
+        const close=Number(Array.isArray(b)?b[4]:(b?.close??b?.c??b?.price));
+        const open=Number(Array.isArray(b)?b[1]:(b?.open??b?.o));
+        const rawOpen=Array.isArray(b)?false:(b?.isOpen===true||String(b?.isOpen||"").toLowerCase()==="true");
+        return {t,close,open,isOpen:rawOpen};
+    }).filter(b=>Number.isFinite(b.t)&&Number.isFinite(b.close)&&b.close>0)
       .sort((a,b)=>a.t-b.t);
 }
 function globalPulsePreviousDailyClose(data){
@@ -12637,8 +13013,9 @@ function globalPulseApplyCommodity(idPrice,idChange,price,change,cacheKey){
         if(Number.isFinite(Number(cached?.change))) setGlobalPulseChange(idChange,cached.change);
     }
 }
-async function loadGlobalPulse(){
-    loadGlobalPulseEconomicEvents(true);
+let globalPulseLoadInProgress = null;
+async function loadGlobalPulseInternal(){
+    loadGlobalPulseEconomicEvents(false);
     const cached=readGlobalPulseCommodityCache();
     let live=false;
     let batch=null;
@@ -12653,16 +13030,43 @@ async function loadGlobalPulse(){
     const oilPrice=globalPulseCommodityValue(batch,"USOIL");
     // Use Biquote's own dayDiffPercent for both the displayed value and
     // notification decisions. This keeps them on exactly the same API field.
-    const goldChange=globalPulseCommodityDayChange(batch,"XAUUSD");
-    const oilChange=globalPulseCommodityDayChange(batch,"USOIL");
+    let goldChange=globalPulseCommodityDayChange(batch,"XAUUSD");
+    let oilChange=globalPulseCommodityDayChange(batch,"USOIL");
+    let effectiveGoldPrice=goldPrice;
+    let effectiveOilPrice=oilPrice;
 
-    if(Number.isFinite(goldPrice)&&Number.isFinite(goldChange)){
-        cached.gold={price:goldPrice,change:goldChange,updatedAt:Date.now()};
+    // If the aggregate feed is incomplete, try each already-configured OHLC
+    // endpoint independently before falling back to cached values.
+    if (!Number.isFinite(effectiveGoldPrice) || !Number.isFinite(goldChange)) {
+        try {
+            const goldBarsPayload = await fetchGlobalPulseJson(GLOBAL_PULSE_GOLD_OHLC_URL, payload => globalPulseCommodityBars(payload).length >= 2);
+            const bars = globalPulseCommodityBars(goldBarsPayload);
+            const latest = bars[bars.length - 1], previous = bars[bars.length - 2];
+            if (latest && previous && latest.close > 0 && previous.close > 0) {
+                effectiveGoldPrice = latest.close;
+                goldChange = ((latest.close - previous.close) / previous.close) * 100;
+            }
+        } catch (error) { console.warn("Gold OHLC fallback failed:", error); }
+    }
+    if (!Number.isFinite(effectiveOilPrice) || !Number.isFinite(oilChange)) {
+        try {
+            const oilBarsPayload = await fetchGlobalPulseJson(GLOBAL_PULSE_OIL_OHLC_URL, payload => globalPulseCommodityBars(payload).length >= 2);
+            const bars = globalPulseCommodityBars(oilBarsPayload);
+            const latest = bars[bars.length - 1], previous = bars[bars.length - 2];
+            if (latest && previous && latest.close > 0 && previous.close > 0) {
+                effectiveOilPrice = latest.close;
+                oilChange = ((latest.close - previous.close) / previous.close) * 100;
+            }
+        } catch (error) { console.warn("Oil OHLC fallback failed:", error); }
+    }
+
+    if(Number.isFinite(effectiveGoldPrice)&&Number.isFinite(goldChange)){
+        cached.gold={price:effectiveGoldPrice,change:goldChange,updatedAt:Date.now()};
         saveGlobalPulseCommodityCache(cached);
-        globalPulseApplyCommodity("globalGoldPrice","globalGoldChange",goldPrice,goldChange,"gold");
+        globalPulseApplyCommodity("globalGoldPrice","globalGoldChange",effectiveGoldPrice,goldChange,"gold");
         clearPageIssue("global-gold");
         clearPageIssue("global-gold-change");
-        globalPulseCheckNotification("gold",goldChange,goldPrice);
+        globalPulseCheckNotification("gold",goldChange,effectiveGoldPrice);
     }else if(Number.isFinite(Number(cached?.gold?.price))){
         globalPulseApplyCommodity("globalGoldPrice","globalGoldChange",null,null,"gold");
         setPageIssue("global-gold",`Gold is using cached data${cached.gold.updatedAt?` · ${new Date(cached.gold.updatedAt).toISOString()}`:""}`,"cache");
@@ -12671,12 +13075,12 @@ async function loadGlobalPulse(){
         setPageIssue("global-gold","Gold live price unavailable and no cached value exists","error");
     }
 
-    if(Number.isFinite(oilPrice)&&Number.isFinite(oilChange)){
-        cached.oil={price:oilPrice,change:oilChange,updatedAt:Date.now()};
+    if(Number.isFinite(effectiveOilPrice)&&Number.isFinite(oilChange)){
+        cached.oil={price:effectiveOilPrice,change:oilChange,updatedAt:Date.now()};
         saveGlobalPulseCommodityCache(cached);
-        globalPulseApplyCommodity("globalOilPrice","globalOilChange",oilPrice,oilChange,"oil");
+        globalPulseApplyCommodity("globalOilPrice","globalOilChange",effectiveOilPrice,oilChange,"oil");
         clearPageIssue("global-oil");
-        globalPulseCheckNotification("oil",oilChange,oilPrice);
+        globalPulseCheckNotification("oil",oilChange,effectiveOilPrice);
     }else if(Number.isFinite(Number(cached?.oil?.price))){
         globalPulseApplyCommodity("globalOilPrice","globalOilChange",null,null,"oil");
         setPageIssue("global-oil",`Oil is using cached data${cached.oil.updatedAt?` · ${new Date(cached.oil.updatedAt).toISOString()}`:""}`,"cache");
@@ -12686,20 +13090,27 @@ async function loadGlobalPulse(){
 
     globalPulseRefreshCompactAssetDisplay();
     try{window.dispatchEvent(new Event("crossover-assets-updated"));}catch(e){}
-    if(live){
-        clearPageIssue("global-gold");
-        clearPageIssue("global-oil");
-    }
+    // Each commodity's own validated source path clears or sets its status.
+    // A successful aggregate HTTP response must not hide a missing/invalid symbol.
     syncNativeWidgetSnapshot();
+}
+async function loadGlobalPulse(){
+    if (globalPulseLoadInProgress) return globalPulseLoadInProgress;
+    globalPulseLoadInProgress = loadGlobalPulseInternal();
+    try { return await globalPulseLoadInProgress; }
+    finally { globalPulseLoadInProgress = null; }
 }
 function startGlobalPulse(){
     globalPulseReadAlertState();
     initGlobalPulseCompactAssetButtons();
     startGlobalPulseMarketClock();
     startGlobalPulseTsetmc();
-    if (globalPulseTimer) clearInterval(globalPulseTimer);
-    loadGlobalPulse();
-    globalPulseTimer = setInterval(loadGlobalPulse, GLOBAL_PULSE_REFRESH_MS);
+    if (globalPulseTimer) clearTimeout(globalPulseTimer);
+    const tick = async () => {
+        await loadGlobalPulse();
+        globalPulseTimer = setTimeout(tick, GLOBAL_PULSE_REFRESH_MS);
+    };
+    void tick();
 }
 
 /* =====================================================
@@ -12760,7 +13171,7 @@ let lastCryptoPrice =
 function saveCryptoPrice(value) {
     try {
         const number = Number(value);
-        if (Number.isFinite(number)) {
+        if (Number.isFinite(number) && number > 0) {
             localStorage.setItem(
                 CACHE_KEYS.CRYPTO_PRICE,
                 String(number)
@@ -12774,7 +13185,7 @@ function loadCachedCryptoPrice() {
             CACHE_KEYS.CRYPTO_PRICE
         );
         const number = Number(saved);
-        return Number.isFinite(number) ? number : null;
+        return Number.isFinite(number) && number > 0 ? number : null;
     } catch (error) {
         return null;
     }
@@ -12816,7 +13227,15 @@ function renderCachedCryptoPrice() {
     return cached;
 }
 
-async function loadCryptoValue() {
+let cryptoValueLoadInProgress = null;
+let cryptoValueRetryAt = 0;
+function loadCryptoValue() {
+    if (cryptoValueLoadInProgress) return cryptoValueLoadInProgress;
+    if (Date.now() < cryptoValueRetryAt) return Promise.resolve(false);
+    cryptoValueLoadInProgress = loadCryptoValueInternal();
+    return cryptoValueLoadInProgress.finally(() => { cryptoValueLoadInProgress = null; });
+}
+async function loadCryptoValueInternal() {
     const element =
         $("cryptoValue");
 
@@ -12825,10 +13244,17 @@ async function loadCryptoValue() {
     renderCachedCryptoPrice();
 
     try {
-const response =
-    await fetchWithFallback(
-        WORKER_URLS.crypto
-    );
+const response = await fetchWithFallback(
+    WORKER_URLS.crypto,
+    { method: "GET", headers: { "Accept": "text/plain" } },
+    7000,
+    async candidate => {
+        const raw = (await candidate.text()).trim().replace(/,/g, "");
+        const value = Number(raw);
+        if (!raw || !Number.isFinite(value) || value <= 0) throw new Error("Crypto Worker returned an invalid positive price");
+        return true;
+    }
+);
         if (!response.ok) {
             throw new Error(
                 "Crypto worker unavailable"
@@ -12836,16 +13262,9 @@ const response =
         }
         const text =
             await response.text();
-        const value =
-            Number(
-                text.trim()
-            );
-        if (
-            !Number.isFinite(value)
-        ) {
-            throw new Error(
-                "Invalid crypto value"
-            );
+        const value = Number(String(text).trim().replace(/,/g, ""));
+        if (!Number.isFinite(value) || value <= 0) {
+            throw new Error("Invalid crypto value (must be positive and finite)");
         }
 
         // Keep the last valid value available for the next refresh/open.
@@ -12920,6 +13339,7 @@ const response =
                 });
         }
         cryptoOnline = true;
+        cryptoValueRetryAt = 0;
         clearPageIssue("crypto-price");
         if (element) {
             element.classList.remove(
@@ -12936,6 +13356,7 @@ const response =
         }
         syncNativeWidgetSnapshot();
     } catch (error) {
+        cryptoValueRetryAt = Date.now() + (/429/.test(String(error?.message || error)) ? 60000 : 15000);
         cryptoOnline =
             false;
         if (element) {
@@ -13072,73 +13493,53 @@ function cryptoFailoverSave(coin, state) {
 }
 async function cryptoFetchSource(source, coin) {
     const apiUrl = source.url(coin);
-    const requestOptions = {
-        method: "GET",
-        headers: { "Accept": "application/json" },
-        cache: "no-store"
+    const requestOptions = { method: "GET", headers: { "Accept": "application/json" }, cache: "no-store" };
+    let payload = null;
+
+    const parseAndValidate = async response => {
+        if (!response.ok) throw new Error(`${source.id.toUpperCase()} HTTP ${response.status}`);
+        const candidate = await response.clone().json();
+        let price = null;
+        if (source.id === "mexc" || source.id === "binance") price = Number(candidate.price ?? candidate.lastPrice);
+        else if (source.id === "coingecko") price = Number(candidate?.[CRYPTO_COINGECKO_IDS[coin]]?.usd);
+        else if (source.id === "nestex") price = Number(candidate.last_price ?? candidate.lastPrice);
+        if (!Number.isFinite(price) || price <= 0) throw new Error(`${source.id} returned invalid price`);
+        return candidate;
     };
 
-    /*
-       MEXC is the primary source for every Crypto Portfolio item.
-       Do not rely on the generic dashboard proxy chain here: a browser can
-       open api.mexc.com directly in a tab while fetch() is still blocked by
-       CORS.  The portfolio therefore has its own explicit MEXC request chain.
-       Android still uses the native bridge first inside fetchApiWithProxyFallback.
-    */
-    let response;
     if (source.id === "mexc" || source.id === "binance") {
-        const exchangeName = source.id.toUpperCase();
-        const exchangeUrls = [
-            apiUrl,
-            `https://proxy.cors.dev/${apiUrl}`
-        ];
+        const exchangeUrls = [apiUrl, `https://proxy.cors.dev/${apiUrl}`];
         let lastError = null;
         for (const url of exchangeUrls) {
             try {
                 const candidate = await fetchWithTimeout(url, requestOptions, 6500);
-                if (!candidate.ok) throw new Error(`${exchangeName} HTTP ${candidate.status}`);
-                response = candidate;
+                payload = await parseAndValidate(candidate);
                 break;
-            } catch (error) {
-                lastError = error;
-            }
+            } catch (error) { lastError = error; }
         }
-        if (!response) throw (lastError || new Error(`${exchangeName} unavailable`));
+        if (!payload) throw (lastError || new Error(`${source.id} unavailable`));
     } else {
-        response = await fetchApiWithProxyFallback(
-            apiUrl,
-            requestOptions,
-            PRICE_REQUEST_TIMEOUT
-        );
+        const response = await fetchApiWithProxyFallback(apiUrl, requestOptions, 8000, candidate => {
+            const price = source.id === "coingecko"
+                ? Number(candidate?.[CRYPTO_COINGECKO_IDS[coin]]?.usd)
+                : Number(candidate?.last_price ?? candidate?.lastPrice);
+            if (!Number.isFinite(price) || price <= 0) throw new Error(`${source.id} returned invalid price`);
+            return true;
+        });
+        payload = await response.json();
     }
 
-    const payload = await response.json();
-    if (!payload || typeof payload !== "object") {
-        throw new Error(`${source.id} returned invalid JSON`);
-    }
-
-    let price = null;
-    let previousClose = null;
-    let changePct = null;
-
-    if (source.id === "mexc" || source.id === "binance") {
-        price = Number(payload.price ?? payload.lastPrice);
-    } else if (source.id === "coingecko") {
-        const id = CRYPTO_COINGECKO_IDS[coin];
-        price = Number(payload?.[id]?.usd);
-    } else if (source.id === "nestex") {
+    let price = null, previousClose = null, changePct = null;
+    if (source.id === "mexc" || source.id === "binance") price = Number(payload.price ?? payload.lastPrice);
+    else if (source.id === "coingecko") price = Number(payload?.[CRYPTO_COINGECKO_IDS[coin]]?.usd);
+    else if (source.id === "nestex") {
         price = Number(payload.last_price ?? payload.lastPrice);
         previousClose = Number(payload.oldltp24h);
-        if (Number.isFinite(price) && price > 0 &&
-            Number.isFinite(previousClose) && previousClose > 0) {
+        if (Number.isFinite(price) && price > 0 && Number.isFinite(previousClose) && previousClose > 0) {
             changePct = ((price - previousClose) / previousClose) * 100;
         }
     }
-
-    if (!Number.isFinite(price) || price <= 0) {
-        throw new Error(`${source.id} returned invalid price`);
-    }
-
+    if (!Number.isFinite(price) || price <= 0) throw new Error(`${source.id} returned invalid price`);
     return {
         price,
         previousClose: Number.isFinite(previousClose) && previousClose > 0 ? previousClose : null,
@@ -13149,17 +13550,21 @@ async function cryptoFetchSource(source, coin) {
     };
 }
 
+
 const CRYPTO_MEXC_PROBE_MS = 30 * 1000;
 
 async function getUnifiedCryptoPrice(coin, options = {}) {
     const normalized = String(coin || "").replace(/[-_\/]/g, "").replace(/USDT$/i, "").toUpperCase();
-    if (!CRYPTO_COINGECKO_IDS[normalized]) {
+    if (!normalized || !/^[A-Z0-9]{2,20}$/.test(normalized)) {
         throw new Error(`Unsupported crypto asset: ${normalized || "unknown"}`);
     }
 
     let state = cryptoFailoverStateFor(normalized);
     const now = Date.now();
     const preferPrimary = options && options.preferPrimary === true;
+    if (state.retryAt > now) {
+        throw new Error(`Crypto price sources are in recovery cooldown for ${Math.ceil((state.retryAt-now)/1000)}s`);
+    }
 
     /*
        MEXC is the authoritative primary source. The Crypto Portfolio calls
@@ -13212,12 +13617,10 @@ async function getUnifiedCryptoPrice(coin, options = {}) {
         return await cryptoFetchSource(source, normalized);
     }
 
-    const startIndex = Math.max(0, Math.min(
-        CRYPTO_PRICE_SOURCES.length - 1,
-        state.sourceIndex
-    ));
-    for (let index = startIndex; index < CRYPTO_PRICE_SOURCES.length; index++) {
-        const source = CRYPTO_PRICE_SOURCES[index];
+    const availableSources = CRYPTO_PRICE_SOURCES.filter(source => source.id !== "coingecko" || !!CRYPTO_COINGECKO_IDS[normalized]);
+    const startIndex = Math.max(0, Math.min(availableSources.length - 1, state.sourceIndex));
+    for (let index = startIndex; index < availableSources.length; index++) {
+        const source = availableSources[index];
         try {
             const result = await cryptoFetchSource(source, normalized);
             cryptoFailoverSave(normalized, { sourceIndex: index, retryAt: 0 });
@@ -13229,7 +13632,7 @@ async function getUnifiedCryptoPrice(coin, options = {}) {
                The next refresh therefore starts directly from the next
                source instead of checking the failed source again.
             */
-            state.sourceIndex = Math.min(index + 1, CRYPTO_PRICE_SOURCES.length - 1);
+            state.sourceIndex = Math.min(index + 1, availableSources.length - 1);
             cryptoFailoverSave(normalized, state);
         }
     }
@@ -13286,7 +13689,7 @@ function loadCryptoPortfolioCache(symbol) {
             JSON.parse(raw);
         if (
             !item ||
-            !Number.isFinite(Number(item.price))
+            !Number.isFinite(Number(item.price)) || Number(item.price) <= 0
         ) {
             return null;
         }
@@ -13884,7 +14287,12 @@ async function loadFearGreedIndex() {
                     headers: { "Accept": "application/json" },
                     cache: "no-store"
                 },
-                5000
+                6000,
+                payload => {
+                    const v = Number(payload?.data?.[0]?.value);
+                    if (!Number.isFinite(v) || v < 0 || v > 100) throw new Error("Invalid Fear & Greed payload");
+                    return true;
+                }
             );
             const data = await response.json();
             const item = data?.data?.[0];
@@ -14646,48 +15054,39 @@ async function rfkjFetchWithFailover(query){
     const urls = [RFKJ_WORKER_URL, RFKJ_FALLBACK_URL];
     const makeUrl = base => base + (base.includes("?") ? "&" : "?") + query;
     const tryFetch = async base => {
-        const controller = new AbortController();
-        const timer = window.setTimeout(() => controller.abort(), RFKJ_REQUEST_TIMEOUT_MS);
-        try{
-            const response = await fetch(makeUrl(base), {
-                method:"GET", cache:"no-store", signal:controller.signal,
-                headers:{"Accept":"application/json"}
-            });
-            if(!response.ok) throw new Error(`Signal Matrix HTTP ${response.status}`);
-            let data = await response.json();
-            if(data && typeof data === "object" && data.data && typeof data.data === "object") data = data.data;
-            if(!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Invalid Signal Matrix response");
-            const hasSignal = ["RF","rf","rangeFilter","range_filter","KJ","kj","kijunsen","ST","st","superTrend","supertrend"]
-                .some(key => Object.prototype.hasOwnProperty.call(data,key));
-            if(!hasSignal) throw new Error("Signal Matrix response contains no signal values");
-            return data;
-        }finally{
-            window.clearTimeout(timer);
-        }
+        const response = await fetchWithTimeout(makeUrl(base), {
+            method:"GET", cache:"no-store", headers:{"Accept":"application/json"}
+        }, RFKJ_REQUEST_TIMEOUT_MS);
+        if(!response.ok) throw new Error(`Signal Matrix HTTP ${response.status}`);
+        let data = await response.json();
+        if(data && typeof data === "object" && data.data && typeof data.data === "object") data = data.data;
+        if(!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Invalid Signal Matrix response");
+        const hasAny = keys => keys.some(key => Object.prototype.hasOwnProperty.call(data,key));
+        const hasRF = hasAny(["RF","rf","rangeFilter","range_filter"]);
+        const hasKJ = hasAny(["KJ","kj","kijunsen"]);
+        const hasST = hasAny(["ST","st","superTrend","supertrend"]);
+        if(!hasRF || !hasKJ || !hasST) throw new Error("Signal Matrix response is missing RF/KJ/ST values");
+        return data;
     };
-    // Always probe the primary first so recovery is detected immediately.
-    try{
+    // Probe primary, then fallback exactly once. Repeating the primary in the
+    // same cycle multiplied traffic without improving recovery probability.
+    let primaryError = null;
+    try {
         const data = await tryFetch(urls[0]);
         rfkjActiveApiIndex = 0;
         return data;
-    }catch(primaryError){
-        try{
-            const data = await tryFetch(urls[1]);
-            rfkjActiveApiIndex = 1;
-            return data;
-        }catch(fallbackError){
-            // If both failed, give the primary one final chance before reporting failure.
-            try{
-                const data = await tryFetch(urls[0]);
-                rfkjActiveApiIndex = 0;
-                return data;
-            }catch(primaryRetryError){
-                throw new Error(`Signal Matrix APIs unavailable (primary: ${primaryRetryError.message || primaryError.message}; fallback: ${fallbackError.message})`);
-            }
-        }
+    } catch (error) {
+        primaryError = error;
+    }
+    try {
+        const data = await tryFetch(urls[1]);
+        rfkjActiveApiIndex = 1;
+        return data;
+    } catch (fallbackError) {
+        throw new Error(`Signal Matrix APIs unavailable (primary: ${primaryError?.message || "failed"}; fallback: ${fallbackError?.message || "failed"})`);
     }
 }
-const RFKJ_POLL_MS = 1000;
+const RFKJ_POLL_MS = 5000;
 const RFKJ_LIVE_CACHE_KEY = "rfkjLiveSignalCache-v1";
 const RFKJ_SIGNAL_CACHE_KEY = "rfkjSignalDisplayCache-v1";
 const RFKJ_SLOT_COUNT = 3;
@@ -14699,6 +15098,9 @@ const rfkjInstances = Array.from({length:RFKJ_SLOT_COUNT},(_,i)=>({
     running:false,
     timer:null,
     requestInProgress:false,
+    cycleInProgress:false,
+    cyclePricePromise:null,
+    cycleDailyChangePromise:null,
     previousSignals:{},
     latestTimeframe:"1",
     latestPrice:null,
@@ -15208,14 +15610,18 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         syncNativeWidgetSnapshot();
         let dailyChangePercent=Number(data.dailyChangePercent);
         if(!Number.isFinite(dailyChangePercent)){
-            try{ dailyChangePercent=await crossoverFetchDailyPercent(coin); }catch(e){}
+            try{
+                if (!state.cycleDailyChangePromise) state.cycleDailyChangePromise = crossoverFetchDailyPercent(coin).catch(() => null);
+                dailyChangePercent = await state.cycleDailyChangePromise;
+            }catch(e){}
         }
-        state.latestDailyChangePercent=Number.isFinite(dailyChangePercent)?dailyChangePercent:null;
+        state.latestDailyChangePercent=Number.isFinite(Number(dailyChangePercent))?Number(dailyChangePercent):null;
         let price=Number(data.price);
         let priceRaw=(data.price===undefined||data.price===null)?null:String(data.price).trim();
         try{
-            const unifiedPrice=await getUnifiedCryptoPrice(coin);
-            if(Number.isFinite(Number(unifiedPrice.price))&&Number(unifiedPrice.price)>0){
+            if (!state.cyclePricePromise) state.cyclePricePromise = getUnifiedCryptoPrice(coin).catch(error => { console.warn(`Unified crypto price failed for ${coin}:`, error); return null; });
+            const unifiedPrice=await state.cyclePricePromise;
+            if(unifiedPrice && Number.isFinite(Number(unifiedPrice.price))&&Number(unifiedPrice.price)>0){
                 price=Number(unifiedPrice.price);
                 priceRaw=String(unifiedPrice.price);
             }
@@ -15280,14 +15686,31 @@ async function rfkjFetchOne(index,timeframe,notify=true){
 }
 async function rfkjFetchSignal(index){
     const state=rfkjInstance(index);
-    if(!state||!state.running)return;
-    // Never let a slow previous cycle block the next polling cycle.
-    // Each worker URL already contains a cache-busting timestamp, so every
-    // cycle asks the Worker for the newest available value.
-    const timeframes=state.selectedTimeframes.slice();
-    await Promise.all(timeframes.map(tf=>rfkjFetchOne(index,tf,true)));
-    rfkjSaveState();
+    if(!state||!state.running||state.cycleInProgress)return;
+    state.cycleInProgress=true;
+    state.cyclePricePromise=null;
+    state.cycleDailyChangePromise=null;
+    try {
+        const timeframes=state.selectedTimeframes.slice();
+        await Promise.all(timeframes.map(tf=>rfkjFetchOne(index,tf,true)));
+        rfkjSaveState();
+    } finally {
+        state.cyclePricePromise=null;
+        state.cycleDailyChangePromise=null;
+        state.cycleInProgress=false;
+    }
 }
+function rfkjScheduleNext(index){
+    const state=rfkjInstance(index);
+    if(!state||!state.running)return;
+    state.timer=setTimeout(async()=>{
+        try { await rfkjFetchSignal(index); }
+        catch (error) { console.warn(`Signal Matrix ${index} cycle failed unexpectedly:`, error); }
+        finally { rfkjScheduleNext(index); }
+    },RFKJ_POLL_MS);
+}
+
+
 function rfkjStart(index,sendStart=true){
     const s=rfkjInstance(index);
     if(!s||s.running)return;
@@ -15311,8 +15734,11 @@ function rfkjStart(index,sendStart=true){
     rfkjSaveState();
     rfkjRenderUltraCompact(false);
     syncNativeWidgetSnapshot();
-    rfkjFetchSignal(index);
-    s.timer=setInterval(()=>rfkjFetchSignal(index),RFKJ_POLL_MS);
+    void (async () => {
+        try { await rfkjFetchSignal(index); }
+        catch (error) { console.warn(`Signal Matrix ${index} initial cycle failed:`, error); }
+        finally { rfkjScheduleNext(index); }
+    })();
     rfkjSaveState();
     rfkjSyncCountLineStates();
 }
@@ -15320,7 +15746,7 @@ function rfkjStop(index,sendStop=true){
     const s=rfkjInstance(index);
     if(!s)return;
     s.running=false;
-    if(s.timer){clearInterval(s.timer);s.timer=null;}
+    if(s.timer){clearTimeout(s.timer);s.timer=null;}
     const b=rfkjGet("rfkjStartStop",index);
     if(b){b.textContent="▶ Start Signal";b.classList.remove("running");}
     s.selectedTimeframes.forEach(tf=>{
@@ -15346,6 +15772,7 @@ function rfkjStop(index,sendStop=true){
     rfkjSaveState();
     rfkjSyncCountLineStates();
 }
+
 function rfkjSelectTimeframe(index,button){
     const s=rfkjInstance(index);
     const card=button.closest(".rfkj-instance");
@@ -15642,9 +16069,17 @@ function crossoverAssetOptions(){
 async function crossoverFetchSpecialPrice(asset){
     const v=String(asset||"").toUpperCase();
     if(v==="GOLD"||v==="OIL"){
-        const data=await fetchGlobalPulseJson(GLOBAL_PULSE_COMMODITY_BATCH_URL);
-        const row=data?.[CROSSOVER_COMMODITY_ASSETS[v].apiSymbol]||data?.symbols?.[CROSSOVER_COMMODITY_ASSETS[v].apiSymbol];
-        const price=Number(row?.mid);
+        const symbol=CROSSOVER_COMMODITY_ASSETS[v].apiSymbol;
+        try {
+            const data=await fetchGlobalPulseJson(GLOBAL_PULSE_COMMODITY_BATCH_URL,payload=>Number(payload?.[symbol]?.mid??payload?.symbols?.[symbol]?.mid)>0);
+            const row=data?.[symbol]||data?.symbols?.[symbol];
+            const price=Number(row?.mid);
+            if(Number.isFinite(price)&&price>0)return {price,updated:new Date().toISOString()};
+        } catch (error) { console.warn(`${v} aggregate price unavailable; trying OHLC fallback`, error); }
+        const historyUrl=v==="GOLD"?GLOBAL_PULSE_GOLD_OHLC_URL:GLOBAL_PULSE_OIL_OHLC_URL;
+        const history=await fetchGlobalPulseJson(historyUrl,payload=>globalPulseCommodityBars(payload).length>0);
+        const bars=globalPulseCommodityBars(history);
+        const price=Number(bars[bars.length-1]?.close);
         if(!Number.isFinite(price)||price<=0)throw new Error(`${v} price unavailable`);
         return {price,updated:new Date().toISOString()};
     }
@@ -15770,7 +16205,14 @@ function crossoverUpdateMailButton(index){
     btn.setAttribute("aria-pressed",enabled?"true":"false");
     btn.setAttribute("aria-label",enabled?"Email alerts on":"Email alerts off");
 }
+let crossoverEmailSyncInProgress = null;
 async function crossoverSyncEmailWorker(){
+    if (crossoverEmailSyncInProgress) return crossoverEmailSyncInProgress;
+    crossoverEmailSyncInProgress = crossoverSyncEmailWorkerInternal();
+    try { return await crossoverEmailSyncInProgress; }
+    finally { crossoverEmailSyncInProgress = null; }
+}
+async function crossoverSyncEmailWorkerInternal(){
     /*
      * The Email Worker is a CRYPTO-only remote monitor.  UI Crossover slots
      * may also monitor USD/GOLD/OIL/TSE, but those assets are deliberately
@@ -15790,13 +16232,13 @@ async function crossoverSyncEmailWorker(){
     const active=items.length>0;
     const payload={clientId:crossoverClientId(),active,count,items};
     try{
-        const response=await fetch(CROSSOVER_EMAIL_WORKER_URL,{
+        const response=await fetchWithTimeout(CROSSOVER_EMAIL_WORKER_URL,{
             method:"POST",
             cache:"no-store",
             headers:{"Content-Type":"application/json","Accept":"application/json"},
             body:JSON.stringify(payload),
             keepalive:true
-        });
+        },8000);
         const text=await response.text().catch(()=>"");
         if(!response.ok)throw new Error(`Email Worker HTTP ${response.status}${text?` • ${text.slice(0,160)}`:""}`);
         clearPageIssue("crossover-email-worker");
@@ -16147,6 +16589,8 @@ function crossoverWriteCachedPrice(asset,price,updated){
         localStorage.setItem(crossoverPriceCacheKey(asset),JSON.stringify({price:value,updated:updated||new Date().toISOString()}));
     }catch(e){}
 }
+const crossoverDailyPercentCache = new Map();
+const crossoverDailyPercentInFlight = new Map();
 async function crossoverFetchDailyPercent(asset){
     const v=String(asset||"").trim().toUpperCase();
     if(!v||v==="USD")return null;
@@ -16158,35 +16602,35 @@ async function crossoverFetchDailyPercent(asset){
         }catch(e){}
         return null;
     }
-
-    // Use the same exchange market data family as the existing Crossover price
-    // path, but request its 24-hour ticker explicitly. The previous implementation
-    // relied on fetchApiWithProxyFallback for a cross-origin endpoint that can be
-    // blocked in WebView, leaving the guide stuck on "Waiting for daily change…".
-    const symbol=typeof cryptoSpotSymbol==="function"
-        ? cryptoSpotSymbol(v)
-        : (v.replace(/[-_\\/]/g,"").endsWith("USDT")?v.replace(/[-_\\/]/g,""):v.replace(/[-_\\/]/g,"")+"USDT");
-    const mexcUrl=`https://api.mexc.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(symbol)}`;
-    const binanceUrl=`https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(symbol)}`;
-    const urls=[
-        mexcUrl,
-        `https://proxy.cors.dev/${mexcUrl}`,
-        binanceUrl,
-        `https://proxy.cors.dev/${binanceUrl}`
-    ];
-    for(const url of urls){
-        try{
-            const response=await fetchWithTimeout(url,{method:"GET",headers:{Accept:"application/json"},cache:"no-store"},4000);
-            if(!response?.ok)continue;
-            const payload=await response.json();
-            const raw=payload?.priceChangePercent;
-            if(raw!==null&&raw!==undefined&&String(raw).trim()!==""&&Number.isFinite(Number(raw))){
-                return Number(raw);
-            }
-        }catch(e){}
-    }
-    return null;
+    const cached=crossoverDailyPercentCache.get(v);
+    if(cached&&Date.now()-cached.at<60000)return cached.value;
+    if(crossoverDailyPercentInFlight.has(v))return crossoverDailyPercentInFlight.get(v);
+    const task=(async()=>{
+        const compact=v.replace(/[-_\\/]/g,"");
+        const symbol=typeof cryptoSpotSymbol==="function"?cryptoSpotSymbol(v):(compact.endsWith("USDT")?compact:compact+"USDT");
+        const mexcUrl=`https://api.mexc.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(symbol)}`;
+        const binanceUrl=`https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(symbol)}`;
+        const urls=[mexcUrl,`https://proxy.cors.dev/${mexcUrl}`,binanceUrl,`https://proxy.cors.dev/${binanceUrl}`];
+        for(const url of urls){
+            try{
+                const response=await fetchWithTimeout(url,{method:"GET",headers:{Accept:"application/json"},cache:"no-store"},4500);
+                if(!response?.ok)continue;
+                const payload=await response.json();
+                const raw=payload?.priceChangePercent;
+                if(raw!==null&&raw!==undefined&&String(raw).trim()!==""&&Number.isFinite(Number(raw))){
+                    const value=Number(raw);
+                    crossoverDailyPercentCache.set(v,{value,at:Date.now()});
+                    return value;
+                }
+            }catch(e){}
+        }
+        return null;
+    })();
+    crossoverDailyPercentInFlight.set(v,task);
+    try{return await task;}finally{crossoverDailyPercentInFlight.delete(v);}
 }
+
+
 async function crossoverFetchOne(index,notify=true){
     const s=crossoverInstance(index);
     if(!s||!s.running||s.requestInProgress)return;
@@ -16349,7 +16793,7 @@ function crossoverStop(index,sendStop=true){
         s.previousPrice=null;s.latestPrice=null;s.latestUpdated=null;
         s.lastCrossAt=null;s.lastCrossDirection=0;s.priceDirection=0;
     }
-    if(s.timer){clearInterval(s.timer);s.timer=null;}
+    if(s.timer){clearTimeout(s.timer);s.timer=null;}
     const b=crossoverGet("crossoverStartStop",index);
     if(b){b.textContent="▶ Start Crossover";b.classList.remove("running");}
     /* Stop clears the visible and cached crossover marker. The next Start
@@ -17253,6 +17697,9 @@ if (
   let selectedTransactionId=null;
   let selectedHistoryPointT=null;
   let transactionsLoadStarted=false;
+  let transactionsLoadInProgress=null;
+  let transactionsLoadRetryTimer=null;
+  let transactionsLoadRetryCount=0;
   function normalizeTransactions(data){
     const rows=Array.isArray(data&&data.transactions)?data.transactions:[];
     return rows.map((t,index)=>{
@@ -17266,10 +17713,14 @@ if (
     }).filter(Boolean).sort((a,b)=>a.t-b.t);
   }
   function refreshChartTransactions(){
-    if(transactionsLoadStarted)return;transactionsLoadStarted=true;
+    if(transactionsLoadStarted||transactionsLoadInProgress)return transactionsLoadInProgress;
     try{const cached=typeof loadCachedDashboardData==='function'?loadCachedDashboardData():null;if(cached)chartTransactions=normalizeTransactions(cached);}catch(e){}
     scheduleDraw();
-    fetch('https://test1800.github.io/data.json',{cache:'default'}).then(r=>{if(!r.ok)throw new Error('data.json HTTP '+r.status);return r.json();}).then(data=>{chartTransactions=normalizeTransactions(data);try{if(typeof saveLocalData==='function')saveLocalData(data);}catch(e){}scheduleDraw();}).catch(()=>{});
+    transactionsLoadInProgress=fetchWithTimeout('https://test1800.github.io/data.json',{method:'GET',headers:{'Accept':'application/json'},cache:'no-store'},7000)
+      .then(async response=>{if(!response.ok)throw new Error('data.json HTTP '+response.status);const data=await response.json();if(!isValidDashboardData(data))throw new Error('data.json transaction snapshot invalid');chartTransactions=normalizeTransactions(data);if(typeof saveLocalData==='function')saveLocalData(data);transactionsLoadStarted=true;transactionsLoadRetryCount=0;if(typeof clearPageIssue==='function')clearPageIssue('chart-transactions');scheduleDraw();})
+      .catch(error=>{transactionsLoadStarted=false;transactionsLoadRetryCount++;if(typeof setPageIssue==='function')setPageIssue('chart-transactions',`Chart transactions refresh failed: ${error?.message||'request error'}`,'warn');console.warn('Chart transactions API failed:',error);if(transactionsLoadRetryTimer)clearTimeout(transactionsLoadRetryTimer);const delay=Math.min(60000,5000*Math.pow(2,Math.min(transactionsLoadRetryCount-1,3)));transactionsLoadRetryTimer=setTimeout(()=>{transactionsLoadInProgress=null;refreshChartTransactions();},delay);})
+      .finally(()=>{if(transactionsLoadStarted)transactionsLoadInProgress=null;});
+    return transactionsLoadInProgress;
   }
   function valid(p){const v=Number(p&&p.v),t=Number(p&&p.t);return Number.isFinite(v)&&v>0&&Number.isFinite(t)&&t>0;}
   // Price history is stored as whole integers throughout the local cache and export.
@@ -17703,10 +18154,13 @@ if (
         const sourceWidth=85/sources.length;
         if(range===syncRange)setChartProgress(sourceStart,'processing');
         try{
-          const response=await fetch(url+(url.includes('?')?'&':'?')+'_chartSync='+Date.now(),{method:'GET',cache:'no-store'});
+          const response=await fetchWithTimeout(url+(url.includes('?')?'&':'?')+'_chartSync='+Date.now(),{method:'GET',headers:{'Accept':'application/json'},cache:'no-store'},12000);
           if(!response.ok)throw new Error('HTTP '+response.status);
           if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.28,'processing');
           const payload=await response.json();
+          const remoteRows=importedRows(payload);
+          const normalizedRemoteRows=normalizeImportedRows(syncRange==='hour'?remoteRows.slice(-35):remoteRows);
+          if(!remoteRows.length || !normalizedRemoteRows.length)throw new Error('History API returned no valid price records');
           successfulSources++;
           if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.48,'processing');
           const old=meta[key]||{};
@@ -17732,9 +18186,9 @@ if (
           }else{
             // Original v52 behavior for every non-hour range; deliberately unchanged.
             const advertisedCount=Number(payload&&payload.count);
-            incomingCount=Number.isFinite(advertisedCount)&&advertisedCount>=0?advertisedCount:normalizeImported(payload).length;
+            incomingCount=Number.isFinite(advertisedCount)&&advertisedCount>=0?advertisedCount:normalizedRemoteRows.length;
             if(old.count===incomingCount&&old.initialized){old.checkedAt=Date.now();meta[key]=old;if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.94,'processing');continue;}
-            incoming=normalizeImported(payload);
+            incoming=normalizedRemoteRows;
           }
           if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.72,'processing');
           for(const point of incoming){const k=String(Number(point.t))+':'+String(Number(point.v));if(!existing.has(k)){existing.add(k);additions.push({t:Number(point.t),v:Number(point.v)});}}
@@ -18076,20 +18530,12 @@ if (
     return {value,timestamp};
   }
   async function fetchCoinPriceEndpoint(url,label){
-    const controller=typeof AbortController!=='undefined'?new AbortController():null;
-    const timeout=controller?setTimeout(()=>controller.abort(),10000):null;
-    try{
-      const options={method:'GET',cache:'no-store'};
-      if(controller)options.signal=controller.signal;
-      const response=await fetch(url+(url.includes('?')?'&':'?')+'_coinSync='+Date.now(),options);
-      if(!response.ok)throw new Error(label+' HTTP '+response.status);
-      const body=await response.text();
-      return parseCoinPricePayload(body);
-    }catch(error){
-      if(error&&error.name==='AbortError')throw new Error(label+' timeout (10s)');
-      throw error;
-    }finally{if(timeout)clearTimeout(timeout);}
+    const response=await fetchWithTimeout(url+(url.includes('?')?'&':'?')+'_coinSync='+Date.now(),{method:'GET',headers:{'Accept':'application/json,text/plain'},cache:'no-store'},10000);
+    if(!response.ok)throw new Error(label+' HTTP '+response.status);
+    return parseCoinPricePayload(await response.text());
   }
+
+
   function saveCoinLatest(value,timestamp){
     coinLatestValue=value;
     try{
@@ -18112,7 +18558,8 @@ if (
     }catch(e){}
     return null;
   }
-  async function refreshCoinLatest(){
+  let coinLatestRefreshInProgress=null;
+  async function refreshCoinLatestInternal(){
     let primaryError=null;
     // Primary source: coin.rxw.workers.dev returns the live Coin price.
     try{
@@ -18143,6 +18590,11 @@ if (
       const cachedFallback=getCachedCoinFallback();
       if(Number.isFinite(cachedFallback)&&cachedFallback>0){coinLatestValue=cachedFallback;scheduleDraw();}
     }
+  }
+  async function refreshCoinLatest(){
+    if(coinLatestRefreshInProgress)return coinLatestRefreshInProgress;
+    coinLatestRefreshInProgress=refreshCoinLatestInternal();
+    try{return await coinLatestRefreshInProgress;}finally{coinLatestRefreshInProgress=null;}
   }
   try{
     const fallback=getCachedCoinFallback();
@@ -18485,10 +18937,13 @@ if (
         const sourceWidth=85/sources.length;
         if(range===syncRange)setChartProgress(sourceStart,'processing');
         try{
-          const response=await fetch(url+(url.includes('?')?'&':'?')+'_chartSync='+Date.now(),{method:'GET',cache:'no-store'});
+          const response=await fetchWithTimeout(url+(url.includes('?')?'&':'?')+'_chartSync='+Date.now(),{method:'GET',headers:{'Accept':'application/json'},cache:'no-store'},12000);
           if(!response.ok)throw new Error('HTTP '+response.status);
           if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.28,'processing');
           const payload=await response.json();
+          const remoteRows=importedRows(payload);
+          const normalizedRemoteRows=normalizeImportedRows(syncRange==='hour'?remoteRows.slice(-35):remoteRows);
+          if(!remoteRows.length || !normalizedRemoteRows.length)throw new Error('Coin history API returned no valid price records');
           successfulSources++;
           if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.48,'processing');
           const old=meta[key]||{};
@@ -18514,9 +18969,9 @@ if (
           }else{
             // Original v52 behavior for every non-hour range; deliberately unchanged.
             const advertisedCount=Number(payload&&payload.count);
-            incomingCount=Number.isFinite(advertisedCount)&&advertisedCount>=0?advertisedCount:normalizeImported(payload).length;
+            incomingCount=Number.isFinite(advertisedCount)&&advertisedCount>=0?advertisedCount:normalizedRemoteRows.length;
             if(old.count===incomingCount&&old.initialized){old.checkedAt=Date.now();meta[key]=old;if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.94,'processing');continue;}
-            incoming=normalizeImported(payload);
+            incoming=normalizedRemoteRows;
           }
           if(range===syncRange)setChartProgress(sourceStart+sourceWidth*.72,'processing');
           for(const point of incoming){
