@@ -5874,6 +5874,41 @@ h1 {
 /* Signal Matrix values: a separate cool-white tone, not gray. */
 .signal-name { color: #CBD5E1; }
 </style>
+
+<style id="global-tsetmc-selector-and-editor">
+.global-tsetmc-section{grid-column:1/-1;width:100%;min-width:0;margin:0 0 -5px;position:relative;z-index:45}
+.global-tsetmc-slot-bar{display:grid;grid-template-columns:minmax(125px,1.1fr) repeat(4,minmax(0,1fr));align-items:center;gap:6px;width:100%;min-width:0;box-sizing:border-box;padding:2px;border:1px solid rgba(148,163,184,.10);border-radius:10px;background:linear-gradient(180deg,rgba(15,23,42,.72),rgba(2,6,23,.55));box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 8px 22px rgba(0,0,0,.12)}
+.global-tsetmc-slot-label{display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0;text-align:center;color:#94a3b8;font-size:clamp(12px,1.25vw,16px);font-weight:900;line-height:1;white-space:nowrap;padding:0 10px}
+
+
+
+
+
+#globalTsetmcCards .global-tsetmc-asset-copy{min-width:0;overflow:hidden}
+#globalTsetmcCards .global-tsetmc-edit{margin-left:4px;color:#93c5fd;border-color:rgba(96,165,250,.25);background:rgba(37,99,235,.12);cursor:pointer}
+#globalTsetmcCards .global-tsetmc-edit:hover{background:rgba(37,99,235,.28);border-color:rgba(96,165,250,.6)}
+.global-tsetmc-editor-backdrop{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(2,6,23,.78);backdrop-filter:blur(5px)}
+.global-tsetmc-editor-backdrop[hidden]{display:none!important}
+.global-tsetmc-editor{width:min(460px,100%);max-height:min(82vh,680px);overflow:auto;border:1px solid rgba(96,165,250,.35);border-radius:15px;background:linear-gradient(160deg,#101d35,#070d1b 72%);box-shadow:0 22px 70px rgba(0,0,0,.55);color:#e2e8f0;direction:rtl}
+.global-tsetmc-editor-head{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid rgba(148,163,184,.13);direction:ltr}
+.global-tsetmc-editor-head strong{font-size:13px;color:#bfdbfe}
+.global-tsetmc-editor-head button{width:28px;height:28px;border:1px solid rgba(148,163,184,.2);border-radius:8px;background:rgba(15,23,42,.7);color:#cbd5e1;font-size:20px;cursor:pointer}
+.global-tsetmc-editor-body{padding:14px;display:flex;flex-direction:column;gap:9px}
+.global-tsetmc-editor-body label{font-size:11px;color:#cbd5e1;font-weight:800}
+.global-tsetmc-search-row{display:flex;gap:7px}
+.global-tsetmc-search-row input{flex:1;min-width:0;height:38px;border:1px solid rgba(96,165,250,.3);border-radius:9px;background:#050b17;color:#f8fafc;padding:0 10px;font-size:13px;outline:none}
+.global-tsetmc-search-row input:focus{border-color:#60a5fa;box-shadow:0 0 0 2px rgba(59,130,246,.15)}
+.global-tsetmc-search-row button,.global-tsetmc-editor-actions button{border:1px solid rgba(96,165,250,.32);border-radius:9px;background:rgba(37,99,235,.22);color:#dbeafe;padding:0 13px;font-size:11px;font-weight:900;cursor:pointer}
+.global-tsetmc-search-status{font-size:10px;color:#94a3b8;min-height:16px;line-height:1.6}
+.global-tsetmc-search-results{display:flex;flex-direction:column;gap:6px;max-height:34vh;overflow:auto}
+.global-tsetmc-result{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:right;padding:9px 11px;border:1px solid rgba(148,163,184,.15);border-radius:9px;background:rgba(15,23,42,.7);color:#e2e8f0;cursor:pointer}
+.global-tsetmc-result strong{font-size:12px;color:#bfdbfe}.global-tsetmc-result span{font-size:10px;color:#94a3b8}
+.global-tsetmc-result.selected{border-color:#60a5fa;background:rgba(37,99,235,.22);box-shadow:inset 0 0 0 1px rgba(96,165,250,.15)}
+.global-tsetmc-editor-actions{display:flex;align-items:center;gap:7px;padding:11px 14px;border-top:1px solid rgba(148,163,184,.13)}
+.global-tsetmc-editor-actions span{flex:1}.global-tsetmc-editor-actions button{height:32px}.global-tsetmc-editor-actions .remove{margin-right:auto;border-color:rgba(248,113,113,.25);background:rgba(127,29,29,.2);color:#fca5a5}.global-tsetmc-editor-actions .cancel{background:rgba(30,41,59,.7);border-color:rgba(148,163,184,.2);color:#cbd5e1}.global-tsetmc-editor-actions .confirm{background:rgba(37,99,235,.42);color:#eff6ff}.global-tsetmc-editor-actions .confirm:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:420px){.global-tsetmc-slot-bar{gap:4px;grid-template-columns:minmax(112px,1.05fr) repeat(4,minmax(0,1fr))}.global-tsetmc-editor-actions{gap:5px;padding:9px}.global-tsetmc-editor-actions button{padding:0 9px;font-size:10px}}
+</style>
+
 </head>
 <body>
 <!--
@@ -6655,7 +6690,7 @@ h1 {
 ================================================= -->
 <section class="card average-price-chart-card" id="averagePriceChartCard" aria-label="Chart">
   <div class="average-price-chart-head">
-    <div class="average-price-chart-title"><span id="averageChartProgressLabel" class="average-chart-progress-label" role="status" aria-label="Chart data status" title="Chart data is current">Chart</span><span id="averageChartDailyChange" class="average-chart-daily-change" aria-label="USD daily change">—</span></div>
+    <div class="average-price-chart-title"><span id="averageChartProgressLabel" class="average-chart-progress-label" role="button" tabindex="0" aria-label="Open Rahdata USD chart" title="Open Rahdata USD chart" onclick="window.openRahdataChart && window.openRahdataChart('usd')">Chart</span><span id="averageChartDailyChange" class="average-chart-daily-change" aria-label="USD daily change">—</span></div>
     <div class="average-price-chart-range" role="group" aria-label="Time range">
       <button type="button" data-average-range="hour">Hour</button>
       <button type="button" data-average-range="day" class="active">Day</button>
@@ -6684,7 +6719,7 @@ h1 {
 </section>
 <section class="card average-price-chart-card" id="coinPriceChartCard" aria-label="Coin">
   <div class="average-price-chart-head">
-    <div class="average-price-chart-title"><span id="coinChartProgressLabel" class="average-chart-progress-label" role="status" aria-label="Chart data status" title="Chart data is current">Coin</span><span id="coinChartDailyChange" class="average-chart-daily-change" aria-label="Coin daily change">—</span></div>
+    <div class="average-price-chart-title"><span id="coinChartProgressLabel" class="average-chart-progress-label" role="button" tabindex="0" aria-label="Open Rahdata Coin chart" title="Open Rahdata Coin chart" onclick="window.openRahdataChart && window.openRahdataChart('coin')">Coin</span><span id="coinChartDailyChange" class="average-chart-daily-change" aria-label="Coin daily change">—</span></div>
     <div class="average-price-chart-range" role="group" aria-label="Time range">
       <button type="button" data-coin-range="hour">Hour</button>
       <button type="button" data-coin-range="day" class="active">Day</button>
@@ -6750,6 +6785,18 @@ h1 {
     <div
         class="crypto-portfolio-grid"
         id="cryptoPortfolioGrid">
+    </div>
+</div>
+<!-- =================================================
+     TSETMC SLOT SELECTOR • FOUR CONFIGURABLE SYMBOLS
+===================================================== -->
+<div class="global-tsetmc-section" id="globalTsetmcSection">
+    <div class="rfkj-slot-bar global-tsetmc-slot-bar" role="group" aria-label="Select number of TSETMC symbols">
+        <span class="rfkj-slot-label global-tsetmc-slot-label">TSETMC</span>
+        <button type="button" class="global-tsetmc-slot-btn" data-tsetmc-count="1" aria-label="Show one TSETMC symbol" title="1"></button>
+        <button type="button" class="global-tsetmc-slot-btn" data-tsetmc-count="2" aria-label="Show two TSETMC symbols" title="2"></button>
+        <button type="button" class="global-tsetmc-slot-btn" data-tsetmc-count="3" aria-label="Show three TSETMC symbols" title="3"></button>
+        <button type="button" class="global-tsetmc-slot-btn" data-tsetmc-count="4" aria-label="Show four TSETMC symbols" title="4"></button>
     </div>
 </div>
 <!-- =================================================
@@ -7478,6 +7525,17 @@ function loadSignalCache() {
         return null;
     }
 }
+function isValidCryptoSignalValue(value) {
+    if (value && typeof value === "object") {
+        const nested = value.signal ?? value.type ?? value.action ?? value.direction ?? value.value ?? value.score;
+        if (nested !== undefined && nested !== value) return isValidCryptoSignalValue(nested);
+    }
+    const text = String(value ?? "").trim().toUpperCase();
+    if (["BUY", "BULL", "BULLISH", "LONG", "SELL", "BEAR", "BEARISH", "SHORT"].includes(text)) return true;
+    if (text === "") return false;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && (numeric === -1 || numeric === 0 || numeric === 1);
+}
 function getSignalNumericValue(value) {
     if (value && typeof value === "object") {
         const nested = value.signal ?? value.type ?? value.action ?? value.direction ?? value.value ?? value.score;
@@ -7574,6 +7632,10 @@ async function loadCryptoSignalsInternal() {
                 if (!payload || typeof payload !== "object" || Array.isArray(payload) || !keys.every(key => Object.prototype.hasOwnProperty.call(payload, key))) {
                     throw new Error("Signal Worker returned incomplete signal fields");
                 }
+                const invalidCoins = keys.filter(key => !isValidCryptoSignalValue(payload[key]));
+                if (invalidCoins.includes("GRAM")) setPageIssue("crypto-signal:GRAM", "GRAM signal missing or invalid", "error");
+                else clearPageIssue("crypto-signal:GRAM");
+                if (invalidCoins.length) throw new Error(`Invalid signal values: ${invalidCoins.join(", ")}`);
                 return true;
             }
         );
@@ -7587,12 +7649,17 @@ async function loadCryptoSignalsInternal() {
             await res.json();
         if (
             !data ||
-            typeof data !== "object"
+            typeof data !== "object" || Array.isArray(data)
         ) {
             throw new Error(
                 "Invalid signal response"
             );
         }
+        const expectedSignalCoins = ["BTC", "BNB", "ETH", "DOGE", "ADA", "SOL", "GRAM", "AVAX", "POL", "TRX"];
+        const invalidSignalCoins = expectedSignalCoins.filter(key => !Object.prototype.hasOwnProperty.call(data, key) || !isValidCryptoSignalValue(data[key]));
+        if (invalidSignalCoins.includes("GRAM")) setPageIssue("crypto-signal:GRAM", "GRAM signal missing or invalid", "error");
+        else clearPageIssue("crypto-signal:GRAM");
+        if (invalidSignalCoins.length) throw new Error(`Invalid or missing signal values: ${invalidSignalCoins.join(", ")}`);
         /*
            Use the cached/previous signal as the
            comparison baseline so changes are still
@@ -7671,10 +7738,10 @@ async function loadCryptoSignalsInternal() {
             loadSignalCache();
         if (cached) {
             renderCryptoSignals(cached, !navigator.onLine);
-            setPageIssue("signal-api", "Signal API offline", "warn");
-            setPageIssue("signal-cache", "Signal cached", "cache");
+            setPageIssue("signal-api", `Crypto Signals API failed: ${error?.message || "request failed"}`, "warn");
+            setPageIssue("signal-cache", "Showing last valid Crypto Signals data", "cache");
         } else {
-            setPageIssue("signal-api", "Signal not received", "error");
+            setPageIssue("signal-api", `Crypto Signals API failed: ${error?.message || "request failed"}`, "error");
         }
         console.warn("Signal API Error:", error);
     }
@@ -9501,10 +9568,15 @@ function pageIssueLabel(key, issue) {
     if (k === "coin-live-fallback") return "Coin Fallback";
     if (k === "connection") return "Internet Error";
     if (k === "data-json") return "Data JSON";
+    if (k === "bank-rate-history") return "Bank History API";
+    if (k === "crypto-signal:GRAM") return "GRAM Signal";
     if (k === "usd") return "USD API";
     if (k === "yekusd") return "YEKUSD API";
-    if (k === "signal-api") return "Signal API";
-    if (k === "signal-cache") return "Signal Cache";
+    if (k === "signal-api") return "Crypto Signals API";
+    if (k === "signal-cache") return "Crypto Signals Cache";
+    if (k === "signal-matrix-primary") return "Matrix Worker";
+    if (k.startsWith("crypto-source:")) return `${k.slice(14)} API`;
+    if (k.startsWith("crypto-price:")) return `${k.slice(13)} Price`;
     if (k === "crypto-portfolio") return "Portfolio API";
     if (k === "crypto-price") return "Crypto API";
     if (k === "fear-greed") return "F&G API";
@@ -9515,11 +9587,24 @@ function pageIssueLabel(key, issue) {
     if (k === "market-connection") return "Market API";
     if (k === "mexc-api") return "MEXC API";
     if (k === "mexc-cache") return "MEXC Cache";
-    if (k.startsWith("mexc:")) return `MEXC ${k.slice(5)}`;
-    if (k.startsWith("rfkj:")) return `Matrix #${k.split(":")[1] || "?"}`;
+    if (k.startsWith("mexc:")) return `${k.slice(5)} API`;
+    if (k.startsWith("rfkj:")) {
+        const parts = k.split(":");
+        const index = parts[1] || "?";
+        const tf = parts[2] || "?";
+        const timeframeLabel = typeof rfkjTimeframeLabel === "function" ? rfkjTimeframeLabel(tf) : tf;
+        const select = document.getElementById(`rfkjCoin${index}`);
+        const asset = String(select?.selectedOptions?.[0]?.textContent || select?.value || "").trim();
+        return `Matrix #${index}${asset ? ` ${asset}` : ""} ${timeframeLabel}`;
+    }
     if (k === "crossover-remote") return "Crossover API";
     if (k === "crossover-email-worker") return "Email API";
-    if (k.startsWith("crossover:")) return `Crossover #${k.split(":")[1] || "?"}`;
+    if (k.startsWith("crossover:")) {
+        const index = k.split(":")[1] || "?";
+        const select = document.getElementById(`crossoverCoin${index}`);
+        const asset = String(select?.selectedOptions?.[0]?.textContent || select?.value || "").trim();
+        return `Crossover #${index}${asset ? ` ${asset}` : ""}`;
+    }
     if (k === "global-gold") return "Gold API";
     if (k === "global-gold-change") return "Gold Change";
     if (k === "global-oil") return "Oil API";
@@ -9565,6 +9650,9 @@ function pageIssueDescription(key, issue) {
     if (k === "signal-api") {
         return "Fresh crypto signals were not received from the API.";
     }
+    if (k === "crypto-signal:GRAM") {
+        return "GRAM is missing or contains an invalid value in the Crypto Signals API response.";
+    }
     if (k === "signal-cache") {
         return "Crypto Signal is using the latest cached data; this section may not be real-time.";
     }
@@ -9586,8 +9674,17 @@ function pageIssueDescription(key, issue) {
     if (k.startsWith("mexc:")) {
         return `${k.slice(5)} live price is unavailable. The dashboard may be showing its last cached value or no current value for this asset.`;
     }
+    if (k === "signal-matrix-primary") {
+        return "The primary Signal Matrix Worker failed; the matrix is currently using its Supabase fallback.";
+    }
     if (k.startsWith("rfkj:")) {
-        return "The Signal Matrix worker did not return valid data for this matrix/timeframe; its signals may be stale or unavailable.";
+        return "Signal Matrix request failed for the selected asset/timeframe. The last valid signal is retained; this timeframe may be stale.";
+    }
+    if (k.startsWith("crypto-source:")) {
+        return "The primary MEXC price source failed and a live fallback source is being used. The displayed price is live but not from the primary exchange.";
+    }
+    if (k.startsWith("crypto-price:")) {
+        return "All configured live price sources failed for this cryptocurrency. The dashboard may retain its last valid cached price.";
     }
     if (k === "crossover-remote") {
         return "The remote Crossover worker could not be synchronized; background Crossover monitoring may be unavailable while local monitoring continues.";
@@ -9673,20 +9770,33 @@ function renderErrorBox() {
         if (type === "info") return "OK";
         return "Warn";
     };
+    const counts = issues.reduce((out, [, issue]) => {
+        const type = issue?.type || "warn";
+        out[type] = (out[type] || 0) + 1;
+        return out;
+    }, {});
+    const escapeAttr = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
     const rows = issues.map(([key, issue]) => {
         const label = pageIssueLabel(key, issue);
         const type = issue?.type || "warn";
+        const detail = `${pageIssueDescription(key, issue)} ${issue?.message || ""}`.trim();
         return `
-            <div class="page-status-report-item ${type}" title="${label}">
+            <div class="page-status-report-item ${type}" title="${escapeAttr(detail)}" aria-label="${escapeAttr(`${label}: ${detail}`)}">
                 <span class="page-status-dot" aria-hidden="true">${statusIcon(type)}</span>
-                <strong>${label}</strong>
+                <strong>${escapeAttr(label)}</strong>
                 <span class="page-status-short">${statusText(type)}</span>
             </div>
         `;
     }).join("");
+    const summary = [
+        counts.error ? `${counts.error} Error` : "",
+        counts.warn ? `${counts.warn} Warn` : "",
+        counts.cache ? `${counts.cache} Cache` : "",
+        counts.info ? `${counts.info} OK` : ""
+    ].filter(Boolean).join(" • ");
     errorBox.innerHTML = `
         <div class="error page-status-report">
-            <div class="page-status-report-title">Issues</div>
+            <div class="page-status-report-title">Issues${summary ? ` · ${escapeAttr(summary)}` : ""}</div>
             <div class="page-status-report-list">
                 ${rows}
             </div>
@@ -12757,6 +12867,16 @@ function initGlobalPulseCompactAssetButtons(){
     if(!globalPulseCompactButtonsReady){
         globalPulseCompactButtonsReady=true;
         document.addEventListener("click",event=>{
+            // The TSETMC edit pencil also uses the compact-button visual class.
+            // Handle it first in capture phase so the compact-asset handler cannot
+            // swallow the click before the symbol editor opens.
+            const editBtn=event.target.closest?.(".global-tsetmc-edit[data-tsetmc-edit]");
+            if(editBtn){
+                event.preventDefault();
+                event.stopPropagation();
+                globalPulseTsetmcOpenEditor(editBtn.dataset.tsetmcEdit);
+                return;
+            }
             const btn=event.target.closest?.(".global-pulse-compact-select");
             if(!btn)return;
             event.preventDefault(); event.stopPropagation();
@@ -12787,16 +12907,504 @@ const GLOBAL_PULSE_TSE_REFRESH_MS = 10 * 1000;
 const GLOBAL_PULSE_TSE_START_MIN = 8 * 60 + 45;
 const GLOBAL_PULSE_TSE_END_MIN = 18 * 60;
 const GLOBAL_PULSE_TSE_ACTIVE_DAYS = new Set([0,1,2,3,6]); // Sat-Wed in Tehran
-const GLOBAL_PULSE_TSE_DEFAULT_RESULTS = [
-    {symbol:"رانیز",ok:true,lastPrice:191400,lastPricePercent:1.59,closingPrice:191500,closingPricePercent:1.65},
-    {symbol:"عیار",ok:true,lastPrice:6420210,lastPricePercent:0.28,closingPrice:6432340,closingPricePercent:0.47}
-];
+const GLOBAL_PULSE_TSE_DEFAULT_RESULTS = [];
 let globalPulseTsetmcTimer = null;
 let globalPulseTsetmcLoopEnabled = false;
 let globalPulseTsetmcLoadInProgress = false;
 let globalPulseTsetmcFailureCount = 0;
 let globalPulseTsetmcLastFetchAt = 0;
 let globalPulseTsetmcAlertState = {};
+
+const GLOBAL_PULSE_TSE_SLOTS_KEY = "globalPulseTsetmcSlots-v1";
+const GLOBAL_PULSE_TSE_API_BASE = "https://cdn.tsetmc.com/api";
+let globalPulseTsetmcEditorSlot = 1;
+let globalPulseTsetmcEditorCandidate = null;
+let globalPulseTsetmcEditorResults = [];
+const globalPulseTsetmcQuoteCache = new Map();
+const globalPulseTsetmcQuoteInFlight = new Map();
+
+function globalPulseTsetmcReadConfig(){
+    try{
+        const raw=JSON.parse(localStorage.getItem(GLOBAL_PULSE_TSE_SLOTS_KEY)||"null");
+        const slots=Array.isArray(raw?.slots)?raw.slots.slice(0,4):[];
+        while(slots.length<4)slots.push(null);
+        return {count:Math.max(1,Math.min(4,Number(raw?.count)||1)),slots:slots.map(x=>x&&typeof x==="object"?x:null)};
+    }catch(e){return {count:1,slots:[null,null,null,null]};}
+}
+function globalPulseTsetmcGetSlots(){
+    const config=globalPulseTsetmcReadConfig();
+    return config.slots.slice(0,config.count);
+}
+function globalPulseTsetmcSyncNative(){
+    try{
+        const config=globalPulseTsetmcReadConfig();
+        const list=config.slots.slice(0,config.count).map((item,index)=>item?({
+            slot:index+1,symbol:String(item.symbol||""),name:String(item.name||""),insCode:String(item.insCode||"")
+        }):null).filter(item=>item&&item.symbol&&/^\d+$/.test(item.insCode));
+        if(window.AndroidNotifications&&typeof window.AndroidNotifications.setTsetmcWatchlistJson==="function"){
+            window.AndroidNotifications.setTsetmcWatchlistJson(JSON.stringify(list));
+        }
+    }catch(e){console.warn("TSETMC native watchlist sync failed",e);}
+}
+function globalPulseTsetmcResetCrossoverForSlotChanges(previous,next){
+    try{
+        if(typeof crossoverInstances==="undefined"||!Array.isArray(crossoverInstances))return;
+        let changed=false;
+        for(let slot=1;slot<=4;slot++){
+            const before=previous.slots[slot-1],after=next.slots[slot-1];
+            const wasActive=slot<=previous.count,isActive=slot<=next.count;
+            const beforeCode=wasActive?String(before?.insCode||""):"";
+            const afterCode=isActive?String(after?.insCode||""):"";
+            if(beforeCode===afterCode)continue;
+            const asset=`TSE|SLOT${slot}`;
+            const oldSymbol=String(before?.symbol||"").trim().toUpperCase();
+            const legacyAsset=oldSymbol?`TSE|${oldSymbol}`:"";
+            crossoverInstances.forEach((state,index)=>{
+                if(!state)return;
+                let mapped=false;
+                if(legacyAsset&&String(state.coin||"").toUpperCase()===legacyAsset){state.coin=asset;mapped=true;}
+                if(legacyAsset&&String(state.activeCoin||"").toUpperCase()===legacyAsset){state.activeCoin=asset;mapped=true;}
+                if(mapped){changed=true;crossoverUpdateUI(index+1);}
+                const monitored=String(state.running?(state.activeCoin||state.coin):state.coin||"").toUpperCase();
+                if(monitored!==asset)return;
+                state.previousPrice=null;state.latestPrice=null;state.latestUpdated=null;
+                state.dailyChangePercent=null;state.priceDirection=0;state.wasOffline=false;
+                crossoverUpdateUI(index+1);
+                if(state.running)setTimeout(()=>void crossoverFetchOne(index+1,false),0);
+                changed=true;
+            });
+        }
+        if(changed)crossoverSaveState();
+    }catch(error){console.warn("TSETMC Crossover slot refresh failed",error);}
+}
+function globalPulseTsetmcSyncCountLineStates(config=globalPulseTsetmcReadConfig()){
+    // Match Signal Matrix / Crossover: every slot in the visible count is
+    // strong blue. A configured slot outside that count is light blue;
+    // an unconfigured hidden slot is gray.
+    document.querySelectorAll(".global-tsetmc-slot-btn").forEach(btn=>{
+        const index=Number(btn.dataset.tsetmcCount);
+        const slot=config.slots[index-1];
+        const configured=!!(slot&&String(slot.symbol||"").trim());
+        const visible=index<=config.count;
+        btn.classList.toggle("configured",configured);
+        btn.classList.toggle("is-visible",visible);
+        btn.classList.remove("active","selected");
+    });
+}
+function globalPulseTsetmcSaveConfig(config){
+    const previous=globalPulseTsetmcReadConfig();
+    try{localStorage.setItem(GLOBAL_PULSE_TSE_SLOTS_KEY,JSON.stringify(config));}catch(e){}
+    globalPulseTsetmcSyncCountLineStates(config);
+    globalPulseTsetmcSyncNative();
+    globalPulseTsetmcResetCrossoverForSlotChanges(previous,config);
+    globalPulseRenderTsetmc(readGlobalPulseTsetmcCache().results||[]);
+    try{window.dispatchEvent(new Event("crossover-assets-updated"));}catch(e){}
+    globalPulseTsetmcLastFetchAt=0;
+    void loadGlobalPulseTsetmc(true);
+}
+function globalPulseTsetmcSetCount(count){
+    const config=globalPulseTsetmcReadConfig();
+    config.count=Math.max(1,Math.min(4,Number(count)||1));
+    globalPulseTsetmcSaveConfig(config);
+}
+const GLOBAL_PULSE_TSE_API_TIMEOUT_MS = Math.max(20000, Number(PRICE_REQUEST_TIMEOUT)||10000);
+const GLOBAL_PULSE_TSE_API_HOSTS = ["https://cdn.tsetmc.com/api", "https://cdn10.tsetmc.com/api"];
+const globalPulseTsetmcInstrumentInfoCache = new Map();
+async function globalPulseTsetmcFetchJson(path,validator){
+    const cleanPath=String(path||"").replace(/^\/+/,"");
+    let lastError=null;
+    for(const base of GLOBAL_PULSE_TSE_API_HOSTS){
+        const url=`${base}/${cleanPath}`;
+        // TSETMC identity must be attempted directly from the browser first.
+        // The generic market helper starts with the Android bridge and proxies;
+        // that route can time out even when the public TSETMC endpoint responds.
+        try{
+            const direct=await fetchWithTimeout(url,{method:"GET",headers:{"Accept":"application/json"},cache:"no-store"},9000);
+            if(!direct.ok)throw new Error(`TSETMC HTTP ${direct.status}`);
+            const payload=await direct.json();
+            if(typeof validator==="function"&&!validator(payload))throw new Error("TSETMC JSON validation failed");
+            return payload;
+        }catch(directError){
+            lastError=directError;
+            console.warn("TSETMC direct browser request failed; trying proxy/native fallback:",url,directError);
+        }
+        try{
+            const response=await fetchApiWithProxyFallback(url,{method:"GET",headers:{"Accept":"application/json"},cache:"no-store"},GLOBAL_PULSE_TSE_API_TIMEOUT_MS,async clonedResponse=>{
+                try{
+                    const payload=await clonedResponse.json();
+                    if(typeof validator==="function")return validator(payload);
+                    return payload&&typeof payload==="object";
+                }catch(e){return false;}
+            });
+            return await response.json();
+        }catch(error){lastError=error;console.warn("TSETMC API host failed; trying alternate host:",url,error);}
+    }
+    throw lastError||new Error("TSETMC API unavailable on all hosts");
+}
+function globalPulseTsetmcUnwrapInstrumentInfo(payload){
+    if(!payload||typeof payload!=="object")return null;
+    const candidates=[
+        payload.instrumentIdentity,payload.instrumentInfo,payload.instrument,
+        payload.data?.instrumentIdentity,payload.data?.instrumentInfo,payload.data?.instrument,
+        payload.result?.instrumentIdentity,payload.result?.instrumentInfo,payload.result?.instrument,
+        payload.data,payload.result,payload
+    ];
+    for(const item of candidates){
+        if(!item||typeof item!=="object"||Array.isArray(item))continue;
+        const nested=item.instrument&&typeof item.instrument==="object"?item.instrument:null;
+        const symbol=globalPulseTsetmcPickField(item,["lVal18AFC","symbol","symbolName","Symbol","symbolFa"])
+            ||globalPulseTsetmcPickField(nested,["lVal18AFC","symbol","symbolName","Symbol","symbolFa"]);
+        if(symbol)return nested?{...item,...nested}:item;
+    }
+    return null;
+}
+async function globalPulseTsetmcGetInstrumentInfo(insCode){
+    const code=String(insCode||"").trim();
+    if(!/^\d{8,}$/.test(code))throw new Error("کد عددی معتبر TSETMC نیست");
+    const cached=globalPulseTsetmcInstrumentInfoCache.get(code);
+    if(cached&&Date.now()-cached.at<24*60*60*1000)return cached.value;
+    let raw=null,lastError=null;
+
+    // Identity is the correct first endpoint for resolving the Persian symbol/name.
+    // Its documented payload includes insCode, lVal18AFC and lVal30.
+    try{
+        const identity=await globalPulseTsetmcFetchJson(
+            `Instrument/GetInstrumentIdentity/${encodeURIComponent(code)}`,
+            data=>!!(data?.instrumentIdentity||data?.data?.instrumentIdentity||data?.result?.instrumentIdentity)
+        );
+        raw=globalPulseTsetmcUnwrapInstrumentInfo(identity);
+        if(!raw)throw new Error("پاسخ InstrumentIdentity فاقد نام یا نماد فارسی است");
+    }catch(error){lastError=error;console.warn("TSETMC identity endpoint failed; trying instrument info:",code,error);}
+
+    // InstrumentInfo is a fallback for installations where Identity is unavailable.
+    if(!raw){
+        try{
+            const info=await globalPulseTsetmcFetchJson(
+                `Instrument/GetInstrumentInfo/${encodeURIComponent(code)}`,
+                data=>!!(data?.instrumentInfo||data?.data?.instrumentInfo||data?.result?.instrumentInfo)
+            );
+            raw=globalPulseTsetmcUnwrapInstrumentInfo(info);
+            if(!raw)throw new Error("ساختار پاسخ InstrumentInfo قابل شناسایی نیست");
+        }catch(error){lastError=error;console.warn("TSETMC instrument info endpoint failed:",code,error);}
+    }
+    if(!raw)throw lastError||new Error("پاسخ هویت نماد از TSETMC خالی است");
+    const symbol=String(globalPulseTsetmcPickField(raw,["lVal18AFC","symbol","symbolName","Symbol","symbolFa"])||"").trim();
+    const name=String(globalPulseTsetmcPickField(raw,["lVal30","name","companyName","Name","company_name"])||symbol).trim();
+    const returnedCode=String(globalPulseTsetmcPickField(raw,["insCode","InsCode","instrumentCode"])||code).trim();
+    if(returnedCode && returnedCode!=="0" && returnedCode!==code)throw new Error("کد برگشتی API با کد واردشده مطابقت ندارد");
+    if(!symbol||/^\d+$/.test(symbol))throw new Error("API نام واقعی نماد را برنگرداند؛ فیلد lVal18AFC در پاسخ موجود نیست");
+    const value={insCode:code,symbol,name:name||symbol,flowTitle:String(globalPulseTsetmcPickField(raw,["flowTitle","FlowTitle"])||""),flow:Number(globalPulseTsetmcPickField(raw,["flow","Flow"])||0)};
+    globalPulseTsetmcInstrumentInfoCache.set(code,{value,at:Date.now()});
+    return value;
+}
+function globalPulseTsetmcExtractSearchRows(payload){
+    if(Array.isArray(payload))return payload;
+    if(!payload||typeof payload!=="object")return [];
+    for(const key of ["instrumentSearch","InstrumentSearch","instrument","Instrument","data","Data","results","Results","result","Result"]){
+        const value=payload[key];
+        if(Array.isArray(value))return value;
+        if(value&&typeof value==="object"){
+            for(const nestedKey of ["instrumentSearch","instrument","data","results","result"]){
+                if(Array.isArray(value[nestedKey]))return value[nestedKey];
+            }
+        }
+    }
+    return [];
+}
+function globalPulseTsetmcPickField(row,keys){
+    for(const key of keys){
+        const value=row?.[key];
+        if(value!==undefined&&value!==null&&String(value).trim()!=="")return value;
+    }
+    return "";
+}
+async function globalPulseTsetmcSearch(query){
+    const text=String(query||"").trim();
+    if(text.length<2)throw new Error("حداقل دو حرف از نام یا نماد را وارد کن");
+    const encoded=encodeURIComponent(text);
+    const data=await globalPulseTsetmcFetchJson(
+        `Instrument/GetInstrumentSearch/${encoded}`,
+        payload=>(Array.isArray(payload)||(payload&&typeof payload==="object"))
+    );
+    const rows=globalPulseTsetmcExtractSearchRows(data);
+    const normalized=[];
+    const seen=new Set();
+    for(const row of rows){
+        if(!row||typeof row!=="object")continue;
+        const rawCode=globalPulseTsetmcPickField(row,["insCode","InsCode","instrumentCode","InstrumentCode","inscode"]);
+        const rawSymbol=globalPulseTsetmcPickField(row,["lVal18AFC","symbol","symbolName","name","symbolFa","Symbol","SymbolName"]);
+        const rawName=globalPulseTsetmcPickField(row,["lVal30","name","companyName","Name","CompanyName"])||rawSymbol;
+        const insCode=String(rawCode).trim(),symbol=String(rawSymbol).trim();
+        if(!/^\d+$/.test(insCode)||!symbol)continue;
+        const key=insCode+"|"+symbol;
+        if(seen.has(key))continue;
+        seen.add(key);
+        normalized.push({
+            insCode,
+            symbol,
+            name:String(rawName).trim(),
+            flowTitle:String(globalPulseTsetmcPickField(row,["flowTitle","FlowTitle","flowName"])||""),
+            flow:Number(globalPulseTsetmcPickField(row,["flow","Flow"])||0)
+        });
+        if(normalized.length>=30)break;
+    }
+    return normalized;
+}
+function globalPulseTsetmcUnwrapQuoteInfo(payload){
+    if(!payload||typeof payload!=="object")return null;
+    const candidates=[payload.closingPriceInfo,payload.data?.closingPriceInfo,payload.result?.closingPriceInfo,payload.data,payload.result,payload];
+    for(const item of candidates){
+        if(item&&typeof item==="object"&&!Array.isArray(item)){
+            const hasPrice=["pDrCotVal","pClosing","priceYesterday","pl","pc","py","last","close"].some(key=>item[key]!==undefined&&item[key]!==null&&String(item[key]).trim()!=="");
+            if(hasPrice)return item;
+        }
+    }
+    return null;
+}
+function globalPulseTsetmcNumber(row,keys){
+    for(const key of keys){
+        const raw=row?.[key];
+        if(raw===undefined||raw===null||String(raw).trim()==="")continue;
+        const value=Number(String(raw).replace(/,/g,""));
+        if(Number.isFinite(value)&&value>0)return value;
+    }
+    return NaN;
+}
+function globalPulseTsetmcSignedNumber(row,keys){
+    for(const key of keys){
+        const raw=row?.[key];
+        if(raw===undefined||raw===null||String(raw).trim()==="")continue;
+        const value=Number(String(raw).replace(/,/g,""));
+        if(Number.isFinite(value))return value;
+    }
+    return NaN;
+}
+function globalPulseTsetmcPercent(price,previous,fallback,change){
+    const p=Number(price),y=Number(previous),f=Number(fallback),c=Number(change);
+    if(Number.isFinite(p)&&p>0&&Number.isFinite(y)&&y>0)return ((p-y)/y)*100;
+    if(Number.isFinite(c)&&Number.isFinite(y)&&y>0)return (c/y)*100;
+    return Number.isFinite(f)?f:NaN;
+}
+async function globalPulseTsetmcFetchWorkerQuote(instrument,resolved){
+    try{
+        const response=await fetchGlobalPulseTsetmcWithFailover(Date.now());
+        const rows=Array.isArray(response?.data?.results)?response.data.results:[];
+        const code=String(instrument?.insCode||"");
+        const knownSymbol=String(resolved?.symbol||instrument?.symbol||"").trim().toUpperCase();
+        const match=rows.find(row=>{
+            if(!row||typeof row!=="object")return false;
+            const rowCode=String(globalPulseTsetmcPickField(row,["insCode","InsCode","instrumentCode","code","symbolCode"])||"").trim();
+            if(rowCode&&rowCode===code)return true;
+            const rowSymbol=String(globalPulseTsetmcPickField(row,["symbol","lVal18AFC","symbolName"])||"").trim().toUpperCase();
+            return !!knownSymbol&&!/^\d+$/.test(knownSymbol)&&rowSymbol===knownSymbol;
+        });
+        if(!match)return null;
+        const last=globalPulseTsetmcNumber(match,["lastPrice","pDrCotVal","pl","last"]);
+        const close=globalPulseTsetmcNumber(match,["closingPrice","pClosing","pc","close"]);
+        if(!Number.isFinite(last)&&!Number.isFinite(close))return null;
+        const actualLast=Number.isFinite(last)?last:close;
+        const actualClose=Number.isFinite(close)?close:actualLast;
+        const previous=globalPulseTsetmcNumber(match,["priceYesterday","py","yesterday"]);
+        const lastPctRaw=globalPulseTsetmcSignedNumber(match,["lastPricePercent","dailyChangePercent","priceChangePercent","changePercent","percent"]);
+        const closePctRaw=globalPulseTsetmcSignedNumber(match,["closingPricePercent","closeChangePercent"]);
+        const lastPct=globalPulseTsetmcPercent(actualLast,previous,lastPctRaw,NaN);
+        const closePct=globalPulseTsetmcPercent(actualClose,previous,closePctRaw,NaN);
+        const symbol=String(globalPulseTsetmcPickField(match,["symbol","lVal18AFC","symbolName"])||resolved?.symbol||instrument?.symbol||code).trim();
+        const name=String(globalPulseTsetmcPickField(match,["name","lVal30","companyName"])||resolved?.name||symbol).trim();
+        return {insCode:code,symbol,name,lastPrice:actualLast,lastPricePercent:lastPct,closingPrice:actualClose,closingPricePercent:closePct,updatedAt:Date.now(),status:"",quoteSource:"worker"};
+    }catch(error){console.warn("TSETMC Worker quote fallback failed:",instrument?.insCode,error);return null;}
+}
+async function globalPulseTsetmcFetchQuote(instrument){
+    if(!instrument||!/^[0-9]+$/.test(String(instrument.insCode||"")))throw new Error("TSETMC instrument code is missing");
+    const code=String(instrument.insCode),cached=globalPulseTsetmcQuoteCache.get(code);
+    if(cached&&Date.now()-cached.at<4500){
+        const storedSymbol=String(instrument.symbol||"").trim(),storedName=String(instrument.name||"").trim();
+        return {...cached.value,symbol:storedSymbol&&!/^\d+$/.test(storedSymbol)?storedSymbol:cached.value.symbol,name:storedName&&!/^\d+$/.test(storedName)&&!storedName.startsWith("کد TSETMC")?storedName:cached.value.name};
+    }
+    if(globalPulseTsetmcQuoteInFlight.has(code))return globalPulseTsetmcQuoteInFlight.get(code);
+    const task=(async()=>{
+        let resolved={insCode:code,symbol:String(instrument.symbol||""),name:String(instrument.name||instrument.symbol||"")};
+        try{
+            resolved=await globalPulseTsetmcGetInstrumentInfo(code);
+            instrument.symbol=resolved.symbol;instrument.name=resolved.name;
+            const config=globalPulseTsetmcReadConfig();
+            const saved=config.slots.find(item=>item&&String(item.insCode)===code);
+            if(saved){saved.symbol=resolved.symbol;saved.name=resolved.name;try{localStorage.setItem(GLOBAL_PULSE_TSE_SLOTS_KEY,JSON.stringify(config));}catch(e){}globalPulseTsetmcSyncNative();}
+        }catch(metaError){console.warn("TSETMC instrument metadata unavailable; continuing with quote request:",code,metaError);}
+
+        let info=null,quoteSource="live",quoteError=null;
+        try{
+            const data=await globalPulseTsetmcFetchJson(`ClosingPrice/GetClosingPriceInfo/${encodeURIComponent(code)}`,payload=>{
+                const quote=globalPulseTsetmcUnwrapQuoteInfo(payload);
+                return !!quote&&(globalPulseTsetmcNumber(quote,["pDrCotVal","pClosing","priceYesterday","pl","pc","py"])>0);
+            });
+            info=globalPulseTsetmcUnwrapQuoteInfo(data);
+        }catch(error){quoteError=error;console.warn("TSETMC live quote endpoint failed:",code,error);}
+
+        // Some responses carry the Persian symbol/name in the embedded instrument object.
+        const embedded=info?.instrument||info?.instrumentInfo||{};
+        const embeddedSymbol=String(globalPulseTsetmcPickField(embedded,["lVal18AFC","symbol","symbolName"])||globalPulseTsetmcPickField(info,["lVal18AFC","symbol","symbolName"])||"").trim();
+        const embeddedName=String(globalPulseTsetmcPickField(embedded,["lVal30","name","companyName"])||globalPulseTsetmcPickField(info,["lVal30","name","companyName"])||"").trim();
+        if(embeddedSymbol&&!/^\d+$/.test(embeddedSymbol))resolved={...resolved,symbol:embeddedSymbol,name:embeddedName||embeddedSymbol};
+        else if(embeddedName)resolved={...resolved,name:embeddedName};
+
+        let lastPrice=globalPulseTsetmcNumber(info,["pDrCotVal","pl","last","lastPrice"]);
+        let close=globalPulseTsetmcNumber(info,["pClosing","pc","close","closingPrice"]);
+        let yesterday=globalPulseTsetmcNumber(info,["priceYesterday","py","yesterday"]);
+        let priceChange=globalPulseTsetmcSignedNumber(info,["priceChange","pricechange"]);
+        let fallback=globalPulseTsetmcSignedNumber(info,["priceChangePercent","changePercent","percent"]);
+        if(!Number.isFinite(yesterday)&&Number.isFinite(priceChange)&&priceChange!==0){
+            const anchor=Number.isFinite(lastPrice)?lastPrice:close;
+            if(Number.isFinite(anchor)&&anchor-priceChange>0)yesterday=anchor-priceChange;
+        }
+
+        // If the live snapshot is incomplete, request the latest daily record.
+        if(!Number.isFinite(lastPrice)&&!Number.isFinite(close)){
+            try{
+                const history=await globalPulseTsetmcFetchJson(`ClosingPrice/GetClosingPriceDailyList/${encodeURIComponent(code)}/1`,payload=>Array.isArray(payload?.closingPriceDaily)||Array.isArray(payload?.data?.closingPriceDaily));
+                const list=Array.isArray(history?.closingPriceDaily)?history.closingPriceDaily:(Array.isArray(history?.data?.closingPriceDaily)?history.data.closingPriceDaily:[]);
+                const latest=list[0]||{};
+                if(latest&&Object.keys(latest).length){
+                    info=latest;quoteSource="daily-fallback";
+                    lastPrice=globalPulseTsetmcNumber(info,["pDrCotVal","pl","last","lastPrice"]);
+                    close=globalPulseTsetmcNumber(info,["pClosing","pc","close","closingPrice"]);
+                    yesterday=globalPulseTsetmcNumber(info,["priceYesterday","py","yesterday"]);
+                    priceChange=globalPulseTsetmcSignedNumber(info,["priceChange","pricechange"]);
+                    fallback=globalPulseTsetmcSignedNumber(info,["priceChangePercent","changePercent","percent"]);
+                    if(!Number.isFinite(yesterday)&&Number.isFinite(priceChange)&&priceChange!==0){const anchor=Number.isFinite(lastPrice)?lastPrice:close;if(Number.isFinite(anchor)&&anchor-priceChange>0)yesterday=anchor-priceChange;}
+                }
+            }catch(historyError){console.warn("TSETMC daily quote fallback failed:",code,historyError);}
+        }
+
+        if(!Number.isFinite(lastPrice)&&!Number.isFinite(close)){
+            const workerRow=await globalPulseTsetmcFetchWorkerQuote(instrument,resolved);
+            if(workerRow){
+                globalPulseTsetmcQuoteCache.set(code,{value:workerRow,at:Date.now()});
+                return workerRow;
+            }
+        }
+        if(!Number.isFinite(lastPrice))lastPrice=close;
+        if(!Number.isFinite(close))close=lastPrice;
+        if(!Number.isFinite(lastPrice)||lastPrice<=0){
+            const workerRow=await globalPulseTsetmcFetchWorkerQuote(instrument,resolved);
+            if(workerRow){globalPulseTsetmcQuoteCache.set(code,{value:workerRow,at:Date.now()});return workerRow;}
+            throw new Error(`${resolved.symbol||instrument.symbol||code} price unavailable${quoteError?`: ${quoteError.message||quoteError}`:""}`);
+        }
+        const lastPct=globalPulseTsetmcPercent(lastPrice,yesterday,fallback,priceChange);
+        const closePct=globalPulseTsetmcPercent(close,yesterday,fallback,priceChange);
+        const value={insCode:code,symbol:String(resolved.symbol||instrument.symbol||code),name:String(resolved.name||instrument.name||resolved.symbol||instrument.symbol||code),lastPrice,lastPricePercent:Number.isFinite(lastPct)?lastPct:NaN,closingPrice:Number.isFinite(close)&&close>0?close:lastPrice,closingPricePercent:Number.isFinite(closePct)?closePct:NaN,updatedAt:Date.now(),status:String(info?.instrumentState?.cEtavalTitle||""),quoteSource};
+        if(value.symbol&&!/^\d+$/.test(value.symbol)){
+            instrument.symbol=value.symbol;instrument.name=value.name;
+            const config=globalPulseTsetmcReadConfig(),saved=config.slots.find(item=>item&&String(item.insCode)===code);
+            if(saved){saved.symbol=value.symbol;saved.name=value.name;try{localStorage.setItem(GLOBAL_PULSE_TSE_SLOTS_KEY,JSON.stringify(config));}catch(e){}globalPulseTsetmcSyncNative();}
+        }
+        globalPulseTsetmcQuoteCache.set(code,{value,at:Date.now()});return value;
+    })();
+    globalPulseTsetmcQuoteInFlight.set(code,task);
+    try{return await task;}finally{globalPulseTsetmcQuoteInFlight.delete(code);}
+}
+function globalPulseTsetmcFindInstrument(symbol){
+    const key=String(symbol||"").trim().toUpperCase();
+    if(!key)return null;
+    const configured=globalPulseTsetmcGetSlots().filter(Boolean);
+    const found=configured.find(item=>String(item.symbol||"").trim().toUpperCase()===key);
+    if(found)return found;
+    const cached=readGlobalPulseTsetmcCache();
+    const row=(cached?.results||[]).find(item=>String(item.symbol||"").trim().toUpperCase()===key&&String(item.insCode||""));
+    return row?{insCode:String(row.insCode),symbol:String(row.symbol),name:String(row.name||row.symbol)}:null;
+}
+function globalPulseTsetmcEnsureEditor(){
+    let modal=document.getElementById("globalTsetmcEditor");
+    if(modal)return modal;
+    modal=document.createElement("div");modal.id="globalTsetmcEditor";modal.className="global-tsetmc-editor-backdrop";modal.hidden=true;
+    modal.innerHTML=`<div class="global-tsetmc-editor" role="dialog" aria-modal="true" aria-labelledby="globalTsetmcEditorTitle"><div class="global-tsetmc-editor-head"><strong id="globalTsetmcEditorTitle">TSETMC • Select symbol</strong><button type="button" data-tsetmc-close aria-label="Close">×</button></div><div class="global-tsetmc-editor-body"><label for="globalTsetmcSearchInput">نام/نماد شرکت یا کد عددی TSETMC را وارد کن</label><div class="global-tsetmc-search-row"><input id="globalTsetmcSearchInput" type="text" autocomplete="off" placeholder="مثلاً فولاد، رانیز یا 13386281759834677"><button type="button" id="globalTsetmcSearchButton">جستجو</button></div><div id="globalTsetmcSearchStatus" class="global-tsetmc-search-status">برای پیدا کردن نماد، جستجو را بزن.</div><div id="globalTsetmcSearchResults" class="global-tsetmc-search-results"></div></div><div class="global-tsetmc-editor-actions"><button type="button" id="globalTsetmcRemoveButton" class="remove">حذف نماد</button><span></span><button type="button" data-tsetmc-close class="cancel">انصراف</button><button type="button" id="globalTsetmcConfirmButton" class="confirm" disabled>تأیید و ثبت</button></div></div>`;
+    document.body.appendChild(modal);
+    const close=()=>{modal.hidden=true;globalPulseTsetmcEditorCandidate=null;};
+    modal.querySelectorAll("[data-tsetmc-close]").forEach(btn=>btn.addEventListener("click",close));
+    modal.addEventListener("click",event=>{if(event.target===modal)close();});
+    const search=()=>globalPulseTsetmcRunEditorSearch();
+    modal.querySelector("#globalTsetmcSearchButton").addEventListener("click",search);
+    modal.querySelector("#globalTsetmcSearchInput").addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();search();}});
+    modal.querySelector("#globalTsetmcConfirmButton").addEventListener("click",()=>{
+        const candidate=globalPulseTsetmcEditorCandidate;if(!candidate)return;
+        const config=globalPulseTsetmcReadConfig();
+        config.slots[globalPulseTsetmcEditorSlot-1]=candidate;
+        globalPulseTsetmcSaveConfig(config);close();
+    });
+    modal.querySelector("#globalTsetmcRemoveButton").addEventListener("click",()=>{
+        const config=globalPulseTsetmcReadConfig();config.slots[globalPulseTsetmcEditorSlot-1]=null;
+        globalPulseTsetmcSaveConfig(config);close();
+    });
+    return modal;
+}
+async function globalPulseTsetmcRunEditorSearch(){
+    const modal=globalPulseTsetmcEnsureEditor();
+    const input=modal.querySelector("#globalTsetmcSearchInput"),status=modal.querySelector("#globalTsetmcSearchStatus"),host=modal.querySelector("#globalTsetmcSearchResults"),confirm=modal.querySelector("#globalTsetmcConfirmButton");
+    const query=String(input.value||"").trim();
+    globalPulseTsetmcEditorCandidate=null;confirm.disabled=true;host.innerHTML="";
+    if(!query){status.textContent="نام نماد یا کد عددی TSETMC را وارد کن.";return;}
+    if(/^\d{8,}$/.test(query)){
+        status.textContent="در حال شناسایی نام نماد و دریافت قیمت با کد مستقیم TSETMC...";
+        let candidate;
+        try{
+            candidate=await globalPulseTsetmcGetInstrumentInfo(query);
+        }catch(error){
+            console.warn("TSETMC direct code could not be resolved:",query,error);
+            status.textContent=`کد وارد شد، اما TSETMC نام واقعی نماد را برنگرداند؛ ثبت انجام نشد. خطا: ${error?.message||"API unavailable"}`;
+            return;
+        }
+        let quote=null,quoteError=null;
+        try{quote=await globalPulseTsetmcFetchQuote(candidate);}catch(error){quoteError=error;console.warn("TSETMC preview quote failed:",query,error);}
+        if(quote){candidate={...candidate,...quote};}
+        globalPulseTsetmcEditorCandidate=candidate;
+        const button=document.createElement("button");button.type="button";button.className="global-tsetmc-result selected";
+        const title=document.createElement("strong");title.textContent=`${candidate.symbol} — ${candidate.name}`;
+        const detail=document.createElement("span");
+        detail.textContent=quote?`کد ${query} تأیید شد • آخرین قیمت ${formatGlobalPulseNumber(quote.lastPrice,0)} • تغییر ${globalPulseTsetmcPercentText(quote.lastPricePercent)}`:`کد ${query} و نام نماد تأیید شد؛ قیمت فعلاً در دسترس نیست (${quoteError?.message||"API quote unavailable"}).`;
+        button.append(title,detail);button.addEventListener("click",()=>{globalPulseTsetmcEditorCandidate=candidate;confirm.disabled=false;});
+        host.appendChild(button);confirm.disabled=false;
+        status.textContent=quote?"نام و اطلاعات قیمت از TSETMC دریافت شد؛ برای ثبت تأیید کن.":"نام واقعی نماد پیدا شد، اما قیمت دریافت نشد؛ می‌توانی نماد را ثبت کنی و خطای قیمت در کارت مشخص خواهد شد.";
+        globalPulseTsetmcEditorResults=[candidate];return;
+    }
+    status.textContent="در حال جستجو در TSETMC...";
+    try{
+        const results=await globalPulseTsetmcSearch(query);globalPulseTsetmcEditorResults=results;
+        if(!results.length){status.textContent="نمادی پیدا نشد. نام یا نماد را دقیق‌تر وارد کن یا کد عددی TSETMC را وارد کن.";return;}
+        status.textContent=`${results.length} نتیجه پیدا شد؛ نماد موردنظر را انتخاب کن.`;
+        results.forEach((item,index)=>{
+            const button=document.createElement("button");button.type="button";button.className="global-tsetmc-result";
+            const title=document.createElement("strong");title.textContent=item.symbol;
+            const detail=document.createElement("span");detail.textContent=`${item.name}${item.flowTitle?` • ${item.flowTitle}`:""}`;
+            button.append(title,detail);button.addEventListener("click",()=>{globalPulseTsetmcEditorCandidate=item;host.querySelectorAll(".global-tsetmc-result").forEach(el=>el.classList.remove("selected"));button.classList.add("selected");confirm.disabled=false;});
+            host.appendChild(button);if(results.length===1)button.click();
+        });
+    }catch(error){status.textContent=`خطا در دریافت اطلاعات TSETMC: ${error?.message||"اتصال برقرار نشد"}`;}
+}
+function globalPulseTsetmcOpenEditor(slot){
+    globalPulseTsetmcEditorSlot=Math.max(1,Math.min(4,Number(slot)||1));
+    const modal=globalPulseTsetmcEnsureEditor(),config=globalPulseTsetmcReadConfig(),current=config.slots[globalPulseTsetmcEditorSlot-1];
+    modal.querySelector("#globalTsetmcEditorTitle").textContent=`TSETMC • Slot ${globalPulseTsetmcEditorSlot}`;
+    modal.querySelector("#globalTsetmcSearchInput").value=current?.symbol||"";
+    modal.querySelector("#globalTsetmcSearchStatus").textContent=current?`نماد فعلی: ${current.symbol} — برای تغییر، جستجو کن.`:"نام/نماد شرکت یا کد عددی TSETMC را وارد کن و جستجو را بزن.";
+    modal.querySelector("#globalTsetmcSearchResults").innerHTML="";
+    modal.querySelector("#globalTsetmcConfirmButton").disabled=true;
+    modal.hidden=false;setTimeout(()=>modal.querySelector("#globalTsetmcSearchInput").focus(),50);
+}
+function initGlobalPulseTsetmcControls(){
+    const config=globalPulseTsetmcReadConfig();
+    globalPulseTsetmcSyncCountLineStates(config);
+    document.querySelectorAll(".global-tsetmc-slot-btn").forEach(btn=>{
+        if(!btn.dataset.bound){btn.dataset.bound="1";btn.addEventListener("click",()=>globalPulseTsetmcSetCount(btn.dataset.tsetmcCount));}
+    });
+    const host=$("globalTsetmcCards");
+    if(host&&!host.dataset.editBound){
+        host.dataset.editBound="1";
+        host.addEventListener("click",event=>{const btn=event.target.closest("[data-tsetmc-edit]");if(btn){event.preventDefault();event.stopPropagation();globalPulseTsetmcOpenEditor(btn.dataset.tsetmcEdit);}});
+    }
+    globalPulseTsetmcSyncNative();
+    globalPulseRenderTsetmc(readGlobalPulseTsetmcCache().results||[]);
+}
+
 
 function globalPulseTsetmcIsLiveWindow(now=new Date()){
     const p=globalPulseParts(now,GLOBAL_PULSE_IRAN_TZ);
@@ -12823,6 +13431,9 @@ function readGlobalPulseTsetmcAlertState(){
 function saveGlobalPulseTsetmcAlertState(){
     try{localStorage.setItem(GLOBAL_PULSE_TSE_ALERT_STATE_KEY,JSON.stringify(globalPulseTsetmcAlertState));}catch(e){}
 }
+function globalPulseTsetmcEscape(value){
+    return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]));
+}
 function globalPulseTsetmcPercentText(value){
     const n=Number(value);
     if(!Number.isFinite(n))return "--";
@@ -12835,35 +13446,36 @@ function globalPulseTsetmcPercentClass(value){
 function globalPulseRenderTsetmc(results){
     const host=$("globalTsetmcCards");
     if(!host)return;
-    const rows=Array.isArray(results)?results.filter(row=>row&&String(row.symbol||"").trim()):[];
-    host.classList.toggle("is-three-cards",rows.length===3);
-
-    // Always keep visible TSE boxes, even before the first Worker response.
-    // Once data arrives, replace the placeholders with every symbol returned
-    // by the Worker (1, 2, 3, 4, ...). No symbol name is hard-coded.
-    const displayRows=rows.length?rows:[{},{}];
-    host.innerHTML=displayRows.map((row,index)=>{
-        const symbol=String(row.symbol||"").trim();
-        const lastPrice=Number(row.lastPrice), lastPct=Number(row.lastPricePercent);
-        const closePrice=Number(row.closingPrice), closePct=Number(row.closingPricePercent);
+    const config=globalPulseTsetmcReadConfig();
+    const rows=Array.isArray(results)?results.filter(row=>row&&String(row.insCode||"")):[];
+    const byCode=new Map(rows.map(row=>[String(row.insCode),row]));
+    host.dataset.count=String(config.count);
+    host.classList.toggle("is-three-cards",config.count===3);
+    host.style.gridTemplateColumns=config.count===1?"minmax(0,1fr)":"repeat(2,minmax(0,1fr))";
+    const displaySlots=config.slots.slice(0,config.count);
+    host.innerHTML=displaySlots.map((instrument,index)=>{
+        const row=instrument?byCode.get(String(instrument.insCode))||{}:{};
+        const symbol=String(instrument?.symbol||"").trim();
+        const name=String(instrument?.name||symbol||"TSE").trim();
+        const lastPrice=Number(row.lastPrice),lastPct=Number(row.lastPricePercent);
+        const closePrice=Number(row.closingPrice),closePct=Number(row.closingPricePercent);
         const iconText=symbol?symbol.slice(0,2):"TSE";
         const iconClass=index%2===0?"gold":"oil";
-        const name=symbol||"TSE";
-        const sourceLabel="TSETMC";
-        return `<article class="global-pulse-card global-pulse-tsetmc-card"${symbol?` data-tsetmc-symbol="${symbol.replace(/\"/g,"&quot;")}"`:""}>
+        const safeSymbol=globalPulseTsetmcEscape(symbol),safeName=globalPulseTsetmcEscape(name),safeIcon=globalPulseTsetmcEscape(iconText);
+        return `<article class="global-pulse-card global-pulse-tsetmc-card"${symbol?` data-tsetmc-symbol="${safeSymbol}"`:""} data-tsetmc-slot="${index+1}">
             <div class="global-pulse-card-top">
                 <div class="global-pulse-asset">
-                    <span class="global-pulse-icon ${iconClass}">${iconText}</span>
-                    <div>
-                        <div class="global-pulse-name">${name} <button type="button" class="global-pulse-compact-select" data-global-compact-asset="tse" data-global-compact-symbol="${symbol.replace(/"/g,"&quot;")}" aria-label="Show ${name} in Ultra Compact" title="Show ${name} in Ultra Compact">◎</button></div>
-                        <div class="global-pulse-symbol">${sourceLabel}</div>
+                    <span class="global-pulse-icon ${iconClass}">${safeIcon}</span>
+                    <div class="global-tsetmc-asset-copy">
+                        <div class="global-pulse-name">${safeSymbol||"TSE"} ${symbol?`<button type="button" class="global-pulse-compact-select" data-global-compact-asset="tse" data-global-compact-symbol="${safeSymbol}" aria-label="Show ${safeSymbol} in Ultra Compact" title="Show ${safeSymbol} in Ultra Compact">◎</button>`:""}<button type="button" class="global-pulse-compact-select global-tsetmc-edit" data-tsetmc-edit="${index+1}" aria-label="Set TSETMC symbol ${index+1}" title="Set or change symbol">✎</button></div>
+                        <div class="global-pulse-symbol">${symbol?safeName:"Select symbol"} · TSETMC</div>
                     </div>
                 </div>
                 <div class="global-pulse-card-actions"><span class="global-pulse-badge">TSE</span></div>
             </div>
             <div class="global-pulse-tsetmc-values">
-                <div class="global-pulse-tsetmc-group"><span class="global-pulse-tsetmc-label">LAST</span><span class="global-pulse-tsetmc-price">${Number.isFinite(lastPrice)?formatGlobalPulseNumber(lastPrice,0):"-"}</span><span class="global-pulse-tsetmc-percent ${globalPulseTsetmcPercentClass(lastPct)}">${globalPulseTsetmcPercentText(lastPct)}</span></div>
-                <div class="global-pulse-tsetmc-group"><span class="global-pulse-tsetmc-label">CLOSE</span><span class="global-pulse-tsetmc-price">${Number.isFinite(closePrice)?formatGlobalPulseNumber(closePrice,0):"-"}</span><span class="global-pulse-tsetmc-percent ${globalPulseTsetmcPercentClass(closePct)}">${globalPulseTsetmcPercentText(closePct)}</span></div>
+                <div class="global-pulse-tsetmc-group"><span class="global-pulse-tsetmc-label">LAST</span><span class="global-pulse-tsetmc-price">${Number.isFinite(lastPrice)&&lastPrice>0?formatGlobalPulseNumber(lastPrice,0):"-"}</span><span class="global-pulse-tsetmc-percent ${globalPulseTsetmcPercentClass(lastPct)}">${globalPulseTsetmcPercentText(lastPct)}</span></div>
+                <div class="global-pulse-tsetmc-group"><span class="global-pulse-tsetmc-label">CLOSE</span><span class="global-pulse-tsetmc-price">${Number.isFinite(closePrice)&&closePrice>0?formatGlobalPulseNumber(closePrice,0):"-"}</span><span class="global-pulse-tsetmc-percent ${globalPulseTsetmcPercentClass(closePct)}">${globalPulseTsetmcPercentText(closePct)}</span></div>
             </div>
         </article>`;
     }).join("");
@@ -12947,57 +13559,58 @@ async function fetchGlobalPulseTsetmcWithFailoverInternal(requestStartedAt){
     throw firstError||new Error("TSETMC sources unavailable");
 }
 async function loadGlobalPulseTsetmc(force=false){
-    if (globalPulseTsetmcLoadInProgress) return;
+    if(globalPulseTsetmcLoadInProgress)return false;
     readGlobalPulseTsetmcAlertState();
     const cached=readGlobalPulseTsetmcCache();
-    if(Array.isArray(cached.results)&&cached.results.length)globalPulseRenderTsetmc(cached.results);
+    if(Array.isArray(cached.results))globalPulseRenderTsetmc(cached.results);
     const now=Date.now();
-    if(!force && now-globalPulseTsetmcLastFetchAt<GLOBAL_PULSE_TSE_REFRESH_MS-2000)return;
-
-    globalPulseTsetmcLoadInProgress = true;
+    if(!force&&now-globalPulseTsetmcLastFetchAt<GLOBAL_PULSE_TSE_REFRESH_MS-2000)return true;
+    globalPulseTsetmcLoadInProgress=true;
     try{
-        const requestStartedAt=Date.now();
-        const failover=await fetchGlobalPulseTsetmcWithFailover(requestStartedAt);
-        const data=failover.data;
-        const results=Array.isArray(data?.results)
-            ? data.results.filter(row=>row&&String(row.symbol||"").trim())
-            : [];
-        if(!data?.ok || !results.length)throw new Error("TSETMC Worker returned no valid results");
-
-        const invalidRows=[];
-        for(const row of results){
-            const symbol=String(row.symbol||"").trim();
-            const required=[row.lastPrice,row.lastPricePercent,row.closingPrice,row.closingPricePercent];
-            if(required.some(value=>!Number.isFinite(Number(value)))) invalidRows.push(symbol);
+        const instruments=globalPulseTsetmcGetSlots().filter(item=>item&&item.insCode&&item.symbol);
+        if(!instruments.length){
+            globalPulseTsetmcLastFetchAt=Date.now();
+            globalPulseRenderTsetmc([]);
+            clearPageIssue("global-tsetmc");
+            return true;
         }
-        for(const key of Array.from(pageIssues.keys())) {
-            if(key.startsWith("global-tsetmc:")) clearPageIssue(key);
+        const results=[],failed=[];
+        let freshCount=0;
+        const cachedByCode=new Map((cached.results||[]).filter(row=>row&&row.insCode).map(row=>[String(row.insCode),row]));
+        for(const instrument of instruments){
+            try{
+                const row=await globalPulseTsetmcFetchQuote(instrument);
+                results.push(row);freshCount++;
+                clearPageIssue(`global-tsetmc:${row.symbol}`);
+                await globalPulseCheckTsetmcNotification(row);
+            }catch(error){
+                failed.push(instrument.symbol);
+                const stale=cachedByCode.get(String(instrument.insCode));
+                if(stale)results.push(stale);
+                setPageIssue(`global-tsetmc:${instrument.symbol}`,`${instrument.symbol} TSETMC data unavailable: ${error?.message||"API error"}`,"error");
+            }
         }
-        invalidRows.forEach(symbol=>{
-            setPageIssue(`global-tsetmc:${symbol}`, `${symbol} TSETMC data is incomplete`, "error");
-        });
-        if(invalidRows.length === results.length)throw new Error("TSETMC Worker returned only invalid symbol data");
-
-        globalPulseTsetmcLastFetchAt=requestStartedAt;
+        if(!freshCount)throw new Error("No selected TSETMC symbol returned valid live data");
+        globalPulseTsetmcLastFetchAt=Date.now();
         saveGlobalPulseTsetmcCache({results,updatedAt:Date.now()});
         globalPulseRenderTsetmc(results);
-        for(const row of results)await globalPulseCheckTsetmcNotification(row);
-        clearPageIssue("global-tsetmc");
-        globalPulseTsetmcFailureCount = 0;
+        if(failed.length)setPageIssue("global-tsetmc",`Some TSETMC symbols are unavailable: ${failed.join(", ")}`,"warn");
+        else clearPageIssue("global-tsetmc");
+        globalPulseTsetmcFailureCount=0;
+        syncNativeWidgetSnapshot();
         return true;
     }catch(error){
-        console.warn("TSETMC worker unavailable:",error);
+        console.warn("TSETMC CDN refresh failed:",error);
         if(Array.isArray(cached.results)&&cached.results.length){
             globalPulseRenderTsetmc(cached.results);
-            setPageIssue("global-tsetmc", `TSETMC Worker unavailable; cached data from ${cached.updatedAt ? new Date(cached.updatedAt).toLocaleString() : "an earlier response"} is being shown`, "cache");
-        } else {
-            setPageIssue("global-tsetmc", `TSETMC Worker error: ${error?.message || "current data unavailable"}`, "error");
+            setPageIssue("global-tsetmc",`TSETMC API unavailable; cached data from ${cached.updatedAt?new Date(cached.updatedAt).toLocaleString():"an earlier response"} is being shown`,"cache");
+        }else{
+            globalPulseRenderTsetmc([]);
+            setPageIssue("global-tsetmc",`TSETMC API error: ${error?.message||"current data unavailable"}`,"error");
         }
         globalPulseTsetmcFailureCount++;
         return false;
-    } finally {
-        globalPulseTsetmcLoadInProgress = false;
-    }
+    }finally{globalPulseTsetmcLoadInProgress=false;}
 }
 function startGlobalPulseTsetmc(){
     if(globalPulseTsetmcTimer)clearTimeout(globalPulseTsetmcTimer);
@@ -13171,6 +13784,7 @@ async function loadGlobalPulse(){
 }
 function startGlobalPulse(){
     globalPulseReadAlertState();
+    initGlobalPulseTsetmcControls();
     initGlobalPulseCompactAssetButtons();
     startGlobalPulseMarketClock();
     startGlobalPulseTsetmc();
@@ -13636,7 +14250,7 @@ async function cryptoFetchSource(source, coin) {
 
 const CRYPTO_MEXC_PROBE_MS = 30 * 1000;
 
-async function getUnifiedCryptoPrice(coin, options = {}) {
+async function getUnifiedCryptoPriceCore(coin, options = {}) {
     const normalized = String(coin || "").replace(/[-_\/]/g, "").replace(/USDT$/i, "").toUpperCase();
     if (!normalized || !/^[A-Z0-9]{2,20}$/.test(normalized)) {
         throw new Error(`Unsupported crypto asset: ${normalized || "unknown"}`);
@@ -13730,6 +14344,22 @@ async function getUnifiedCryptoPrice(coin, options = {}) {
         retryAt: Date.now() + CRYPTO_PRICE_FAILOVER_RETRY_MS
     });
     throw new Error(`All crypto price sources unavailable for ${normalized}`);
+}
+async function getUnifiedCryptoPrice(coin, options = {}) {
+    const normalized = String(coin || "").replace(/[-_\/]/g, "").replace(/USDT$/i, "").toUpperCase();
+    try {
+        const result = await getUnifiedCryptoPriceCore(coin, options);
+        clearPageIssue(`crypto-price:${normalized}`);
+        if (result?.source && result.source !== "mexc") {
+            setPageIssue(`crypto-source:${normalized}`, `MEXC unavailable; live price supplied by ${String(result.source).toUpperCase()}`, "warn");
+        } else {
+            clearPageIssue(`crypto-source:${normalized}`);
+        }
+        return result;
+    } catch (error) {
+        setPageIssue(`crypto-price:${normalized || "UNKNOWN"}`, error?.message || "All crypto price sources unavailable", "error");
+        throw error;
+    }
 }
 /*
    Holdings are read ONLY from data.json.
@@ -15123,6 +15753,21 @@ async function rfkjFetchWithFailover(query){
         const hasKJ = hasAny(["KJ","kj","kijunsen"]);
         const hasST = hasAny(["ST","st","superTrend","supertrend"]);
         if(!hasRF || !hasKJ || !hasST) throw new Error("Signal Matrix response is missing RF/KJ/ST values");
+        const read = keys => { for (const key of keys) if (Object.prototype.hasOwnProperty.call(data,key)) return data[key]; return undefined; };
+        const valid = value => {
+            if(value && typeof value === "object"){
+                const nested=value.signal??value.value??value.score??value.direction??value.action??value.type;
+                if(nested!==undefined&&nested!==value)return valid(nested);
+            }
+            const text=String(value??"").trim().toUpperCase();
+            if(["BUY","BULL","BULLISH","LONG","SELL","BEAR","BEARISH","SHORT"].includes(text))return true;
+            if(text==="")return false;
+            const n=Number(value);
+            return Number.isFinite(n)&&(n===-1||n===0||n===1);
+        };
+        if(!valid(read(["RF","rf","rangeFilter","range_filter"])) || !valid(read(["KJ","kj","kijunsen"])) || !valid(read(["ST","st","superTrend","supertrend"]))) {
+            throw new Error("Signal Matrix returned invalid RF/KJ/ST values");
+        }
         return data;
     };
     // Probe primary, then fallback exactly once. Repeating the primary in the
@@ -15131,6 +15776,7 @@ async function rfkjFetchWithFailover(query){
     try {
         const data = await tryFetch(urls[0]);
         rfkjActiveApiIndex = 0;
+        clearPageIssue("signal-matrix-primary");
         return data;
     } catch (error) {
         primaryError = error;
@@ -15138,11 +15784,162 @@ async function rfkjFetchWithFailover(query){
     try {
         const data = await tryFetch(urls[1]);
         rfkjActiveApiIndex = 1;
+        setPageIssue("signal-matrix-primary", `Primary Worker failed; Supabase fallback active (${primaryError?.message || "request failed"})`, "warn");
         return data;
     } catch (fallbackError) {
         throw new Error(`Signal Matrix APIs unavailable (primary: ${primaryError?.message || "failed"}; fallback: ${fallbackError?.message || "failed"})`);
     }
 }
+/* TSETMC support for Signal Matrix. TSE indicators intentionally use the
+   same 30-minute candles and formulas as the supplied Python reference. */
+const RFKJ_TSE_TIMEFRAME = "30m";
+const RFKJ_TSE_CACHE_PREFIX = "rfkjTse30mHistory-v1:";
+const rfkjTseComputedCache = new Map();
+function rfkjIsTseCoin(value){return String(value||"").trim().toUpperCase().startsWith("TSE|");}
+function rfkjTseSlotForCoin(value){
+    const match=String(value||"").trim().toUpperCase().match(/^TSE\|SLOT([1-4])$/);
+    if(!match)return null;
+    return globalPulseTsetmcGetSlots()[Number(match[1])-1]||null;
+}
+function rfkjRefreshTseOptions(){
+    document.querySelectorAll(".rfkj-instance-coin").forEach(select=>{
+        const current=String(select.value||"");
+        Array.from(select.options).filter(option=>option.dataset.rfkjTseOption==="1").forEach(option=>option.remove());
+        let slots=[];
+        try{slots=globalPulseTsetmcGetSlots();}catch(e){}
+        slots.forEach((slot,index)=>{
+            if(!slot||!/^\d+$/.test(String(slot.insCode||"")))return;
+            const value=`TSE|SLOT${index+1}`;
+            const option=document.createElement("option");
+            option.value=value;
+            option.textContent=String(slot.symbol||slot.name||"").trim();
+            option.dataset.rfkjTseOption="1";
+            select.appendChild(option);
+        });
+        if(current&&Array.from(select.options).some(option=>option.value===current))select.value=current;
+    });
+}
+function rfkjTseNumber(row,keys){
+    if(!row||typeof row!=="object")return null;
+    for(const key of keys){
+        const value=row[key];
+        if(value!==undefined&&value!==null&&String(value).trim()!==""){
+            const n=Number(String(value).replace(/,/g,"").trim());
+            if(Number.isFinite(n))return n;
+        }
+    }
+    return null;
+}
+function rfkjTseChartRows(payload){
+    if(Array.isArray(payload))return payload;
+    if(!payload||typeof payload!=="object")return [];
+    for(const key of ["closingPriceChartData","chartData","data","result"]){
+        const value=payload[key];
+        if(Array.isArray(value))return value;
+        if(value&&typeof value==="object"){
+            for(const nested of ["closingPriceChartData","chartData","data","result"]){
+                if(Array.isArray(value[nested]))return value[nested];
+            }
+        }
+    }
+    return [];
+}
+function rfkjNormalizeTseCandles(rows){
+    const unique=new Map();
+    for(const row of rows){
+        if(!row||typeof row!=="object")continue;
+        const rawTime=row.time??row.timestamp??row.datetime??row.dateTime??row.dEven??row.DEven??row.t??row.date;
+        const close=rfkjTseNumber(row,["close","c","pClose","pc","pClosing","pDrCotVal","pl"]);
+        if(rawTime===undefined||rawTime===null||close===null)continue;
+        const open=rfkjTseNumber(row,["open","o","pOpen","pf","priceFirst"]);
+        const high=rfkjTseNumber(row,["high","h","pHigh","pMax","priceMax"]);
+        const low=rfkjTseNumber(row,["low","l","pLow","pMin","priceMin"]);
+        const timestamp=String(rawTime).trim();
+        if(!timestamp)continue;
+        unique.set(timestamp,{timestamp,open:open??close,high:high??close,low:low??close,close});
+    }
+    return Array.from(unique.values()).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
+}
+function rfkjTseEma(values,period){
+    if(!values.length)return [];
+    period=Math.max(1,Math.min(period,values.length));
+    const alpha=2/(period+1),out=[values[0]];
+    let current=values[0];
+    for(const value of values.slice(1)){current=alpha*value+(1-alpha)*current;out.push(current);}
+    return out;
+}
+function rfkjCalculateTseSignals(candles){
+    if(candles.length<20)throw new Error(`Only ${candles.length} valid TSETMC candles; at least 20 required`);
+    const source=candles.map(c=>(c.high+c.low)/2);
+    const changes=[];
+    for(let i=1;i<source.length;i++)changes.push(Math.abs(source[i]-source[i-1]));
+    const avrng=rfkjTseEma(changes,Math.min(100,source.length));
+    let filter=source[0];
+    for(let i=1;i<source.length;i++){
+        const range=(avrng[Math.min(i-1,avrng.length-1)]||0)*5;
+        const value=source[i];
+        if(value>filter){const next=value-range;if(next>filter)filter=next;}
+        else if(value<filter){const next=value+range;if(next<filter)filter=next;}
+    }
+    const lastSource=source[source.length-1];
+    const RF=lastSource>filter?1:lastSource<filter?-1:0;
+
+    const trueRanges=candles.map((c,i)=>{
+        const previous=i===0?c.close:candles[i-1].close;
+        return Math.max(c.high-c.low,Math.abs(c.high-previous),Math.abs(c.low-previous));
+    });
+    const atr=rfkjTseEma(trueRanges,Math.min(10,trueRanges.length));
+    let direction=1,upper=null,lower=null;
+    candles.forEach((c,i)=>{
+        const mid=(c.high+c.low)/2,currentAtr=atr[Math.min(i,atr.length-1)];
+        const basicUpper=mid+3*currentAtr,basicLower=mid-3*currentAtr;
+        if(upper===null){upper=basicUpper;lower=basicLower;}
+        else{
+            const previousClose=candles[i-1].close;
+            if(basicUpper<upper||previousClose>upper)upper=basicUpper;
+            if(basicLower>lower||previousClose<lower)lower=basicLower;
+        }
+        if(direction===1){if(c.close<lower)direction=-1;}
+        else if(c.close>upper)direction=1;
+    });
+    const selected=candles.slice(-Math.min(288,candles.length));
+    const highest=Math.max(...selected.map(c=>c.high));
+    const lowest=Math.min(...selected.map(c=>c.low));
+    const kijun=(highest+lowest)/2,lastClose=candles[candles.length-1].close;
+    const KJ=lastClose>kijun?1:lastClose<kijun?-1:0;
+    return {RF,ST:direction,KJ};
+}
+async function rfkjFetchTseData(coin){
+    const slot=rfkjTseSlotForCoin(coin);
+    if(!slot||!/^[0-9]+$/.test(String(slot.insCode||"")))throw new Error("TSETMC symbol is not configured in the TSE watchlist");
+    const code=String(slot.insCode),cached=rfkjTseComputedCache.get(code);
+    const quotePromise=globalPulseTsetmcFetchQuote(slot);
+    if(cached&&Date.now()-cached.at<60000){
+        const quote=await quotePromise;
+        return {...cached.value,price:Number(quote.lastPrice),dailyChangePercent:Number(quote.lastPricePercent),updated:new Date(quote.updatedAt||Date.now()).toISOString(),symbol:String(quote.symbol||slot.symbol||cached.value.symbol||"TSE")};
+    }
+    const [quote,chartPayload]=await Promise.all([
+        quotePromise,
+        globalPulseTsetmcFetchJson(`ClosingPrice/GetChartData/${encodeURIComponent(code)}/${RFKJ_TSE_TIMEFRAME}`,payload=>Array.isArray(payload)||!!(payload?.closingPriceChartData||payload?.data||payload?.chartData))
+    ]);
+    let candles=rfkjNormalizeTseCandles(rfkjTseChartRows(chartPayload));
+    const historyKey=RFKJ_TSE_CACHE_PREFIX+code;
+    try{
+        const previous=JSON.parse(localStorage.getItem(historyKey)||"[]");
+        if(Array.isArray(previous)){
+            const merged=new Map(previous.filter(c=>c&&c.timestamp).map(c=>[String(c.timestamp),c]));
+            candles.forEach(c=>merged.set(c.timestamp,c));
+            candles=Array.from(merged.values()).sort((a,b)=>String(a.timestamp).localeCompare(String(b.timestamp))).slice(-1200);
+        }
+        localStorage.setItem(historyKey,JSON.stringify(candles));
+    }catch(e){}
+    const signals=rfkjCalculateTseSignals(candles);
+    const value={...signals,price:Number(quote.lastPrice),dailyChangePercent:Number(quote.lastPricePercent),updated:new Date(quote.updatedAt||Date.now()).toISOString(),symbol:String(quote.symbol||slot.symbol||"TSE"),source:"tsetmc",timeframe:RFKJ_TSE_TIMEFRAME};
+    if(!Number.isFinite(value.price)||value.price<=0)throw new Error("TSETMC current price unavailable");
+    rfkjTseComputedCache.set(code,{value,at:Date.now()});
+    return value;
+}
+
 const RFKJ_POLL_MS = 5000;
 const RFKJ_LIVE_CACHE_KEY = "rfkjLiveSignalCache-v1";
 const RFKJ_SIGNAL_CACHE_KEY = "rfkjSignalDisplayCache-v1";
@@ -15247,7 +16044,7 @@ function rfkjUpdateHeaderPrice(index){
     const coinEl=el.querySelector(".rfkj-header-coin");
     const updatedEl=el.querySelector(".rfkj-header-updated");
     const dailyEl=el.querySelector(".rfkj-header-daily-change");
-    if(coinEl)coinEl.textContent=coin;
+    if(coinEl)coinEl.textContent=rfkjIsTseCoin(coin)?(rfkjTseSlotForCoin(coin)?.symbol||"TSE"):coin;
     if(priceEl){
         const price=Number(s.latestPrice);
         const valid=Number.isFinite(price)&&price>0;
@@ -15639,7 +16436,10 @@ async function rfkjFetchOne(index,timeframe,notify=true){
     if(!state||!state.running)return;
     const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
     try{
-        const data=await rfkjFetchWithFailover(`coin=${encodeURIComponent(coin)}&timeframe=${encodeURIComponent(timeframe)}&t=${Date.now()}`);
+        const isTse=rfkjIsTseCoin(coin);
+        const data=isTse
+            ? await rfkjFetchTseData(coin)
+            : await rfkjFetchWithFailover(`coin=${encodeURIComponent(coin)}&timeframe=${encodeURIComponent(timeframe)}&t=${Date.now()}`);
         const rf=rfkjNormalizeSignal(data.RF??data.rf??data.rangeFilter??data.range_filter??0);
         const kj=rfkjNormalizeSignal(data.KJ??data.kj??data.kijunsen??0);
         const st=rfkjNormalizeSignal(data.ST??data.st??data.superTrend??data.supertrend??0);
@@ -15666,7 +16466,7 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         rfkjSaveState();
         syncNativeWidgetSnapshot();
         let dailyChangePercent=Number(data.dailyChangePercent);
-        if(!Number.isFinite(dailyChangePercent)){
+        if(!Number.isFinite(dailyChangePercent)&&!isTse){
             try{
                 if (!state.cycleDailyChangePromise) state.cycleDailyChangePromise = crossoverFetchDailyPercent(coin).catch(() => null);
                 dailyChangePercent = await state.cycleDailyChangePromise;
@@ -15675,15 +16475,17 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         state.latestDailyChangePercent=Number.isFinite(Number(dailyChangePercent))?Number(dailyChangePercent):null;
         let price=Number(data.price);
         let priceRaw=(data.price===undefined||data.price===null)?null:String(data.price).trim();
-        try{
-            if (!state.cyclePricePromise) state.cyclePricePromise = getUnifiedCryptoPrice(coin).catch(error => { console.warn(`Unified crypto price failed for ${coin}:`, error); return null; });
-            const unifiedPrice=await state.cyclePricePromise;
-            if(unifiedPrice && Number.isFinite(Number(unifiedPrice.price))&&Number(unifiedPrice.price)>0){
-                price=Number(unifiedPrice.price);
-                priceRaw=String(unifiedPrice.price);
+        if(!isTse){
+            try{
+                if (!state.cyclePricePromise) state.cyclePricePromise = getUnifiedCryptoPrice(coin).catch(error => { console.warn(`Unified crypto price failed for ${coin}:`, error); return null; });
+                const unifiedPrice=await state.cyclePricePromise;
+                if(unifiedPrice && Number.isFinite(Number(unifiedPrice.price))&&Number(unifiedPrice.price)>0){
+                    price=Number(unifiedPrice.price);
+                    priceRaw=String(unifiedPrice.price);
+                }
+            }catch(priceError){
+                console.warn(`Unified crypto price failed for ${coin}, keeping Signal Matrix worker price:`,priceError);
             }
-        }catch(priceError){
-            console.warn(`Unified crypto price failed for ${coin}, keeping Signal Matrix worker price:`,priceError);
         }
         const previousPrice=Number(state.latestPrice);
         state.priceDirection=(Number.isFinite(previousPrice)&&Number.isFinite(price)&&price>0)
@@ -15835,6 +16637,15 @@ function rfkjSelectTimeframe(index,button){
     const card=button.closest(".rfkj-instance");
     const multi=card?.dataset.timeframeMode==="multi-timeframe";
     const tf=button.dataset.rfkjTime||"1";
+    if(rfkjIsTseCoin(rfkjGet("rfkjCoin",index)?.value)&&tf!=="30"){
+        s.selectedTimeframes=["30"];
+        card.querySelectorAll(".rfkj-timeframe").forEach(x=>x.classList.toggle("active",x.dataset.rfkjTime==="30"));
+        rfkjRenderSignalRows(index);
+        rfkjSetStatus(index,"TSETMC indicators use the configured 30m candles.");
+        if(s.running)rfkjFetchSignal(index);
+        rfkjSaveState();
+        return;
+    }
     if(!multi){
         card.querySelectorAll(".rfkj-timeframe").forEach(x=>x.classList.remove("active"));
         button.classList.add("active");
@@ -15858,12 +16669,24 @@ function rfkjSelectTimeframe(index,button){
     rfkjSaveState();
 }
 function rfkjInitInstance(index){
+    rfkjRefreshTseOptions();
     const s=rfkjInstance(index);
     const coin=rfkjGet("rfkjCoin",index);
     const btn=rfkjGet("rfkjStartStop",index);
     if(!s||!coin||!btn)return;
     document.querySelectorAll(`.rfkj-instance[data-rfkj-index="${index}"] .rfkj-timeframe`).forEach(b=>b.addEventListener("click",()=>rfkjSelectTimeframe(index,b)));
+    s.lastCoinValue=String(coin.value||"");
     coin.addEventListener("change",()=>{
+        const previousCoin=s.lastCoinValue||"";
+        if(rfkjIsTseCoin(coin.value)){
+            if(!rfkjIsTseCoin(previousCoin))s.preTseTimeframes=s.selectedTimeframes.slice();
+            s.selectedTimeframes=["30"];
+            document.querySelectorAll(`.rfkj-instance[data-rfkj-index="${index}"] .rfkj-timeframe`).forEach(b=>b.classList.toggle("active",b.dataset.rfkjTime==="30"));
+        }else if(rfkjIsTseCoin(previousCoin)){
+            s.selectedTimeframes=Array.isArray(s.preTseTimeframes)&&s.preTseTimeframes.length?s.preTseTimeframes.slice():["1"];
+            document.querySelectorAll(`.rfkj-instance[data-rfkj-index="${index}"] .rfkj-timeframe`).forEach(b=>b.classList.toggle("active",s.selectedTimeframes.includes(b.dataset.rfkjTime)));
+        }
+        s.lastCoinValue=String(coin.value||"");
         if(index===1){
             if(coin.value)coin.dataset.userSelected="1";
             else delete coin.dataset.userSelected;
@@ -15925,11 +16748,13 @@ function rfkjRestoreState(){
         // hide a running first Matrix just because an older state lacks selectedCoin.
         const isSelected = m.selectedCoin===true || !!String(m.coin||"").trim() || !!m.running;
         coin.value=isSelected?(m.coin||"BTC"):"";
+        s.lastCoinValue=String(coin.value||"");
         if(isSelected)coin.dataset.userSelected="1";
         else delete coin.dataset.userSelected;
         const multi=card.dataset.timeframeMode==="multi-timeframe";
         let tfs=Array.isArray(m.timeframes)&&m.timeframes.length?m.timeframes.map(String):["1"];
-        if(!multi)tfs=[tfs[0]||"1"];
+        if(rfkjIsTseCoin(coin.value))tfs=["30"];
+        else if(!multi)tfs=[tfs[0]||"1"];
         s.selectedTimeframes=tfs.filter(x=>RFKJ_TIMEFRAMES.includes(x));
         if(!s.selectedTimeframes.length)s.selectedTimeframes=["1"];
         card.querySelectorAll(".rfkj-timeframe").forEach(b=>b.classList.toggle("active",s.selectedTimeframes.includes(b.dataset.rfkjTime)));
@@ -15955,6 +16780,11 @@ function initRFKJSignalMonitor(){
     }
 }
 initRFKJSignalMonitor();
+rfkjRefreshTseOptions();
+window.addEventListener("crossover-assets-updated",()=>{
+    rfkjRefreshTseOptions();
+    document.querySelectorAll(".rfkj-compact-coin-picker").forEach(picker=>picker._rebuildOptions&&picker._rebuildOptions());
+});
 
 /* =====================================================
    CROSSOVER MONITOR
@@ -16018,12 +16848,19 @@ function crossoverAssetSymbol(value){
     const v=String(value||"").toUpperCase();
     if(v==="GOLD")return "Gold";
     if(v==="OIL")return "Crude Oil";
-    if(v.startsWith("TSE|"))return v.slice(4);
+    if(v.startsWith("TSE|"))return crossoverTseSymbol(v)||"TSE";
     return v;
 }
 function crossoverTseSymbol(value){
     const v=String(value||"").toUpperCase();
-    return v.startsWith("TSE|")?v.slice(4):"";
+    if(!v.startsWith("TSE|"))return "";
+    const symbol=v.slice(4);
+    const slotMatch=symbol.match(/^SLOT([1-4])$/);
+    if(slotMatch){
+        const instrument=globalPulseTsetmcGetSlots()[Number(slotMatch[1])-1];
+        return String(instrument?.symbol||"");
+    }
+    return symbol;
 }
 function crossoverAssetIconHTML(value){
     const v=String(value||"").toUpperCase();
@@ -16043,7 +16880,7 @@ function crossoverAssetLabel(value){
     const v=String(value||"").toUpperCase();
     if(v==="GOLD")return "GOLD";
     if(v==="OIL")return "OIL";
-    if(v.startsWith("TSE|"))return crossoverTseSymbol(v);
+    if(v.startsWith("TSE|"))return crossoverTseSymbol(v)||"TSE";
     return v;
 }
 function crossoverNotificationAssetLabel(value){
@@ -16073,8 +16910,16 @@ function crossoverAssetOptions(){
      */
     const out=[];
     const add=value=>{
-        const v=String(value||"").trim().toUpperCase();
+        let v=String(value||"").trim().toUpperCase();
         if(!v)return;
+        const slotRef=v.match(/^TSE\|SLOT([1-4])$/);
+        if(slotRef&&Number(slotRef[1])>globalPulseTsetmcGetSlots().length)return;
+        if(v.startsWith("TSE|")&&!/^TSE\|SLOT[1-4]$/.test(v)){
+            const symbol=v.slice(4);
+            const slots=globalPulseTsetmcGetSlots();
+            const slotIndex=slots.findIndex(item=>item&&String(item.symbol||"").trim().toUpperCase()===symbol);
+            if(slotIndex>=0)v=`TSE|SLOT${slotIndex+1}`;
+        }
         if(CROSSOVER_COINS.includes(v)||crossoverIsSpecialAsset(v))out.push(v);
     };
 
@@ -16106,19 +16951,9 @@ function crossoverAssetOptions(){
         });
     }catch(e){}
 
-    /* Live TSE discovery is supplemental only; it can never remove a saved asset. */
+    /* One Crossover TSE asset is exposed for every active GLOBAL slot; its label follows the slot configuration. */
     try{
-        const cached=readGlobalPulseTsetmcCache();
-        (cached?.results||[]).forEach(row=>{
-            const symbol=String(row?.symbol||"").trim();
-            if(symbol)add(`TSE|${symbol}`);
-        });
-    }catch(e){}
-    try{
-        (GLOBAL_PULSE_TSE_DEFAULT_RESULTS||[]).forEach(row=>{
-            const symbol=String(row?.symbol||"").trim();
-            if(symbol)add(`TSE|${symbol}`);
-        });
+        globalPulseTsetmcGetSlots().forEach((item,index)=>add(`TSE|SLOT${index+1}`));
     }catch(e){}
 
     return [...new Set(out)];
@@ -16142,12 +16977,10 @@ async function crossoverFetchSpecialPrice(asset){
     }
     if(v.startsWith("TSE|")){
         const symbol=crossoverTseSymbol(v);
-        const failover=await fetchGlobalPulseTsetmcWithFailover(Date.now());
-        const data=failover.data;
-        const row=(Array.isArray(data?.results)?data.results:[]).find(r=>String(r?.symbol||"").trim().toUpperCase()===symbol);
-        const price=Number(row?.lastPrice);
-        if(!data?.ok||!Number.isFinite(price)||price<=0)throw new Error(`TSETMC ${symbol} price unavailable`);
-        return {price,updated:new Date().toISOString()};
+        const instrument=globalPulseTsetmcFindInstrument(symbol);
+        if(!instrument)throw new Error(symbol?`TSETMC ${symbol} is not configured in GLOBAL`:"Select a TSETMC symbol in GLOBAL first");
+        const quote=await globalPulseTsetmcFetchQuote(instrument);
+        return {price:quote.lastPrice,dailyChangePercent:quote.lastPricePercent,updated:new Date(quote.updatedAt||Date.now()).toISOString()};
     }
     return null;
 }
@@ -16628,7 +17461,9 @@ async function crossoverSendAlert(index,direction,price,target){
     /* Crossover email is sent exclusively by CROSSOVER_EMAIL_WORKER_URL. */
 }
 function crossoverPriceCacheKey(asset){
-    return `crossoverPriceCache-v1:${String(asset||"").trim().toUpperCase()}`;
+    const value=String(asset||"").trim().toUpperCase();
+    const resolved=value.startsWith("TSE|")?crossoverTseSymbol(value)||"UNSET":value;
+    return `crossoverPriceCache-v2:${value}:${resolved}`;
 }
 function crossoverReadCachedPrice(asset){
     try{
@@ -16739,7 +17574,9 @@ async function crossoverFetchOne(index,notify=true){
             : 0;
         s.latestPrice=price;
         s.latestUpdated=data.updated||new Date().toISOString();
-        const dailyChangePercent=await crossoverFetchDailyPercent(effectiveCoin);
+        const suppliedDailyPercent=data?.dailyChangePercent;
+        const dailyChangePercent=suppliedDailyPercent!==null&&suppliedDailyPercent!==undefined&&Number.isFinite(Number(suppliedDailyPercent))
+            ?Number(suppliedDailyPercent):await crossoverFetchDailyPercent(effectiveCoin);
         if(Number.isFinite(dailyChangePercent))s.dailyChangePercent=dailyChangePercent;
         crossoverWriteCachedPrice(effectiveCoin,price,s.latestUpdated);
         // Persist the latest Crossover daily percentage before rendering Ultra Compact.
@@ -16779,7 +17616,7 @@ async function crossoverFetchOne(index,notify=true){
             const cached=crossoverReadCachedPrice(effectiveCoin);
             if(cached){s.latestPrice=cached.price;s.latestUpdated=cached.updated||s.latestUpdated;crossoverUpdateUI(index);}
         }
-        setPageIssue(`crossover:${index}`,`Price APIs unavailable • keeping last price`,"error");
+        setPageIssue(`crossover:${index}`,`${crossoverAssetSymbol(effectiveCoin)} price unavailable; keeping last valid price. ${error?.message || "Price API request failed"}`,"error");
         console.warn(`Crossover ${index} failed`,error);
         const status=crossoverGet("crossoverStatus",index);
         if(status)status.textContent=`Worker unavailable • ${error.message||"request failed"}`;
@@ -17468,32 +18305,38 @@ if (
         menu.className="rfkj-compact-coin-menu";
         menu.setAttribute("role","listbox");
         function syncVisual(){
-            currentName.textContent=select.value||"BTC";
+            const selectedOption=select.options[select.selectedIndex];
+            currentName.textContent=selectedOption?.textContent||select.value||"BTC";
             menu.querySelectorAll(".rfkj-compact-coin-option").forEach(option=>{
                 const active=option.dataset.value===select.value;
                 option.classList.toggle("active",active);
                 option.setAttribute("aria-selected",active?"true":"false");
             });
         }
-        Array.from(select.options).forEach(option=>{
-            const item=document.createElement("button");
-            item.type="button";
-            item.className="rfkj-compact-coin-option";
-            item.dataset.value=option.value;
-            item.textContent=option.textContent;
-            item.setAttribute("role","option");
-            item.addEventListener("click",()=>{
-                if(select.value!==option.value){
-                    select.value=option.value;
-                    select.dispatchEvent(new Event("change",{bubbles:true}));
-                }
-                syncVisual();
-                picker.classList.remove("open");
-                trigger.classList.remove("open");
-                trigger.setAttribute("aria-expanded","false");
+        function rebuildOptions(){
+            menu.innerHTML="";
+            Array.from(select.options).forEach(option=>{
+                const item=document.createElement("button");
+                item.type="button";
+                item.className="rfkj-compact-coin-option";
+                item.dataset.value=option.value;
+                item.textContent=option.textContent;
+                item.setAttribute("role","option");
+                item.addEventListener("click",()=>{
+                    if(select.value!==option.value){
+                        select.value=option.value;
+                        select.dispatchEvent(new Event("change",{bubbles:true}));
+                    }
+                    syncVisual();
+                    picker.classList.remove("open");
+                    trigger.classList.remove("open");
+                    trigger.setAttribute("aria-expanded","false");
+                });
+                menu.appendChild(item);
             });
-            menu.appendChild(item);
-        });
+            syncVisual();
+        }
+        rebuildOptions();
         function closePicker(){
             picker.classList.remove("open");
             trigger.classList.remove("open");
@@ -17518,6 +18361,7 @@ if (
         select.style.pointerEvents="none";
         select.style.clipPath="inset(50%)";
         picker._syncVisual=syncVisual;
+        picker._rebuildOptions=rebuildOptions;
         syncVisual();
     });
 })();
@@ -19257,7 +20101,7 @@ if (
 #rahdataOverlay{position:fixed;inset:0;z-index:2147483000;background:#0b0e11;display:none;flex-direction:column}
 #rahdataOverlay.open{display:flex}
 #rahdataFrame{border:0;width:100%;height:100%;flex:1;min-height:0;background:#0b0e11}
-.average-chart-progress-label,.average-chart-progress-label:hover{cursor:pointer}
+.average-chart-progress-label,.average-chart-progress-label:hover{cursor:pointer!important;pointer-events:auto!important;position:relative;z-index:30}
 </style>
 <div id="rahdataOverlay" aria-hidden="true">
  <iframe id="rahdataFrame" title="RAHDATA" allow="fullscreen"></iframe>
@@ -19273,14 +20117,48 @@ const coinDoc="<!DOCTYPE html>\n<html lang=\"fa\">\n<head>\n<meta charset=\"UTF-
  function saveOverlayState(isOpen){try{sessionStorage.setItem(stateKey,JSON.stringify({open:!!isOpen,mode:current}))}catch{}}
  function show(mode){current=mode;saveOverlayState(overlay.classList.contains('open'));frame.srcdoc=mode==='usd'?usdDoc:coinDoc}
  function open(mode){overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');show(mode)}
+ window.openRahdataChart=function(mode){open(mode==='coin'?'coin':'usd')};
  function close(){overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true');saveOverlayState(false);frame.srcdoc=''}
- document.getElementById('averageChartProgressLabel')?.addEventListener('click',()=>open('usd'));
- document.getElementById('coinChartProgressLabel')?.addEventListener('click',()=>open('coin'));
+ // Open on pointerdown as well as click: Android WebView can suppress the
+ // synthesized click when the dashboard is being scrolled/touched.
+ let pointerActivatedTarget=null;
+ function activateRahdataTarget(target,e){
+  if(!target)return;
+  if(e){e.preventDefault();e.stopImmediatePropagation();}
+  open(target.id==='coinChartProgressLabel'?'coin':'usd');
+ }
+ document.addEventListener('pointerdown',e=>{
+  const target=e.target&&e.target.closest?e.target.closest('#averageChartProgressLabel,#coinChartProgressLabel'):null;
+  if(target){pointerActivatedTarget=target.id;activateRahdataTarget(target,e);}
+ },true);
+ document.addEventListener('click',e=>{
+  const target=e.target&&e.target.closest?e.target.closest('#averageChartProgressLabel,#coinChartProgressLabel'):null;
+  if(!target)return;
+  if(pointerActivatedTarget===target.id){pointerActivatedTarget=null;e.preventDefault();e.stopImmediatePropagation();return;}
+  activateRahdataTarget(target,e);
+ },true);
+ ['averageChartProgressLabel','coinChartProgressLabel'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.style.pointerEvents='auto';
+  el.style.cursor='pointer';
+  el.style.touchAction='manipulation';
+  el.style.userSelect='none';
+  el.style.webkitUserSelect='none';
+  el.style.position='relative';
+  el.style.zIndex='40';
+  el.setAttribute('tabindex','0');
+  el.setAttribute('role','button');
+  el.addEventListener('keydown',e=>{
+   if(e.key==='Enter'||e.key===' '){e.preventDefault();activateRahdataTarget(el);}
+  });
+ });
  window.addEventListener('message',e=>{if(e.source!==frame.contentWindow)return;if(e.data&&e.data.type==='rahdata-close')close();if(e.data==='rahdata:usd')show('usd');if(e.data==='rahdata:coin')show('coin')});
  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.contains('open'))close()});
  try{const savedState=JSON.parse(sessionStorage.getItem(stateKey)||'null');if(savedState?.open)open(savedState.mode==='coin'?'coin':'usd')}catch{}
 })();
 </script>
+
 
 </body>
 
@@ -19927,4 +20805,51 @@ const coinDoc="<!DOCTYPE html>\n<html lang=\"fa\">\n<head>\n<meta charset=\"UTF-
 /* Remove the empty strip below the chart time axis. */
 .average-price-chart-card{padding-bottom:8px!important;}
 @media(max-width:480px){.average-price-chart-card{padding-bottom:6px!important;}}
+</style>
+
+<style id="global-tsetmc-slot-colors-final">
+/* Fixed one-pixel line, matching the Signal Matrix / Crossover selector. */
+.global-tsetmc-slot-btn,
+.global-tsetmc-slot-btn:hover,
+.global-tsetmc-slot-btn:focus,
+.global-tsetmc-slot-btn:active {
+    box-sizing:border-box !important;
+    display:block !important;
+    width:100% !important;
+    min-width:0 !important;
+    height:1px !important;
+    min-height:1px !important;
+    max-height:1px !important;
+    padding:0 !important;
+    margin:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    opacity:1 !important;
+    animation:none !important;
+    transform:none !important;
+    transition:background .16s ease !important;
+    cursor:pointer;
+}
+/* Every slot currently included in the visible count is strong royal blue. */
+.global-tsetmc-slot-btn.is-visible,
+.global-tsetmc-slot-btn.is-visible:hover,
+.global-tsetmc-slot-btn.is-visible:focus,
+.global-tsetmc-slot-btn.is-visible:active {
+    background:rgba(65,105,225,.96) !important;
+}
+/* Configured, but outside the visible count. */
+.global-tsetmc-slot-btn.configured:not(.is-visible),
+.global-tsetmc-slot-btn.configured:not(.is-visible):hover,
+.global-tsetmc-slot-btn.configured:not(.is-visible):focus,
+.global-tsetmc-slot-btn.configured:not(.is-visible):active {
+    background:rgba(65,105,225,.40) !important;
+}
+/* Not configured and outside the visible count. */
+.global-tsetmc-slot-btn:not(.configured):not(.is-visible),
+.global-tsetmc-slot-btn:not(.configured):not(.is-visible):hover,
+.global-tsetmc-slot-btn:not(.configured):not(.is-visible):focus,
+.global-tsetmc-slot-btn:not(.configured):not(.is-visible):active {
+    background:rgba(100,116,139,.48) !important;
+}
 </style>
