@@ -16454,11 +16454,16 @@ function rfkjSaveState(){
 }
 async function rfkjSendNotification(index,title,message,type="RFKJ"){
     try{
-        const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
+        const coin=String(rfkjGet("rfkjCoin",index)?.value||"BTC").trim();
+        const tseSlot=rfkjIsTseCoin(coin)?rfkjTseSlotForCoin(coin):null;
         const displayCoin=rfkjIsTseCoin(coin)
-            ? (rfkjTseSlotForCoin(coin)?.symbol||rfkjTseSlotForCoin(coin)?.name||"TSE")
+            ? String(tseSlot?.symbol||tseSlot?.name||"TSE").trim()
             : coin;
-        await sendDashboardNotification(title,message,getCryptoIconSrc(displayCoin),type);
+        /* Resolve the internal TSE|SLOTn key centrally for every Matrix alert
+           (start, stop and indicator transitions), including Android native alerts. */
+        const safeTitle=String(title||"").replace(/TSE\|SLOT[1-4]/gi,displayCoin);
+        const safeMessage=String(message||"").replace(/TSE\|SLOT[1-4]/gi,displayCoin);
+        await sendDashboardNotification(safeTitle,safeMessage,getCryptoIconSrc(displayCoin),type);
     }catch(e){console.warn("Signal Matrix notification failed",e);}
 }
 async function rfkjFetchOne(index,timeframe,notify=true){
