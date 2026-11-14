@@ -1,4 +1,4 @@
-const CACHE_NAME = "financial-dashboard-v9";
+const CACHE_NAME = "financial-dashboard-v10";
 
 const STATIC_FILES = [
 
