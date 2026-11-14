@@ -15815,11 +15815,19 @@ async function rfkjFetchWithFailover(query){
         throw new Error(`Signal Matrix APIs unavailable (primary: ${primaryError?.message || "failed"}; fallback: ${fallbackError?.message || "failed"})`);
     }
 }
-/* TSETMC support for Signal Matrix. TSE indicators intentionally use the
-   same 30-minute candles and formulas as the supplied Python reference. */
-const RFKJ_TSE_TIMEFRAME = "30m";
-const RFKJ_TSE_CACHE_PREFIX = "rfkjTse30mHistory-v1:";
+/* TSETMC Signal Matrix data engine.
+   Intraday candles are built from TSETMC's per-session closing-price history;
+   higher timeframes are aggregated from 30m or daily candles. Each source is
+   cached per instrument/date/timeframe to reduce CDN traffic and tolerate limits. */
+const RFKJ_TSE_CACHE_PREFIX = "rfkjTseHistory-v2:";
+const RFKJ_TSE_CANDLE_TTL_MS = 60 * 1000;
+const RFKJ_TSE_DAILY_TTL_MS = 10 * 60 * 1000;
+const RFKJ_TSE_SESSION_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 const rfkjTseComputedCache = new Map();
+const rfkjTseCandleInFlight = new Map();
+const rfkjTseSessionInFlight = new Map();
+const rfkjTseDailyInFlight = new Map();
+let rfkjTseSessionRequestQueue=Promise.resolve();
 function rfkjIsTseCoin(value){return String(value||"").trim().toUpperCase().startsWith("TSE|");}
 function rfkjTseSlotForCoin(value){
     const match=String(value||"").trim().toUpperCase().match(/^TSE\|SLOT([1-4])$/);
@@ -15833,7 +15841,7 @@ function rfkjRefreshTseOptions(){
         let slots=[];
         try{slots=globalPulseTsetmcGetSlots();}catch(e){}
         slots.forEach((slot,index)=>{
-            if(!slot||!/^\d+$/.test(String(slot.insCode||"")))return;
+            if(!slot||!/^[0-9]+$/.test(String(slot.insCode||"")))return;
             const value=`TSE|SLOT${index+1}`;
             const option=document.createElement("option");
             option.value=value;
@@ -15858,11 +15866,11 @@ function rfkjTseNumber(row,keys){
 function rfkjTseChartRows(payload){
     if(Array.isArray(payload))return payload;
     if(!payload||typeof payload!=="object")return [];
-    for(const key of ["closingPriceChartData","chartData","data","result"]){
+    for(const key of ["closingPriceChartData","closingPriceDaily","closingPriceHistory","chartData","data","result"]){
         const value=payload[key];
         if(Array.isArray(value))return value;
         if(value&&typeof value==="object"){
-            for(const nested of ["closingPriceChartData","chartData","data","result"]){
+            for(const nested of ["closingPriceChartData","closingPriceDaily","closingPriceHistory","chartData","data","result"]){
                 if(Array.isArray(value[nested]))return value[nested];
             }
         }
@@ -15873,17 +15881,172 @@ function rfkjNormalizeTseCandles(rows){
     const unique=new Map();
     for(const row of rows){
         if(!row||typeof row!=="object")continue;
-        const rawTime=row.time??row.timestamp??row.datetime??row.dateTime??row.dEven??row.DEven??row.t??row.date;
+        const rawDate=row.dEven??row.DEven??row.date;
+        const rawClock=row.hEven??row.HEven;
+        const rawTime=row.time??row.timestamp??row.datetime??row.dateTime??rawDate??row.t;
         const close=rfkjTseNumber(row,["close","c","pClose","pc","pClosing","pDrCotVal","pl"]);
-        if(rawTime===undefined||rawTime===null||close===null)continue;
+        if(rawTime===undefined||rawTime===null||close===null||close<=0)continue;
         const open=rfkjTseNumber(row,["open","o","pOpen","pf","priceFirst"]);
         const high=rfkjTseNumber(row,["high","h","pHigh","pMax","priceMax"]);
         const low=rfkjTseNumber(row,["low","l","pLow","pMin","priceMin"]);
-        const timestamp=String(rawTime).trim();
+        let timestamp=String(rawTime).trim();
+        if(rawDate!==undefined&&rawDate!==null&&rawClock!==undefined&&rawClock!==null){
+            const date=rfkjTseDateString(rawDate),clock=String(rawClock).replace(/\D/g,"").padStart(6,"0").slice(-6);
+            if(date)timestamp=`${date}T${clock.slice(0,2)}:${clock.slice(2,4)}:${clock.slice(4,6)}`;
+        }else if(/^\d{14}$/.test(timestamp))timestamp=`${timestamp.slice(0,8)}T${timestamp.slice(8,10)}:${timestamp.slice(10,12)}:${timestamp.slice(12,14)}`;
+        else if(/^\d{8}$/.test(timestamp))timestamp+=`T${String(rawClock??"000000").replace(/\D/g,"").padStart(6,"0").slice(-6).replace(/^(\d{2})(\d{2})(\d{2})$/,"$1:$2:$3")}`;
+        else if(/^\d{10,13}$/.test(timestamp)){
+            const epoch=Number(timestamp)*(timestamp.length===10?1000:1);
+            const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tehran",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).formatToParts(new Date(epoch));
+            const part=type=>parts.find(x=>x.type===type)?.value||"00";
+            timestamp=`${part("year")}${part("month")}${part("day")}T${part("hour")}:${part("minute")}:${part("second")}`;
+        }
         if(!timestamp)continue;
-        unique.set(timestamp,{timestamp,open:open??close,high:high??close,low:low??close,close});
+        unique.set(timestamp,{timestamp,open:open??close,high:Math.max(high??close,open??close),low:Math.min(low??close,open??close),close});
     }
     return Array.from(unique.values()).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
+}
+function rfkjTseDateString(value){
+    const n=String(value??"").replace(/\D/g,"");
+    return n.length>=8?n.slice(0,8):"";
+}
+function rfkjTseHistoryRowsToOneMinute(rows,date){
+    const byMinute=new Map();
+    for(const row of rows||[]){
+        if(!row||typeof row!=="object")continue;
+        const rawTime=row.hEven??row.HEven??row.time??row.timestamp;
+        if(rawTime===undefined||rawTime===null)continue;
+        const digits=String(rawTime).replace(/\D/g,"").padStart(6,"0").slice(-6);
+        const hour=Number(digits.slice(0,2)),minute=Number(digits.slice(2,4));
+        if(!Number.isFinite(hour)||!Number.isFinite(minute)||hour<9||hour>13)continue;
+        const price=rfkjTseNumber(row,["pDrCotVal","last","pl","pClosing","close"]);
+        if(price===null||price<=0)continue;
+        const key=`${date}T${String(hour).padStart(2,"0")}:${String(minute).padStart(2,"0")}:00`;
+        const existing=byMinute.get(key);
+        if(!existing)byMinute.set(key,{timestamp:key,open:price,high:price,low:price,close:price});
+        else{existing.high=Math.max(existing.high,price);existing.low=Math.min(existing.low,price);existing.close=price;}
+    }
+    return Array.from(byMinute.values()).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
+}
+function rfkjTseAggregateIntraday(candles,minutes){
+    if(minutes<=1)return candles.slice();
+    const groups=new Map();
+    for(const candle of candles){
+        const match=String(candle.timestamp).match(/^(\d{8})T(\d{2}):(\d{2})/);
+        if(!match)continue;
+        const date=match[1],minuteOfDay=Number(match[2])*60+Number(match[3]);
+        const bucket=Math.floor((minuteOfDay-540)/minutes);
+        if(bucket<0)continue;
+        const key=`${date}:${bucket}`;
+        const existing=groups.get(key);
+        if(!existing)groups.set(key,{...candle,_date:date,_bucket:bucket});
+        else{existing.high=Math.max(existing.high,candle.high);existing.low=Math.min(existing.low,candle.low);existing.close=candle.close;}
+    }
+    return Array.from(groups.values()).sort((a,b)=>a.timestamp.localeCompare(b.timestamp)).map(({_date,_bucket,...c})=>c);
+}
+function rfkjTseAggregateDaily(candles,period){
+    if(period!=="1W")return candles.slice();
+    const groups=new Map();
+    for(const candle of candles){
+        const digits=String(candle.timestamp).replace(/\D/g,"").slice(0,8);
+        if(digits.length!==8)continue;
+        const y=Number(digits.slice(0,4)),m=Number(digits.slice(4,6))-1,d=Number(digits.slice(6,8));
+        const date=new Date(Date.UTC(y,m,d));
+        // TSE trading weeks begin on Saturday.
+        date.setUTCDate(date.getUTCDate()-((date.getUTCDay()+1)%7));
+        const week=`${date.getUTCFullYear()}${String(date.getUTCMonth()+1).padStart(2,"0")}${String(date.getUTCDate()).padStart(2,"0")}`;
+        const key=week;
+        const existing=groups.get(key);
+        if(!existing)groups.set(key,{...candle,timestamp:week});
+        else{existing.high=Math.max(existing.high,candle.high);existing.low=Math.min(existing.low,candle.low);existing.close=candle.close;}
+    }
+    return Array.from(groups.values()).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
+}
+function rfkjTseReadCache(key){
+    try{const value=JSON.parse(localStorage.getItem(key)||"null");return value&&typeof value==="object"?value:null;}catch(e){return null;}
+}
+function rfkjTseWriteCache(key,value){try{localStorage.setItem(key,JSON.stringify(value));}catch(e){}}
+async function rfkjTseGetDailyRows(code,top=500){
+    const key=`${RFKJ_TSE_CACHE_PREFIX}${code}:daily:${top}`;
+    const cached=rfkjTseReadCache(key);
+    if(cached?.rows?.length&&Date.now()-Number(cached.at||0)<RFKJ_TSE_DAILY_TTL_MS)return cached.rows;
+    if(rfkjTseDailyInFlight.has(code))return rfkjTseDailyInFlight.get(code);
+    const task=(async()=>{
+        try{
+            const payload=await globalPulseTsetmcFetchJson(`ClosingPrice/GetClosingPriceDailyList/${encodeURIComponent(code)}/${top}`,p=>rfkjTseChartRows(p).length>0);
+            const rows=rfkjTseChartRows(payload);
+            rfkjTseWriteCache(key,{at:Date.now(),rows});
+            return rows;
+        }catch(error){
+            if(cached?.rows?.length)return cached.rows;
+            throw error;
+        }finally{rfkjTseDailyInFlight.delete(code);}
+    })();
+    rfkjTseDailyInFlight.set(code,task);return task;
+}
+async function rfkjTseGetSessionRows(code,date){
+    const key=`${RFKJ_TSE_CACHE_PREFIX}${code}:session:${date}`;
+    const cached=rfkjTseReadCache(key);
+    const tehranToday=new Date(Date.now()+3.5*60*60*1000).toISOString().slice(0,10).replace(/-/g,"");
+    const ttl=date===tehranToday?RFKJ_TSE_CANDLE_TTL_MS:RFKJ_TSE_SESSION_CACHE_TTL_MS;
+    if(cached?.candles?.length&&Date.now()-Number(cached.at||0)<ttl)return cached.candles;
+    if(rfkjTseSessionInFlight.has(key))return rfkjTseSessionInFlight.get(key);
+    const task=(async()=>{
+        try{
+            // Serialize historical-session requests and leave a short gap between
+            // calls so multiple Matrix blocks cannot flood the TSETMC CDN.
+            const request=rfkjTseSessionRequestQueue.then(async()=>{
+                await new Promise(resolve=>setTimeout(resolve,350));
+                return globalPulseTsetmcFetchJson(`ClosingPrice/GetClosingPriceHistory/${encodeURIComponent(code)}/${date}`,p=>rfkjTseChartRows(p).length>0);
+            });
+            rfkjTseSessionRequestQueue=request.catch(()=>{});
+            const payload=await request;
+            const candles=rfkjTseHistoryRowsToOneMinute(rfkjTseChartRows(payload),date);
+            if(!candles.length)throw new Error(`No intraday snapshots for ${date}`);
+            rfkjTseWriteCache(key,{at:Date.now(),candles});
+            return candles;
+        }catch(error){
+            if(cached?.candles?.length)return cached.candles;
+            throw error;
+        }finally{rfkjTseSessionInFlight.delete(key);}
+    })();
+    rfkjTseSessionInFlight.set(key,task);return task;
+}
+async function rfkjTseGetIntradayCandles(code,minutes){
+    const dailyRows=await rfkjTseGetDailyRows(code);
+    const dates=Array.from(new Set(dailyRows.map(row=>rfkjTseDateString(row.dEven??row.DEven??row.date)).filter(Boolean))).sort().reverse();
+    // Fetch only enough recent sessions for a useful indicator history.
+    const sessionsNeeded=minutes<=1?3:minutes<=3?6:minutes<=5?9:27;
+    const selectedDates=dates.slice(0,sessionsNeeded);
+    const all=[];
+    let firstError=null;
+    for(let i=0;i<selectedDates.length;i++){
+        const date=selectedDates[i];
+        try{
+            const candles=await rfkjTseGetSessionRows(code,date);
+            all.push(...candles);
+        }catch(error){firstError=firstError||error;}
+    }
+    const candles=rfkjTseAggregateIntraday(all.sort((a,b)=>a.timestamp.localeCompare(b.timestamp)),minutes);
+    if(candles.length>=20)return candles.slice(-900);
+    const cacheKey=`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${minutes}m`;
+    const cached=rfkjTseReadCache(cacheKey);
+    if(cached?.candles?.length>=20)return cached.candles;
+    throw new Error(`TSETMC ${minutes}m history has only ${candles.length} candles${firstError?`: ${firstError.message}`:""}`);
+}
+async function rfkjTseGetThirtyMinuteCandles(code){
+    const payload=await globalPulseTsetmcFetchJson(`ClosingPrice/GetChartData/${encodeURIComponent(code)}/30m`,p=>rfkjTseChartRows(p).length>=20);
+    const candles=rfkjNormalizeTseCandles(rfkjTseChartRows(payload));
+    if(candles.length<20)throw new Error(`TSETMC 30m chart has only ${candles.length} candles`);
+    return candles.slice(-1200);
+}
+function rfkjTseAggregateFixed(candles,minutes){
+    if(minutes===240){
+        // TSE's regular session is shorter than four hours; one 4H candle
+        // therefore represents one complete trading session (daily OHLC).
+        return candles;
+    }
+    return rfkjTseAggregateIntraday(candles,minutes);
 }
 function rfkjTseEma(values,period){
     if(!values.length)return [];
@@ -15908,7 +16071,6 @@ function rfkjCalculateTseSignals(candles){
     }
     const lastSource=source[source.length-1];
     const RF=lastSource>filter?1:lastSource<filter?-1:0;
-
     const trueRanges=candles.map((c,i)=>{
         const previous=i===0?c.close:candles[i-1].close;
         return Math.max(c.high-c.low,Math.abs(c.high-previous),Math.abs(c.low-previous));
@@ -15932,36 +16094,74 @@ function rfkjCalculateTseSignals(candles){
     const lowest=Math.min(...selected.map(c=>c.low));
     const kijun=(highest+lowest)/2,lastClose=candles[candles.length-1].close;
     const KJ=lastClose>kijun?1:lastClose<kijun?-1:0;
-    return {RF,ST:direction,KJ};
+    // Keep the exact indicator price levels alongside their directional signals.
+    // These levels are used only to display informational distance percentages.
+    const STValue=direction===1?lower:upper;
+    return {RF,ST:direction,KJ,RFValue:filter,STValue,KJValue:kijun};
 }
-async function rfkjFetchTseData(coin){
+async function rfkjBuildTseCandles(code,timeframe){
+    const tf=String(timeframe||"30");
+    if(["1","3","5","15"].includes(tf))return rfkjTseGetIntradayCandles(code,Number(tf));
+    if(tf==="30")return rfkjTseGetThirtyMinuteCandles(code);
+    if(tf==="60"||tf==="4h"){
+        if(tf==="4h"){
+            const daily=rfkjNormalizeTseCandles(await rfkjTseGetDailyRows(code));
+            if(daily.length>=20)return daily.slice(-1200);
+        }
+        const base=await rfkjTseGetThirtyMinuteCandles(code);
+        const aggregated=rfkjTseAggregateFixed(base,tf==="60"?60:240);
+        if(aggregated.length>=20)return aggregated;
+        if(tf==="4h"){
+            const daily=rfkjNormalizeTseCandles(await rfkjTseGetDailyRows(code));
+            if(daily.length>=20)return daily.slice(-1200);
+        }
+        throw new Error(`TSETMC ${tf} history has only ${aggregated.length} candles`);
+    }
+    if(tf==="1D"||tf==="1W"){
+        let daily=rfkjNormalizeTseCandles(await rfkjTseGetDailyRows(code));
+        if(daily.length<20){
+            const payload=await globalPulseTsetmcFetchJson(`ClosingPrice/GetChartData/${encodeURIComponent(code)}/D`,p=>rfkjTseChartRows(p).length>=20);
+            daily=rfkjNormalizeTseCandles(rfkjTseChartRows(payload));
+        }
+        const result=tf==="1W"?rfkjTseAggregateDaily(daily,"1W"):daily;
+        if(result.length<20)throw new Error(`TSETMC ${tf} history has only ${result.length} candles`);
+        return result.slice(-1200);
+    }
+    throw new Error(`Unsupported TSETMC timeframe: ${tf}`);
+}
+async function rfkjFetchTseData(coin,timeframe){
     const slot=rfkjTseSlotForCoin(coin);
     if(!slot||!/^[0-9]+$/.test(String(slot.insCode||"")))throw new Error("TSETMC symbol is not configured in the TSE watchlist");
-    const code=String(slot.insCode),cached=rfkjTseComputedCache.get(code);
+    const code=String(slot.insCode),tf=String(timeframe||"30"),cacheKey=`${code}:${tf}`;
     const quotePromise=globalPulseTsetmcFetchQuote(slot);
-    if(cached&&Date.now()-cached.at<60000){
-        const quote=await quotePromise;
-        return {...cached.value,price:Number(quote.lastPrice),dailyChangePercent:Number(quote.lastPricePercent),updated:new Date(quote.updatedAt||Date.now()).toISOString(),symbol:String(quote.symbol||slot.symbol||cached.value.symbol||"TSE")};
+    let candlePromise;
+    const cached=rfkjTseComputedCache.get(cacheKey);
+    if(cached&&Date.now()-cached.at<RFKJ_TSE_CANDLE_TTL_MS)candlePromise=Promise.resolve(cached.candles);
+    else if(rfkjTseCandleInFlight.has(cacheKey))candlePromise=rfkjTseCandleInFlight.get(cacheKey);
+    else{
+        candlePromise=(async()=>{
+            const storageKey=`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${tf}`;
+            const stored=rfkjTseReadCache(storageKey);
+            try{
+                const candles=await rfkjBuildTseCandles(code,tf);
+                rfkjTseWriteCache(storageKey,{at:Date.now(),candles});
+                return candles;
+            }catch(error){
+                if(stored?.candles?.length>=20){console.warn(`Using cached TSETMC ${tf} candles after API failure`,error);return stored.candles;}
+                throw error;
+            }finally{rfkjTseCandleInFlight.delete(cacheKey);}
+        })();
+        rfkjTseCandleInFlight.set(cacheKey,candlePromise);
     }
-    const [quote,chartPayload]=await Promise.all([
-        quotePromise,
-        globalPulseTsetmcFetchJson(`ClosingPrice/GetChartData/${encodeURIComponent(code)}/${RFKJ_TSE_TIMEFRAME}`,payload=>Array.isArray(payload)||!!(payload?.closingPriceChartData||payload?.data||payload?.chartData))
-    ]);
-    let candles=rfkjNormalizeTseCandles(rfkjTseChartRows(chartPayload));
-    const historyKey=RFKJ_TSE_CACHE_PREFIX+code;
-    try{
-        const previous=JSON.parse(localStorage.getItem(historyKey)||"[]");
-        if(Array.isArray(previous)){
-            const merged=new Map(previous.filter(c=>c&&c.timestamp).map(c=>[String(c.timestamp),c]));
-            candles.forEach(c=>merged.set(c.timestamp,c));
-            candles=Array.from(merged.values()).sort((a,b)=>String(a.timestamp).localeCompare(String(b.timestamp))).slice(-1200);
-        }
-        localStorage.setItem(historyKey,JSON.stringify(candles));
-    }catch(e){}
+    const [quote,rawCandles]=await Promise.all([quotePromise,candlePromise]);
+    const livePrice=Number(quote.lastPrice);
+    if(!Number.isFinite(livePrice)||livePrice<=0)throw new Error("TSETMC current price unavailable");
+    // Normalize the candle-price scale against the live TSETMC quote before
+    // calculating both signal levels and their informational percentages.
+    const candles=rfkjTseAlignCandleScale(rawCandles,livePrice);
     const signals=rfkjCalculateTseSignals(candles);
-    const value={...signals,price:Number(quote.lastPrice),dailyChangePercent:Number(quote.lastPricePercent),updated:new Date(quote.updatedAt||Date.now()).toISOString(),symbol:String(quote.symbol||slot.symbol||"TSE"),source:"tsetmc",timeframe:RFKJ_TSE_TIMEFRAME};
-    if(!Number.isFinite(value.price)||value.price<=0)throw new Error("TSETMC current price unavailable");
-    rfkjTseComputedCache.set(code,{value,at:Date.now()});
+    const value={...signals,price:livePrice,dailyChangePercent:Number(quote.lastPricePercent),updated:new Date(quote.updatedAt||Date.now()).toISOString(),symbol:String(quote.symbol||slot.symbol||"TSE"),source:"tsetmc",timeframe:tf};
+    rfkjTseComputedCache.set(cacheKey,{value,candles,at:Date.now()});
     return value;
 }
 
@@ -16466,6 +16666,39 @@ async function rfkjSendNotification(index,title,message,type="RFKJ"){
         await sendDashboardNotification(safeTitle,safeMessage,getCryptoIconSrc(displayCoin),type);
     }catch(e){console.warn("Signal Matrix notification failed",e);}
 }
+function rfkjTseAlignCandleScale(candles,livePrice){
+    const price=Number(livePrice);
+    if(!Array.isArray(candles)||!candles.length||!Number.isFinite(price)||price<=0)return candles;
+    const last=candles[candles.length-1];
+    const close=Number(last?.close);
+    if(!Number.isFinite(close)||close<=0)return candles;
+    const ratio=price/close;
+    // TSETMC endpoints/timeframes can return adjusted or differently scaled
+    // historical prices. Align the complete OHLC series to the live quote
+    // when the newest candle is materially out of scale. Uniform scaling
+    // preserves all indicator directions while making displayed distances valid.
+    if(!Number.isFinite(ratio)||ratio<0.5||ratio>2)return candles.map(c=>({
+        ...c,
+        open:Number(c.open)*ratio,
+        high:Number(c.high)*ratio,
+        low:Number(c.low)*ratio,
+        close:Number(c.close)*ratio
+    }));
+    if(ratio<0.9||ratio>1.1)return candles.map(c=>({
+        ...c,
+        open:Number(c.open)*ratio,
+        high:Number(c.high)*ratio,
+        low:Number(c.low)*ratio,
+        close:Number(c.close)*ratio
+    }));
+    return candles;
+}
+function rfkjTseDistancePercent(livePrice,lineValue){
+    const price=Number(livePrice),line=Number(lineValue);
+    if(!Number.isFinite(price)||price<=0||!Number.isFinite(line)||line<=0)return null;
+    const result=((price-line)/line)*100;
+    return Number.isFinite(result)?result:null;
+}
 async function rfkjFetchOne(index,timeframe,notify=true){
     const state=rfkjInstance(index);
     if(!state||!state.running)return;
@@ -16473,14 +16706,22 @@ async function rfkjFetchOne(index,timeframe,notify=true){
     try{
         const isTse=rfkjIsTseCoin(coin);
         const data=isTse
-            ? await rfkjFetchTseData(coin)
+            ? await rfkjFetchTseData(coin,timeframe)
             : await rfkjFetchWithFailover(`coin=${encodeURIComponent(coin)}&timeframe=${encodeURIComponent(timeframe)}&t=${Date.now()}`);
         const rf=rfkjNormalizeSignal(data.RF??data.rf??data.rangeFilter??data.range_filter??0);
         const kj=rfkjNormalizeSignal(data.KJ??data.kj??data.kijunsen??0);
         const st=rfkjNormalizeSignal(data.ST??data.st??data.superTrend??data.supertrend??0);
-        const rfPercent=data.RFPercent??data.rfPercent??data.RF_PERCENT??data.rf_percent;
-        const kjPercent=data.KJPercent??data.kjPercent??data.KJ_PERCENT??data.kj_percent;
-        const stPercent=data.STPercent??data.stPercent??data.ST_PERCENT??data.st_percent;
+        let rfPercent=data.RFPercent??data.rfPercent??data.RF_PERCENT??data.rf_percent;
+        let kjPercent=data.KJPercent??data.kjPercent??data.KJ_PERCENT??data.kj_percent;
+        let stPercent=data.STPercent??data.stPercent??data.ST_PERCENT??data.st_percent;
+        // TSE percentages are informational only: compare the live TSETMC quote
+        // with each calculated indicator line. They never feed signal direction.
+        if(isTse){
+            const livePrice=Number(data.price);
+            rfPercent=rfkjTseDistancePercent(livePrice,data.RFValue);
+            kjPercent=rfkjTseDistancePercent(livePrice,data.KJValue);
+            stPercent=rfkjTseDistancePercent(livePrice,data.STValue);
+        }
         state.latestTimeframe=timeframe;
         clearPageIssue(`rfkj:${index}:${timeframe}`);
         rfkjApplySignal(rfkjSignalElement(index,timeframe,"RF"),rf);
@@ -16675,15 +16916,6 @@ function rfkjSelectTimeframe(index,button){
     const card=button.closest(".rfkj-instance");
     const multi=card?.dataset.timeframeMode==="multi-timeframe";
     const tf=button.dataset.rfkjTime||"1";
-    if(rfkjIsTseCoin(rfkjGet("rfkjCoin",index)?.value)&&tf!=="30"){
-        s.selectedTimeframes=["30"];
-        card.querySelectorAll(".rfkj-timeframe").forEach(x=>x.classList.toggle("active",x.dataset.rfkjTime==="30"));
-        rfkjRenderSignalRows(index);
-        rfkjSetStatus(index,"TSETMC indicators use the configured 30m candles.");
-        if(s.running)rfkjFetchSignal(index);
-        rfkjSaveState();
-        return;
-    }
     if(!multi){
         card.querySelectorAll(".rfkj-timeframe").forEach(x=>x.classList.remove("active"));
         button.classList.add("active");
@@ -16791,8 +17023,7 @@ function rfkjRestoreState(){
         else delete coin.dataset.userSelected;
         const multi=card.dataset.timeframeMode==="multi-timeframe";
         let tfs=Array.isArray(m.timeframes)&&m.timeframes.length?m.timeframes.map(String):["1"];
-        if(rfkjIsTseCoin(coin.value))tfs=["30"];
-        else if(!multi)tfs=[tfs[0]||"1"];
+        if(!multi)tfs=[tfs[0]||"1"];
         s.selectedTimeframes=tfs.filter(x=>RFKJ_TIMEFRAMES.includes(x));
         if(!s.selectedTimeframes.length)s.selectedTimeframes=["1"];
         card.querySelectorAll(".rfkj-timeframe").forEach(b=>b.classList.toggle("active",s.selectedTimeframes.includes(b.dataset.rfkjTime)));
