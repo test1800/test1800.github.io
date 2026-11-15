@@ -5604,7 +5604,7 @@ h1 {
 .signal-header small{order:2;}
 @media(max-width:899px){
  .signal-header{justify-content:center;gap:7px;flex-wrap:nowrap;}
- .signal-header-cache-actions{gap:5px;}
+ .signal-header-cache-actions{gap:44px !important;column-gap:44px !important;}
  .signal-header-cache-actions .global-pulse-cache-action{width:23px;height:23px;min-width:23px;border-radius:7px;font-size:15px;}
 }
 </style>
@@ -6126,8 +6126,8 @@ h1 {
     <div class="signal-header">
         <span class="signal-header-title">Crypto Signal</span>
         <span class="signal-header-cache-actions" aria-label="GLOBAL backup controls">
-            <button type="button" id="globalPulseCacheExport" class="global-pulse-cache-action" aria-label="Export all cached data" title="Download complete cache backup">⇩</button>
-            <button type="button" id="globalPulseCacheImport" class="global-pulse-cache-action" aria-label="Import cache backup" title="Restore backup into this browser cache">⇧</button>
+            <button type="button" id="globalPulseCacheExport" class="global-pulse-cache-action" aria-label="Export all cached data" title="Download complete cache backup"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4 17v3h16v-3" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button type="button" id="globalPulseCacheImport" class="global-pulse-cache-action" aria-label="Import cache backup" title="Restore backup into this browser cache"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21V9m0 0 4.5 4.5M12 9l-4.5 4.5M4 7V4h16v3" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </span>
         <small id="signalInfo">-</small>
         <input type="file" id="globalPulseCacheFile" accept="application/json,.json" hidden>
@@ -20827,6 +20827,12 @@ const coinDoc="<!DOCTYPE html>\n<html lang=\"fa\">\n<head>\n<meta charset=\"UTF-
   }
 }
 /* Keep backup controls elegant and low-contrast on both desktop and mobile. */
+.signal-header-cache-actions .global-pulse-cache-action svg {
+  width: 16px !important;
+  height: 16px !important;
+  display: block !important;
+  flex: 0 0 auto !important;
+}
 .signal-header-cache-actions .global-pulse-cache-action {
   color: #94a3b8 !important;
   background: rgba(100,116,139,.10) !important;
@@ -21564,7 +21570,7 @@ const coinDoc="<!DOCTYPE html>\n<html lang=\"fa\">\n<head>\n<meta charset=\"UTF-
   }
   .signal-header-cache-actions {
     flex: 0 0 auto !important;
-    gap: 4px !important;
+    gap: 7px !important;
   }
   .signal-header-cache-actions .global-pulse-cache-action {
     box-sizing: border-box !important;
@@ -21670,7 +21676,7 @@ const coinDoc="<!DOCTYPE html>\n<html lang=\"fa\">\n<head>\n<meta charset=\"UTF-
     display: inline-flex !important; flex-wrap: nowrap !important;
     min-width: 0 !important; width: auto !important;
     margin: 0 !important; padding: 0 !important;
-    white-space: nowrap !important; gap: 3px !important;
+    white-space: nowrap !important; gap: 70px !important; column-gap: 70px !important;
   }
   .signal-header-cache-actions .global-pulse-cache-action {
     flex: 0 0 20px !important; width: 20px !important;
