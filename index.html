@@ -5594,6 +5594,10 @@ h1 {
 }
 </style>
 
+<style id="global-pulse-cache-actions-css">
+.global-pulse-cache-action{font-size:15px;font-weight:900;color:#93c5fd;border-color:rgba(96,165,250,.3);}
+.global-pulse-cache-action:hover{color:#fff;border-color:rgba(96,165,250,.7);background:rgba(37,99,235,.22);}
+</style>
 <style id="r28-global-night-mode">
 .global-pulse-title{display:flex;align-items:center;gap:7px;}
 .global-pulse-sleep-toggle{width:27px;height:27px;border:1px solid rgba(148,163,184,.28);border-radius:50%;background:rgba(15,23,42,.72);color:#cbd5e1;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:.2s ease;box-shadow:0 2px 8px rgba(0,0,0,.18);}
@@ -6812,7 +6816,7 @@ h1 {
 <section class="global-pulse-section" id="globalPulseSection" aria-label="Global Pulse">
     <div class="global-pulse-head">
         <div>
-            <div class="global-pulse-title">GLOBAL <span class="global-pulse-active-markets" id="globalPulseActiveMarkets">· —</span><button type="button" id="globalPulseSleepToggle" class="global-pulse-sleep-toggle" aria-label="Night mode notifications" title="Night mode notifications">☾</button></div>
+            <div class="global-pulse-title">GLOBAL <span class="global-pulse-active-markets" id="globalPulseActiveMarkets">· —</span><button type="button" id="globalPulseSleepToggle" class="global-pulse-sleep-toggle" aria-label="Night mode notifications" title="Night mode notifications">☾</button><button type="button" id="globalPulseCacheExport" class="global-pulse-sleep-toggle global-pulse-cache-action" aria-label="Export all cached data" title="Download complete cache backup">⇩</button><button type="button" id="globalPulseCacheImport" class="global-pulse-sleep-toggle global-pulse-cache-action" aria-label="Import cache backup" title="Restore backup into this browser cache">⇧</button><input type="file" id="globalPulseCacheFile" accept="application/json,.json" hidden></div>
             <div class="global-pulse-urgent" id="globalPulseUrgentTimer" aria-live="polite"></div>
         </div>
         <div class="global-pulse-clock-pair">
@@ -12700,6 +12704,141 @@ function initGlobalPulseSleepToggle(){
     globalPulseSetSleep(enabled);
 }
 
+/* Simple, data-only browser cache backup.
+   The JSON contains raw browser values and the two chart-history stores.
+   It deliberately does not contain or depend on RF/KJ/ST calculations. */
+const GLOBAL_PULSE_CACHE_BACKUP_VERSION=2;
+const GLOBAL_PULSE_CACHE_HISTORY_DATABASES=[
+    {name:"FinancialDashboardPriceChartDB",store:"numericHistory",key:"dollar"},
+    {name:"FinancialDashboardCoinChartDB",store:"coinNumericHistory",key:"coin"}
+];
+function globalPulseReadStorage(storage){
+    const result={};
+    for(let i=0;i<storage.length;i++){
+        const key=storage.key(i);
+        if(key!==null)result[key]=storage.getItem(key);
+    }
+    return result;
+}
+function globalPulseOpenCacheDB(name,storeName){
+    return new Promise((resolve,reject)=>{
+        if(!window.indexedDB){reject(new Error("IndexedDB is not available"));return;}
+        const request=indexedDB.open(name);
+        request.onupgradeneeded=()=>{
+            const db=request.result;
+            if(!db.objectStoreNames.contains(storeName))db.createObjectStore(storeName,{keyPath:"id"});
+        };
+        request.onsuccess=()=>resolve(request.result);
+        request.onerror=()=>reject(request.error||new Error("Could not open chart history"));
+        request.onblocked=()=>reject(new Error("Close other dashboard tabs and try again"));
+    });
+}
+async function globalPulseReadChartHistory(config){
+    const db=await globalPulseOpenCacheDB(config.name,config.store);
+    try{
+        if(!db.objectStoreNames.contains(config.store))return [];
+        return await new Promise((resolve,reject)=>{
+            const tx=db.transaction(config.store,"readonly");
+            const request=tx.objectStore(config.store).getAll();
+            request.onsuccess=()=>resolve(request.result||[]);
+            request.onerror=()=>reject(request.error||new Error("Could not read chart history"));
+        });
+    }finally{db.close();}
+}
+async function globalPulseWriteChartHistory(config,records){
+    if(!Array.isArray(records))return 0;
+    const db=await globalPulseOpenCacheDB(config.name,config.store);
+    try{
+        const tx=db.transaction(config.store,"readwrite"),store=tx.objectStore(config.store);
+        let count=0;
+        for(const record of records){
+            if(!record||record.id===undefined)continue;
+            store.put(record);count++;
+        }
+        await new Promise((resolve,reject)=>{
+            tx.oncomplete=resolve;
+            tx.onerror=()=>reject(tx.error||new Error("Could not restore chart history"));
+            tx.onabort=()=>reject(tx.error||new Error("Chart history restore was cancelled"));
+        });
+        return count;
+    }finally{db.close();}
+}
+async function globalPulseExportCacheBackup(){
+    const histories={};
+    for(const config of GLOBAL_PULSE_CACHE_HISTORY_DATABASES){
+        histories[config.key]=await globalPulseReadChartHistory(config);
+    }
+    const payload={
+        format:"financial-dashboard-cache",
+        version:GLOBAL_PULSE_CACHE_BACKUP_VERSION,
+        createdAt:new Date().toISOString(),
+        localStorage:globalPulseReadStorage(localStorage),
+        sessionStorage:globalPulseReadStorage(sessionStorage),
+        histories
+    };
+    const blob=new Blob([JSON.stringify(payload)],{type:"application/json;charset=utf-8"});
+    const url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;
+    a.download=`financial-dashboard-cache-${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    return {keys:Object.keys(payload.localStorage).length,records:Object.values(histories).reduce((n,list)=>n+list.length,0)};
+}
+async function globalPulseImportCacheBackup(file){
+    const payload=JSON.parse(await file.text());
+    if(!payload||typeof payload!=="object")throw new Error("Invalid backup file");
+    let local=payload.localStorage,session=payload.sessionStorage,histories=payload.histories||{};
+    // Read backups created by the previous dashboard version too.
+    if(payload.format==="financial-dashboard-cache-backup"&&payload.storage){
+        local=payload.storage.localStorage;
+        session=payload.storage.sessionStorage||{};
+        histories={};
+        for(const db of payload.storage.indexedDB||[]){
+            for(const store of db.stores||[]){
+                const config=GLOBAL_PULSE_CACHE_HISTORY_DATABASES.find(x=>x.name===db.name&&x.store===store.name);
+                if(config)histories[config.key]=store.records||[];
+            }
+        }
+    }else if(payload.format!=="financial-dashboard-cache"||![1,2].includes(Number(payload.version))){
+        throw new Error("This JSON is not a supported dashboard backup");
+    }
+    if(!local||typeof local!=="object"||Array.isArray(local))throw new Error("Backup does not contain browser cache values");
+    let keys=0,sessionKeys=0,records=0;
+    for(const [key,value] of Object.entries(local)){
+        if(typeof value!=="string")continue;
+        localStorage.setItem(key,value);keys++;
+    }
+    for(const [key,value] of Object.entries(session||{})){
+        if(typeof value!=="string")continue;
+        sessionStorage.setItem(key,value);sessionKeys++;
+    }
+    for(const config of GLOBAL_PULSE_CACHE_HISTORY_DATABASES){
+        records+=await globalPulseWriteChartHistory(config,histories[config.key]||[]);
+    }
+    return {keys,sessionKeys,records};
+}
+function initGlobalPulseCacheBackupControls(){
+    const exportBtn=$("globalPulseCacheExport"),importBtn=$("globalPulseCacheImport"),fileInput=$("globalPulseCacheFile");
+    exportBtn?.addEventListener("click",async()=>{
+        const old=exportBtn.textContent;exportBtn.disabled=true;exportBtn.textContent="…";
+        try{
+            const result=await globalPulseExportCacheBackup();
+            exportBtn.title=`Backup saved · ${result.keys} values · ${result.records} chart records`;
+            exportBtn.textContent="✓";
+        }catch(error){console.error(error);alert(`Cache backup failed: ${error.message||error}`);exportBtn.textContent=old;}
+        finally{setTimeout(()=>{exportBtn.textContent=old;exportBtn.disabled=false;},1400);}
+    });
+    importBtn?.addEventListener("click",()=>fileInput?.click());
+    fileInput?.addEventListener("change",async()=>{
+        const file=fileInput.files?.[0];if(!file)return;
+        try{
+            const result=await globalPulseImportCacheBackup(file);
+            alert(`Cache restored.\nBrowser values: ${result.keys}\nSession values: ${result.sessionKeys}\nChart history records: ${result.records}\n\nRefresh the page to apply the restored data.`);
+        }catch(error){console.error(error);alert(`Cache restore failed: ${error.message||error}`);}
+        finally{fileInput.value="";}
+    });
+}
+
 async function globalPulseCheckEconomicNotification(now){
     if(!globalPulseNotificationAllowed(now)) return;
     const next=globalPulseEconomicFindNext(now);
@@ -13809,6 +13948,7 @@ async function loadGlobalPulse(){
 }
 function startGlobalPulse(){
     globalPulseReadAlertState();
+    initGlobalPulseCacheBackupControls();
     initGlobalPulseTsetmcControls();
     initGlobalPulseCompactAssetButtons();
     startGlobalPulseMarketClock();
@@ -16028,16 +16168,16 @@ async function rfkjTseGetIntradayCandles(code,minutes){
         }catch(error){firstError=firstError||error;}
     }
     const candles=rfkjTseAggregateIntraday(all.sort((a,b)=>a.timestamp.localeCompare(b.timestamp)),minutes);
-    if(candles.length>=20)return candles.slice(-900);
+    if(candles.length>0)return candles.slice(-900);
     const cacheKey=`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${minutes}m`;
     const cached=rfkjTseReadCache(cacheKey);
-    if(cached?.candles?.length>=20)return cached.candles;
+    if(cached?.candles?.length>0)return cached.candles;
     throw new Error(`TSETMC ${minutes}m history has only ${candles.length} candles${firstError?`: ${firstError.message}`:""}`);
 }
 async function rfkjTseGetThirtyMinuteCandles(code){
-    const payload=await globalPulseTsetmcFetchJson(`ClosingPrice/GetChartData/${encodeURIComponent(code)}/30m`,p=>rfkjTseChartRows(p).length>=20);
+    const payload=await globalPulseTsetmcFetchJson(`ClosingPrice/GetChartData/${encodeURIComponent(code)}/30m`,p=>rfkjTseChartRows(p).length>0);
     const candles=rfkjNormalizeTseCandles(rfkjTseChartRows(payload));
-    if(candles.length<20)throw new Error(`TSETMC 30m chart has only ${candles.length} candles`);
+    if(!candles.length)throw new Error("TSETMC 30m chart returned no valid candles");
     return candles.slice(-1200);
 }
 function rfkjTseAggregateFixed(candles,minutes){
@@ -16048,56 +16188,92 @@ function rfkjTseAggregateFixed(candles,minutes){
     }
     return rfkjTseAggregateIntraday(candles,minutes);
 }
+// Signal Matrix TSETMC calculations are a direct port of the Worker algorithms.
+// Keep these parameters and formulas synchronized with signalmatrix.rxw1.workers.dev.
+const RFKJ_RF_CONFIG={samplingPeriod:21,rangeMultiplier:5,kijunPeriod:288};
+const RFKJ_SUPER_TREND_CONFIG={hPeriod:80,hLag:15,kfGain:0.10,atrLen:14,atrBase:2.0,atrHScale:4.0};
 function rfkjTseEma(values,period){
     if(!values.length)return [];
-    period=Math.max(1,Math.min(period,values.length));
-    const alpha=2/(period+1),out=[values[0]];
+    const alpha=2/(Math.max(1,period)+1),out=[values[0]];
     let current=values[0];
-    for(const value of values.slice(1)){current=alpha*value+(1-alpha)*current;out.push(current);}
+    for(let i=1;i<values.length;i++){current=alpha*values[i]+(1-alpha)*current;out.push(current);}
     return out;
 }
-function rfkjCalculateTseSignals(candles){
-    if(candles.length<20)throw new Error(`Only ${candles.length} valid TSETMC candles; at least 20 required`);
-    const source=candles.map(c=>(c.high+c.low)/2);
-    const changes=[];
-    for(let i=1;i<source.length;i++)changes.push(Math.abs(source[i]-source[i-1]));
-    const avrng=rfkjTseEma(changes,Math.min(100,source.length));
-    let filter=source[0];
-    for(let i=1;i<source.length;i++){
-        const range=(avrng[Math.min(i-1,avrng.length-1)]||0)*5;
-        const value=source[i];
-        if(value>filter){const next=value-range;if(next>filter)filter=next;}
-        else if(value<filter){const next=value+range;if(next<filter)filter=next;}
+function rfkjCalculateTseRangeFilter(candles){
+    const src=candles.map(c=>(Number(c.high)+Number(c.low))/2);
+    if(!src.length)return {signal:0,value:null};
+    const per=RFKJ_RF_CONFIG.samplingPeriod,mult=RFKJ_RF_CONFIG.rangeMultiplier;
+    const changes=[0];
+    for(let i=1;i<src.length;i++)changes.push(Math.abs(src[i]-src[i-1]));
+    const avrng=rfkjTseEma(changes,per);
+    const smrng=rfkjTseEma(avrng,per*2-1).map(x=>x*mult);
+    const filt=[],upward=[],downward=[],cond=[];
+    filt[0]=src[0];upward[0]=0;downward[0]=0;cond[0]=0;
+    for(let i=1;i<src.length;i++){
+        const previous=Number.isFinite(filt[i-1])?filt[i-1]:0;
+        if(src[i]>previous)filt[i]=src[i]-smrng[i]<previous?previous:src[i]-smrng[i];
+        else filt[i]=src[i]+smrng[i]>previous?previous:src[i]+smrng[i];
+        upward[i]=filt[i]>filt[i-1]?upward[i-1]+1:filt[i]<filt[i-1]?0:upward[i-1];
+        downward[i]=filt[i]<filt[i-1]?downward[i-1]+1:filt[i]>filt[i-1]?0:downward[i-1];
+        const longCond=(src[i]>filt[i]&&src[i]>src[i-1]&&upward[i]>0)||(src[i]>filt[i]&&src[i]<src[i-1]&&upward[i]>0);
+        const shortCond=(src[i]<filt[i]&&src[i]<src[i-1]&&downward[i]>0)||(src[i]<filt[i]&&src[i]>src[i-1]&&downward[i]>0);
+        cond[i]=longCond?1:shortCond?-1:cond[i-1];
     }
-    const lastSource=source[source.length-1];
-    const RF=lastSource>filter?1:lastSource<filter?-1:0;
-    const trueRanges=candles.map((c,i)=>{
-        const previous=i===0?c.close:candles[i-1].close;
-        return Math.max(c.high-c.low,Math.abs(c.high-previous),Math.abs(c.low-previous));
-    });
-    const atr=rfkjTseEma(trueRanges,Math.min(10,trueRanges.length));
-    let direction=1,upper=null,lower=null;
-    candles.forEach((c,i)=>{
-        const mid=(c.high+c.low)/2,currentAtr=atr[Math.min(i,atr.length-1)];
-        const basicUpper=mid+3*currentAtr,basicLower=mid-3*currentAtr;
-        if(upper===null){upper=basicUpper;lower=basicLower;}
-        else{
-            const previousClose=candles[i-1].close;
-            if(basicUpper<upper||previousClose>upper)upper=basicUpper;
-            if(basicLower>lower||previousClose<lower)lower=basicLower;
+    const lastIndex=cond.length-1;
+    return {signal:cond[lastIndex],value:filt[lastIndex]};
+}
+function rfkjCalculateTseKijun(candles){
+    const n=candles.length,period=RFKJ_RF_CONFIG.kijunPeriod;
+    if(!n)return {signal:0,value:null};
+    const current=candles[n-1];
+    // Use every available completed candle, up to 288. With only one candle,
+    // use that candle's own high/low as the best available Kijun range.
+    const availablePrevious=Math.max(0,n-1),windowSize=Math.min(period,availablePrevious);
+    const start=windowSize>0?n-1-windowSize:n-1,end=n-1;
+    let highest=-Infinity,lowest=Infinity;
+    for(let i=start;i<end;i++){highest=Math.max(highest,Number(candles[i].high));lowest=Math.min(lowest,Number(candles[i].low));}
+    if(!Number.isFinite(highest)||!Number.isFinite(lowest)){highest=Number(current.high);lowest=Number(current.low);}
+    const kijun=(highest+lowest)/2;
+    return {signal:current.close>kijun?1:current.close<kijun?-1:0,value:kijun};
+}
+function rfkjCalculateTseSuperTrend(candles){
+    const n=candles.length,cfg=RFKJ_SUPER_TREND_CONFIG;
+    if(!n)return {signal:0,value:null};
+    const close=candles.map(c=>Number(c.close)),high=candles.map(c=>Number(c.high)),low=candles.map(c=>Number(c.low));
+    const delta1=close.map((v,i)=>i===0?NaN:v-close[i-1]);
+    const deltaQ=close.map((v,i)=>i<cfg.hLag?NaN:v-close[i-cfg.hLag]);
+    const variance=(values,end,length)=>{
+        const start=end-length+1;if(start<0)return NaN;let sum=0;
+        for(let i=start;i<=end;i++){const v=values[i];if(!Number.isFinite(v))return NaN;sum+=v;}
+        const mean=sum/length;let sq=0;for(let i=start;i<=end;i++){const d=values[i]-mean;sq+=d*d;}return sq/length;
+    };
+    const tr=new Array(n).fill(NaN);
+    for(let i=0;i<n;i++)tr[i]=i===0?high[i]-low[i]:Math.max(high[i]-low[i],Math.abs(high[i]-close[i-1]),Math.abs(low[i]-close[i-1]));
+    const atr=new Array(n).fill(NaN);
+    if(n>=cfg.atrLen){let seed=0;for(let i=0;i<cfg.atrLen;i++)seed+=tr[i];atr[cfg.atrLen-1]=seed/cfg.atrLen;const alpha=1/cfg.atrLen;for(let i=cfg.atrLen;i<n;i++)atr[i]=atr[i-1]+alpha*(tr[i]-atr[i-1]);}
+    let kf=NaN,upBand=NaN,dnBand=NaN,trend=1,finalSuperTrend=NaN;
+    for(let i=0;i<n;i++){
+        const var1=variance(delta1,i,cfg.hPeriod),varq=variance(deltaQ,i,cfg.hPeriod);let safeH=0.5;
+        if(Number.isFinite(var1)&&Number.isFinite(varq)){
+            const hRaw=Math.log(varq/Math.max(var1,1e-10))/(2*Math.log(cfg.hLag));
+            const h=Math.max(0,Math.min(hRaw,1));safeH=Number.isFinite(h)?h:0.5;
         }
-        if(direction===1){if(c.close<lower)direction=-1;}
-        else if(c.close>upper)direction=1;
-    });
-    const selected=candles.slice(-Math.min(288,candles.length));
-    const highest=Math.max(...selected.map(c=>c.high));
-    const lowest=Math.min(...selected.map(c=>c.low));
-    const kijun=(highest+lowest)/2,lastClose=candles[candles.length-1].close;
-    const KJ=lastClose>kijun?1:lastClose<kijun?-1:0;
-    // Keep the exact indicator price levels alongside their directional signals.
-    // These levels are used only to display informational distance percentages.
-    const STValue=direction===1?lower:upper;
-    return {RF,ST:direction,KJ,RFValue:filter,STValue,KJValue:kijun};
+        const gain=Math.max(Math.min(cfg.kfGain*(0.5+safeH),0.99),0.01);
+        kf=!Number.isFinite(kf)?close[i]:kf+gain*(close[i]-kf);
+        const multiplier=cfg.atrBase+cfg.atrHScale*(1-safeH),band=Number.isFinite(atr[i])?atr[i]*multiplier:0;
+        const prevTrend=trend,prevUp=Number.isFinite(upBand)?upBand:close[i],prevDn=Number.isFinite(dnBand)?dnBand:close[i];
+        upBand=prevTrend===1?Math.max(kf-band,prevUp):kf-band;
+        dnBand=prevTrend===-1?Math.min(kf+band,prevDn):kf+band;
+        trend=kf>prevDn?1:kf<prevUp?-1:prevTrend;
+        finalSuperTrend=trend===1?upBand:dnBand;
+    }
+    return {signal:trend,value:finalSuperTrend};
+}
+function rfkjCalculateTseSignals(candles){
+    const valid=(Array.isArray(candles)?candles:[]).filter(c=>c&&Number.isFinite(Number(c.high))&&Number.isFinite(Number(c.low))&&Number.isFinite(Number(c.close))&&Number(c.high)>0&&Number(c.low)>0&&Number(c.close)>0);
+    if(!valid.length)throw new Error("No valid TSETMC candles available");
+    const rf=rfkjCalculateTseRangeFilter(valid),kj=rfkjCalculateTseKijun(valid),st=rfkjCalculateTseSuperTrend(valid);
+    return {RF:rf.signal,KJ:kj.signal,ST:st.signal,RFValue:rf.value,KJValue:kj.value,STValue:st.value};
 }
 async function rfkjBuildTseCandles(code,timeframe){
     const tf=String(timeframe||"30");
@@ -16106,61 +16282,87 @@ async function rfkjBuildTseCandles(code,timeframe){
     if(tf==="60"||tf==="4h"){
         if(tf==="4h"){
             const daily=rfkjNormalizeTseCandles(await rfkjTseGetDailyRows(code));
-            if(daily.length>=20)return daily.slice(-1200);
+            if(daily.length>0)return daily.slice(-1200);
         }
         const base=await rfkjTseGetThirtyMinuteCandles(code);
         const aggregated=rfkjTseAggregateFixed(base,tf==="60"?60:240);
-        if(aggregated.length>=20)return aggregated;
+        if(aggregated.length>0)return aggregated;
         if(tf==="4h"){
             const daily=rfkjNormalizeTseCandles(await rfkjTseGetDailyRows(code));
-            if(daily.length>=20)return daily.slice(-1200);
+            if(daily.length>0)return daily.slice(-1200);
         }
         throw new Error(`TSETMC ${tf} history has only ${aggregated.length} candles`);
     }
     if(tf==="1D"||tf==="1W"){
         let daily=rfkjNormalizeTseCandles(await rfkjTseGetDailyRows(code));
-        if(daily.length<20){
-            const payload=await globalPulseTsetmcFetchJson(`ClosingPrice/GetChartData/${encodeURIComponent(code)}/D`,p=>rfkjTseChartRows(p).length>=20);
+        if(!daily.length){
+            const payload=await globalPulseTsetmcFetchJson(`ClosingPrice/GetChartData/${encodeURIComponent(code)}/D`,p=>rfkjTseChartRows(p).length>0);
             daily=rfkjNormalizeTseCandles(rfkjTseChartRows(payload));
         }
         const result=tf==="1W"?rfkjTseAggregateDaily(daily,"1W"):daily;
-        if(result.length<20)throw new Error(`TSETMC ${tf} history has only ${result.length} candles`);
+        if(!result.length)throw new Error(`TSETMC ${tf} history has no valid candles`);
         return result.slice(-1200);
     }
     throw new Error(`Unsupported TSETMC timeframe: ${tf}`);
+}
+function rfkjTseSymbolCacheKey(slot,tf){
+    const symbol=String(slot?.symbol||slot?.name||slot?.insCode||"TSE").trim().toUpperCase().replace(/[^\p{L}\p{N}_-]+/gu,"_");
+    return `${RFKJ_TSE_CACHE_PREFIX}symbol:${symbol}:${String(tf)}`;
+}
+function rfkjTseMergeCandles(previous,next,limit=1500){
+    const byTime=new Map();
+    for(const c of [...(Array.isArray(previous)?previous:[]),...(Array.isArray(next)?next:[])]){
+        if(!c||!c.timestamp)continue;
+        const open=Number(c.open),high=Number(c.high),low=Number(c.low),close=Number(c.close);
+        if(![open,high,low,close].every(Number.isFinite)||high<=0||low<=0||close<=0)continue;
+        byTime.set(String(c.timestamp),{timestamp:String(c.timestamp),open,high,low,close});
+    }
+    return Array.from(byTime.values()).sort((a,b)=>a.timestamp.localeCompare(b.timestamp)).slice(-limit);
 }
 async function rfkjFetchTseData(coin,timeframe){
     const slot=rfkjTseSlotForCoin(coin);
     if(!slot||!/^[0-9]+$/.test(String(slot.insCode||"")))throw new Error("TSETMC symbol is not configured in the TSE watchlist");
     const code=String(slot.insCode),tf=String(timeframe||"30"),cacheKey=`${code}:${tf}`;
-    const quotePromise=globalPulseTsetmcFetchQuote(slot);
+    const storageKey=`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${tf}`;
+    const symbolStorageKey=rfkjTseSymbolCacheKey(slot,tf);
+    const storedByCode=rfkjTseReadCache(storageKey),storedBySymbol=rfkjTseReadCache(symbolStorageKey);
+    const storedCandles=rfkjTseMergeCandles(storedByCode?.candles,storedBySymbol?.candles);
+    const quotePromise=globalPulseTsetmcFetchQuote(slot).catch(error=>({
+        lastPrice:null,lastPricePercent:null,updatedAt:null,symbol:slot.symbol||"TSE",_cacheFallback:true,_quoteError:error
+    }));
     let candlePromise;
     const cached=rfkjTseComputedCache.get(cacheKey);
     if(cached&&Date.now()-cached.at<RFKJ_TSE_CANDLE_TTL_MS)candlePromise=Promise.resolve(cached.candles);
     else if(rfkjTseCandleInFlight.has(cacheKey))candlePromise=rfkjTseCandleInFlight.get(cacheKey);
     else{
         candlePromise=(async()=>{
-            const storageKey=`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${tf}`;
-            const stored=rfkjTseReadCache(storageKey);
             try{
-                const candles=await rfkjBuildTseCandles(code,tf);
-                rfkjTseWriteCache(storageKey,{at:Date.now(),candles});
+                const fetched=await rfkjBuildTseCandles(code,tf);
+                // Preserve older valid bars when an API returns only a partial window.
+                const candles=rfkjTseMergeCandles(storedCandles,fetched,1500);
+                const record={at:Date.now(),symbol:String(slot.symbol||slot.name||code),insCode:code,timeframe:tf,candles};
+                rfkjTseWriteCache(storageKey,record);
+                rfkjTseWriteCache(symbolStorageKey,record);
                 return candles;
             }catch(error){
-                if(stored?.candles?.length>=20){console.warn(`Using cached TSETMC ${tf} candles after API failure`,error);return stored.candles;}
+                if(storedCandles.length>0){
+                    console.warn(`Using persistent TSETMC ${tf} candles for ${slot.symbol||code} after API failure`,error);
+                    return storedCandles;
+                }
                 throw error;
             }finally{rfkjTseCandleInFlight.delete(cacheKey);}
         })();
         rfkjTseCandleInFlight.set(cacheKey,candlePromise);
     }
     const [quote,rawCandles]=await Promise.all([quotePromise,candlePromise]);
-    const livePrice=Number(quote.lastPrice);
-    if(!Number.isFinite(livePrice)||livePrice<=0)throw new Error("TSETMC current price unavailable");
-    // Normalize the candle-price scale against the live TSETMC quote before
-    // calculating both signal levels and their informational percentages.
+    const cachedPrice=Number(rawCandles?.[rawCandles.length-1]?.close);
+    const quotePrice=Number(quote.lastPrice);
+    const livePrice=Number.isFinite(quotePrice)&&quotePrice>0?quotePrice:cachedPrice;
+    if(!Number.isFinite(livePrice)||livePrice<=0)throw new Error("TSETMC current price unavailable and no valid cached candle close exists");
     const candles=rfkjTseAlignCandleScale(rawCandles,livePrice);
     const signals=rfkjCalculateTseSignals(candles);
-    const value={...signals,price:livePrice,dailyChangePercent:Number(quote.lastPricePercent),updated:new Date(quote.updatedAt||Date.now()).toISOString(),symbol:String(quote.symbol||slot.symbol||"TSE"),source:"tsetmc",timeframe:tf};
+    const quotePercent=Number(quote.lastPricePercent);
+    const value={...signals,price:livePrice,dailyChangePercent:quote._cacheFallback?undefined:(Number.isFinite(quotePercent)?quotePercent:null),updated:new Date(quote.updatedAt||Date.now()).toISOString(),symbol:String(quote.symbol||slot.symbol||"TSE"),source:quote._cacheFallback?"tsetmc-cache":"tsetmc",timeframe:tf};
     rfkjTseComputedCache.set(cacheKey,{value,candles,at:Date.now()});
     return value;
 }
