@@ -106,11 +106,11 @@
       "symbol": "DOGE_USDT"
     },
     "ETH": {
-      "amount": 0.0625359,
+      "amount": 0.06698,
       "symbol": "ETH_USDT"
     },
     "BNB": {
-      "amount": 6.19361,
+      "amount": 6.19034,
       "symbol": "BNB_USDT"
     },
     "ADA": {
@@ -118,11 +118,11 @@
       "symbol": "ADA_USDT"
     },
     "SOL": {
-      "amount": 4.688,
+      "amount": 4.702,
       "symbol": "SOL_USDT"
     },
     "POL": {
-      "amount": 1242.82,
+      "amount": 1152.82,
       "symbol": "POL_USDT"
     },
     "AVAX": {
