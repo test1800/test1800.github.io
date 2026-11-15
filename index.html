@@ -5594,6 +5594,21 @@ h1 {
 }
 </style>
 
+<style id="global-cache-actions-in-crypto-signal">
+.signal-header{gap:9px;}
+.signal-header-title{order:0;white-space:nowrap;}
+.signal-header-cache-actions{order:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:0 0 auto;}
+.signal-header-cache-actions .global-pulse-cache-action{width:34px;height:34px;min-width:34px;padding:0;border:1px solid rgba(96,165,250,.42);border-radius:10px;background:linear-gradient(145deg,rgba(30,64,110,.62),rgba(15,23,42,.88));color:#bfdbfe;font-size:21px;font-weight:800;line-height:1;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.10);transition:transform .16s ease,border-color .16s ease,background .16s ease,box-shadow .16s ease;}
+.signal-header-cache-actions .global-pulse-cache-action:hover{transform:translateY(-1px);color:#fff;border-color:rgba(96,165,250,.82);background:linear-gradient(145deg,rgba(37,99,235,.48),rgba(15,23,42,.94));box-shadow:0 4px 12px rgba(37,99,235,.20),inset 0 1px 0 rgba(255,255,255,.14);}
+.signal-header-cache-actions .global-pulse-cache-action:active{transform:scale(.96);}
+.signal-header small{order:2;}
+@media(max-width:899px){
+ .signal-header{justify-content:center;gap:7px;flex-wrap:nowrap;}
+ .signal-header-cache-actions{gap:5px;}
+ .signal-header-cache-actions .global-pulse-cache-action{width:23px;height:23px;min-width:23px;border-radius:7px;font-size:15px;}
+}
+</style>
+
 <style id="global-pulse-cache-actions-css">
 .global-pulse-cache-action{font-size:15px;font-weight:900;color:#93c5fd;border-color:rgba(96,165,250,.3);}
 .global-pulse-cache-action:hover{color:#fff;border-color:rgba(96,165,250,.7);background:rgba(37,99,235,.22);}
@@ -6109,10 +6124,13 @@ h1 {
 ===================================================== -->
 <div class="signal-board">
     <div class="signal-header">
-        <span>Crypto Signal</span>
-        <small id="signalInfo">
-            -
-        </small>
+        <span class="signal-header-title">Crypto Signal</span>
+        <span class="signal-header-cache-actions" aria-label="GLOBAL backup controls">
+            <button type="button" id="globalPulseCacheExport" class="global-pulse-cache-action" aria-label="Export all cached data" title="Download complete cache backup">⇩</button>
+            <button type="button" id="globalPulseCacheImport" class="global-pulse-cache-action" aria-label="Import cache backup" title="Restore backup into this browser cache">⇧</button>
+        </span>
+        <small id="signalInfo">-</small>
+        <input type="file" id="globalPulseCacheFile" accept="application/json,.json" hidden>
     </div>
     <div class="signal-grid" id="signalGrid">
     </div>
@@ -6816,7 +6834,7 @@ h1 {
 <section class="global-pulse-section" id="globalPulseSection" aria-label="Global Pulse">
     <div class="global-pulse-head">
         <div>
-            <div class="global-pulse-title">GLOBAL <span class="global-pulse-active-markets" id="globalPulseActiveMarkets">· —</span><button type="button" id="globalPulseSleepToggle" class="global-pulse-sleep-toggle" aria-label="Night mode notifications" title="Night mode notifications">☾</button><button type="button" id="globalPulseCacheExport" class="global-pulse-sleep-toggle global-pulse-cache-action" aria-label="Export all cached data" title="Download complete cache backup">⇩</button><button type="button" id="globalPulseCacheImport" class="global-pulse-sleep-toggle global-pulse-cache-action" aria-label="Import cache backup" title="Restore backup into this browser cache">⇧</button><input type="file" id="globalPulseCacheFile" accept="application/json,.json" hidden></div>
+            <div class="global-pulse-title">GLOBAL <span class="global-pulse-active-markets" id="globalPulseActiveMarkets">· —</span><button type="button" id="globalPulseSleepToggle" class="global-pulse-sleep-toggle" aria-label="Night mode notifications" title="Night mode notifications">☾</button></div>
             <div class="global-pulse-urgent" id="globalPulseUrgentTimer" aria-live="polite"></div>
         </div>
         <div class="global-pulse-clock-pair">
@@ -12776,16 +12794,34 @@ async function globalPulseExportCacheBackup(){
         sessionStorage:globalPulseReadStorage(sessionStorage),
         histories
     };
-    const blob=new Blob([JSON.stringify(payload)],{type:"application/json;charset=utf-8"});
-    const url=URL.createObjectURL(blob),a=document.createElement("a");
-    a.href=url;
-    a.download=`financial-dashboard-cache-${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
-    document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    const json=JSON.stringify(payload);
+    const fileName=`financial-dashboard-cache-${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
+    // Android WebView cannot reliably download Blob URLs. Save through the native
+    // bridge so the user gets a real JSON file in the public Downloads folder.
+    if(window.AndroidNotifications && typeof window.AndroidNotifications.saveTextFile==="function"){
+        const saved=window.AndroidNotifications.saveTextFile(fileName,json);
+        if(typeof saved!=="string" || !saved.startsWith("OK:")){
+            throw new Error(typeof saved==="string"?saved:"Android file save failed");
+        }
+    }else{
+        const blob=new Blob([json],{type:"application/json;charset=utf-8"});
+        const url=URL.createObjectURL(blob),a=document.createElement("a");
+        a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),1500);
+    }
     return {keys:Object.keys(payload.localStorage).length,records:Object.values(histories).reduce((n,list)=>n+list.length,0)};
 }
+async function globalPulseReadBackupFile(file){
+    if(file && typeof file.text==="function")return await file.text();
+    return await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(String(reader.result||""));
+        reader.onerror=()=>reject(reader.error||new Error("Could not read selected backup file"));
+        reader.readAsText(file,"UTF-8");
+    });
+}
 async function globalPulseImportCacheBackup(file){
-    const payload=JSON.parse(await file.text());
+    const payload=JSON.parse(await globalPulseReadBackupFile(file));
     if(!payload||typeof payload!=="object")throw new Error("Invalid backup file");
     let local=payload.localStorage,session=payload.sessionStorage,histories=payload.histories||{};
     // Read backups created by the previous dashboard version too.
@@ -20631,6 +20667,70 @@ const coinDoc="<!DOCTYPE html>\n<html lang=\"fa\">\n<head>\n<meta charset=\"UTF-
 </script>
 
 
+
+<style id="global-crypto-signal-header-mobile-order-v4">
+/* Mobile: viewer's left-to-right order is timestamp | backup controls | title.
+   Use three separate grid tracks so the items never overlap or collapse together. */
+@media (max-width: 899px) {
+  .signal-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+    direction: ltr !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    column-gap: 6px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding-left: 7px !important;
+    padding-right: 7px !important;
+  }
+  .signal-header-title {
+    grid-column: 1 !important;
+    justify-self: start !important;
+    text-align: left !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+  }
+  .signal-header-cache-actions {
+    grid-column: 2 !important;
+    justify-self: center !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto !important;
+    gap: 4px !important;
+  }
+  .signal-header small {
+    grid-column: 3 !important;
+    justify-self: end !important;
+    text-align: right !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+  }
+}
+/* Keep backup controls elegant and low-contrast on both desktop and mobile. */
+.signal-header-cache-actions .global-pulse-cache-action {
+  color: #94a3b8 !important;
+  background: rgba(100,116,139,.10) !important;
+  border: 1px solid rgba(148,163,184,.16) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transition: background .15s ease, border-color .15s ease, color .15s ease !important;
+}
+.signal-header-cache-actions .global-pulse-cache-action:hover,
+.signal-header-cache-actions .global-pulse-cache-action:focus-visible {
+  color: #cbd5e1 !important;
+  background: rgba(148,163,184,.16) !important;
+  border-color: rgba(148,163,184,.28) !important;
+  box-shadow: none !important;
+}
+.signal-header-cache-actions .global-pulse-cache-action:active {
+  background: rgba(148,163,184,.20) !important;
+  transform: scale(.97) !important;
+}
+</style>
+
 </body>
 
 
@@ -21322,5 +21422,154 @@ const coinDoc="<!DOCTYPE html>\n<html lang=\"fa\">\n<head>\n<meta charset=\"UTF-
 .global-tsetmc-slot-btn:not(.configured):not(.is-visible):focus,
 .global-tsetmc-slot-btn:not(.configured):not(.is-visible):active {
     background:rgba(100,116,139,.48) !important;
+}
+</style>
+
+<style id="global-crypto-signal-header-final-alignment">
+/* Desktop: give the complete title / backup controls / timestamp a wider,
+   balanced header while keeping the backup controls visually restrained. */
+@media (min-width: 900px) {
+  .signal-header {
+    box-sizing: border-box !important;
+    width: 292px !important;
+    min-width: 292px !important;
+    max-width: 292px !important;
+    flex: 0 0 292px !important;
+    justify-content: space-between !important;
+    gap: 7px !important;
+    padding: 0 9px !important;
+    overflow: visible !important;
+  }
+  .signal-header-title {
+    flex: 0 0 auto !important;
+    font-size: 10px !important;
+    letter-spacing: 0 !important;
+  }
+  .signal-header-cache-actions {
+    flex: 0 0 auto !important;
+    gap: 4px !important;
+  }
+  .signal-header-cache-actions .global-pulse-cache-action {
+    box-sizing: border-box !important;
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    font-size: 17px !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  }
+  .signal-header small {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    font-size: 9px !important;
+    letter-spacing: 0 !important;
+  }
+}
+/* Ultra-wide layout uses a dedicated first grid column for this header. */
+@media (min-width: 1401px) {
+  .signal-board {
+    grid-template-columns: 292px minmax(0,1fr) !important;
+  }
+  .signal-header {
+    width: 292px !important;
+    min-width: 292px !important;
+    max-width: 292px !important;
+    flex-basis: 292px !important;
+  }
+}
+/* Mobile visual order (from the viewer's perspective):
+   Crypto Signal on the right, controls centered, timestamp on the left. */
+@media (max-width: 899px) {
+  .signal-header {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) !important;
+    direction: rtl !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    gap: 5px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .signal-header-title {
+    grid-column: 1 !important;
+    justify-self: end !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+  }
+  .signal-header-cache-actions {
+    grid-column: 2 !important;
+    justify-self: center !important;
+    gap: 4px !important;
+  }
+  .signal-header-cache-actions .global-pulse-cache-action {
+    width: 21px !important;
+    height: 21px !important;
+    min-width: 21px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,.14) !important;
+  }
+  .signal-header small {
+    grid-column: 3 !important;
+    justify-self: start !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+  }
+}
+</style>
+
+<style id="crypto-signal-mobile-one-row-final-fix">
+@media (max-width: 899px) {
+  .signal-board { min-width: 0 !important; width: 100% !important; }
+  .signal-header {
+    display: grid !important;
+    grid-template-columns: max-content minmax(24px, 1fr) max-content !important;
+    grid-template-rows: 1fr !important;
+    direction: ltr !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    column-gap: 5px !important;
+    row-gap: 0 !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    padding: 2px 4px !important;
+  }
+  .signal-header-title {
+    grid-column: 1 !important; grid-row: 1 !important;
+    justify-self: start !important;
+    min-width: 0 !important; width: auto !important;
+    margin: 0 !important; padding: 0 !important;
+    white-space: nowrap !important;
+    font-size: 10px !important; line-height: 1.2 !important;
+  }
+  .signal-header-cache-actions {
+    grid-column: 2 !important; grid-row: 1 !important;
+    justify-self: center !important; align-self: center !important;
+    display: inline-flex !important; flex-wrap: nowrap !important;
+    min-width: 0 !important; width: auto !important;
+    margin: 0 !important; padding: 0 !important;
+    white-space: nowrap !important; gap: 3px !important;
+  }
+  .signal-header-cache-actions .global-pulse-cache-action {
+    flex: 0 0 20px !important; width: 20px !important;
+    min-width: 20px !important; height: 20px !important;
+    padding: 0 !important; font-size: 13px !important;
+  }
+  .signal-header small {
+    grid-column: 3 !important; grid-row: 1 !important;
+    justify-self: end !important; align-self: center !important;
+    display: block !important; flex: none !important;
+    min-width: 0 !important; width: auto !important; max-width: none !important;
+    margin: 0 !important; padding: 0 !important;
+    white-space: nowrap !important;
+    text-align: right !important;
+    font-size: 9px !important; line-height: 1.2 !important;
+  }
+  .signal-header input[type="file"] { display: none !important; }
 }
 </style>
