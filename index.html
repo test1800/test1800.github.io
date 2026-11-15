@@ -14673,6 +14673,9 @@ function cryptoPriceDecimals(asset) {
 function formatCryptoAssetPrice(value, asset, withDollar = true) {
     const number = Number(value);
     if (!Number.isFinite(number) || number <= 0) return "-";
+    if (String(asset || "").trim().toUpperCase() === "USD") {
+        return (withDollar ? "$" : "") + Math.round(number).toLocaleString("en-US", { maximumFractionDigits: 0 });
+    }
     const decimals = cryptoPriceDecimals(asset);
     // Signal Matrix / Ultra Compact must preserve the configured decimals exactly.
     const options = decimals === undefined
@@ -14689,14 +14692,7 @@ function formatCryptoUsdValue(value) {
     if (!Number.isFinite(number)) {
         return "-";
     }
-    return "$" +
-        number.toLocaleString(
-            "en-US",
-            {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }
-        );
+    return "$" + Math.round(number).toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 function formatCryptoPct(value) {
     const number = Number(value);
@@ -16005,6 +16001,113 @@ const rfkjTseSessionInFlight = new Map();
 const rfkjTseDailyInFlight = new Map();
 let rfkjTseSessionRequestQueue=Promise.resolve();
 function rfkjIsTseCoin(value){return String(value||"").trim().toUpperCase().startsWith("TSE|");}
+function rfkjIsChartAsset(value){return ["USD","COIN"].includes(String(value||"").trim().toUpperCase());}
+const RFKJ_CHART_ASSET_CONFIG={
+    USD:{db:"FinancialDashboardPriceChartDB",store:"numericHistory",url:"https://financial-chart-history.rahdatair.workers.dev/history"},
+    COIN:{db:"FinancialDashboardCoinChartDB",store:"coinNumericHistory",url:"https://coin-chart-history.info-intoken.workers.dev/history"}
+};
+const rfkjChartAssetCache=new Map();
+const rfkjChartAssetInFlight=new Map();
+function rfkjChartAssetRows(payload){
+    if(Array.isArray(payload))return payload;
+    if(!payload||typeof payload!=="object")return [];
+    for(const key of ["history","records","points","data","result"]){
+        const value=payload[key];
+        if(Array.isArray(value))return value;
+        if(value&&typeof value==="object"){
+            const nested=rfkjChartAssetRows(value);
+            if(nested.length)return nested;
+        }
+    }
+    return [];
+}
+function rfkjChartAssetTimestamp(value){
+    if(typeof value==="string"&&!/^\d+(\.\d+)?$/.test(value.trim())){const parsed=Date.parse(value);return Number.isFinite(parsed)?parsed:NaN;}
+    let t=Number(value);if(!Number.isFinite(t)||t<=0)return NaN;if(t<100000000000)t*=1000;return t;
+}
+function rfkjNormalizeChartAssetRows(rows){
+    const byTime=new Map();
+    for(const row of Array.isArray(rows)?rows:[]){
+        let rawTime,rawValue;
+        if(Array.isArray(row)){rawTime=row[0];rawValue=row[1];}
+        else if(row&&typeof row==="object"){
+            rawTime=row.t??row.timestamp??row.time??row.date??row.createdAt??row.created_at;
+            rawValue=row.v??row.value??row.price??row.average??row.avg??row.averagePrice??row.average_price??row.priceAverage??row.price_average??row.liveAverage??row.live_average;
+        }
+        const t=rfkjChartAssetTimestamp(rawTime),v=Number(String(rawValue??"").replace(/,/g,""));
+        if(Number.isFinite(t)&&t>0&&Number.isFinite(v)&&v>0)byTime.set(Math.round(t),{t:Math.round(t),v});
+    }
+    return Array.from(byTime.values()).sort((a,b)=>a.t-b.t);
+}
+async function rfkjReadChartAssetIndexedDb(asset){
+    const config=RFKJ_CHART_ASSET_CONFIG[asset];
+    if(!config||!window.indexedDB)return [];
+    const db=await new Promise((resolve,reject)=>{
+        const req=indexedDB.open(config.db);
+        req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(config.store))db.createObjectStore(config.store,{keyPath:"id"});};
+        req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error("Chart history database unavailable"));
+        req.onblocked=()=>reject(new Error("Chart history database is busy"));
+    });
+    try{
+        if(!db.objectStoreNames.contains(config.store))return [];
+        return await new Promise((resolve,reject)=>{
+            const tx=db.transaction(config.store,"readonly"),req=tx.objectStore(config.store).getAll();
+            req.onsuccess=()=>resolve(rfkjNormalizeChartAssetRows(req.result||[]));
+            req.onerror=()=>reject(req.error||new Error("Chart history read failed"));
+        });
+    }finally{db.close();}
+}
+async function rfkjFetchChartAssetRows(asset){
+    const cached=rfkjChartAssetCache.get(asset);
+    if(cached&&Date.now()-cached.at<30000)return cached.rows;
+    if(rfkjChartAssetInFlight.has(asset))return rfkjChartAssetInFlight.get(asset);
+    const task=(async()=>{
+        let rows=[];let dbError=null;
+        try{rows=await rfkjReadChartAssetIndexedDb(asset);}catch(error){dbError=error;}
+        // The existing chart history Worker is only a repair/fallback source;
+        // the local chart cache remains the primary source for Signal Matrix.
+        const latestAge=rows.length?Date.now()-Number(rows[rows.length-1].t):Infinity;
+        if(rows.length<30||latestAge>180000){
+            const config=RFKJ_CHART_ASSET_CONFIG[asset];
+            try{
+                const response=await fetchWithTimeout(config.url+(config.url.includes("?")?"&":"?")+"_matrix="+Date.now(),{method:"GET",cache:"no-store",headers:{"Accept":"application/json"}},10000);
+                if(!response.ok)throw new Error(`History HTTP ${response.status}`);
+                const remote=rfkjNormalizeChartAssetRows(rfkjChartAssetRows(await response.json()));
+                if(remote.length){const merged=new Map(rows.map(x=>[x.t,x]));remote.forEach(x=>merged.set(x.t,x));rows=Array.from(merged.values()).sort((a,b)=>a.t-b.t);}
+            }catch(error){if(!rows.length)throw new Error(`${asset} chart history unavailable${dbError?`: ${dbError.message}`:""} • ${error.message||error}`);}
+        }
+        if(rows.length<2)throw new Error(`${asset} chart history has insufficient records`);
+        rows=rows.slice(-12000);
+        rfkjChartAssetCache.set(asset,{at:Date.now(),rows});
+        return rows;
+    })().finally(()=>rfkjChartAssetInFlight.delete(asset));
+    rfkjChartAssetInFlight.set(asset,task);return task;
+}
+function rfkjChartAssetBuildCandles(rows,timeframe){
+    const tf=String(timeframe||"1"),minutes=({"1":1,"3":3,"5":5,"15":15,"30":30,"60":60,"4h":240,"1D":1440,"1W":10080})[tf];
+    if(!minutes)throw new Error(`Unsupported ${tf} chart timeframe`);
+    const span=minutes*60000,groups=new Map();
+    for(const point of rows){
+        const t=Number(point.t),v=Number(point.v);if(!Number.isFinite(t)||!Number.isFinite(v)||v<=0)continue;
+        const bucket=Math.floor(t/span)*span,old=groups.get(bucket);
+        if(!old)groups.set(bucket,{timestamp:new Date(bucket).toISOString(),open:v,high:v,low:v,close:v});
+        else{old.high=Math.max(old.high,v);old.low=Math.min(old.low,v);old.close=v;}
+    }
+    const candles=Array.from(groups.values()).sort((a,b)=>a.timestamp.localeCompare(b.timestamp)).slice(-1500);
+    if(candles.length<2)throw new Error(`${tf} chart timeframe has insufficient candles`);
+    return candles;
+}
+async function rfkjFetchChartAssetData(asset,timeframe){
+    const key=`${asset}:${timeframe}`,cached=rfkjChartAssetCache.get(key);
+    if(cached&&Date.now()-cached.at<30000)return cached.value;
+    const rows=await rfkjFetchChartAssetRows(asset),candles=rfkjChartAssetBuildCandles(rows,timeframe);
+    const signals=rfkjCalculateTseSignals(candles),last=rows[rows.length-1],cutoff=Number(last.t)-86400000;
+    let prior=null;for(let i=rows.length-2;i>=0;i--){if(Number(rows[i].t)<=cutoff){prior=rows[i];break;}}
+    const dailyChangePercent=prior&&Number(prior.v)>0?((Number(last.v)-Number(prior.v))/Number(prior.v))*100:null;
+    const value={...signals,price:Number(last.v),dailyChangePercent,updated:new Date(Number(last.t)).toISOString(),symbol:asset,source:"chart-history-cache",timeframe:String(timeframe)};
+    rfkjChartAssetCache.set(key,{at:Date.now(),value});
+    return value;
+}
 function rfkjTseSlotForCoin(value){
     const match=String(value||"").trim().toUpperCase().match(/^TSE\|SLOT([1-4])$/);
     if(!match)return null;
@@ -16013,6 +16116,12 @@ function rfkjTseSlotForCoin(value){
 function rfkjRefreshTseOptions(){
     document.querySelectorAll(".rfkj-instance-coin").forEach(select=>{
         const current=String(select.value||"");
+        for(const asset of ["USD","COIN"]){
+            if(!Array.from(select.options).some(option=>option.value===asset)){
+                const option=document.createElement("option");option.value=asset;option.textContent=asset;option.dataset.rfkjChartOption="1";
+                select.appendChild(option);
+            }
+        }
         Array.from(select.options).filter(option=>option.dataset.rfkjTseOption==="1").forEach(option=>option.remove());
         let slots=[];
         try{slots=globalPulseTsetmcGetSlots();}catch(e){}
@@ -16264,8 +16373,9 @@ function rfkjCalculateTseKijun(candles){
     const current=candles[n-1];
     // Use every available completed candle, up to 288. With only one candle,
     // use that candle's own high/low as the best available Kijun range.
-    const availablePrevious=Math.max(0,n-1),windowSize=Math.min(period,availablePrevious);
-    const start=windowSize>0?n-1-windowSize:n-1,end=n-1;
+    // Match FREE-R09 rollingMid(288) exactly: the 288-candle window
+    // includes the current candle (index n-288 through n-1).
+    const start=Math.max(0,n-period),end=n;
     let highest=-Infinity,lowest=Infinity;
     for(let i=start;i<end;i++){highest=Math.max(highest,Number(candles[i].high));lowest=Math.min(lowest,Number(candles[i].low));}
     if(!Number.isFinite(highest)||!Number.isFinite(lowest)){highest=Number(current.high);lowest=Number(current.low);}
@@ -16449,7 +16559,10 @@ function rfkjFormatPrice(value, asset){
     const raw = String(value ?? "").trim().replace(/,/g, "");
     const number = Number(raw);
     if(!Number.isFinite(number) || number<=0)return "-";
-    if(rfkjIsTseCoin(asset)){
+    if(String(asset || "").trim().toUpperCase() === "USD"){
+        return Math.round(number).toLocaleString("en-US",{maximumFractionDigits:0});
+    }
+    if(rfkjIsTseCoin(asset)||rfkjIsChartAsset(asset)){
         return Math.round(number).toLocaleString("en-US",{maximumFractionDigits:0});
     }
     const decimals = cryptoPriceDecimals(asset);
@@ -16943,18 +17056,21 @@ async function rfkjFetchOne(index,timeframe,notify=true){
     const coin=rfkjGet("rfkjCoin",index)?.value||"BTC";
     try{
         const isTse=rfkjIsTseCoin(coin);
+        const isChartAsset=rfkjIsChartAsset(coin);
         const data=isTse
             ? await rfkjFetchTseData(coin,timeframe)
-            : await rfkjFetchWithFailover(`coin=${encodeURIComponent(coin)}&timeframe=${encodeURIComponent(timeframe)}&t=${Date.now()}`);
+            : isChartAsset
+                ? await rfkjFetchChartAssetData(String(coin).trim().toUpperCase(),timeframe)
+                : await rfkjFetchWithFailover(`coin=${encodeURIComponent(coin)}&timeframe=${encodeURIComponent(timeframe)}&t=${Date.now()}`);
         const rf=rfkjNormalizeSignal(data.RF??data.rf??data.rangeFilter??data.range_filter??0);
         const kj=rfkjNormalizeSignal(data.KJ??data.kj??data.kijunsen??0);
         const st=rfkjNormalizeSignal(data.ST??data.st??data.superTrend??data.supertrend??0);
         let rfPercent=data.RFPercent??data.rfPercent??data.RF_PERCENT??data.rf_percent;
         let kjPercent=data.KJPercent??data.kjPercent??data.KJ_PERCENT??data.kj_percent;
         let stPercent=data.STPercent??data.stPercent??data.ST_PERCENT??data.st_percent;
-        // TSE percentages are informational only: compare the live TSETMC quote
-        // with each calculated indicator line. They never feed signal direction.
-        if(isTse){
+        // TSE/USD/COIN percentages are informational only: compare the live
+        // chart quote with each calculated indicator line. They never feed direction.
+        if(isTse||isChartAsset){
             const livePrice=Number(data.price);
             rfPercent=rfkjTseDistancePercent(livePrice,data.RFValue);
             kjPercent=rfkjTseDistancePercent(livePrice,data.KJValue);
@@ -16979,8 +17095,8 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         // The next timeframe request must never delay this registration.
         rfkjSaveState();
         syncNativeWidgetSnapshot();
-        let dailyChangePercent=Number(data.dailyChangePercent);
-        if(!Number.isFinite(dailyChangePercent)&&!isTse){
+        let dailyChangePercent=(data.dailyChangePercent===null||data.dailyChangePercent===undefined)?NaN:Number(data.dailyChangePercent);
+        if(!Number.isFinite(dailyChangePercent)&&!isTse&&!isChartAsset){
             try{
                 if (!state.cycleDailyChangePromise) state.cycleDailyChangePromise = crossoverFetchDailyPercent(coin).catch(() => null);
                 dailyChangePercent = await state.cycleDailyChangePromise;
@@ -16989,7 +17105,7 @@ async function rfkjFetchOne(index,timeframe,notify=true){
         state.latestDailyChangePercent=Number.isFinite(Number(dailyChangePercent))?Number(dailyChangePercent):null;
         let price=Number(data.price);
         let priceRaw=(data.price===undefined||data.price===null)?null:String(data.price).trim();
-        if(!isTse){
+        if(!isTse&&!isChartAsset){
             try{
                 if (!state.cyclePricePromise) state.cyclePricePromise = getUnifiedCryptoPrice(coin).catch(error => { console.warn(`Unified crypto price failed for ${coin}:`, error); return null; });
                 const unifiedPrice=await state.cyclePricePromise;
@@ -17722,6 +17838,7 @@ async function crossoverToggleNotifications(index){
 }
 function crossoverFormatPrice(value, asset){
     const key=String(asset||"").trim().toUpperCase();
+    if(key==="USD") return formatGlobalPulseNumber(value,0);
     if(key==="GOLD") return formatGlobalPulseNumber(value,0);
     if(key==="OIL") return formatGlobalPulseNumber(value,2);
     if(key.startsWith("TSE|")) return formatGlobalPulseNumber(value,0);
