@@ -21696,3 +21696,85 @@ const coinDoc="<!DOCTYPE html>\n<html lang=\"fa\">\n<head>\n<meta charset=\"UTF-
   .signal-header input[type="file"] { display: none !important; }
 }
 </style>
+
+<style id="crypto-signal-mobile-and-tablet-layout-fix">
+/* Mobile: remove the extra space above the Crypto Signal title row. */
+@media (max-width: 899px) {
+  .signal-board {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  .signal-header {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+}
+
+/* Medium screens: use the same side-by-side title/header + coin row
+   arrangement as desktop instead of stacking the title above the icons. */
+@media (min-width: 900px) and (max-width: 1400px) {
+  .signal-board {
+    display: grid !important;
+    grid-template-columns: 292px minmax(0, 1fr) !important;
+    align-items: center !important;
+    column-gap: 10px !important;
+    padding: 4px 6px !important;
+    min-width: 0 !important;
+  }
+  .signal-header {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 7px !important;
+    width: 292px !important;
+    min-width: 292px !important;
+    max-width: 292px !important;
+    height: 44px !important;
+    margin: 0 !important;
+    padding: 0 9px !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+  }
+  .signal-header-title,
+  .signal-header small {
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+  }
+  .signal-header-title {
+    flex: 0 0 auto !important;
+    font-size: 10px !important;
+  }
+  .signal-header-cache-actions {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+  }
+  .signal-header-cache-actions .global-pulse-cache-action {
+    width: 26px !important;
+    min-width: 26px !important;
+    height: 26px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+  }
+  .signal-header small {
+    flex: 0 0 auto !important;
+    font-size: 9px !important;
+  }
+  .signal-grid {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    align-items: center !important;
+  }
+}
+</style>
