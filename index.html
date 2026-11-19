@@ -185,6 +185,7 @@ h1 {
 }
 #financialDashboardTitle.is-loading{filter:drop-shadow(0 0 5px rgba(125,211,252,.22));}
 #financialDashboardTitle.is-complete{--financial-record-progress:100%;filter:drop-shadow(0 0 7px rgba(34,197,94,.28));}
+#financialDashboardTitle.is-error{--financial-record-progress:0%;background-image:linear-gradient(90deg,#fca5a5,#fca5a5);filter:drop-shadow(0 0 6px rgba(248,113,113,.42));}
 
 .today {
     margin-top: 4px;
@@ -6795,7 +6796,6 @@ h1 {
     </div>
   </div>
   <div class="average-price-chart-plot" id="averagePriceChartPlot">
-    <span class="average-price-chart-tools average-chart-export-bottom" aria-label="Chart history tools"><button type="button" class="average-chart-tool export" id="averageChartExport" title="Download full history backup" aria-label="Download history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 17v3h14v-3"/></svg></button></span>
     <div class="average-price-chart-empty"><span>No cached price data</span></div>
   </div>
   <div class="average-chart-navigator" id="averageChartNavigator" aria-label="Select chart time range">
@@ -6824,7 +6824,6 @@ h1 {
     </div>
   </div>
   <div class="average-price-chart-plot" id="coinPriceChartPlot">
-    <span class="average-price-chart-tools average-chart-export-bottom" aria-label="Chart history tools"><button type="button" class="average-chart-tool export" id="coinChartExport" title="Download full history backup" aria-label="Download history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 17v3h14v-3"/></svg></button></span>
     <div class="average-price-chart-empty"><span>No cached price data</span></div>
   </div>
   <div class="average-chart-navigator" id="coinChartNavigator" aria-label="Select chart time range">
@@ -7118,28 +7117,37 @@ h1 {
  const URL='https://raw.githubusercontent.com/test1800/test1800.github.io/main/FinancialRecord.json';
  const DB='financial-record-bootstrap-v1',STORE='remote';
  const title=()=>document.getElementById('financialDashboardTitle');
- const paint=p=>{const el=title();if(el){const value=Math.max(0,Math.min(100,Number(p)||0));el.style.setProperty('--financial-record-progress',value+'%');el.classList.toggle('is-loading',value>0&&value<100);el.classList.toggle('is-complete',value>=100)}};
+ const paint=(p,state='auto')=>{const el=title();if(el){const value=Math.max(0,Math.min(100,Number(p)||0));el.style.setProperty('--financial-record-progress',value+'%');el.classList.toggle('is-loading',state!=='error'&&value>0&&value<100);el.classList.toggle('is-complete',state!=='error'&&value>=100);el.classList.toggle('is-error',state==='error')}};
+ window.__setFinancialRecordProgress=(p,state)=>paint(p,state||'auto');
  const openDB=()=>new Promise((resolve,reject)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE,{keyPath:'id'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
  const readCache=async()=>{const db=await openDB();try{return await new Promise((resolve,reject)=>{const r=db.transaction(STORE,'readonly').objectStore(STORE).get('financial-record');r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)})}finally{db.close()}};
  const writeCache=async value=>{const db=await openDB();try{await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put({id:'financial-record',...value});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}finally{db.close()}};
  function recordsFrom(text){const src=String(text||'').replace(/^\uFEFF/,'').trim();if(!src)throw Error('FinancialRecord.json خالی است');try{const v=JSON.parse(src);if(Array.isArray(v))return v;if(v&&v.type==='history')return [v];if(v&&Array.isArray(v.records))return v.records;if(v&&Array.isArray(v.history))return [v];if(v&&v.histories&&typeof v.histories==='object')return Object.values(v.histories).flat().concat(Array.isArray(v.tradeRecords)?v.tradeRecords:[]);}catch{}const rows=src.split(/\r?\n/).filter(x=>x.trim()).map(line=>JSON.parse(line));if(!rows.length)throw Error('ساختار فایل معتبر نیست');return rows;}
  function countMap(text){const rows=recordsFrom(text),out={};for(const r of rows){if(r&&r.type==='history'){const key=String(r.key||((r.group||'')+':'+(r.symbol||'')));const n=Number(r.count);if(!key||!Number.isFinite(n)||n<0)throw Error('count نامعتبر در FinancialRecord.json');out[key]=n;}}if(!Object.keys(out).length)throw Error('هیچ رکورد history دارای count پیدا نشد');return out;}
  function syncTradeRecords(text){try{const rows=recordsFrom(text),incoming=rows.filter(r=>r&&r.type==='trade'&&r.id&&r.chartKey&&['buy','sell'].includes(r.tool));if(!incoming.length)return;const key='rahdata_trade_records_v1',existing=JSON.parse(localStorage.getItem(key)||'[]'),map=new Map();for(const r of [...(Array.isArray(existing)?existing:[]),...incoming])if(r&&r.id&&r.chartKey&&['buy','sell'].includes(r.tool))map.set(String(r.chartKey)+'|'+String(r.id),r);localStorage.setItem(key,JSON.stringify(Array.from(map.values())));}catch(e){console.warn('FinancialRecord trade records sync failed',e)}}
- async function fetchTextWithProgress(){const res=await fetch(URL,{method:'GET',cache:'no-store',headers:{Accept:'application/x-ndjson, application/json'}});if(!res.ok)throw Error('HTTP '+res.status);const total=Number(res.headers.get('content-length'))||0;if(!res.body){const t=await res.text();paint(92);return t;}const reader=res.body.getReader(),chunks=[];let loaded=0;while(true){const {done,value}=await reader.read();if(done)break;chunks.push(value);loaded+=value.byteLength;paint(total?Math.min(94,8+loaded/total*86):Math.min(90,8+Math.log2(loaded+1)*5));}const bytes=new Uint8Array(loaded);let offset=0;for(const c of chunks){bytes.set(c,offset);offset+=c.length;}return new TextDecoder('utf-8').decode(bytes);}
+ async function fetchTextWithProgress(){const controller=typeof AbortController==='function'?new AbortController():null,timer=controller?setTimeout(()=>controller.abort(),30000):null;try{const res=await fetch(URL,{method:'GET',cache:'no-store',headers:{Accept:'application/x-ndjson, application/json'},...(controller?{signal:controller.signal}:{})});if(!res.ok)throw Error('HTTP '+res.status);const total=Number(res.headers.get('content-length'))||0;if(!res.body){const t=await res.text();paint(92);return t;}const reader=res.body.getReader(),chunks=[];let loaded=0;while(true){const {done,value}=await reader.read();if(done)break;chunks.push(value);loaded+=value.byteLength;paint(total?Math.min(94,8+loaded/total*86):Math.min(90,8+Math.log2(loaded+1)*5));}const bytes=new Uint8Array(loaded);let offset=0;for(const c of chunks){bytes.set(c,offset);offset+=c.length;}return new TextDecoder('utf-8').decode(bytes);}finally{if(timer)clearTimeout(timer)}}
  async function boot(){paint(0);let cached=null;try{cached=await readCache()}catch(e){console.warn('FinancialRecord IndexedDB read failed',e)}
   try{
-   // HEAD is intentionally used as the cheap change probe; a matching ETag avoids downloading the large JSON.
-   let head=null;try{head=await fetch(URL,{method:'HEAD',cache:'no-store'});if(!head.ok)throw Error('HEAD HTTP '+head.status)}catch(e){if(!cached)throw e;console.warn('FinancialRecord HEAD check unavailable; keeping cached copy',e);try{syncTradeRecords(cached.raw);if(typeof window.__financialRecordSyncAllHistories==='function')await window.__financialRecordSyncAllHistories(cached.raw,cached.etag||cached.lastModified||'')}catch(syncError){console.warn('Cached FinancialRecord history sync failed',syncError)}paint(100);return cached;}
-   const etag=head.headers.get('etag')||'',modified=head.headers.get('last-modified')||'';
-   if(cached&&cached.raw&&((etag&&cached.etag===etag)||(!etag&&modified&&cached.lastModified===modified))){syncTradeRecords(cached.raw);try{if(typeof window.__financialRecordSyncAllHistories==='function')await window.__financialRecordSyncAllHistories(cached.raw,cached.etag||cached.lastModified||'')}catch(syncError){console.warn('FinancialRecord history cache sync failed',syncError)}paint(100);return cached;}
-   paint(2);const raw=await fetchTextWithProgress();const counts=countMap(raw);syncTradeRecords(raw);try{if(typeof window.__financialRecordSyncAllHistories==='function')await window.__financialRecordSyncAllHistories(raw,etag||modified||'')}catch(syncError){console.warn('FinancialRecord history cache sync failed',syncError)}const same=!!cached&&JSON.stringify(Object.keys(counts).sort().map(k=>[k,counts[k]]))===JSON.stringify(Object.keys(cached.counts||{}).sort().map(k=>[k,cached.counts[k]]));
+   // HEAD is only an optimization. Android WebView / GitHub raw may reject HEAD;
+   // that must never prevent the real GET from loading the source on a fresh install.
+   let head=null;try{head=typeof fetchWithTimeout==='function'?await fetchWithTimeout(URL,{method:'HEAD',cache:'no-store'},8000):await fetch(URL,{method:'HEAD',cache:'no-store'});if(!head.ok)throw Error('HEAD HTTP '+head.status)}catch(e){console.warn('FinancialRecord HEAD probe unavailable; falling back to GET',e);}
+   const etag=head&&head.ok?(head.headers.get('etag')||''):'',modified=head&&head.ok?(head.headers.get('last-modified')||''):'';
+   if(head&&head.ok&&cached&&cached.raw&&((etag&&cached.etag===etag)||(!etag&&modified&&cached.lastModified===modified))){
+     syncTradeRecords(cached.raw);
+     try{if(typeof window.__financialRecordSyncAllHistories==='function')await window.__financialRecordSyncAllHistories(cached.raw,cached.etag||cached.lastModified||'')}
+     catch(syncError){console.warn('FinancialRecord cached history sync failed',syncError);paint(0,'error');return {...cached,historySyncOk:false,cacheWriteOk:true};}
+     paint(100);return {...cached,historySyncOk:true,cacheWriteOk:true};
+   }
+   paint(2);const raw=await fetchTextWithProgress();const counts=countMap(raw);syncTradeRecords(raw);
+   let historySyncOk=true;try{if(typeof window.__financialRecordSyncAllHistories==='function')await window.__financialRecordSyncAllHistories(raw,etag||modified||'')}catch(syncError){historySyncOk=false;console.warn('FinancialRecord history cache sync failed',syncError)}
    // A changed ETag means the uploaded file changed even when history counts did not
    // (for example, Buy/Sell records or corrected prices were added). Always keep the
    // newly fetched raw snapshot instead of returning the previous count-matched copy.
-   try{await writeCache({raw,counts,etag,lastModified:modified,updatedAt:Date.now(),checkedAt:Date.now()})}
-   catch(storageError){console.warn('FinancialRecord IndexedDB write failed; using validated data in memory',storageError)}
-   paint(100);return {raw,counts,etag,lastModified:modified};
-  }catch(e){console.warn('FinancialRecord bootstrap failed; last valid cache retained',e);if(cached?.raw){try{syncTradeRecords(cached.raw);if(typeof window.__financialRecordSyncAllHistories==='function')await window.__financialRecordSyncAllHistories(cached.raw,cached.etag||cached.lastModified||'')}catch(syncError){console.warn('Cached FinancialRecord history sync failed',syncError)}}paint(cached?100:0);return cached;}
+   let cacheWriteOk=true;try{await writeCache({raw,counts,etag,lastModified:modified,updatedAt:Date.now(),checkedAt:Date.now()})}
+   catch(storageError){cacheWriteOk=false;console.warn('FinancialRecord IndexedDB write failed; using validated data in memory',storageError)}
+   if(historySyncOk&&cacheWriteOk)paint(100);else paint(0,'error');
+   return {raw,counts,etag,lastModified,historySyncOk,cacheWriteOk};
+  }catch(e){console.warn('FinancialRecord bootstrap failed; last valid cache retained',e);if(cached?.raw){try{syncTradeRecords(cached.raw);if(typeof window.__financialRecordSyncAllHistories==='function')await window.__financialRecordSyncAllHistories(cached.raw,cached.etag||cached.lastModified||'');paint(100);return {...cached,historySyncOk:true,cacheWriteOk:true}}catch(syncError){console.warn('Cached FinancialRecord history sync failed',syncError);paint(0,'error');return {...cached,historySyncOk:false,cacheWriteOk:true}}}else paint(0,'error');return cached;}
  }
  // Do not start HEAD/GET, JSON parsing, or IndexedDB writes while the dashboard is still rendering.
  // First let the complete page paint; then refresh the remote file in the background.
@@ -7153,6 +7161,7 @@ h1 {
  };
  if(document.readyState==='complete') requestAnimationFrame(()=>requestAnimationFrame(beginBackgroundRefresh));
  else window.addEventListener('load',()=>requestAnimationFrame(()=>requestAnimationFrame(beginBackgroundRefresh)),{once:true});
+ window.__financialRecordRefresh=async()=>{const data=await boot();if(!data?.raw)throw new Error('FinancialRecord.json could not be downloaded or restored from cache');return data;};
  window.__financialRecordGetRecord=async(key)=>{const data=await promise;if(!data?.raw)return null;try{return recordsFrom(data.raw).find(r=>r&&r.type==='history'&&String(r.key||'')===String(key))||null}catch{return null}};
 })();
 </script>
@@ -12908,24 +12917,26 @@ function globalPulsePackNumericHistory(records,symbol,key){
     for(const row of Array.isArray(records)?records:[]){
         const t=Number(Array.isArray(row)?row[0]:(row&& (row.t??row.timestamp)));
         const v=Number(Array.isArray(row)?row[1]:(row&& (row.v??row.value??row.c)));
-        if(Number.isFinite(t)&&t>0&&Number.isFinite(v)&&v>0)byTime.set(Math.floor(t),Math.round(v));
+        if(Number.isFinite(t)&&t>0&&Number.isFinite(v)&&v>0)byTime.set(Math.floor(t),v);
     }
-    const history=Array.from(byTime.entries()).sort((a,b)=>a[0]-b[0]);
-    return [{id:key,key,symbol,count:history.length,precision:0,history}];
+    const ordered=Array.from(byTime.entries()).sort((a,b)=>a[0]-b[0]);
+    const decimals=value=>{const str=Number(value).toString().toLowerCase();if(!str.includes('e'))return Math.min(12,(str.split('.')[1]||'').length);const parts=str.split('e');return Math.max(0,Math.min(12,(parts[0].split('.')[1]||'').length-Number(parts[1])));};
+    const maxValue=ordered.reduce((m,p)=>Math.max(m,Math.abs(p[1])),0),wanted=Math.max(0,...ordered.map(p=>decimals(p[1]))),safe=maxValue>0?Math.max(0,Math.floor(Math.log10(Number.MAX_SAFE_INTEGER/maxValue))):12;
+    const precision=Math.max(0,Math.min(12,wanted,safe)),scale=Math.pow(10,precision),history=ordered.map(([t,v])=>[t,Math.round(v*scale)]);
+    return [{id:key,key,symbol,count:history.length,precision,history}];
 }
 function globalPulseExpandNumericHistory(records){
-    const compact=(Array.isArray(records)?records:[]).filter(r=>r&&Array.isArray(r.history));
-    if(!compact.length)return Array.isArray(records)?records:[];
-    const expanded=[];
-    for(const record of compact){
-        const precision=Math.max(0,Math.min(12,Number(record.precision)||0)),scale=Math.pow(10,precision);
-        for(const pair of record.history){
-            if(!Array.isArray(pair)||pair.length<2)continue;
-            const t=Number(pair[0]),v=Number(pair[1])/scale;
-            if(Number.isFinite(t)&&t>0&&Number.isFinite(v)&&v>0)expanded.push({id:String(Math.floor(t))+':'+String(Math.round(v)),t:Math.floor(t),v:Math.round(v)});
-        }
+    const expanded=[],byTime=new Map();
+    const add=(time,value)=>{const t=Number(time),v=Number(value);if(Number.isFinite(t)&&t>0&&Number.isFinite(v)&&v>0)byTime.set(Math.floor(t),v);};
+    for(const record of (Array.isArray(records)?records:[])){
+        if(record&&Array.isArray(record.history)){
+            const precision=Math.max(0,Math.min(12,Number(record.precision)||0)),scale=Math.pow(10,precision);
+            for(const pair of record.history){if(Array.isArray(pair)&&pair.length>=2)add(pair[0],Number(pair[1])/scale);}
+        }else if(Array.isArray(record)&&record.length>=2)add(record[0],record[1]);
+        else if(record&&typeof record==='object')add(record.t??record.timestamp??record.time,record.v??record.value??record.price);
     }
-    return expanded;
+    for(const [t,v] of byTime)expanded.push({id:String(t)+':'+String(v),t,v});
+    return expanded.sort((a,b)=>a.t-b.t);
 }
 function globalPulseBuildOrderedSymbolBackupRows(rows){
     const list=(Array.isArray(rows)?rows:[]).filter(r=>r&&Array.isArray(r.history));
@@ -12970,8 +12981,13 @@ async function globalPulseExportCacheBackup(){
     try{const layout=JSON.parse(localStorage.getItem('rahdata_layout')||'null');for(const d of (layout?.drawings||[])){if(d&&(d.tool==='buy'||d.tool==='sell')&&!trades.some(t=>String(t.id)===String(d.id)))trades.push({...d,chartKey:d.chartKey||'legacy:unassigned',type:'trade'});}}catch(e){}
     const appearance=localStorage.getItem('rahdata_layout');
     const meta={format:'financial-dashboard-cache-lines',version:2,type:'meta',createdAt:new Date().toISOString(),localStorage:globalPulseReadBackupStorage(localStorage),sessionStorage:globalPulseReadStorage(sessionStorage)};
-    const lines=[meta,...histories,...trades.map(r=>({...r,type:'trade'}))];
-    if(appearance!==null)lines.push({type:'appearance',removeBeforeFinancialRecordUpload:true,key:'rahdata_layout',value:appearance});
+    // Keep appearance as the first physical line so the file is easy to inspect/edit.
+    // The same line also carries the backup metadata needed by manual restore.
+    const firstLine=appearance!==null
+        ?{...meta,type:'appearance',recordType:'meta',removeBeforeFinancialRecordUpload:true,key:'rahdata_layout',value:appearance}
+        :meta;
+    // Stable order: appearance/meta, USD, COIN, other chart histories, then Buy/Sell.
+    const lines=[firstLine,...histories,...trades.map(r=>({...r,type:'trade'}))];
     const json=lines.map(row=>JSON.stringify(row)).join('\n')+'\n';
     const fileName=`FinancialRecord-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
     if(window.AndroidNotifications&&typeof window.AndroidNotifications.saveTextFile==='function'){
@@ -12987,8 +13003,9 @@ async function globalPulseExportCacheBackup(){
 }
 function globalPulseParseLineBackup(text){
     const parsed=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>JSON.parse(line));
-    if(!parsed.length||parsed[0]?.format!=='financial-dashboard-cache-lines'||parsed[0]?.type!=='meta')throw new Error('Invalid line-based cache backup');
-    const histories={dollar:[],coin:[],symbolCharts:[]},tradeRecords=[];let appearance=null;
+    const first=parsed[0],firstIsAppearance=first?.type==='appearance'&&first?.key==='rahdata_layout'&&typeof first?.value==='string';
+    if(!parsed.length||first?.format!=='financial-dashboard-cache-lines'||!(first?.type==='meta'||firstIsAppearance))throw new Error('Invalid line-based cache backup');
+    const histories={dollar:[],coin:[],symbolCharts:[]},tradeRecords=[];let appearance=firstIsAppearance?first.value:null;
     for(const line of parsed.slice(1)){
         if(!line)continue;
         if(line.type==='history'&&Array.isArray(line.history)){line.count=line.history.length;if(line.group==='USD'||line.key==='dollar')histories.dollar.push(line);else if(line.group==='COIN'||line.key==='coin')histories.coin.push(line);else histories.symbolCharts.push(line);}
@@ -13002,7 +13019,7 @@ async function globalPulseMergeNumericHistory(config,savedRows){
     try{
         const existing=await new Promise((resolve,reject)=>{const tx=db.transaction(config.store,'readonly'),req=tx.objectStore(config.store).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error||new Error('Could not read existing numeric history'));});
         const byTime=new Map();
-        for(const row of existing){const t=Number(row?.t),v=Number(row?.v);if(Number.isFinite(t)&&t>0&&Number.isFinite(v)&&v>0)byTime.set(Math.floor(t),Math.round(v));}
+        for(const row of globalPulseExpandNumericHistory(existing)){const t=Number(row?.t),v=Number(row?.v);if(Number.isFinite(t)&&t>0&&Number.isFinite(v)&&v>0)byTime.set(Math.floor(t),v);}
         for(const row of incoming){const t=Number(row?.t),v=Number(row?.v);if(Number.isFinite(t)&&t>0&&Number.isFinite(v)&&v>0)byTime.set(Math.floor(t),Math.round(v));}
         const tx=db.transaction(config.store,'readwrite'),store=tx.objectStore(config.store);store.clear();
         for(const [t,v] of byTime)store.put({id:String(t)+':'+String(v),t,v});
@@ -13064,14 +13081,50 @@ function globalPulseParseFinancialRecordRows(raw){
     }catch(e){}
     return source.split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{try{return JSON.parse(line)}catch(e){return null}}).filter(Boolean);
 }
+async function globalPulseFinancialRecordCacheReady(dollarRows,coinRows,symbolRows){
+    const configs={
+        dollar:GLOBAL_PULSE_CACHE_HISTORY_DATABASES.find(x=>x.key==='dollar'),
+        coin:GLOBAL_PULSE_CACHE_HISTORY_DATABASES.find(x=>x.key==='coin'),
+        symbols:GLOBAL_PULSE_CACHE_HISTORY_DATABASES.find(x=>x.key==='symbolCharts')
+    };
+    try{
+        const [dollarStored,coinStored,symbolStored]=await Promise.all([
+            configs.dollar?globalPulseReadChartHistory(configs.dollar):[],
+            configs.coin?globalPulseReadChartHistory(configs.coin):[],
+            configs.symbols?globalPulseReadChartHistory(configs.symbols):[]
+        ]);
+        const containsNumeric=(stored,incoming)=>{
+            const have=new Set(globalPulseExpandNumericHistory(stored).map(p=>String(Math.floor(Number(p.t)))));
+            return globalPulseExpandNumericHistory(incoming).every(p=>have.has(String(Math.floor(Number(p.t)))));
+        };
+        if(dollarRows.length&&!containsNumeric(dollarStored,dollarRows))return false;
+        if(coinRows.length&&!containsNumeric(coinStored,coinRows))return false;
+        const expected=new Map(),actual=new Map();
+        const collect=(rows,target)=>{
+            for(const row of rows||[]){
+                if(!row||typeof row!=='object')continue;
+                const key=String(row.key||row.id||'');if(!key)continue;
+                if(!target.has(key))target.set(key,new Set());
+                const times=target.get(key);
+                if(Array.isArray(row.history))for(const pair of row.history){if(Array.isArray(pair)&&pair.length>=2){const t=Number(pair[0]);if(Number.isFinite(t)&&t>0)times.add(String(Math.floor(t/60000)));}}
+                else{const t=Number(row.t??row.timestamp??row.time);if(Number.isFinite(t)&&t>0)times.add(String(Math.floor(t/60000)));}
+            }
+        };
+        collect(symbolRows,expected);collect(symbolStored,actual);
+        for(const [key,times] of expected){const have=actual.get(key);if(!have)return false;for(const time of times)if(!have.has(time))return false;}
+        return true;
+    }catch(error){console.warn('FinancialRecord cache completeness check failed; rebuilding chart stores',error);return false;}
+}
 async function globalPulseSyncFinancialRecordHistories(raw,revision='') {
     const markerKey='financialRecordHistoryCacheSyncV1',marker=String(revision||('bytes:'+String(raw||'').length));
-    try{if(localStorage.getItem(markerKey)===marker)return {skipped:true,dollar:0,coin:0,symbols:0};}catch(e){}
+    // Reuse the revision marker only after verifying the actual IndexedDB contents.
+    // Android can retain localStorage while an individual chart DB has been cleared.
     const rows=globalPulseParseFinancialRecordRows(raw),historyRows=rows.filter(row=>row&&row.type==='history'&&Array.isArray(row.history));
     if(!historyRows.length)return {dollar:0,coin:0,symbols:0};
     const dollarRows=historyRows.filter(row=>String(row.group||'').toUpperCase()==='USD'||String(row.key||'')==='dollar');
     const coinRows=historyRows.filter(row=>String(row.group||'').toUpperCase()==='COIN'||String(row.key||'')==='coin');
     const symbolRows=historyRows.filter(row=>!dollarRows.includes(row)&&!coinRows.includes(row));
+    try{if(localStorage.getItem(markerKey)===marker&&await globalPulseFinancialRecordCacheReady(dollarRows,coinRows,symbolRows))return {skipped:true,dollar:0,coin:0,symbols:0};}catch(e){}
     let dollar=0,coin=0,symbols=0;
     const dollarConfig=GLOBAL_PULSE_CACHE_HISTORY_DATABASES.find(x=>x.key==='dollar'),coinConfig=GLOBAL_PULSE_CACHE_HISTORY_DATABASES.find(x=>x.key==='coin');
     if(dollarConfig&&dollarRows.length)dollar=await globalPulseMergeNumericHistory(dollarConfig,dollarRows);
@@ -13095,7 +13148,7 @@ async function globalPulseImportCacheBackup(file){
     let payload;
     try{payload=JSON.parse(String(text||'').replace(/^\uFEFF/,''));}
     catch(parseError){payload=globalPulseParseLineBackup(text);}
-    if(payload?.format==='financial-dashboard-cache-lines'&&payload.type==='meta')payload=globalPulseParseLineBackup(text);
+    if(payload?.format==='financial-dashboard-cache-lines'&&(payload.type==='meta'||payload.type==='appearance'))payload=globalPulseParseLineBackup(text);
     if(!payload||typeof payload!=='object')throw new Error('Invalid backup file');
     let local=payload.localStorage,session=payload.sessionStorage,histories=payload.histories||{},tradeRecords=Array.isArray(payload.tradeRecords)?payload.tradeRecords:[],appearance=payload.appearance;
     if(payload.format==='financial-dashboard-cache-backup'&&payload.storage){
@@ -13122,25 +13175,137 @@ async function globalPulseImportCacheBackup(file){
     if(typeof compactAllSymbolChartCaches==='function')await compactAllSymbolChartCaches();
     return {keys,sessionKeys,records,trades:Array.isArray(tradeRecords)?tradeRecords.length:0};
 }
+/* Refresh every authoritative chart-history source before the manual cache download.
+   This is deliberately additive: each history source is merged into its existing
+   IndexedDB store, never used to replace another source's records. */
+const GLOBAL_PULSE_HISTORY_WORKERS={
+    dollar:"https://financial-chart-history.rahdatair.workers.dev/history",
+    coin:"https://coin-chart-history.info-intoken.workers.dev/history",
+    crypto:"https://crypto-chart-history.ftara1398.workers.dev/history"
+};
+function globalPulseParseHistorySourceRows(text){
+    const source=String(text||"").replace(/^\uFEFF/,"").trim();
+    if(!source)throw new Error("History source returned an empty response");
+    try{
+        const parsed=JSON.parse(source);
+        if(Array.isArray(parsed))return parsed;
+        if(parsed&&parsed.type==="history")return [parsed];
+        if(parsed&&Array.isArray(parsed.records))return parsed.records;
+        if(parsed&&Array.isArray(parsed.data))return parsed.data;
+        if(parsed&&parsed.data&&Array.isArray(parsed.data.records))return parsed.data.records;
+        if(parsed&&parsed.data&&Array.isArray(parsed.data.history))return [{...parsed.data,group:parsed.group||parsed.data.group,key:parsed.key||parsed.data.key,symbol:parsed.symbol||parsed.data.symbol}];
+        if(parsed&&parsed.result&&Array.isArray(parsed.result.history))return [{...parsed.result,group:parsed.group||parsed.result.group,key:parsed.key||parsed.result.key,symbol:parsed.symbol||parsed.result.symbol}];
+        if(parsed&&parsed.histories&&typeof parsed.histories==="object")return Object.values(parsed.histories).flat(Infinity).filter(Boolean);
+        if(parsed&&Array.isArray(parsed.history))return [parsed];
+    }catch(parseError){}
+    const rows=source.split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>JSON.parse(line));
+    if(!rows.length)throw new Error("History source contains no records");
+    return rows;
+}
+function globalPulseHistoryRecordFromWorker(text,group,key,symbol){
+    const rows=globalPulseParseHistorySourceRows(text);
+    const wantedGroup=String(group||"").toUpperCase(),wantedKey=String(key||"");
+    let record=rows.find(row=>row&&row.type==="history"&&Array.isArray(row.history)&&(
+        String(row.key||"")===wantedKey||String(row.group||"").toUpperCase()===wantedGroup
+    ));
+    if(!record&&rows.length===1&&Array.isArray(rows[0]?.history)&&!rows[0]?.type){record=rows[0];}
+    // Some history Workers expose the points directly as `data`/`records` arrays.
+    // Accept those shapes for USD/COIN while still wrapping them with an explicit chart key.
+    if(!record&&rows.length&&rows.every(row=>Array.isArray(row)&&row.length>=2||row&&typeof row==="object"&&(row.t!==undefined||row.timestamp!==undefined||row.time!==undefined))){record={history:rows};}
+    if(!record||!Array.isArray(record.history)||!record.history.length)throw new Error("No valid "+group+" history record in Worker response");
+    return {...record,type:"history",group,key:wantedKey,symbol:String(record.symbol||symbol),count:Number(record.count)||record.history.length,precision:Math.max(0,Math.min(12,Number(record.precision)||0))};
+}
+async function globalPulseFetchHistoryWorker(url,label){
+    const target=url+(url.includes("?")?"&":"?")+"_manualCacheSync="+Date.now()+"_"+Math.random().toString(36).slice(2);
+    const response=await fetchWithTimeout(target,{method:"GET",headers:{Accept:"application/json, application/x-ndjson"},cache:"no-store"},25000);
+    if(!response.ok)throw new Error(label+" Worker HTTP "+response.status);
+    return await response.text();
+}
+async function globalPulseRefreshAllHistorySources(){
+    const progress=(value,state="auto")=>{if(typeof window.__setFinancialRecordProgress==="function")window.__setFinancialRecordProgress(value,state)};
+    const result={financialRecord:0,dollar:0,coin:0,crypto:0,failures:[]};
+    progress(2,"auto");
+    try{
+        const snapshot=typeof window.__financialRecordRefresh==="function"
+            ?await window.__financialRecordRefresh()
+            :await window.__financialRecordBootstrap;
+        if(!snapshot||!snapshot.raw)throw new Error("FinancialRecord.json is not available");
+        if(snapshot.cacheWriteOk===false)result.failures.push("FinancialRecord.json cache: IndexedDB write failed");
+        let synced=null;
+        if(snapshot.historySyncOk!==true){
+            synced=await globalPulseSyncFinancialRecordHistories(snapshot.raw,snapshot.etag||snapshot.lastModified||("bytes:"+snapshot.raw.length));
+        }
+        if(synced)result.financialRecord=Number(synced.dollar||0)+Number(synced.coin||0)+Number(synced.symbols||0);
+        else result.financialRecord=globalPulseParseFinancialRecordRows(snapshot.raw).filter(row=>row&&row.type==="history"&&Array.isArray(row.history)).reduce((sum,row)=>sum+row.history.length,0);
+    }catch(error){result.failures.push("FinancialRecord.json: "+String(error?.message||error));console.warn("Manual FinancialRecord refresh failed",error)}
+    progress(25,"auto");
+    let completed=0;
+    const advance=()=>{completed++;progress(25+completed*23,"auto")};
+    const jobs=[
+        (async()=>{try{
+            const text=await globalPulseFetchHistoryWorker(GLOBAL_PULSE_HISTORY_WORKERS.dollar,"USD");
+            const record=globalPulseHistoryRecordFromWorker(text,"USD","dollar","USD");
+            const config=GLOBAL_PULSE_CACHE_HISTORY_DATABASES.find(x=>x.key==="dollar");
+            result.dollar=config?await globalPulseMergeNumericHistory(config,[record]):0;
+        }catch(error){result.failures.push("USD Worker: "+String(error?.message||error));console.warn("USD history Worker sync failed",error)}finally{advance()}})(),
+        (async()=>{try{
+            const text=await globalPulseFetchHistoryWorker(GLOBAL_PULSE_HISTORY_WORKERS.coin,"COIN");
+            const record=globalPulseHistoryRecordFromWorker(text,"COIN","coin","COIN");
+            const config=GLOBAL_PULSE_CACHE_HISTORY_DATABASES.find(x=>x.key==="coin");
+            result.coin=config?await globalPulseMergeNumericHistory(config,[record]):0;
+        }catch(error){result.failures.push("COIN Worker: "+String(error?.message||error));console.warn("COIN history Worker sync failed",error)}finally{advance()}})(),
+        (async()=>{try{
+            const text=await globalPulseFetchHistoryWorker(GLOBAL_PULSE_HISTORY_WORKERS.crypto,"CRYPTO");
+            const rows=globalPulseParseHistorySourceRows(text).filter(row=>row&&row.type==="history"&&Array.isArray(row.history)&&(
+                String(row.group||"").toUpperCase()==="CRYPTO"||String(row.key||"").startsWith("crypto:")
+            ));
+            if(!rows.length)throw new Error("No CRYPTO history records found in Worker response");
+            result.crypto=await globalPulseMergeSymbolHistory(rows);
+        }catch(error){result.failures.push("CRYPTO Worker: "+String(error?.message||error));console.warn("CRYPTO history Worker sync failed",error)}finally{advance()}})()
+    ];
+    await Promise.all(jobs);
+    try{if(typeof compactAllSymbolChartCaches==="function")await compactAllSymbolChartCaches()}catch(error){result.failures.push("CRYPTO cache compaction: "+String(error?.message||error))}
+    progress(result.failures.length?100:100,result.failures.length?"error":"complete");
+    result.ok=result.failures.length===0;
+    return result;
+}
+
 function initGlobalPulseCacheBackupControls(){
     const exportBtn=$("globalPulseCacheExport"),importBtn=$("globalPulseCacheImport"),fileInput=$("globalPulseCacheFile");
-    exportBtn?.addEventListener("click",async()=>{
-        const old=exportBtn.textContent;exportBtn.disabled=true;exportBtn.textContent="…";
+    if(!exportBtn||!importBtn||!fileInput)return;
+    const originalIcons=new Map([[exportBtn,exportBtn.innerHTML],[importBtn,importBtn.innerHTML]]);
+    const showCompleted=button=>{
+        button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.4 4.4L19.5 6.8"/></svg>';
+        button.classList.add('is-complete');
+        button.setAttribute('aria-label','Operation completed');
+        button.title='Completed successfully';
+    };
+    const restoreIcon=button=>{
+        button.innerHTML=originalIcons.get(button)||'';
+        button.classList.remove('is-complete');
+        button.setAttribute('aria-label',button===exportBtn?'Export all cached data':'Import cache backup');
+        button.title=button===exportBtn?'Download complete cache backup':'Restore backup into this browser cache';
+    };
+    exportBtn.addEventListener("click",async()=>{
+        exportBtn.disabled=true;
         try{
-            const result=await globalPulseExportCacheBackup();
-            exportBtn.title=`Backup saved · ${result.keys} values · ${result.records} chart records · ${result.trades||0} trades · ${result.lines||'multi'} lines`;
-            exportBtn.textContent="✓";
-        }catch(error){console.error(error);alert(`Cache backup failed: ${error.message||error}`);exportBtn.textContent=old;}
-        finally{setTimeout(()=>{exportBtn.textContent=old;exportBtn.disabled=false;},1400);}
+            const sync=await globalPulseRefreshAllHistorySources();
+            await globalPulseExportCacheBackup();
+            showCompleted(exportBtn);
+            if(sync.failures.length){alert(`Backup saved, but some history sources could not be refreshed:\n\n${sync.failures.join("\n")}`);}
+        }catch(error){console.error(error);restoreIcon(exportBtn);alert(`Cache download failed: ${error.message||error}`);}
+        finally{exportBtn.disabled=false;}
     });
-    importBtn?.addEventListener("click",()=>fileInput?.click());
-    fileInput?.addEventListener("change",async()=>{
+    importBtn.addEventListener("click",()=>fileInput.click());
+    fileInput.addEventListener("change",async()=>{
         const file=fileInput.files?.[0];if(!file)return;
+        importBtn.disabled=true;
         try{
             const result=await globalPulseImportCacheBackup(file);
+            showCompleted(importBtn);
             alert(`Cache restored.\nBrowser values: ${result.keys}\nSession values: ${result.sessionKeys}\nChart history records: ${result.records}\nTrade markers: ${result.trades||0}\n\nRefresh the page to apply the restored data.`);
-        }catch(error){console.error(error);alert(`Cache restore failed: ${error.message||error}`);}
-        finally{fileInput.value="";}
+        }catch(error){console.error(error);restoreIcon(importBtn);alert(`Cache restore failed: ${error.message||error}`);}
+        finally{importBtn.disabled=false;fileInput.value="";}
     });
 }
 
@@ -19473,12 +19638,7 @@ if (
     chartProgressLabel.title=state==='complete'?'Chart data is current':state==='error'?'Chart refresh failed; showing the last saved data':state==='idle'?'Waiting for the next chart update':'Updating chart data: '+Math.round(chartProgress)+'%';
   }
   // Each chart range restores its own saved processing state after range is loaded.
-  // Keep the download control alive when chart redraws replace the plot contents.
-  function setPlotContent(markup){
-    const exportControl=plot.querySelector('.average-chart-export-bottom');
-    plot.innerHTML=markup;
-    if(exportControl)plot.appendChild(exportControl);
-  }
+  function setPlotContent(markup){plot.innerHTML=markup;}
   // Restore the user's last selected chart range before the first render.
   let range='day';
   try{const savedRange=localStorage.getItem(RANGE_KEY);if(VALID_RANGES.includes(savedRange))range=savedRange;}catch(e){}
@@ -19902,7 +20062,6 @@ if (
   const GITHUB_URL='https://raw.githubusercontent.com/test1800/test1800.github.io/main/FinancialRecord.json';
   const HISTORY_URLS=[WORKER_URL,GITHUB_URL];
   const REMOTE_META_KEY='financialDashboardPriceChartRemoteMetaV4';
-  const exportButton=document.getElementById('averageChartExport');
   function normalizeTimestamp(value){
     if(typeof value==='string' && !/^\d+(\.\d+)?$/.test(value.trim())){const parsed=Date.parse(value);return Number.isFinite(parsed)?parsed:NaN;}
     let t=Number(value);if(!Number.isFinite(t)||t<=0)return NaN;if(t<100000000000)t*=1000;return t;
@@ -20064,36 +20223,6 @@ if (
       console.warn('Price Chart automatic history sync failed:',err);
     }finally{autoSyncRunning=false;if(range!==syncRange)restoreRangeProgress();}
   }
-  if(exportButton){
-    const updateExportTooltip=()=>{
-      try{exportButton.title='Export · '+cleanHistory(read()).length+' records';}
-      catch(e){exportButton.title='Export';}
-    };
-    exportButton.addEventListener('mouseenter',updateExportTooltip);
-    exportButton.addEventListener('focus',updateExportTooltip);
-  }
-  if(exportButton)exportButton.addEventListener('click',()=>{
-    try{
-      record();
-      const history=cleanHistory(read());
-      const payload={format:'FinancialChartHistory',version:2,encoding:'pairs',count:history.length,history:history.map(p=>[Number(p.t),Math.round(Number(p.v))])};
-      const json=JSON.stringify(payload);
-      // Android WebView does not reliably honor anchor downloads for blob: URLs.
-      // Use the native bridge to save directly into Android's Downloads folder.
-      if(window.AndroidNotifications && typeof window.AndroidNotifications.saveTextFile==='function'){
-        const result=window.AndroidNotifications.saveTextFile('FinancialChartHistory.json',json);
-        if(typeof result==='string' && result.indexOf('OK:')===0){
-          exportButton.title='Saved to Downloads ('+history.length+' points)';
-          alert('History backup saved to Downloads/FinancialChartHistory.json');
-          return;
-        }
-        throw new Error(typeof result==='string'?result:'Native download failed');
-      }
-      const blob=new Blob([json],{type:'application/json;charset=utf-8'});
-      const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='FinancialChartHistory.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
-      exportButton.title='Exported '+history.length+' numeric points';
-    }catch(err){alert('Export failed. Browser storage may be full. '+(err&&err.message?err.message:''));}
-  });
   // Hydrate the local repository first, then sync sources using the selected range's cadence.
   // A missing local history is an initial sync even if an old saved schedule says the next peak is later.
   // This also repairs empty storage after a long period away from the page.
@@ -20163,12 +20292,7 @@ if (
     chartProgressLabel.title=state==='complete'?'Chart data is current':state==='error'?'Chart refresh failed; showing the last saved data':state==='idle'?'Waiting for the next chart update':'Updating chart data: '+Math.round(chartProgress)+'%';
   }
   // Each chart range restores its own saved processing state after range is loaded.
-  // Keep the download control alive when chart redraws replace the plot contents.
-  function setPlotContent(markup){
-    const exportControl=plot.querySelector('.average-chart-export-bottom');
-    plot.innerHTML=markup;
-    if(exportControl)plot.appendChild(exportControl);
-  }
+  function setPlotContent(markup){plot.innerHTML=markup;}
   // Restore the user's last selected chart range before the first render.
   let range='day';
   try{const savedRange=localStorage.getItem(RANGE_KEY);if(VALID_RANGES.includes(savedRange))range=savedRange;}catch(e){}
@@ -20716,7 +20840,6 @@ if (
   const GITHUB_URL='https://raw.githubusercontent.com/test1800/test1800.github.io/main/FinancialRecord.json';
   const HISTORY_URLS=[WORKER_URL,GITHUB_URL];
   const REMOTE_META_KEY='financialDashboardCoinPriceChartRemoteMetaV1';
-  const exportButton=document.getElementById('coinChartExport');
   function normalizeTimestamp(value){
     if(typeof value==='string' && !/^\d+(\.\d+)?$/.test(value.trim())){const parsed=Date.parse(value);return Number.isFinite(parsed)?parsed:NaN;}
     let t=Number(value);if(!Number.isFinite(t)||t<=0)return NaN;if(t<100000000000)t*=1000;return t;
@@ -20875,35 +20998,6 @@ if (
       console.warn('Price Chart automatic history sync failed:',err);
     }finally{autoSyncRunning=false;if(range!==syncRange)restoreRangeProgress();}
   }
-  if(exportButton){
-    const updateExportTooltip=()=>{
-      try{exportButton.title='Export · '+cleanHistory(read()).length+' records';}
-      catch(e){exportButton.title='Export';}
-    };
-    exportButton.addEventListener('mouseenter',updateExportTooltip);
-    exportButton.addEventListener('focus',updateExportTooltip);
-  }
-  if(exportButton)exportButton.addEventListener('click',()=>{
-    try{
-      const history=cleanHistory(read());
-      const payload={format:'CoinChartHistory',version:2,encoding:'pairs',count:history.length,history:history.map(p=>[Number(p.t),Math.round(Number(p.v))])};
-      const json=JSON.stringify(payload);
-      // Android WebView does not reliably honor anchor downloads for blob: URLs.
-      // Use the native bridge to save directly into Android's Downloads folder.
-      if(window.AndroidNotifications && typeof window.AndroidNotifications.saveTextFile==='function'){
-        const result=window.AndroidNotifications.saveTextFile('CoinChartHistory.json',json);
-        if(typeof result==='string' && result.indexOf('OK:')===0){
-          exportButton.title='Saved to Downloads ('+history.length+' points)';
-          alert('History backup saved to Downloads/CoinChartHistory.json');
-          return;
-        }
-        throw new Error(typeof result==='string'?result:'Native download failed');
-      }
-      const blob=new Blob([json],{type:'application/json;charset=utf-8'});
-      const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='CoinChartHistory.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
-      exportButton.title='Exported '+history.length+' numeric points';
-    }catch(err){alert('Export failed. Browser storage may be full. '+(err&&err.message?err.message:''));}
-  });
   // Hydrate the local repository first, then sync sources using the selected range's cadence.
   // A missing local history is an initial sync even if an old saved schedule says the next peak is later.
   // This also repairs empty storage after a long period away from the page.
@@ -20957,10 +21051,6 @@ if (
 .average-chart-progress-label[data-state="error"]{--chart-progress:0%;}
 @media(prefers-reduced-motion:reduce){.average-chart-progress-label{transition:none;}}
 
-/* Keep the export control at the chart's bottom-left, aligned with the time-axis labels. */
-.average-price-chart-plot .average-chart-export-bottom{position:absolute!important;left:0!important;bottom:1px!important;z-index:8!important;display:inline-flex!important;align-items:center!important;justify-content:flex-start!important;margin:0!important;gap:0!important;}
-.average-price-chart-plot .average-chart-export-bottom .average-chart-tool{width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important;padding:3px!important;border-radius:6px!important;}
-.average-price-chart-plot .average-chart-export-bottom .average-chart-tool svg{width:14px!important;height:14px!important;min-width:14px!important;min-height:14px!important;}
 </style>
 <style id="coin-chart-violet-palette-v3">
 /* v3: complete Coin-only violet palette. The shared Dollar chart keeps its original blue theme. */
@@ -21053,10 +21143,6 @@ if (
 #coinPriceChartCard .average-chart-navigator-ticks * {
   accent-color: #a855f7 !important;
 }
-#coinPriceChartCard .average-chart-export-bottom .average-chart-tool {
-  color: #c084fc !important;
-}
-
 </style>
 
 <style>
@@ -21900,6 +21986,22 @@ function createMain(){rahDisplayReset();`)
   background: rgba(148,163,184,.20) !important;
   transform: scale(.97) !important;
 }
+
+/* Successful state: a white check, matching the original icon dimensions
+   and keeping the original button color, border, and background. */
+.signal-header-cache-actions .global-pulse-cache-action.is-complete {
+  color: #ffffff !important;
+  background: rgba(100,116,139,.10) !important;
+  border-color: rgba(148,163,184,.16) !important;
+  box-shadow: none !important;
+}
+.signal-header-cache-actions .global-pulse-cache-action.is-complete svg {
+  width: 16px !important;
+  height: 16px !important;
+  stroke: #ffffff !important;
+  animation: cacheCheckPop .20s ease-out both;
+}
+@keyframes cacheCheckPop { from { transform: scale(.82); opacity:.45 } to { transform:scale(1); opacity:1 } }
 </style>
 
 </body>
