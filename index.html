@@ -13413,19 +13413,12 @@ function globalPulseTseExportCandleRows(){
         for(const key of [`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${tf}`,`${code}:tf:${tf}`,rfkjTseSymbolCacheKey(slot,tf)])add(rfkjTseReadCache(key),key,code);
     }}
     const output=[];
-    // Export-only limits for TSETMC intraday candles. These limits are
-    // proportional to bar duration and represent roughly the same trading
-    // history window (about 6,000 one-minute bars). They NEVER trim or mutate
-    // localStorage, IndexedDB, computed chart caches, or imported archive rows.
-    const TSE_RECORD_EXPORT_LIMITS={'1':6000,'3':2000,'5':1200,'15':400};
+    // Preserve the complete TSETMC candle history in Record-TSE exports.
     for(const row of grouped.values()){
         const byTime=new Map();
         for(const c of row.candles)byTime.set(String(Math.round(c[0])),c);
         let candles=Array.from(byTime.values()).sort((a,b)=>a[0]-b[0]);
-        const exportLimit=TSE_RECORD_EXPORT_LIMITS[globalPulseTseNormalizeTimeframe(row.timeframe)];
-        // Keep the newest candles in the backup file; the complete history
-        // remains untouched in all chart caches and in the independent archive.
-        if(exportLimit&&candles.length>exportLimit)candles=candles.slice(-exportLimit);
+        // No timeframe-specific export cap: keep every valid candle.
         if(candles.length)output.push({...row,candles});
     }
     output.sort((a,b)=>String(a.symbol).localeCompare(String(b.symbol))||String(a.timeframe).localeCompare(String(b.timeframe)));
@@ -17265,11 +17258,11 @@ function rfkjCalculateTseSignals(candles){
 function rfkjTseTradeRows(payload){
     if(Array.isArray(payload))return payload;
     if(!payload||typeof payload!=="object")return [];
-    for(const key of ["tradeHistory","trade","data","result"]){
+    for(const key of ["tradeHistory","trade","tradeIntraDay","data","result"]){
         const value=payload[key];
         if(Array.isArray(value))return value;
         if(value&&typeof value==="object"){
-            for(const nested of ["tradeHistory","trade","data","result"]){
+            for(const nested of ["tradeHistory","trade","tradeIntraDay","data","result"]){
                 if(Array.isArray(value[nested]))return value[nested];
             }
         }
@@ -17285,6 +17278,15 @@ function rfkjTseLocalTimestamp(date,clock="090000"){
     const d=String(date||"").replace(/\D/g,"").slice(0,8),t=String(clock||"090000").replace(/\D/g,"").padStart(6,"0").slice(-6);
     if(!/^\d{8}$/.test(d))return "";
     return d+"T"+t.slice(0,2)+":"+t.slice(2,4)+":"+t.slice(4,6);
+}
+async function rfkjTseGetDailyChartCandles(code){
+    const payload=await globalPulseTsetmcFetchJson(
+        `ClosingPrice/GetChartData/${encodeURIComponent(code)}/D`,
+        p=>rfkjTseChartRows(p).length>0
+    );
+    const candles=rfkjNormalizeTseCandles(rfkjTseChartRows(payload));
+    if(!candles.length)throw new Error('TSETMC ChartData/D returned no valid daily OHLC rows');
+    return candles;
 }
 function rfkjTseDailyRowsToCandles(rows){
     const byDate=new Map();
@@ -17302,8 +17304,16 @@ function rfkjTseDailyRowsToCandles(rows){
     return Array.from(byDate.entries()).sort((a,b)=>a[0].localeCompare(b[0])).map(x=>x[1]);
 }
 async function rfkjTseGetDailyCandles(code){
-    const rows=await rfkjTseGetDailyRows(code,500);
+    let rows=[],listError=null;
+    try{rows=await rfkjTseGetDailyRows(code,500);}catch(error){listError=error;}
+    if(!Array.isArray(rows)||!rows.length){
+        try{rows=await rfkjTseGetDailyRows(code,0);}catch(error){listError=listError||error;}
+    }
     const byDate=new Map(rfkjTseDailyRowsToCandles(rows).map(c=>[String(c.timestamp).slice(0,8),c]));
+    if(!byDate.size){
+        try{for(const c of await rfkjTseGetDailyChartCandles(code))byDate.set(String(c.timestamp).replace(/\D/g,'').slice(0,8),c);}
+        catch(error){listError=listError||error;}
+    }
     const today=rfkjTseTodayDate();
     try{
         const payload=await globalPulseTsetmcFetchJson(`ClosingPrice/GetClosingPriceInfo/${encodeURIComponent(code)}`,p=>!!(p?.closingPriceInfo||p?.data?.closingPriceInfo||p?.result?.closingPriceInfo));
@@ -17316,7 +17326,7 @@ async function rfkjTseGetDailyCandles(code){
         }
     }catch(error){console.warn("TSETMC current daily OHLC refresh unavailable; retaining daily history",error);}
     const candles=Array.from(byDate.entries()).sort((a,b)=>a[0].localeCompare(b[0])).map(x=>x[1]);
-    if(!candles.length)throw new Error("TSETMC daily history contains no complete OHLC rows");
+    if(!candles.length)throw new Error(`TSETMC daily history contains no complete OHLC rows${listError?`: ${listError.message}`:''}`);
     return candles;
 }
 function rfkjTseTradeRowsToOneMinute(rows,date){
@@ -17359,7 +17369,13 @@ async function rfkjTseGetTradeSessionCandles(code,date){
                 try{
                     const live=await globalPulseTsetmcFetchJson(`Trade/GetTrade/${encodeURIComponent(code)}`,p=>Array.isArray(p?.trade)||Array.isArray(p?.data?.trade)||Array.isArray(p?.result?.trade));
                     rows=rfkjTseTradeRows(live);
-                }catch(liveError){console.warn("TSETMC current trade list unavailable; trying dated trade history",liveError);}
+                }catch(liveError){console.warn("TSETMC current trade list unavailable; trying intraday aggregate",liveError);}
+                if(!rows.length){
+                    try{
+                        const intraday=await globalPulseTsetmcFetchJson(`Trade/GetTradeIntraDay/${encodeURIComponent(code)}`,p=>Array.isArray(p?.tradeIntraDay)||Array.isArray(p?.data?.tradeIntraDay)||Array.isArray(p?.result?.tradeIntraDay));
+                        rows=rfkjTseTradeRows(intraday);
+                    }catch(intradayError){console.warn("TSETMC aggregated intraday trades unavailable; trying dated trade history",intradayError);}
+                }
             }
             if(!rows.length){
                 try{
@@ -17397,31 +17413,85 @@ function rfkjTseAggregateTradeCandles(oneMinute,minutes){
     }
     return Array.from(groups.values()).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
 }
-async function rfkjTseGetIntradayCandles(code,minutes){
-    const dailyRows=await rfkjTseGetDailyRows(code,500);
-    const today=rfkjTseTodayDate();
-    const dates=Array.from(new Set(dailyRows.map(row=>rfkjTseDateString(row?.dEven??row?.DEven??row?.date)).filter(x=>/^\d{8}$/.test(x))));
-    if(!dates.includes(today)){
-        try{
-            const quote=await globalPulseTsetmcFetchJson(`ClosingPrice/GetClosingPriceInfo/${encodeURIComponent(code)}`,p=>!!(p?.closingPriceInfo||p?.data?.closingPriceInfo||p?.result?.closingPriceInfo));
-            const info=globalPulseTsetmcUnwrapQuoteInfo(quote),quoteDate=rfkjTseDateString(info?.dEven??info?.DEven);
-            if(quoteDate===today)dates.push(today);
-        }catch(error){console.warn("TSETMC current session date lookup failed",error);}
-    }
-    dates.sort((a,b)=>b.localeCompare(a));
-    const selected=dates.slice(0,45),all=[];
-    let cursor=0,firstError=null;
-    const workers=Array.from({length:Math.min(4,selected.length)},async()=>{
-        while(cursor<selected.length){const index=cursor++,date=selected[index];
-            try{const session=await rfkjTseGetTradeSessionCandles(code,date);if(session.length)all.push(...session);}
-            catch(error){firstError=firstError||error;console.warn("TSETMC trade history unavailable",code,date,error);}
+async function rfkjTseGetIntradaySessionCandles(code,date){
+    let snapshotError=null,tradeError=null;
+    // Prefer the official per-minute closing-price snapshots.
+    try{
+        const snapshots=await rfkjTseGetSessionRows(code,date);
+        if(Array.isArray(snapshots)&&snapshots.length)return snapshots;
+    }catch(error){snapshotError=error;}
+    // A separate TSETMC trade-history source is used if snapshots are empty or unavailable.
+    try{
+        const trades=await rfkjTseWithSessionSlot(()=>rfkjTseGetTradeSessionCandles(code,date));
+        if(Array.isArray(trades)&&trades.length)return trades;
+    }catch(error){tradeError=error;}
+    const details=[snapshotError,tradeError].filter(Boolean).map(e=>String(e?.message||e));
+    throw new Error(`No intraday data for ${date}${details.length?`: ${details.join(' | ')}`:''}`);
+}
+function rfkjTseGetImportedDailyCandles(code){
+    const keys=[
+        `${RFKJ_TSE_CACHE_PREFIX}${String(code)}:tf:1D`,
+        `${String(code)}:tf:1D`,
+        `${RFKJ_TSE_CACHE_PREFIX}${String(code)}:tf:D`,
+        `${String(code)}:tf:D`
+    ];
+    for(const key of keys){
+        const cached=rfkjTseReadCache(key);
+        if(cached?.recordFile==='Record-TSE.json'&&Array.isArray(cached.candles)&&cached.candles.length){
+            return cached.candles.filter(c=>c&&c.timestamp&&[c.open,c.high,c.low,c.close].every(v=>Number.isFinite(Number(v))&&Number(v)>0));
         }
-    });
-    await Promise.all(workers);
-    all.sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
-    const result=rfkjTseAggregateTradeCandles(all,minutes);
-    if(!result.length)throw new Error(`TSETMC ${minutes}m actual-trade history is empty${firstError?`: ${firstError.message}`:""}`);
-    return result;
+    }
+    return [];
+}
+function rfkjTseCandleDates(candles){
+    return (Array.isArray(candles)?candles:[]).map(c=>String(c?.timestamp||'').replace(/\D/g,'').slice(0,8)).filter(x=>/^\d{8}$/.test(x));
+}
+async function rfkjTseGetIntradayCandles(code,minutes){
+    let dailyRows=[],dailyError=null;
+    try{dailyRows=await rfkjTseGetDailyRows(code,500);}catch(error){dailyError=error;}
+    // Some instruments return an empty 500-row list even though their imported
+    // Record-TSE daily history is available. Try the all-history form next.
+    if(!Array.isArray(dailyRows)||!dailyRows.length){
+        try{dailyRows=await rfkjTseGetDailyRows(code,0);}catch(error){dailyError=dailyError||error;}
+    }
+    let dates=Array.from(new Set((Array.isArray(dailyRows)?dailyRows:[])
+        .map(row=>rfkjTseDateString(row?.dEven??row?.DEven??row?.date))
+        .filter(x=>/^\d{8}$/.test(x))));
+    // If the network date list is empty/unavailable, derive session dates from
+    // the already imported daily OHLC instead of failing before intraday calls.
+    const importedDaily=rfkjTseGetImportedDailyCandles(code);
+    dates.push(...rfkjTseCandleDates(importedDaily));
+    dates=Array.from(new Set(dates));
+    if(!dates.length){
+        try{dates.push(...rfkjTseCandleDates(await rfkjTseGetDailyChartCandles(code)));}
+        catch(error){dailyError=dailyError||error;}
+        dates=Array.from(new Set(dates));
+    }
+    // Include the active session date when the quote endpoint confirms it.
+    try{
+        const quote=await globalPulseTsetmcFetchJson(`ClosingPrice/GetClosingPriceInfo/${encodeURIComponent(code)}`,p=>!!(p?.closingPriceInfo||p?.data?.closingPriceInfo||p?.result?.closingPriceInfo));
+        const info=globalPulseTsetmcUnwrapQuoteInfo(quote),quoteDate=rfkjTseDateString(info?.dEven??info?.DEven);
+        if(/^\d{8}$/.test(quoteDate))dates.push(quoteDate);
+    }catch(error){console.warn('TSETMC current session date lookup failed',error);}
+    dates=Array.from(new Set(dates)).sort((a,b)=>b.localeCompare(a));
+    if(!dates.length)throw new Error(`No TSETMC trading dates for ${code}${dailyError?`: ${dailyError.message}`:''}`);
+    // Each trading session requires at least one remote request. Keep this
+    // bounded: recent sessions already contain enough bars for these chart
+    // intervals, while 30-45 serially throttled requests left the chart blank
+    // for too long on slow TSETMC connections.
+    const sessionsNeeded=minutes<=1?3:minutes<=3?5:minutes<=5?7:minutes<=15?10:15;
+    const selected=dates.slice(0,sessionsNeeded);
+    const results=await Promise.allSettled(selected.map(date=>rfkjTseGetIntradaySessionCandles(code,date)));
+    const all=[];let firstError=null,successfulSessions=0;
+    for(const result of results){
+        if(result.status==='fulfilled'&&Array.isArray(result.value)&&result.value.length){all.push(...result.value);successfulSessions++;}
+        else if(result.status==='rejected')firstError=firstError||result.reason;
+    }
+    const candles=rfkjTseAggregateIntraday(all.sort((a,b)=>a.timestamp.localeCompare(b.timestamp)),minutes);
+    if(candles.length)return candles;
+    const cacheKeys=[`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${minutes}m`,`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${minutes}`];
+    for(const key of cacheKeys){const cached=rfkjTseReadCache(key);if(cached?.candles?.length)return cached.candles;}
+    throw new Error(`TSETMC ${minutes}m history returned zero bars (${successfulSessions}/${selected.length} sessions succeeded)${firstError?`: ${firstError.message}`:''}${dailyError?` · daily list: ${dailyError.message}`:''}`);
 }
 async function rfkjBuildTseCandles(code,timeframe,options={}){
     const tf=String(timeframe||"1D");
@@ -17432,9 +17502,11 @@ async function rfkjBuildTseCandles(code,timeframe,options={}){
     if(["1","3","5","15","30","60"].includes(tf))return rfkjTseGetIntradayCandles(code,Number(tf));
     if(tf==="4h"||tf==="240"||tf==="1D")return rfkjTseGetDailyCandles(code);
     if(tf==="1W"){
-        const daily=await rfkjTseGetDailyCandles(code);
+        let daily=[],dailyError=null;
+        try{daily=await rfkjTseGetDailyCandles(code);}catch(error){dailyError=error;}
+        if(!daily.length)daily=rfkjTseGetImportedDailyCandles(code);
         const weekly=rfkjTseAggregateDaily(daily,"1W");
-        if(!weekly.length)throw new Error("TSETMC weekly history is empty");
+        if(!weekly.length)throw new Error(`TSETMC weekly history is empty${dailyError?`: ${dailyError.message}`:''}`);
         return weekly;
     }
     throw new Error(`Unsupported TSETMC timeframe: ${tf}`);
@@ -21764,13 +21836,21 @@ const coinDoc="<!DOCTYPE html>\n<html lang=\"fa\">\n<head>\n<meta charset=\"UTF-
   .replace("currentTF='1'","currentTF='1'")
   .replace("#status{display:none!important;font-size:11px;color:var(--muted)}","#status{display:block!important;position:absolute;left:10px;bottom:36px;z-index:12;font-size:11px;line-height:14px;color:#93c5fd;white-space:nowrap;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis;pointer-events:none;text-shadow:0 1px 3px #000}")
   .replace("async function load(){\n $('status').textContent='Reading dashboard cache…';", "async function load(){ $('status').textContent='Waiting for symbol data…'; parent.postMessage({type:'rahdata-symbol-request',timeframe:currentTF},'*'); return; }\nasync function load_UNUSED(){\n $('status').textContent='Reading dashboard cache…';")
-  .replace("$('negativeCandleColor').value=candleColors.down;load();loadTradeMarkers();\n})();", "$('negativeCandleColor').value=candleColors.down;document.querySelectorAll('[data-tf]').forEach(b=>b.classList.toggle('active',b.dataset.tf===currentTF));\nwindow.addEventListener('message',ev=>{const d=ev.data||{};if(d.type!=='rahdata-frame-activate')return;requestAnimationFrame(()=>requestAnimationFrame(()=>{try{const w=chartEl.clientWidth||document.getElementById('chart')?.clientWidth||0,h=chartEl.clientHeight||document.getElementById('chart')?.clientHeight||0;if(chart&&w>0&&h>0)chart.resize(w,h,true);if(typeof rahDisplayEnsureTarget==='function')rahDisplayEnsureTarget();if(typeof restoreChartView==='function')restoreChartView()}catch(error){console.warn('RAHDATA frame activation resize failed',error)}}))});window.addEventListener('message',async ev=>{const d=ev.data||{};if(d.type==='rahdata-main-live'){const v=Number(d.v),t=Math.floor(Number(d.t)/1000);if(!Number.isFinite(v)||v<=0||!Number.isFinite(t)||t<=0)return;const last=raw.length?raw[raw.length-1]:null;if(!last||last.time!==t||last.value!==v){raw.push({time:t,value:v,src:'Live '+String(d.mode||'market')});saveLiveCandlePoint('SYMBOL:'+String(RAHDATA_SYMBOL_KEY||''),{time:t,value:v,src:'Live '+String(d.mode||'market')}).catch(()=>{});}const interval=currentTF==='D'?86400:Math.max(60,Number(currentTF)*60),bucket=Math.floor(t/interval)*interval;let index=candles.findIndex(c=>c.time===bucket),candle;if(index<0){candle={time:bucket,open:v,high:v,low:v,close:v};candles.push(candle);candles.sort((a,b)=>a.time-b.time);index=candles.findIndex(c=>c.time===bucket)}else{candle=candles[index];candle.high=Math.max(candle.high,v);candle.low=Math.min(candle.low,v);candle.close=v}const type=$('charttype').value,seriesPoint=type==='line'||type==='area'?{time:bucket,value:v}:candle;let rahLiveSeriesUpdated=false;try{rahLiveSeriesUpdated=rahChartApplyLiveSeries(seriesPoint,index)}catch{if(!rahChartPointerActive)buildCandles();else rahPendingLiveSeriesSync=true}if(rahChartPointerActive)rahChartUpdateLiveUi();else if(rahLiveSeriesUpdated)update();if(index===candles.length-1&&(!last||last.time!==t)){if(rahChartPointerActive)rahPendingIndicatorSync=true;else requestAnimationFrame(()=>{applyIndicators();updateCandleTimer()})};$('status').textContent='LIVE · '+String(d.mode||'market')+' · '+new Date(t*1000).toLocaleTimeString()}else if(d.type==='rahdata-symbol-bars'){if(String(d.key||'')!==String(RAHDATA_SYMBOL_KEY))return;const interval=currentTF==='D'?86400:Math.max(60,Number(currentTF)*60),grouped=new Map();for(const b of (Array.isArray(d.bars)?d.bars:[])){const t=Math.floor(Number(b.time)/interval)*interval,o=Number(b.open),h=Number(b.high),l=Number(b.low),c=Number(b.close);if(!Number.isFinite(t)||t<=0||![o,h,l,c].every(v=>Number.isFinite(v)&&v>0))continue;let x=grouped.get(t);if(!x){x={time:t,open:o,high:h,low:l,close:c};grouped.set(t,x)}else{x.high=Math.max(x.high,h);x.low=Math.min(x.low,l);x.close=c}}const incoming=[...grouped.values()].sort((a,b)=>a.time-b.time);if(incoming.length){const live= candles.filter(c=>c.time>incoming.at(-1).time);candles=incoming.concat(live);const type=$('charttype').value;try{mainSeries.setData(type==='line'||type==='area'?candles.map(c=>({time:c.time,value:c.close})):candles)}catch{buildCandles()}update();requestAnimationFrame(()=>{applyIndicators();updateCandleTimer()});$('status').textContent='HISTORY · '+String(d.source||'OHLC feed')+' · '+incoming.length+' bars'}}else if(d.type==='rahdata-symbol-live'){if(String(d.key||'')!==String(RAHDATA_SYMBOL_KEY))return;const incoming=Number(d.t),t=Math.floor(incoming>1e12?incoming/1000:incoming),v=Number(d.v);if(!Number.isFinite(t)||t<=0||!Number.isFinite(v)||v<=0)return;const last=raw.length?raw[raw.length-1]:null;if(!last||last.time!==t||last.value!==v){raw.push({time:t,value:v,src:String(d.source||'Live')});saveLiveCandlePoint('SYMBOL:'+String(RAHDATA_SYMBOL_KEY||''),{time:t,value:v,src:String(d.source||'Live')}).catch(()=>{});}const interval=currentTF==='D'?86400:Math.max(60,Number(currentTF)*60),bucket=Math.floor(t/interval)*interval;let index=candles.findIndex(c=>c.time===bucket),candle;if(index<0){candle={time:bucket,open:v,high:v,low:v,close:v};candles.push(candle);candles.sort((a,b)=>a.time-b.time);index=candles.findIndex(c=>c.time===bucket)}else{candle=candles[index];candle.high=Math.max(candle.high,v);candle.low=Math.min(candle.low,v);candle.close=v}const type=$('charttype').value,seriesPoint=type==='line'||type==='area'?{time:bucket,value:v}:candle;let rahLiveSeriesUpdated=false;try{rahLiveSeriesUpdated=rahChartApplyLiveSeries(seriesPoint,index)}catch{if(!rahChartPointerActive)buildCandles();else rahPendingLiveSeriesSync=true}if(rahChartPointerActive)rahChartUpdateLiveUi();else if(rahLiveSeriesUpdated)update();if(index===candles.length-1&&(!last||last.time!==t)){if(rahChartPointerActive)rahPendingIndicatorSync=true;else requestAnimationFrame(()=>{applyIndicators();updateCandleTimer()})};$('status').textContent='LIVE · '+String(d.source||'Market feed')+' · '+new Date(t*1000).toLocaleTimeString()}else if(d.type==='rahdata-symbol-ohlc'){if(String(d.key||'')!==String(RAHDATA_SYMBOL_KEY))return;const startMs=Number(d.t),o=Number(d.o),h=Number(d.h),l=Number(d.l),c=Number(d.c);if(!Number.isFinite(startMs)||startMs<=0||![o,h,l,c].every(x=>Number.isFinite(x)&&x>0))return;const t=Math.floor((startMs>1e12?startMs/1000:startMs)/60)*60,interval=currentTF==='D'?86400:Math.max(60,Number(currentTF)*60),bucket=Math.floor(t/interval)*interval;if(currentTF==='1'){const candle={time:bucket,open:o,high:h,low:l,close:c};const idx=candles.findIndex(x=>x.time===bucket);if(idx>=0)candles[idx]=candle;else{candles.push(candle);candles.sort((a,b)=>a.time-b.time)}const type=$('charttype').value;let rahOhlcUpdated=false;try{rahOhlcUpdated=rahChartApplyLiveSeries(type==='line'||type==='area'?{time:bucket,value:c}:candle,candles.findIndex(x=>x.time===bucket))}catch{if(!rahChartPointerActive)buildCandles();else rahPendingLiveSeriesSync=true}if(rahChartPointerActive)rahChartUpdateLiveUi();else if(rahOhlcUpdated)update();$('status').textContent='LIVE · Market 1m candle · '+new Date(t*1000).toLocaleTimeString()}}else if(d.type==='rahdata-symbol-data'){if(String(d.key||'')!==String(RAHDATA_SYMBOL_KEY))return;const title=$('symbolTitle');if(title)title.textContent=d.name||'Symbol';const selectedGroup=String(d.key||'').startsWith('global:')?'global':'crypto';const globalTab=$('rahdataGlobalTab'),cryptoTab=$('rahdataCryptoTab'),usdTab=$('rahdataUsdTab'),coinTab=$('rahdataCoinTab');if(globalTab)globalTab.classList.toggle('active',selectedGroup==='global');if(cryptoTab)cryptoTab.classList.toggle('active',selectedGroup==='crypto');if(usdTab)usdTab.classList.remove('active');if(coinTab)coinTab.classList.remove('active');const rows=Array.isArray(d.records)?d.records:[];const persisted=await readLiveCandlePoints('SYMBOL:'+String(RAHDATA_SYMBOL_KEY||''));persisted.forEach(p=>rows.push({t:p.time*1000,v:p.value,src:p.src}));const liveRows=raw.filter(r=>r&&r.src&&r.src!=='Symbol history'),merged=new Map();rows.forEach(r=>{const point={time:Math.floor(Number(r.t)/1000),value:Number(r.v),src:'Symbol history'};if(Number.isFinite(point.time)&&point.time>0&&Number.isFinite(point.value)&&point.value>0)merged.set(point.time,point)});liveRows.forEach(point=>{if(Number.isFinite(Number(point.time))&&Number(point.time)>0&&Number.isFinite(Number(point.value))&&Number(point.value)>0){const old=merged.get(Number(point.time));if(!old||String(point.src||'').includes('Live')||String(point.src||'').includes('MEXC'))merged.set(Number(point.time),point)}});raw=Array.from(merged.values()).sort((a,b)=>a.time-b.time);if(raw.length){$('charttype').value='candles';buildCandles();update();requestAnimationFrame(()=>requestAnimationFrame(restoreChartView));$('status').textContent=raw.length.toLocaleString()+' cached records · '+new Date().toLocaleTimeString()}else{$('status').textContent='No history yet · collecting live prices';candles=[];try{mainSeries.setData([])}catch{};}}});\nload();\n})();")
+  .replace("$('negativeCandleColor').value=candleColors.down;load();loadTradeMarkers();\n})();", "$('negativeCandleColor').value=candleColors.down;document.querySelectorAll('[data-tf]').forEach(b=>b.classList.toggle('active',b.dataset.tf===currentTF));\nwindow.addEventListener('message',ev=>{const d=ev.data||{};if(d.type!=='rahdata-frame-activate')return;requestAnimationFrame(()=>requestAnimationFrame(()=>{try{const w=chartEl.clientWidth||document.getElementById('chart')?.clientWidth||0,h=chartEl.clientHeight||document.getElementById('chart')?.clientHeight||0;if(chart&&w>0&&h>0)chart.resize(w,h,true);if(typeof rahDisplayEnsureTarget==='function')rahDisplayEnsureTarget();if(typeof restoreChartView==='function')restoreChartView()}catch(error){console.warn('RAHDATA frame activation resize failed',error)}}))});window.addEventListener('message',async ev=>{const d=ev.data||{};if(d.type==='rahdata-main-live'){await rahOhlcHydrationPromise;const v=Number(d.v),t=Math.floor(Number(d.t)/1000);if(!Number.isFinite(v)||v<=0||!Number.isFinite(t)||t<=0)return;const last=raw.length?raw[raw.length-1]:null;if(!last||last.time!==t||last.value!==v){raw.push({time:t,value:v,src:'Live '+String(d.mode||'market')});saveLiveCandlePoint('SYMBOL:'+String(RAHDATA_SYMBOL_KEY||''),{time:t,value:v,src:'Live '+String(d.mode||'market')}).catch(()=>{});}const interval=currentTF==='D'?86400:Math.max(60,Number(currentTF)*60),bucket=Math.floor(t/interval)*interval;let index=candles.findIndex(c=>c.time===bucket),candle;if(index<0){candle={time:bucket,open:v,high:v,low:v,close:v};candles.push(candle);candles.sort((a,b)=>a.time-b.time);index=candles.findIndex(c=>c.time===bucket)}else{candle=candles[index];candle.high=Math.max(candle.high,v);candle.low=Math.min(candle.low,v);candle.close=v}const type=$('charttype').value,seriesPoint=type==='line'||type==='area'?{time:bucket,value:v}:candle;let rahLiveSeriesUpdated=false;try{rahLiveSeriesUpdated=rahChartApplyLiveSeries(seriesPoint,index)}catch{if(!rahChartPointerActive)buildCandles();else rahPendingLiveSeriesSync=true}if(rahChartPointerActive)rahChartUpdateLiveUi();else if(rahLiveSeriesUpdated)update();if(index===candles.length-1&&(!last||last.time!==t)){if(rahChartPointerActive)rahPendingIndicatorSync=true;else requestAnimationFrame(()=>{applyIndicators();updateCandleTimer()})};$('status').textContent='LIVE · '+String(d.mode||'market')+' · '+new Date(t*1000).toLocaleTimeString()}else if(d.type==='rahdata-symbol-bars'){\n await rahOhlcHydrationPromise;\n if(String(d.key||'')!==String(RAHDATA_SYMBOL_KEY))return;\n const responseTf=String(d.timeframe||currentTF);\n const savedBars=rahStoreOhlcBars(d.bars,responseTf);\n // Render incoming TSETMC OHLC directly; chart rendering must not depend on a second localStorage read.\n if(responseTf!==String(currentTF))return;\n const incoming=(Array.isArray(d.bars)?d.bars:[]).map(b=>({time:Math.floor(Number(b.time)),open:Number(b.open),high:Number(b.high),low:Number(b.low),close:Number(b.close),volume:0}))\n  .filter(b=>Number.isFinite(b.time)&&b.time>0&&[b.open,b.high,b.low,b.close].every(v=>Number.isFinite(v)&&v>0)).sort((a,b)=>a.time-b.time);\n if(incoming.length){\n  const merged=new Map();\n  for(const bar of [...incoming,...savedBars.filter(b=>String(b.timeframe||'')===responseTf).map(b=>({time:Number(b.time),open:Number(b.open),high:Number(b.high),low:Number(b.low),close:Number(b.close),volume:0}))]){\n   if(Number.isFinite(bar.time)&&[bar.open,bar.high,bar.low,bar.close].every(v=>Number.isFinite(v)&&v>0))merged.set(bar.time,bar);\n  }\n  candles=[...merged.values()].sort((a,b)=>a.time-b.time);\n  if(mainSeries)rahReplaceMainSeriesData();else createMain();\n  update();\n  requestAnimationFrame(()=>requestAnimationFrame(()=>{goToPresent();applyIndicators();updateCandleTimer()}));\n  $('status').textContent='HISTORY · '+String(d.source||'TSETMC OHLC')+' · '+candles.length+' bars';\n }else $('status').textContent='TSETMC · No valid OHLC bars for '+responseTf;\n}else if(d.type==='rahdata-symbol-live'){await rahOhlcHydrationPromise;if(String(d.key||'')!==String(RAHDATA_SYMBOL_KEY))return;const incoming=Number(d.t),t=Math.floor(incoming>1e12?incoming/1000:incoming),v=Number(d.v);if(!Number.isFinite(t)||t<=0||!Number.isFinite(v)||v<=0)return;const last=raw.length?raw[raw.length-1]:null;if(!last||last.time!==t||last.value!==v){raw.push({time:t,value:v,src:String(d.source||'Live')});saveLiveCandlePoint('SYMBOL:'+String(RAHDATA_SYMBOL_KEY||''),{time:t,value:v,src:String(d.source||'Live')}).catch(()=>{});}const interval=currentTF==='D'?86400:Math.max(60,Number(currentTF)*60),bucket=Math.floor(t/interval)*interval;let index=candles.findIndex(c=>c.time===bucket),candle;if(index<0){candle={time:bucket,open:v,high:v,low:v,close:v};candles.push(candle);candles.sort((a,b)=>a.time-b.time);index=candles.findIndex(c=>c.time===bucket)}else{candle=candles[index];candle.high=Math.max(candle.high,v);candle.low=Math.min(candle.low,v);candle.close=v}const type=$('charttype').value,seriesPoint=type==='line'||type==='area'?{time:bucket,value:v}:candle;let rahLiveSeriesUpdated=false;try{rahLiveSeriesUpdated=rahChartApplyLiveSeries(seriesPoint,index)}catch{if(!rahChartPointerActive)buildCandles();else rahPendingLiveSeriesSync=true}if(rahChartPointerActive)rahChartUpdateLiveUi();else if(rahLiveSeriesUpdated)update();if(index===candles.length-1&&(!last||last.time!==t)){if(rahChartPointerActive)rahPendingIndicatorSync=true;else requestAnimationFrame(()=>{applyIndicators();updateCandleTimer()})};$('status').textContent='LIVE · '+String(d.source||'Market feed')+' · '+new Date(t*1000).toLocaleTimeString()}else if(d.type==='rahdata-symbol-ohlc'){await rahOhlcHydrationPromise;if(String(d.key||'')!==String(RAHDATA_SYMBOL_KEY))return;const startMs=Number(d.t),o=Number(d.o),h=Number(d.h),l=Number(d.l),c=Number(d.c);if(!Number.isFinite(startMs)||startMs<=0||![o,h,l,c].every(x=>Number.isFinite(x)&&x>0))return;const t=Math.floor((startMs>1e12?startMs/1000:startMs)/60)*60,interval=currentTF==='D'?86400:Math.max(60,Number(currentTF)*60),bucket=Math.floor(t/interval)*interval;if(currentTF==='1'){const candle={time:bucket,open:o,high:h,low:l,close:c};const idx=candles.findIndex(x=>x.time===bucket);if(idx>=0)candles[idx]=candle;else{candles.push(candle);candles.sort((a,b)=>a.time-b.time)}const type=$('charttype').value;let rahOhlcUpdated=false;try{rahOhlcUpdated=rahChartApplyLiveSeries(type==='line'||type==='area'?{time:bucket,value:c}:candle,candles.findIndex(x=>x.time===bucket))}catch{if(!rahChartPointerActive)buildCandles();else rahPendingLiveSeriesSync=true}if(rahChartPointerActive)rahChartUpdateLiveUi();else if(rahOhlcUpdated)update();$('status').textContent='LIVE · Market 1m candle · '+new Date(t*1000).toLocaleTimeString()}}else if(d.type==='rahdata-symbol-data'){await rahOhlcHydrationPromise;if(String(d.key||'')!==String(RAHDATA_SYMBOL_KEY))return;const title=$('symbolTitle');if(title)title.textContent=d.name||'Symbol';const selectedGroup=String(d.key||'').startsWith('global:')?'global':'crypto';const globalTab=$('rahdataGlobalTab'),cryptoTab=$('rahdataCryptoTab'),usdTab=$('rahdataUsdTab'),coinTab=$('rahdataCoinTab');if(globalTab)globalTab.classList.toggle('active',selectedGroup==='global');if(cryptoTab)cryptoTab.classList.toggle('active',selectedGroup==='crypto');if(usdTab)usdTab.classList.remove('active');if(coinTab)coinTab.classList.remove('active');const rows=Array.isArray(d.records)?d.records:[];const persisted=await readLiveCandlePoints('SYMBOL:'+String(RAHDATA_SYMBOL_KEY||''));persisted.forEach(p=>rows.push({t:p.time*1000,v:p.value,src:p.src}));const liveRows=raw.filter(r=>r&&r.src&&r.src!=='Symbol history'),merged=new Map();rows.forEach(r=>{const point={time:Math.floor(Number(r.t)/1000),value:Number(r.v),src:'Symbol history'};if(Number.isFinite(point.time)&&point.time>0&&Number.isFinite(point.value)&&point.value>0)merged.set(point.time,point)});liveRows.forEach(point=>{if(Number.isFinite(Number(point.time))&&Number(point.time)>0&&Number.isFinite(Number(point.value))&&Number(point.value)>0){const old=merged.get(Number(point.time));if(!old||String(point.src||'').includes('Live')||String(point.src||'').includes('MEXC'))merged.set(Number(point.time),point)}});raw=Array.from(merged.values()).sort((a,b)=>a.time-b.time);if(raw.length){$('charttype').value='candles';buildCandles();update();requestAnimationFrame(()=>requestAnimationFrame(restoreChartView));$('status').textContent=raw.length.toLocaleString()+' cached records · '+new Date().toLocaleTimeString()}else{$('status').textContent='No history yet · collecting live prices';candles=[];try{mainSeries.setData([])}catch{};}}});\nload();\n})();")
   .replace("function syncLivePriceLine(", `
 const RAH_OHLC_CACHE_PREFIX='rahdata_symbol_ohlc_v3:';
+const RAH_OHLC_DB_NAME='RAHDATA_SymbolOhlcArchive_v1',RAH_OHLC_DB_STORE='ohlcBars';
+let rahOhlcBarsMemory=null,rahOhlcWriteQueue=Promise.resolve(),rahOhlcHydrationPromise=null;
 function rahOhlcCacheKey(){return RAH_OHLC_CACHE_PREFIX+encodeURIComponent(String(RAHDATA_SYMBOL_KEY||''))}
-function rahReadOhlcBars(){try{const a=JSON.parse(localStorage.getItem(rahOhlcCacheKey())||'[]');return Array.isArray(a)?a.filter(b=>b&&Number.isFinite(Number(b.time))&&[b.open,b.high,b.low,b.close].every(v=>Number.isFinite(Number(v))&&Number(v)>0)).sort((x,y)=>Number(x.time)-Number(y.time)):[]}catch{return []}}
-function rahStoreOhlcBars(bars,timeframe=''){const merged=new Map(rahReadOhlcBars().map(b=>[Math.floor(Number(b.time))+'|'+String(b.timeframe||''),b]));for(const b of (Array.isArray(bars)?bars:[])){const time=Math.floor(Number(b.time)),open=Number(b.open),high=Number(b.high),low=Number(b.low),close=Number(b.close);if(!Number.isFinite(time)||time<=0||![open,high,low,close].every(v=>Number.isFinite(v)&&v>0))continue;const tf=String(b.timeframe||timeframe||'');merged.set(time+'|'+tf,{time,open,high:Math.max(high,open,close),low:Math.min(low,open,close),close,...(tf?{timeframe:tf}:{})})}const all=[...merged.values()].sort((a,b)=>a.time-b.time).slice(-12000);try{localStorage.setItem(rahOhlcCacheKey(),JSON.stringify(all))}catch{}return all}
-function rahUpsertOhlcTick(time,value){time=Math.floor(Number(time)/60)*60;value=Number(value);if(!Number.isFinite(time)||time<=0||!Number.isFinite(value)||value<=0)return;const map=new Map(rahReadOhlcBars().map(b=>[Number(b.time)+'|'+String(b.timeframe||''),{...b}]));const key=time+'|',old=map.get(key);if(old){old.high=Math.max(Number(old.high),value);old.low=Math.min(Number(old.low),value);old.close=value}else map.set(key,{time,open:value,high:value,low:value,close:value});rahStoreOhlcBars([...map.values()])}
+function rahOhlcValidBar(b){return !!b&&Number.isFinite(Number(b.time))&&Number(b.time)>0&&[b.open,b.high,b.low,b.close].every(v=>Number.isFinite(Number(v))&&Number(v)>0)}
+function rahOhlcNormalizeRows(rows){const map=new Map();for(const b of Array.isArray(rows)?rows:[]){if(!rahOhlcValidBar(b))continue;const time=Math.floor(Number(b.time)),timeframe=String(b.timeframe||''),key=time+'|'+timeframe;map.set(key,{time,open:Number(b.open),high:Math.max(Number(b.high),Number(b.open),Number(b.close)),low:Math.min(Number(b.low),Number(b.open),Number(b.close)),close:Number(b.close),...(timeframe?{timeframe}:{})})}return [...map.values()].sort((a,b)=>a.time-b.time)}
+function rahOpenOhlcArchive(){return new Promise((resolve,reject)=>{if(!('indexedDB'in window)){reject(new Error('IndexedDB is unavailable'));return}const req=indexedDB.open(RAH_OHLC_DB_NAME,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(RAH_OHLC_DB_STORE)){const store=db.createObjectStore(RAH_OHLC_DB_STORE,{keyPath:'id'});store.createIndex('owner','owner',{unique:false})}};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('Could not open full OHLC archive'))})}
+function rahReadOhlcBars(){if(Array.isArray(rahOhlcBarsMemory))return rahOhlcBarsMemory.slice();try{const a=JSON.parse(localStorage.getItem(rahOhlcCacheKey())||'[]');return rahOhlcNormalizeRows(a)}catch{return []}}
+function rahPersistOhlcRows(rows){const owner=String(RAHDATA_SYMBOL_KEY||'');const normalized=rahOhlcNormalizeRows(rows);if(!owner||!normalized.length)return;rahOhlcWriteQueue=rahOhlcWriteQueue.catch(()=>{}).then(async()=>{const db=await rahOpenOhlcArchive();try{await new Promise((resolve,reject)=>{const tx=db.transaction(RAH_OHLC_DB_STORE,'readwrite'),store=tx.objectStore(RAH_OHLC_DB_STORE);for(const b of normalized){const timeframe=String(b.timeframe||'');store.put({...b,id:owner+'|'+b.time+'|'+timeframe,owner,timeframe})}tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('OHLC archive write failed'));tx.onabort=()=>reject(tx.error||new Error('OHLC archive write aborted'))})}finally{db.close()}}).catch(error=>{console.warn('RAHDATA full OHLC archive write failed; using browser cache fallback',error);try{localStorage.setItem(rahOhlcCacheKey(),JSON.stringify(rahOhlcBarsMemory||normalized))}catch(storageError){console.warn('RAHDATA OHLC fallback storage is full',storageError)}});return rahOhlcWriteQueue}
+function rahStoreOhlcBars(bars,timeframe=''){const incoming=rahOhlcNormalizeRows((Array.isArray(bars)?bars:[]).map(b=>({...b,timeframe:String(b?.timeframe||timeframe||'')})));const merged=new Map(rahReadOhlcBars().map(b=>[Math.floor(Number(b.time))+'|'+String(b.timeframe||''),b]));for(const b of incoming)merged.set(Math.floor(Number(b.time))+'|'+String(b.timeframe||''),b);rahOhlcBarsMemory=[...merged.values()].sort((a,b)=>a.time-b.time);void rahPersistOhlcRows(incoming);return rahOhlcBarsMemory.slice()}
+async function rahLoadOhlcBars(){const owner=String(RAHDATA_SYMBOL_KEY||'');let legacy=[];try{const a=JSON.parse(localStorage.getItem(rahOhlcCacheKey())||'[]');if(Array.isArray(a))legacy=rahOhlcNormalizeRows(a)}catch{}let archived=[];try{const db=await rahOpenOhlcArchive();try{archived=await new Promise((resolve,reject)=>{const tx=db.transaction(RAH_OHLC_DB_STORE,'readonly'),store=tx.objectStore(RAH_OHLC_DB_STORE),index=store.index('owner'),req=index.getAll(owner);req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error||new Error('OHLC archive read failed'))})}finally{db.close()}}catch(error){console.warn('RAHDATA OHLC archive read unavailable; using legacy cache',error)}const merged=new Map();for(const b of [...legacy,...archived,...(Array.isArray(rahOhlcBarsMemory)?rahOhlcBarsMemory:[])])if(rahOhlcValidBar(b))merged.set(Math.floor(Number(b.time))+'|'+String(b.timeframe||''),b);rahOhlcBarsMemory=[...merged.values()].sort((a,b)=>a.time-b.time);if(legacy.length)void rahPersistOhlcRows(legacy);return rahOhlcBarsMemory.slice()}
+rahOhlcHydrationPromise=rahLoadOhlcBars().catch(error=>{console.warn('RAHDATA OHLC archive hydration failed',error);rahOhlcBarsMemory=rahReadOhlcBars();return rahOhlcBarsMemory});
+function rahUpsertOhlcTick(time,value){time=Math.floor(Number(time)/60)*60;value=Number(value);if(!Number.isFinite(time)||time<=0||!Number.isFinite(value)||value<=0)return;const old=rahReadOhlcBars().find(b=>Number(b.time)===time&&!String(b.timeframe||'')),bar=old?{...old,high:Math.max(Number(old.high),value),low:Math.min(Number(old.low),value),close:value}:{time,open:value,high:value,low:value,close:value};rahStoreOhlcBars([bar])}
 function rahMergeOhlcCandles(base){const isTse=String(RAHDATA_SYMBOL_KEY||'').startsWith('global:tse:'),map=new Map((Array.isArray(base)?base:[]).map(c=>[Number(c.time),{...c}])),all=rahReadOhlcBars(),exact=all.filter(b=>String(b.timeframe||'')===String(currentTF));if(isTse){for(const b of exact){const time=Number(b.time);map.set(time,{time,open:Number(b.open),high:Number(b.high),low:Number(b.low),close:Number(b.close),volume:0})}return [...map.values()].filter(c=>Number.isFinite(Number(c.time))&&[c.open,c.high,c.low,c.close].every(v=>Number.isFinite(Number(v))&&Number(v)>0)).sort((a,b)=>a.time-b.time)}const interval=currentTF==='W'?604800:(currentTF==='D'?86400:Math.max(60,Number(currentTF)*60||60));const source=exact.length?exact:all.filter(b=>!b.timeframe);if(exact.length){for(const b of exact){const rawTime=Number(b.time),time=(currentTF==='D'||currentTF==='W')?rahTimeBucket(rawTime,interval):rawTime;map.set(time,{time,open:Number(b.open),high:Number(b.high),low:Number(b.low),close:Number(b.close),volume:0})}}else{const agg=new Map();for(const b of source){const time=Number(b.time),bucket=rahTimeBucket(time,interval);let c=agg.get(bucket);if(!c)agg.set(bucket,{time:bucket,open:Number(b.open),high:Number(b.high),low:Number(b.low),close:Number(b.close),volume:0});else{c.high=Math.max(c.high,Number(b.high));c.low=Math.min(c.low,Number(b.low));c.close=Number(b.close)}}for(const [time,c] of agg)map.set(time,c)}return [...map.values()].filter(c=>Number.isFinite(Number(c.time))&&[c.open,c.high,c.low,c.close].every(v=>Number.isFinite(Number(v))&&Number(v)>0)).sort((a,b)=>a.time-b.time)}
 function rahTseBucketTime(unixTime,tf){
  const t=Math.floor(Number(unixTime)),local=t+12600,dayStart=Math.floor(local/86400)*86400,minuteOfDay=Math.floor((local-dayStart)/60);
@@ -21786,19 +21866,25 @@ function rahTseBucketTime(unixTime,tf){
  return bucket-12600;
 }
 function rahTseApplyLiveQuote(unixTime,price){
- if(!String(RAHDATA_SYMBOL_KEY||'').startsWith('global:tse:')||!candles.length)return false;
+ if(!String(RAHDATA_SYMBOL_KEY||'').startsWith('global:tse:'))return false;
  const value=Number(price),bucket=rahTseBucketTime(unixTime,currentTF);
- if(!Number.isFinite(value)||value<=0||!Number.isFinite(bucket))return false;
- const index=candles.findIndex(c=>Number(c.time)===bucket);if(index<0)return false;
- const c=candles[index];c.high=Math.max(Number(c.high),value);c.low=Math.min(Number(c.low),value);c.close=value;
+ if(!Number.isFinite(value)||value<=0)return false;
+ try{
+  const priceEl=$('lastprice');if(priceEl)priceEl.textContent=fmt(value);
+  if(candles.length){const previous=candles.at(-2),reference=previous?Number(previous.close):Number(candles.at(-1).open);const change=reference>0?(value-reference)/reference*100:0;const changeEl=$('change');if(changeEl){changeEl.textContent=(change>=0?'+':'')+change.toFixed(2)+'%';changeEl.className=change>=0?'green':'red';}updateLivePriceLine(value)}
+ }catch{}
+ if(!Number.isFinite(bucket))return false;
+ let index=candles.findIndex(c=>Number(c.time)===bucket),c;
+ if(index<0){c={time:bucket,open:value,high:value,low:value,close:value,volume:0};candles.push(c);candles.sort((a,b)=>a.time-b.time);index=candles.findIndex(x=>Number(x.time)===bucket)}else{c=candles[index];c.high=Math.max(Number(c.high),value);c.low=Math.min(Number(c.low),value);c.close=value}
  rahStoreOhlcBars([{time:bucket,open:c.open,high:c.high,low:c.low,close:c.close}],currentTF);
- const type=$('charttype')?.value||'candles',point=type==='line'||type==='area'?{time:bucket,value}:c;
- let ok=false;try{ok=rahChartApplyLiveSeries(point,index)}catch{rahPendingLiveSeriesSync=true}
+ const type=$('charttype')?.value||'candles',point=type==='line'||type==='area'?{time:bucket,value}:c;let ok=false;
+ try{if(!mainSeries){createMain();ok=true}else if(index===candles.length-1)ok=rahChartApplyLiveSeries(point,index);else{rahReplaceMainSeriesData();ok=true}}catch{rahPendingLiveSeriesSync=true}
  if(rahChartPointerActive)rahChartUpdateLiveUi();else if(ok)update();
  if(index===candles.length-1){if(rahChartPointerActive)rahPendingIndicatorSync=true;else requestAnimationFrame(()=>{applyIndicators();updateCandleTimer()})}
  return true;
 }
-function rahReplaceMainSeriesData(){if(!mainSeries)return;if(!candles.length){try{mainSeries.setData([]);rahDisplayStart=0;rahDisplayChunk=0;syncLivePriceLine();}catch(error){console.warn('RAHDATA empty OHLC reset failed',error)}return;}let oldRange=null,oldStart=Number(rahDisplayStart)||0;try{oldRange=chart.timeScale().getVisibleLogicalRange()}catch{}if(typeof rahDisplayReset==='function')rahDisplayReset();const type=$('charttype')?.value||'candles',data=type==='line'||type==='area'?candles.map(c=>({time:c.time,value:c.close})):candles;try{mainSeries.setData(data)}catch(error){console.warn('RAHDATA series data update failed',error);return}const shift=oldStart-(Number(rahDisplayStart)||0);if(oldRange&&Number.isFinite(oldRange.from)&&Number.isFinite(oldRange.to)){requestAnimationFrame(()=>{try{chart.timeScale().setVisibleLogicalRange({from:oldRange.from+shift,to:oldRange.to+shift})}catch{}})}if(typeof rahDisplayEnsureTarget==='function')requestAnimationFrame(rahDisplayEnsureTarget);syncLivePriceLine();renderTradeMarkers()}
+function rahReplaceMainSeriesData(){if(!mainSeries)return;if(!candles.length){try{mainSeries.setData([]);rahDisplayStart=0;rahDisplayChunk=0;syncLivePriceLine()}catch(error){console.warn('RAHDATA empty OHLC reset failed',error)}return}let oldRange=null,oldStart=Number(rahDisplayStart)||0;try{oldRange=chart.timeScale().getVisibleLogicalRange()}catch{}if(typeof rahDisplayReset==='function')rahDisplayReset();const type=$('charttype')?.value||'candles',data=type==='line'||type==='area'?candles.map(c=>({time:c.time,value:c.close})):candles;try{mainSeries.setData(data)}catch(error){console.warn('RAHDATA series data update failed',error);return}const shift=oldStart-(Number(rahDisplayStart)||0);if(oldRange&&Number.isFinite(oldRange.from)&&Number.isFinite(oldRange.to)){requestAnimationFrame(()=>{try{chart.timeScale().setVisibleLogicalRange({from:oldRange.from+shift,to:oldRange.to+shift})}catch{}})}if(typeof rahDisplayEnsureTarget==='function')requestAnimationFrame(rahDisplayEnsureTarget);syncLivePriceLine();renderTradeMarkers()}
+
 function syncLivePriceLine(`)
   .replace("candles=Array.from(buckets.values()).sort((a,b)=>a.time-b.time);createMain();requestAnimationFrame(()=>{applyIndicators();updateCandleTimer()});", "candles=rahMergeOhlcCandles(Array.from(buckets.values()).sort((a,b)=>a.time-b.time));if(mainSeries)rahReplaceMainSeriesData();else createMain();requestAnimationFrame(()=>{applyIndicators();updateCandleTimer()});")
   .replace("else if(d.type==='rahdata-symbol-bars'){if(String(d.key||'')!==String(RAHDATA_SYMBOL_KEY))return;const interval=currentTF==='D'?86400:Math.max(60,Number(currentTF)*60),grouped=new Map();for(const b of (Array.isArray(d.bars)?d.bars:[])){const t=Math.floor(Number(b.time)/interval)*interval,o=Number(b.open),h=Number(b.high),l=Number(b.low),c=Number(b.close);if(!Number.isFinite(t)||t<=0||![o,h,l,c].every(v=>Number.isFinite(v)&&v>0))continue;let x=grouped.get(t);if(!x){x={time:t,open:o,high:h,low:l,close:c};grouped.set(t,x)}else{x.high=Math.max(x.high,h);x.low=Math.min(x.low,l);x.close=c}}const incoming=[...grouped.values()].sort((a,b)=>a.time-b.time);if(incoming.length){const live= candles.filter(c=>c.time>incoming.at(-1).time);candles=incoming.concat(live);const type=$('charttype').value;try{mainSeries.setData(type==='line'||type==='area'?candles.map(c=>({time:c.time,value:c.close})):candles)}catch{buildCandles()}update();requestAnimationFrame(()=>{applyIndicators();updateCandleTimer()});$('status').textContent='HISTORY · '+String(d.source||'OHLC feed')+' · '+incoming.length+' bars'}}else if(d.type==='rahdata-symbol-live')", "else if(d.type==='rahdata-symbol-bars'){if(String(d.key||'')!==String(RAHDATA_SYMBOL_KEY))return;const savedBars=rahStoreOhlcBars(d.bars,d.timeframe||'');if(savedBars.length){if(String(RAHDATA_SYMBOL_KEY||'').startsWith('global:tse:')){candles=rahMergeOhlcCandles([]);if(mainSeries)rahReplaceMainSeriesData();else createMain()}else if(raw.length)buildCandles();else{candles=rahMergeOhlcCandles([]);if(mainSeries)rahReplaceMainSeriesData();else createMain()}update();requestAnimationFrame(()=>requestAnimationFrame(()=>{goToPresent();applyIndicators();updateCandleTimer()}));$('status').textContent='HISTORY · '+String(d.source||'OHLC feed')+' · '+savedBars.length+' cached OHLC bars'}}else if(d.type==='rahdata-symbol-live')")
@@ -21821,7 +21907,7 @@ function rahChartApplyLiveSeries(seriesPoint,index){if(index===candles.length-1)
 chartEl.addEventListener('pointermove',rahChartMarkPointerActive,{passive:true});
 chartEl.addEventListener('pointerup',rahChartReleasePointer,{passive:true});
 chartEl.addEventListener('pointerleave',rahChartReleasePointer,{passive:true});
-function rahDisplayTarget(){const width=Math.max(120,chart.timeScale().width()||chartEl.clientWidth||600),spacing=8;return Math.max(50,Math.ceil(width/spacing*1.5))}
+function rahDisplayTarget(){return Math.max(50,candles.length)}
 function rahDisplayReset(){rahDisplayLoading=false;try{chart.timeScale().applyOptions({barSpacing:8})}catch{}const target=rahDisplayTarget();rahDisplayChunk=Math.max(1,Math.ceil(target/3));rahDisplayStart=Math.max(0,candles.length-target)}
 function rahDisplayFilter(data){if(!Array.isArray(data)||!data.length||!candles.length)return data||[];const first=Number(candles[rahDisplayStart]?.time),last=Number(candles.at(-1)?.time);if(!Number.isFinite(first)||!Number.isFinite(last))return data;let lo=0,hi=data.length;while(lo<hi){const mid=(lo+hi)>>1;if(Number(data[mid]?.time)<first)lo=mid+1;else hi=mid}const start=lo;lo=start;hi=data.length;while(lo<hi){const mid=(lo+hi)>>1;if(Number(data[mid]?.time)<=last)lo=mid+1;else hi=mid}return data.slice(start,lo)}
 function rahDisplayScaleSnapshot(){const ts=chart.timeScale();let range=null,barSpacing=null;try{range=ts.getVisibleLogicalRange()}catch{}try{barSpacing=Number(ts.options().barSpacing)}catch{}return{range,barSpacing:Number.isFinite(barSpacing)&&barSpacing>0?barSpacing:null}}
@@ -21950,7 +22036,11 @@ function createMain(){rahDisplayReset();`)
  }
  const usdDocPaged=addStableRightEdge(addPagedChartDisplay(usdDoc));
  const coinDocPaged=addStableRightEdge(addPagedChartDisplay(coinDoc));
- const symbolDocTemplatePaged=addStableRightEdge(addPagedChartDisplay(symbolDocTemplate));
+ function addTseDiagnosticHandler(doc){
+  const diagnosticScript=`<script id="rahdataTseDiagnostic">window.addEventListener('message',ev=>{const d=ev.data||{};const symbolKey=typeof RAHDATA_SYMBOL_KEY!=='undefined'?RAHDATA_SYMBOL_KEY:window.__RAHDATA_SYMBOL_KEY;if(d.type!=='rahdata-symbol-bars-error'||String(d.key||'')!==String(symbolKey||''))return;const tf=String(d.timeframe||'');const current=document.querySelector('[data-tf].active')?.dataset?.tf||'';if(current&&tf!==current)return;const status=document.getElementById('status');if(status)status.textContent='TSETMC '+tf+' ERROR · '+String(d.stage||'history')+' · '+String(d.message||'No data');console.warn('RAHDATA TSETMC '+tf+' bars error:',d.stage,d.message)});<\/script>`;
+  return doc.replace('</body>',diagnosticScript+'</body>');
+ }
+ const symbolDocTemplatePaged=addTseDiagnosticHandler(addStableRightEdge(addPagedChartDisplay(symbolDocTemplate)));
  const symbolPickerStyle='<style>#rahdataSymbolPicker{display:none;position:fixed;z-index:10000;top:48px;left:8px;right:8px;width:auto;max-width:none;max-height:54px;overflow-x:auto;overflow-y:hidden;padding:6px 8px;border:1px solid #3a4252;border-radius:8px;background:#131722;box-shadow:0 8px 28px #000b;gap:6px;align-items:center;flex-direction:row;flex-wrap:nowrap;white-space:nowrap;scrollbar-width:none}#rahdataSymbolPicker::-webkit-scrollbar{display:none}#rahdataSymbolPicker.open{display:flex}#rahdataSymbolPicker .rahdata-picker-head{flex:0 0 auto;color:#93c5fd;font-weight:800;padding:4px 6px}#rahdataSymbolPicker button{flex:0 0 auto;min-width:0;height:30px;min-height:30px;max-height:30px;line-height:16px;text-align:center;white-space:nowrap;font-size:12px;padding:5px 10px}</style>';
  const symbolPickerHtml='<div id="rahdataSymbolPicker" aria-label="Select symbol"></div>';
  const symbolPickerScript='<script>(()=>{const picker=document.getElementById("rahdataSymbolPicker");if(!picker)return;const ids=["list1","list2","list3","list4"];const tabs=ids.map((id,i)=>document.getElementById("rahdataListTab"+(i+1)));const send=listId=>parent.postMessage({type:"rahdata-symbol-tab-click",group:listId},"*");tabs.forEach((tab,i)=>{if(tab)tab.onclick=()=>send(ids[i])});picker.addEventListener("click",ev=>{const btn=ev.target.closest("[data-symbol-key]");if(!btn)return;picker.classList.remove("open");parent.postMessage({type:"rahdata-select-symbol",key:btn.dataset.symbolKey,listId:picker.dataset.listId||"list1"},"*")});window.addEventListener("message",ev=>{const d=ev.data||{};if(d.type==="rahdata-symbol-list-close"){picker.classList.remove("open");return}if(d.type==="rahdata-symbol-state"){tabs.forEach((tab,i)=>{if(!tab)return;const active=String(d.activeListId||"")===ids[i];tab.textContent=d[ids[i]+"Label"]||"LIST";tab.classList.toggle("active",active);tab.setAttribute("aria-pressed",active?"true":"false")});return}if(d.type!=="rahdata-symbol-list")return;picker.dataset.listId=ids.includes(d.group)?d.group:"list1";picker.style.top=(document.querySelector("header")?.getBoundingClientRect().bottom+4||52)+"px";picker.replaceChildren();const head=document.createElement("div");head.className="rahdata-picker-head";head.textContent="LIST "+(ids.indexOf(picker.dataset.listId)+1);picker.appendChild(head);(d.items||[]).forEach(item=>{const b=document.createElement("button");b.type="button";b.dataset.symbolKey=item.key;b.textContent=item.name||item.symbol||item.key;const selected=String(d.selectedKey||"")===String(item.key||"");b.classList.toggle("selected",selected);b.setAttribute("aria-pressed",selected?"true":"false");picker.appendChild(b)});picker.classList.add("open")})})();<\/script>'
@@ -22456,8 +22546,13 @@ const alertButton=$("alerts");if(alertButton)alertButton.onclick=openManager;
   const isCurrent=()=>generation===activeSymbolDataGeneration&&current==='symbol'&&activeSymbol?.key===item.key&&overlay.classList.contains('open')&&frame?.contentWindow;
   try{
    const code=String(item.insCode),imported=rfkjTseReadCache(`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${sourceTf}`);
+   const postError=(message,stage='history')=>{
+    if(!isCurrent())return;
+    try{frame.contentWindow.postMessage({type:'rahdata-symbol-bars-error',key:item.key,timeframe:requested,stage,message:String(message||'Unknown TSETMC error')},'*')}catch{}
+   };
    const postCandles=(candles,source)=>{
-    if(!isCurrent()||!Array.isArray(candles)||!candles.length)return 0;
+    if(!isCurrent())return 0;
+    if(!Array.isArray(candles)||!candles.length){postError('No candles returned from '+source,'empty');return 0;}
     const bars=candles.map(c=>{
     const stamp=String(c.timestamp||''),digits=stamp.replace(/\D/g,'');
     if(digits.length<8)return null;
@@ -22468,7 +22563,7 @@ const alertButton=$("alerts");if(alertButton)alertButton.onclick=openManager;
     if(!Number.isFinite(ms)||![open,high,low,close].every(v=>Number.isFinite(v)&&v>0))return null;
     return {time:Math.floor(ms/1000),open,high:Math.max(high,open,close),low:Math.min(low,open,close),close};
    }).filter(Boolean).sort((a,b)=>a.time-b.time);
-    if(!bars.length)return 0;
+    if(!bars.length){postError('Candle timestamps or OHLC values could not be converted for '+source,'normalize');return 0;}
     frame.contentWindow.postMessage({type:'rahdata-symbol-bars',key:item.key,timeframe:requested,bars,source},'*');
     return bars.length;
    };
@@ -22488,7 +22583,12 @@ const alertButton=$("alerts");if(alertButton)alertButton.onclick=openManager;
    }
    const candles=await rfkjBuildTseCandles(code,sourceTf,{skipImportedCache:true});
    return postCandles(candles,'TSETMC OHLC '+sourceTf);
-  }catch(error){console.warn('RAHDATA TSETMC OHLC history unavailable',item.symbol,requested,error);return 0}
+  }catch(error){
+   console.warn('RAHDATA TSETMC OHLC history unavailable',item.symbol,requested,error);
+   // postError is declared inside try and cannot be referenced from this catch.
+   try{if(isCurrent())frame.contentWindow.postMessage({type:'rahdata-symbol-bars-error',key:item.key,timeframe:requested,stage:'fetch',message:String(error?.message||error||'Unknown TSETMC error')},'*')}catch{}
+   return 0;
+  }
  }
  function sendActiveSymbolData(timeframe='1'){
   const item=activeSymbol;if(!item||!frame.contentWindow)return;
