@@ -14228,11 +14228,13 @@ const GLOBAL_PULSE_TSE_API_TIMEOUT_MS = Math.max(20000, Number(PRICE_REQUEST_TIM
 const GLOBAL_PULSE_TSE_API_HOSTS = ["https://cdn.tsetmc.com/api", "https://cdn10.tsetmc.com/api"];
 const globalPulseTsetmcInstrumentInfoCache = new Map();
 async function globalPulseTsetmcFetchJson(path,validator){
-    const cleanPath=String(path||"").replace(/^\/+/,"");
+    const cleanPath=String(path||"").replace(/^\/+/ ,"");
     let lastError=null;
     for(const base of GLOBAL_PULSE_TSE_API_HOSTS){
         const url=`${base}/${cleanPath}`;
         try{
+            // TSETMC requests must go directly to the official Iranian CDN.
+            // No third-party proxy is used anywhere in this request path.
             const response=await fetchWithTimeout(url,{method:"GET",headers:{"Accept":"application/json"},cache:"no-store",credentials:"omit"},9000);
             if(!response.ok)throw new Error(`TSETMC HTTP ${response.status}`);
             const payload=await response.json();
@@ -17116,6 +17118,19 @@ function rfkjTseNumber(row,keys){
     }
     return null;
 }
+// For TSETMC intraday snapshots, zero-valued fields are placeholders, not
+// usable prices. Keep searching later aliases (notably pClosing) instead of
+// returning zero and discarding an otherwise valid minute.
+function rfkjTsePositiveNumber(row,keys){
+    if(!row||typeof row!=="object")return null;
+    for(const key of keys){
+        const value=row[key];
+        if(value===undefined||value===null||String(value).trim()==="")continue;
+        const n=Number(String(value).replace(/,/g,"").trim());
+        if(Number.isFinite(n)&&n>0)return n;
+    }
+    return null;
+}
 function rfkjTseChartRows(payload){
     if(Array.isArray(payload))return payload;
     if(!payload||typeof payload!=="object")return [];
@@ -17172,7 +17187,7 @@ function rfkjTseHistoryRowsToOneMinute(rows,date){
         const digits=String(rawTime).replace(/\D/g,"").padStart(6,"0").slice(-6);
         const hour=Number(digits.slice(0,2)),minute=Number(digits.slice(2,4));
         if(!Number.isFinite(hour)||!Number.isFinite(minute)||hour<9||hour>13)continue;
-        const price=rfkjTseNumber(row,["pDrCotVal","last","pl","pClosing","close"]);
+        const price=rfkjTsePositiveNumber(row,["pDrCotVal","pClosing","last","pl","close"]);
         if(price===null||price<=0)continue;
         const key=`${date}T${String(hour).padStart(2,"0")}:${String(minute).padStart(2,"0")}:00`;
         const existing=byMinute.get(key);
@@ -17196,6 +17211,33 @@ function rfkjTseAggregateIntraday(candles,minutes){
         else{existing.high=Math.max(existing.high,candle.high);existing.low=Math.min(existing.low,candle.low);existing.close=candle.close;}
     }
     return Array.from(groups.values()).sort((a,b)=>a.timestamp.localeCompare(b.timestamp)).map(({_date,_bucket,...c})=>c);
+}
+// Derive every intraday timeframe from the same validated 1-minute OHLC source.
+// Buckets are anchored to the TSETMC 09:00 session open, not to the first
+// available row, so a missing first minute cannot shift a candle's timestamp.
+function rfkjTseAggregateOneMinuteCandles(candles,minutes){
+    const period=Math.max(1,Math.floor(Number(minutes)||1));
+    const ordered=(Array.isArray(candles)?candles:[]).filter(c=>c&&/^\d{8}T\d{2}:\d{2}/.test(String(c.timestamp||'')))
+        .slice().sort((a,b)=>String(a.timestamp).localeCompare(String(b.timestamp)));
+    if(period===1)return ordered.map(c=>({timestamp:String(c.timestamp),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}))
+        .filter(c=>[c.open,c.high,c.low,c.close].every(v=>Number.isFinite(v)&&v>0));
+    const groups=new Map();
+    for(const candle of ordered){
+        const match=String(candle.timestamp).match(/^(\d{8})T(\d{2}):(\d{2})/);
+        if(!match)continue;
+        const date=match[1],minuteOfDay=Number(match[2])*60+Number(match[3]);
+        if(!Number.isFinite(minuteOfDay)||minuteOfDay<540||minuteOfDay>900)continue;
+        const bucketMinute=540+Math.floor((minuteOfDay-540)/period)*period;
+        const hh=String(Math.floor(bucketMinute/60)).padStart(2,'0');
+        const mm=String(bucketMinute%60).padStart(2,'0');
+        const timestamp=`${date}T${hh}:${mm}:00`;
+        const open=Number(candle.open),high=Number(candle.high),low=Number(candle.low),close=Number(candle.close);
+        if(![open,high,low,close].every(v=>Number.isFinite(v)&&v>0))continue;
+        const old=groups.get(timestamp);
+        if(!old)groups.set(timestamp,{timestamp,open,high:Math.max(high,open,close),low:Math.min(low,open,close),close});
+        else{old.high=Math.max(old.high,high,open,close);old.low=Math.min(old.low,low,open,close);old.close=close;}
+    }
+    return Array.from(groups.values()).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
 }
 function rfkjTseAggregateDaily(candles,period){
     if(period!=="1W")return candles.slice();
@@ -17506,7 +17548,7 @@ function rfkjTseTradeRowsToOneMinute(rows,date){
         const hour=Number(digits.slice(0,2)),minute=Number(digits.slice(2,4)),second=Number(digits.slice(4,6));
         const minuteOfDay=hour*60+minute;
         if(!Number.isFinite(minuteOfDay)||minuteOfDay<540||minuteOfDay>900)continue;
-        const price=rfkjTseNumber(row,["pTran","price","Price","tradePrice"]);
+        const price=rfkjTsePositiveNumber(row,["pTran","price","Price","tradePrice"]);
         if(price===null||price<=0)continue;
         const tradeNo=rfkjTseNumber(row,["nTran","tradeNo","id","idn"]);
         ordered.push({date,minuteOfDay,second,tradeNo:Number.isFinite(tradeNo)?tradeNo:sequence,sequence:sequence++,price});
@@ -17611,7 +17653,7 @@ function rfkjTseGetImportedDailyCandles(code){
 function rfkjTseCandleDates(candles){
     return (Array.isArray(candles)?candles:[]).map(c=>String(c?.timestamp||'').replace(/\D/g,'').slice(0,8)).filter(x=>/^\d{8}$/.test(x));
 }
-async function rfkjTseGetIntradayCandles(code,minutes){
+async function rfkjTseGetIntradayCandles(code,minutes,options={}){
     let dailyRows=[],dailyError=null;
     try{dailyRows=await rfkjTseGetDailyRows(code,500);}catch(error){dailyError=error;}
     // Some instruments return an empty 500-row list even though their imported
@@ -17640,19 +17682,28 @@ async function rfkjTseGetIntradayCandles(code,minutes){
     }catch(error){console.warn('TSETMC current session date lookup failed',error);}
     dates=Array.from(new Set(dates)).sort((a,b)=>b.localeCompare(a));
     if(!dates.length)throw new Error(`No TSETMC trading dates for ${code}${dailyError?`: ${dailyError.message}`:''}`);
-    // No arbitrary history cap: use every date returned by the date source.
-    // Request sessions sequentially to avoid flooding TSETMC, exhausting the
-    // shared request gate, or triggering rate/timeout errors. Cached sessions
-    // resolve immediately and are included as well.
+    // Load the newest sessions first in small concurrent batches. The old
+    // one-by-one loop could spend many minutes walking hundreds of dates before
+    // the chart received its first intraday candle. Cache entries are reused,
+    // and the 6,000-bar limit applies only to this newly assembled response;
+    // previously stored chart history is merged by the caller and is retained.
     const selected=dates;
     const all=[];let firstError=null,successfulSessions=0;
-    for(const date of selected){
-        try{
-            const result=await rfkjTseGetIntradaySessionCandles(code,date);
-            if(Array.isArray(result)&&result.length){all.push(...result);successfulSessions++;}
-        }catch(error){firstError=firstError||error;}
+    const limitedTimeframe=[1,3,5].includes(Number(minutes));
+    const hasFetchLimit=options&&Object.prototype.hasOwnProperty.call(options,'fetchLimit')&&options.fetchLimit!==undefined&&options.fetchLimit!==null;
+    const fetchLimit=hasFetchLimit?(options.fetchLimit===Infinity?Infinity:Math.max(1,Number(options.fetchLimit)||1)):(limitedTimeframe?6000:Infinity);
+    for(let offset=0;offset<selected.length;offset+=3){
+        const batch=selected.slice(offset,offset+3);
+        const results=await Promise.allSettled(batch.map(date=>rfkjTseGetIntradaySessionCandles(code,date)));
+        for(const result of results){
+            if(result.status==='fulfilled'&&Array.isArray(result.value)&&result.value.length){all.push(...result.value);successfulSessions++;}
+            else if(result.status==='rejected')firstError=firstError||result.reason;
+        }
+        const count=rfkjTseAggregateIntraday(all,minutes).length;
+        if(Number.isFinite(fetchLimit)&&count>=fetchLimit)break;
     }
-    const candles=rfkjTseAggregateIntraday(all.sort((a,b)=>a.timestamp.localeCompare(b.timestamp)),minutes);
+    let candles=rfkjTseAggregateIntraday(all.sort((a,b)=>a.timestamp.localeCompare(b.timestamp)),minutes);
+    if(Number.isFinite(fetchLimit)&&candles.length>fetchLimit)candles=candles.slice(-fetchLimit);
     if(candles.length)return candles;
     const cacheKeys=[`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${minutes}m`,`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${minutes}`];
     for(const key of cacheKeys){const cached=rfkjTseReadCache(key);if(cached?.candles?.length)return cached.candles;}
@@ -17660,11 +17711,25 @@ async function rfkjTseGetIntradayCandles(code,minutes){
 }
 async function rfkjBuildTseCandles(code,timeframe,options={}){
     const tf=String(timeframe||"1D");
-    if(!options.skipImportedCache){
+    const derivedIntraday=["3","5","15","60"].includes(tf);
+    // Imported pre-aggregated 3m/5m/15m/1H rows must not bypass the common
+    // one-minute source. Daily/weekly and other timeframes keep their own path.
+    if(!options.skipImportedCache&&!derivedIntraday){
         const cached=rfkjTseReadCache(`${RFKJ_TSE_CACHE_PREFIX}${String(code)}:tf:${tf}`);
         if(cached?.recordFile==='Record-TSE.json'&&Array.isArray(cached.candles)&&cached.candles.length)return cached.candles;
     }
-    if(["1","3","5","15","30","60"].includes(tf))return rfkjTseGetIntradayCandles(code,Number(tf));
+    if(tf==="1")return options.fetchLimit===undefined?rfkjTseGetIntradayCandles(code,1):rfkjTseGetIntradayCandles(code,1,{fetchLimit:options.fetchLimit});
+    if(derivedIntraday){
+        const minutes=Number(tf);
+        // Keep the former 6,000-candle depth for 3m/5m. 15m and 1H previously
+        // loaded every available session, so retain that historical depth.
+        const baseFetchLimit=Number.isFinite(Number(options.fetchLimit))?Number(options.fetchLimit):(minutes===3?18000:(minutes===5?30000:Infinity));
+        const oneMinute=await rfkjTseGetIntradayCandles(code,1,{fetchLimit:baseFetchLimit});
+        const aggregated=rfkjTseAggregateOneMinuteCandles(oneMinute,minutes);
+        if(!aggregated.length)throw new Error(`TSETMC ${tf}m derived history is empty from the 1m source`);
+        return aggregated;
+    }
+    if(tf==="30")return rfkjTseGetIntradayCandles(code,30);
     if(tf==="4h"||tf==="240"||tf==="1D")return rfkjTseGetDailyCandles(code);
     if(tf==="1W"){
         let daily=[],dailyError=null;
@@ -17689,6 +17754,16 @@ function rfkjTseMergeCandles(previous,next){
         byTime.set(String(c.timestamp),{timestamp:String(c.timestamp),open,high,low,close});
     }
     return Array.from(byTime.values()).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
+}
+// Replace complete trading dates when newly calculated 1m-derived candles
+// arrive. This also removes older misaligned 3m/5m/15m/1H timestamps from the
+// same dates, while preserving history for dates absent from the 1m source.
+function rfkjTseMergeDerivedIntradayCandles(previous,calculated){
+    const next=Array.isArray(calculated)?calculated:[];
+    if(!next.length)return rfkjTseMergeCandles(previous,[]);
+    const refreshedDates=new Set(next.map(c=>String(c?.timestamp||'').replace(/\D/g,'').slice(0,8)).filter(x=>/^\d{8}$/.test(x)));
+    const retained=(Array.isArray(previous)?previous:[]).filter(c=>!refreshedDates.has(String(c?.timestamp||'').replace(/\D/g,'').slice(0,8)));
+    return rfkjTseMergeCandles(retained,next);
 }
 async function rfkjFetchTseData(coin,timeframe){
     const slot=rfkjTseSlotForCoin(coin);
@@ -22017,8 +22092,8 @@ function rahTseIsIntradayTf(tf){const v=String(tf??'').trim().toLowerCase();retu
 function rahTseIsDailyTf(tf){const v=String(tf??'').trim().toLowerCase();return v==='d'||v==='1d'||v==='day'||v==='daily'}
 function rahTseEpochSeconds(value){let t=Number(value);if(!Number.isFinite(t)||t<=0)return NaN;if(t>1e12)t/=1000;return Math.floor(t)}
 function rahTseDailyRangeAt(time,dailyRows){const t=rahTseEpochSeconds(time);if(!Number.isFinite(t))return null;const dayKey=Math.floor((t+12600)/86400);let low=Infinity,high=-Infinity,found=false;for(const b of Array.isArray(dailyRows)?dailyRows:[]){if(!rahTseIsDailyTf(b?.timeframe))continue;const bt=rahTseEpochSeconds(b.time);if(!Number.isFinite(bt)||Math.floor((bt+12600)/86400)!==dayKey)continue;const lo=Number(b.low),hi=Number(b.high),op=Number(b.open),cl=Number(b.close);if(![lo,hi,op,cl].every(Number.isFinite))continue;low=Math.min(low,lo,op,cl);high=Math.max(high,hi,op,cl);found=true}return found&&low>0&&high>=low?{low,high}:null}
-function rahTsePriceInsideDaily(time,price,dailyRows=rahReadOhlcBars()){const v=Number(price),range=rahTseDailyRangeAt(time,dailyRows);return !!range&&Number.isFinite(v)&&v>=range.low&&v<=range.high}
-function rahTseBarInsideDaily(bar,dailyRows=rahReadOhlcBars()){const range=rahTseDailyRangeAt(bar?.time,dailyRows);if(!range)return false;return [bar.open,bar.high,bar.low,bar.close].map(Number).every(v=>Number.isFinite(v)&&v>=range.low&&v<=range.high)}
+function rahTsePriceInsideDaily(time,price,dailyRows=rahReadOhlcBars()){const v=Number(price);/* Do not use an optional daily range as a hard gate: stale, adjusted, or date-mismatched daily data must not hide valid intraday prices. */return Number.isFinite(v)&&v>0}
+function rahTseBarInsideDaily(bar,dailyRows=rahReadOhlcBars()){const values=[bar?.open,bar?.high,bar?.low,bar?.close].map(Number);/* Keep every structurally valid OHLC candle; daily reference data is not guaranteed to match the intraday source. */return values.every(v=>Number.isFinite(v)&&v>0)}
 function rahTseFilterDailyRangeBars(rows,timeframe,dailyRows=rahReadOhlcBars()){if(!String(RAHDATA_SYMBOL_KEY||'').startsWith('global:tse:')||!rahTseIsIntradayTf(timeframe))return Array.isArray(rows)?rows.slice():[];return (Array.isArray(rows)?rows:[]).filter(b=>rahTseBarInsideDaily(b,dailyRows))}
 function rahTseFilterDailyRangePoints(rows,dailyRows=rahReadOhlcBars()){if(!String(RAHDATA_SYMBOL_KEY||'').startsWith('global:tse:'))return Array.isArray(rows)?rows.slice():[];return (Array.isArray(rows)?rows:[]).filter(p=>rahTsePriceInsideDaily(p?.time,p?.value??p?.close,dailyRows))}
 function rahPersistOhlcRows(rows){const owner=String(RAHDATA_SYMBOL_KEY||'');const normalized=rahOhlcNormalizeRows(rows);if(!owner||!normalized.length)return;rahOhlcWriteQueue=rahOhlcWriteQueue.catch(()=>{}).then(async()=>{const db=await rahOpenOhlcArchive();try{await new Promise((resolve,reject)=>{const tx=db.transaction(RAH_OHLC_DB_STORE,'readwrite'),store=tx.objectStore(RAH_OHLC_DB_STORE);for(const b of normalized){const timeframe=String(b.timeframe||'');store.put({...b,id:owner+'|'+b.time+'|'+timeframe,owner,timeframe})}tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('OHLC archive write failed'));tx.onabort=()=>reject(tx.error||new Error('OHLC archive write aborted'))})}finally{db.close()}}).catch(error=>{console.warn('RAHDATA full OHLC archive write failed; using browser cache fallback',error);try{localStorage.setItem(rahOhlcCacheKey(),JSON.stringify(rahOhlcBarsMemory||normalized))}catch(storageError){console.warn('RAHDATA OHLC fallback storage is full',storageError)}});return rahOhlcWriteQueue}
@@ -22821,7 +22896,8 @@ const alertButton=$("alerts");if(alertButton)alertButton.onclick=openManager;
   if(!item||item.type!=='tse'||!item.insCode||!frame.contentWindow)return 0;
   const requested=String(timeframe||'1');
   const tfMap={D:'1D',W:'1W','1':'1','3':'3','5':'5','15':'15','30':'30','60':'60','240':'4h','4h':'4h'};
-  const sourceTf=tfMap[requested]||'1D';
+  const minuteFamily=['1','3','5','15','60'].includes(requested);
+  const sourceTf=minuteFamily?'1':(tfMap[requested]||'1D');
   const isCurrent=()=>generation===activeSymbolDataGeneration&&current==='symbol'&&activeSymbol?.key===item.key&&overlay.classList.contains('open')&&frame?.contentWindow;
   try{
    const code=String(item.insCode);
@@ -22829,9 +22905,22 @@ const alertButton=$("alerts");if(alertButton)alertButton.onclick=openManager;
    const symbolCacheKey=rfkjTseSymbolCacheKey(item,sourceTf);
    const imported=rfkjTseReadCache(codeCacheKey);
    const symbolCached=rfkjTseReadCache(symbolCacheKey);
-   // Preserve the complete local history, including records older than the
-   // 6,000-candle network-fetch window.
-   const cachedCandles=rfkjTseMergeCandles(imported?.candles,symbolCached?.candles);
+   // One-minute data is the single source for 1m/3m/5m/15m/1H.
+   // Keep existing target caches so older bars remain available while the
+   // minute source is being refreshed.
+   const sourceCachedCandles=rfkjTseMergeCandles(imported?.candles,symbolCached?.candles);
+   let cachedCandles=sourceCachedCandles;
+   let targetImported=imported,targetSymbolCached=symbolCached;
+   let targetCodeCacheKey=codeCacheKey,targetSymbolCacheKey=symbolCacheKey;
+   if(minuteFamily&&requested!=='1'){
+    targetCodeCacheKey=`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${requested}`;
+    targetSymbolCacheKey=rfkjTseSymbolCacheKey(item,requested);
+    targetImported=rfkjTseReadCache(targetCodeCacheKey);
+    targetSymbolCached=rfkjTseReadCache(targetSymbolCacheKey);
+    const oldTarget=rfkjTseMergeCandles(targetImported?.candles,targetSymbolCached?.candles);
+    const derivedFromCache=rfkjTseAggregateOneMinuteCandles(sourceCachedCandles,Number(requested));
+    cachedCandles=rfkjTseMergeDerivedIntradayCandles(oldTarget,derivedFromCache);
+   }
    const postError=(message,stage='history')=>{
     if(!isCurrent())return;
     try{frame.contentWindow.postMessage({type:'rahdata-symbol-bars-error',key:item.key,timeframe:requested,stage,message:String(message||'Unknown TSETMC error')},'*')}catch{}
@@ -22853,9 +22942,9 @@ const alertButton=$("alerts");if(alertButton)alertButton.onclick=openManager;
     frame.contentWindow.postMessage({type:'rahdata-symbol-bars',key:item.key,timeframe:targetTimeframe,bars,source},'*');
     return bars.length;
    };
-   // Prime the chart's daily OHLC range before loading intraday candles.
-   // Live-price validation for 1m/3m/5m/15m/1H depends on this same-day range.
-   if(['1','3','5','15','60'].includes(requested)){
+   // Keep the existing daily reference feed; it is used only as a range
+   // reference by the chart and does not build/replace 4H, 1D or 1W candles.
+   if(minuteFamily){
     const dailyKeys=[`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:1D`,`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:D`,rfkjTseSymbolCacheKey(item,'1D'),rfkjTseSymbolCacheKey(item,'D')];
     let dailyCached=[];
     for(const key of dailyKeys){const entry=rfkjTseReadCache(key);dailyCached=rfkjTseMergeCandles(dailyCached,entry?.candles)}
@@ -22872,11 +22961,47 @@ const alertButton=$("alerts");if(alertButton)alertButton.onclick=openManager;
      console.warn('TSETMC daily range reference refresh failed; retaining cached daily range',item.symbol,dailyRangeError);
     }
    }
-   let immediate=0;
+   const refreshFromOneMinute=async()=>{
+    const fetchLimit=requested==='3'?18000:(requested==='5'?30000:((requested==='15'||requested==='60')?Infinity:6000));
+    const freshOneMinute=await rfkjTseGetIntradayCandles(code,1,{fetchLimit});
+    if(!isCurrent()||!Array.isArray(freshOneMinute)||!freshOneMinute.length)return 0;
+    const latestCodeCache=rfkjTseReadCache(codeCacheKey),latestSymbolCache=rfkjTseReadCache(symbolCacheKey);
+    const priorOneMinute=rfkjTseMergeCandles(rfkjTseMergeCandles(sourceCachedCandles,latestCodeCache?.candles),latestSymbolCache?.candles);
+    const oneMinuteMerged=rfkjTseMergeCandles(priorOneMinute,freshOneMinute);
+    if(!oneMinuteMerged.length)return 0;
+    // Bound the standalone 1m cache; full session data remains in the dated
+    // session cache, while each derived timeframe keeps its own complete cache.
+    const oneMinuteStored=oneMinuteMerged.slice(-6000);
+    const oneMinuteRecord={...(latestCodeCache||imported||{}),at:Date.now(),symbol:String(item.symbol||''),insCode:code,timeframe:'1',candles:oneMinuteStored,recordFile:(latestCodeCache?.recordFile||imported?.recordFile||'')};
+    rfkjTseWriteCache(codeCacheKey,oneMinuteRecord);
+    rfkjTseWriteCache(symbolCacheKey,oneMinuteRecord);
+    const derivedByTimeframe=new Map();
+    for(const tf of ['3','5','15','60']){
+     const tfCodeKey=`${RFKJ_TSE_CACHE_PREFIX}${code}:tf:${tf}`,tfSymbolKey=rfkjTseSymbolCacheKey(item,tf);
+     const latestTfCode=rfkjTseReadCache(tfCodeKey),latestTfSymbol=rfkjTseReadCache(tfSymbolKey);
+     const oldTf=rfkjTseMergeCandles(latestTfCode?.candles,latestTfSymbol?.candles);
+     const calculated=rfkjTseAggregateOneMinuteCandles(oneMinuteMerged,Number(tf));
+     const mergedTf=rfkjTseMergeDerivedIntradayCandles(oldTf,calculated);
+     const tfRecord={...(latestTfCode||{}),at:Date.now(),symbol:String(item.symbol||''),insCode:code,timeframe:tf,candles:mergedTf,recordFile:(latestTfCode?.recordFile||latestTfSymbol?.recordFile||'')};
+     rfkjTseWriteCache(tfCodeKey,tfRecord);
+     rfkjTseWriteCache(tfSymbolKey,tfRecord);
+     derivedByTimeframe.set(tf,mergedTf);
+    }
+    const selectedCandles=requested==='1'?oneMinuteMerged:derivedByTimeframe.get(requested);
+    return postCandles(selectedCandles||[],'TSETMC 1m source · '+(requested==='1'?'1m':requested+'m derived')+' · all intraday caches updated');
+   };
+   if(minuteFamily){
+    let immediate=0;
+    if(cachedCandles.length){
+     immediate=postCandles(cachedCandles,requested==='1'?'Local TSETMC 1m cache':'Cached '+requested+'m · derived from 1m when available');
+     void refreshFromOneMinute().catch(error=>console.warn('Background TSETMC 1m refresh/derivation failed; cached intraday candles retained',item.symbol,requested,error));
+     return immediate;
+    }
+    return await refreshFromOneMinute();
+   }
+   // Non-intraday timeframes (30m, 4H, 1D, 1W) retain their existing paths.
    if(cachedCandles.length){
-    immediate=postCandles(cachedCandles,imported?.recordFile==='Record-TSE.json'?'Record-TSE + local chart cache':'Local TSE chart cache');
-    // Fetch at most 6,000 new 1m/3m/5m candles, then merge with the entire
-    // persistent cache so older cached candles remain visible without limit.
+    const immediate=postCandles(cachedCandles,imported?.recordFile==='Record-TSE.json'?'Record-TSE + local chart cache':'Local TSE chart cache');
     void rfkjBuildTseCandles(code,sourceTf,{skipImportedCache:true}).then(fresh=>{
      if(!isCurrent()||!Array.isArray(fresh)||!fresh.length)return;
      const latestCodeCache=rfkjTseReadCache(codeCacheKey),latestSymbolCache=rfkjTseReadCache(symbolCacheKey);
@@ -22898,11 +23023,11 @@ const alertButton=$("alerts");if(alertButton)alertButton.onclick=openManager;
    return postCandles(merged,'TSETMC OHLC '+sourceTf);
   }catch(error){
    console.warn('RAHDATA TSETMC OHLC history unavailable',item.symbol,requested,error);
-   // postError is declared inside try and cannot be referenced from this catch.
    try{if(isCurrent())frame.contentWindow.postMessage({type:'rahdata-symbol-bars-error',key:item.key,timeframe:requested,stage:'fetch',message:String(error?.message||error||'Unknown TSETMC error')},'*')}catch{}
    return 0;
   }
  }
+
  async function sendActiveSymbolDailyOhlc(item,generation=activeSymbolDataGeneration){
   if(!item||!['crypto','commodity'].includes(item.type)||!frame.contentWindow)return 0;
   const isCurrent=()=>generation===activeSymbolDataGeneration&&current==='symbol'&&activeSymbol?.key===item.key&&overlay.classList.contains('open')&&frame?.contentWindow;
